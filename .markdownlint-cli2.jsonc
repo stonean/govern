@@ -1,0 +1,14 @@
+{
+  "config": {
+    "default": true,
+    "MD013": false,
+    "MD033": false,
+    "MD024": {
+      "siblings_only": true
+    },
+    "MD060": {
+      "style": "compact"
+    }
+  },
+  "ignores": ["CLAUDE.md"]
+}
