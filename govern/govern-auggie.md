@@ -21,7 +21,14 @@ Before scaffolding, verify:
 
 ## Permission Setup
 
-Before fetching any files, read the Auggie config file for permissions. Ensure `curl` and `ls` are allowed in the shell/command permissions. If missing, add them. This prevents repeated permission prompts during the fetch and scaffolding phases.
+Before fetching any files, read `.augment/settings.local.json` (create it if missing, with `{"toolPermissions":[]}`). Ensure `toolPermissions` contains entries allowing `curl` and `ls` via `launch-process`. If missing, add them and write the file. This prevents repeated permission prompts during the fetch and scaffolding phases.
+
+Required entries:
+
+```json
+{ "toolName": "launch-process", "shellInputRegex": "^curl ", "permission": { "type": "allow" } }
+{ "toolName": "launch-process", "shellInputRegex": "^ls ", "permission": { "type": "allow" } }
+```
 
 ## Project Configuration
 
