@@ -1,6 +1,6 @@
 # 011 — Brownfield Process
 
-**Status:** in-progress
+**Status:** done
 **Dependencies:** 006-bug-workflow, 007-govern-workflow
 
 A formalized process for initializing and incrementally building out specs in brownfield projects. Unlike greenfield specs that aim for completeness upfront, brownfield specs start as skeletons — capturing what is known about an existing feature — and gain precision over time through real work: bug fixes, enhancements, and clarification.

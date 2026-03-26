@@ -65,11 +65,11 @@ Add the brownfield process, scenario promotion, and cross-spec impact patterns t
 
 Update documentation to reflect the brownfield process.
 
-- [ ] Add capture command to `sdd-context.md` slash commands table
-- [ ] Add brownfield process section to `sdd-context.md` (capture, incremental growth, scenario promotion)
-- [ ] Add cross-spec impact to `sdd-context.md`
-- [ ] Update `README.md` slash commands table — add `/capture`, rename `/triage` to `/inbox`
-- [ ] Update `README.md` brownfield section to reference the process
-- [ ] Run `markdownlint-cli2` on both files
+- [x] Add capture command to `sdd-context.md` slash commands table
+- [x] Add brownfield process section to `sdd-context.md` (capture, incremental growth, scenario promotion)
+- [x] Add cross-spec impact to `sdd-context.md`
+- [x] Update `README.md` slash commands table — add `/capture`, rename `/triage` to `/inbox`
+- [x] Update `README.md` brownfield section to reference the process
+- [x] Run `markdownlint-cli2` on both files
 
 **Done when:** both files reflect the brownfield process, capture command, inbox rename, and pass lint.

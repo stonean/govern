@@ -250,6 +250,18 @@ the rest.
 - The goal is for `inbox.md` to eventually disappear
 - SDD adoption in a brownfield project is incremental by feature area, not a big-bang effort
 
+### Brownfield Process
+
+The `/capture` command initializes a skeleton spec from freeform user input — no pressure to be comprehensive. Start broad; decompose through scenarios over time.
+
+1. **Capture** — describe an existing feature in your own words. `/capture` drafts a skeleton spec at `draft` status with whatever behavior is known. Sparse acceptance criteria are expected and valid.
+2. **Incremental growth** — every subsequent touch adds precision: bug fixes add acceptance criteria or scenarios, enhancements follow the normal pipeline, clarifications resolve open questions.
+3. **Scenario promotion** — when a scenario outgrows its parent spec (more than three edge cases, longer behavior section, unrelated open questions), the user promotes it to its own feature spec via `/specify` or `/capture`, then replaces the original scenario with a dependency reference.
+
+### Cross-Spec Impact
+
+When work on one spec identifies changes that affect another spec, those changes are recorded in the affected spec — not left as a note in the originating spec. A signpost references the originating spec so the reader understands why the change was made. If the affected spec is `done`, the change reopens it to `in-progress`.
+
 Governance can be adopted in a single command. Install the govern command for your
 agent (Claude Code or Auggie), run `/govern {project-name}`, and it fetches
 governance files, scaffolds the spec directory, installs slash commands, and displays
@@ -274,6 +286,7 @@ then use pipeline commands in context.
 | `/question` | Ask a question about the current feature or scenario |
 | `/scenario` | Create a scenario for a bug fix, edge case, or behavior clarification |
 | `/inbox` | Walk inbox.md items through the bug decision tree |
+| `/capture` | Initialize a skeleton spec from freeform description of an existing feature |
 | `/setup` | Configure agent permissions for governance commands |
 | `/create` | Create a new spec artifact (plan, tasks, data model, scenario) |
 

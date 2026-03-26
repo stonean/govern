@@ -31,11 +31,11 @@ Governance uses its own spec-driven pipeline to develop itself.
 | [008-security-rules](specs/008-security-rules/spec.md) | draft | 007 | Enforceable backend and frontend security rules distributed via adopt |
 | [009-scenario-targeting](specs/009-scenario-targeting/spec.md) | done | 006 | Promote scenarios to first-class pipeline targets for question, clarify, status, and implement commands |
 | [010-agent-autonomy](specs/010-agent-autonomy/spec.md) | draft | 000 | Evaluate and adopt agent orchestration capabilities (skills, complexity routing, stuck detection, autonomy) |
-| [011-brownfield-process](specs/011-brownfield-process/spec.md) | planned | 006, 007 | Formalized process for initializing and incrementally building out specs in brownfield projects |
+| [011-brownfield-process](specs/011-brownfield-process/spec.md) | done | 006, 007 | Formalized process for initializing and incrementally building out specs in brownfield projects |
 
 ## Adopting in an Existing Project
 
-For brownfield projects, install the govern command and run it — no clone required.
+For brownfield projects, install the govern command and run it — no clone required. Once adopted, use `/capture` to initialize skeleton specs for existing features and let them gain precision incrementally through bug fixes, enhancements, and clarification.
 
 ### Claude Code
 
@@ -86,6 +86,7 @@ Adoption installs a full set of slash commands that operationalize the pipeline.
 | `/question` | Ask a question about the current feature or scenario |
 | `/scenario` | Create a scenario for a bug fix, edge case, or behavior clarification |
 | `/inbox` | Walk inbox.md items through the bug decision tree |
+| `/capture` | Initialize a skeleton spec from freeform description of an existing feature |
 
 ### Utilities
 
