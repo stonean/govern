@@ -77,7 +77,7 @@ These files are filled in by the user with project-specific content. Created on 
 | `templates/system.md` | `specs/system.md` |
 | `templates/errors.md` | `specs/errors.md` |
 | `templates/events.md` | `specs/events.md` |
-| `templates/triage.md` | `specs/triage.md` |
+| `templates/inbox.md` | `specs/inbox.md` |
 | `templates/initialize.md` | `.claude/commands/{project}/initialize.md` |
 
 ### Slash commands (strategy: update)
@@ -96,7 +96,7 @@ Fetch each command template and copy it into `.claude/commands/{project}/`. In e
 | `commands/specify.md` | `.claude/commands/{project}/specify.md` |
 | `commands/status.md` | `.claude/commands/{project}/status.md` |
 | `commands/target.md` | `.claude/commands/{project}/target.md` |
-| `commands/triage.md` | `.claude/commands/{project}/triage.md` |
+| `commands/inbox.md` | `.claude/commands/{project}/inbox.md` |
 | `commands/validate.md` | `.claude/commands/{project}/validate.md` |
 | `commands/create.md` | `.claude/commands/{project}/create.md` |
 
@@ -177,8 +177,8 @@ Next steps:
 1. Run `/{project}:setup` to configure permissions
 2. Fill in `AGENTS.md` — tech stack, project structure, code style, testing conventions, gotchas
 3. Fill in `specs/system.md` — architecture, request lifecycle, shared infrastructure
-4. Populate `specs/triage.md` with known issues and bugs
-5. Run `/{project}:triage` to migrate items to specs and scenarios
+4. Populate `specs/inbox.md` with known issues and bugs
+5. Run `/{project}:inbox` to migrate items to specs and scenarios
 6. Create your first feature spec: `/{project}:specify {feature description}`
 
 ---

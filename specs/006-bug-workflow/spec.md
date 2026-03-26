@@ -77,6 +77,8 @@ The rule: a bug file should never be the first artifact created. The spec or sce
 
 ## Brownfield Triage
 
+> **Note:** `triage` was renamed to `inbox` by [011-brownfield-process](../011-brownfield-process/spec.md). The artifact is now `specs/inbox.md` and the command is `/inbox`.
+
 For projects adopting governance incrementally, a `specs/triage.md` file serves as a temporary inbox for known issues not yet assigned to a feature spec.
 
 ### Triage rules

@@ -60,7 +60,7 @@ specs/
   system.md                # Architecture, shared conventions, request flow
   events.md                # Global event catalog (grows with features)
   errors.md                # Error handling conventions
-  triage.md                # Temporary inbox for brownfield adoption
+  inbox.md                # Temporary inbox for brownfield adoption
   000-user-auth/
     spec.md                # Requirements, contracts, acceptance criteria
     plan.md                # Implementation approach, technical decisions
@@ -245,9 +245,9 @@ the rest.
 
 - Do not frontfill bugs you aren't actively working on
 - Write specs for areas you are actively touching — let adoption spread naturally
-- Use `triage.md` as a temporary inbox for known issues not yet assigned to a feature spec
-- As specs get written, items migrate from triage into their proper home
-- The goal is for `triage.md` to eventually disappear
+- Use `inbox.md` as a temporary inbox for known issues not yet assigned to a feature spec
+- As specs get written, items migrate from inbox into their proper home
+- The goal is for `inbox.md` to eventually disappear
 - SDD adoption in a brownfield project is incremental by feature area, not a big-bang effort
 
 Governance can be adopted in a single command. Install the govern command for your
@@ -273,7 +273,7 @@ then use pipeline commands in context.
 | `/validate` | Audit spec, plan, tasks, and scenarios for completeness and consistency |
 | `/question` | Ask a question about the current feature or scenario |
 | `/scenario` | Create a scenario for a bug fix, edge case, or behavior clarification |
-| `/triage` | Walk triage.md items through the bug decision tree |
+| `/inbox` | Walk inbox.md items through the bug decision tree |
 | `/setup` | Configure agent permissions for governance commands |
 | `/create` | Create a new spec artifact (plan, tasks, data model, scenario) |
 

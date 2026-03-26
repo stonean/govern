@@ -1,4 +1,4 @@
-# Triage
+# Inbox
 
 Temporary inbox for known issues not yet assigned to a feature spec.
 Items are migrated to their proper home as specs are written.

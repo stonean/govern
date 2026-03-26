@@ -37,7 +37,7 @@ See [constitution.md](constitution.md) — guiding principles, development pipel
   - `system.md` -- Architecture, shared conventions
   - `events.md` -- Global event catalog
   - `errors.md` -- Error handling conventions and codes
-  - `triage.md` -- Temporary inbox for known issues not yet assigned to a spec
+  - `inbox.md` -- Temporary inbox for known issues not yet assigned to a spec
   - `templates/` -- Starter files for specs, plans, tasks, scenarios
   - `{NNN-feature}/`
     - `spec.md` -- Requirements, contracts, acceptance criteria

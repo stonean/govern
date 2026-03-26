@@ -233,18 +233,18 @@ Scenarios do not have their own status field. A scenario is either written (merg
 - The spec itself was missing or ambiguous — fix the spec directly
 - The behavior is already captured by an existing scenario — update the existing file
 
-<!-- §brownfield-triage -->
+<!-- §brownfield-inbox -->
 
-### Brownfield Triage
+### Brownfield Inbox
 
-For projects adopting governance incrementally, a `specs/triage.md` file serves as a temporary inbox for known issues not yet assigned to a feature spec.
+For projects adopting governance incrementally, a `specs/inbox.md` file serves as a temporary inbox for known issues not yet assigned to a feature spec.
 
-Triage rules:
+Inbox rules:
 
 - Do not frontfill bugs that are not being actively worked on
 - Write specs for areas being actively touched — let adoption spread naturally
-- As specs are written, items migrate from triage into their proper home
-- The goal is for `triage.md` to eventually be empty and deleted
+- As specs are written, items migrate from the inbox into their proper home
+- The goal is for `inbox.md` to eventually be empty and deleted
 
 <!-- §pipeline-boundaries -->
 

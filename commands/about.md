@@ -36,7 +36,7 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 | Command | Description |
 | --- | --- |
 | `/{project}:scenario` | Create a scenario file for the targeted feature. Walks the bug decision tree, creates the file in `scenarios/`, and appends a task to `tasks.md`. |
-| `/{project}:triage` | Review `specs/triage.md` and migrate items to the appropriate spec or scenario. |
+| `/{project}:inbox` | Review `specs/inbox.md` and migrate items to the appropriate spec or scenario. |
 
 #### Utilities
 
@@ -65,7 +65,7 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 - **Artifacts** — Each feature directory can contain `spec.md`, `plan.md`, `tasks.md`, `data-model.md`, and a `scenarios/` subdirectory.
 - **Scenarios** — A scenario is a spec at a lower level of abstraction. Scenarios live in `specs/NNN-feature/scenarios/slug.md` and capture bugs, edge cases, and detailed behavior. Each scenario gets a linked task in `tasks.md`.
 - **Bug decision tree** — When a bug is reported: (1) no spec → write the spec first, (2) spec is ambiguous → fix the spec, (3) spec is clear → add a scenario.
-- **Triage** — `specs/triage.md` is a temporary inbox for known issues. Items are migrated to specs or scenarios as the project adopts governance.
+- **Inbox** — `specs/inbox.md` is a temporary inbox for known issues. Items are migrated to specs or scenarios as the project adopts governance.
 - **Finish before moving on** — Prefer completing a feature through the full pipeline before starting the next. Depth-first keeps context focused.
 
 ---

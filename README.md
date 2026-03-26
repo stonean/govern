@@ -31,6 +31,7 @@ Governance uses its own spec-driven pipeline to develop itself.
 | [008-security-rules](specs/008-security-rules/spec.md) | draft | 007 | Enforceable backend and frontend security rules distributed via adopt |
 | [009-scenario-targeting](specs/009-scenario-targeting/spec.md) | done | 006 | Promote scenarios to first-class pipeline targets for question, clarify, status, and implement commands |
 | [010-agent-autonomy](specs/010-agent-autonomy/spec.md) | draft | 000 | Evaluate and adopt agent orchestration capabilities (skills, complexity routing, stuck detection, autonomy) |
+| [011-brownfield-process](specs/011-brownfield-process/spec.md) | planned | 006, 007 | Formalized process for initializing and incrementally building out specs in brownfield projects |
 
 ## Adopting in an Existing Project
 
@@ -84,7 +85,7 @@ Adoption installs a full set of slash commands that operationalize the pipeline.
 | --- | --- |
 | `/question` | Ask a question about the current feature or scenario |
 | `/scenario` | Create a scenario for a bug fix, edge case, or behavior clarification |
-| `/triage` | Walk triage.md items through the bug decision tree |
+| `/inbox` | Walk inbox.md items through the bug decision tree |
 
 ### Utilities
 
@@ -184,7 +185,7 @@ Projects can reference these rules in their AGENTS.md or validate command to enf
 | [data-model.md](templates/data-model.md) | Plan phase — when the feature involves database persistence |
 | [research.md](templates/research.md) | Optional — background research, prior art, references |
 | [scenario.md](templates/scenario.md) | Bug workflow — scenario capturing specific behavior, edge case, or bug fix |
-| [triage.md](templates/triage.md) | Bug workflow — temporary inbox for known issues during brownfield adoption |
+| [inbox.md](templates/inbox.md) | Bug workflow — temporary inbox for known issues during brownfield adoption |
 
 ## Bug Workflow
 
@@ -202,9 +203,9 @@ When a bug is reported, follow in order:
 
 A scenario is a spec at a lower level of abstraction. Scenarios live in `specs/NNN-feature/scenarios/slug.md` and capture edge cases, bug fixes, and detailed behavior. Each scenario gets a linked task in the parent spec's `tasks.md`. Scenarios can be targeted directly with `/target feature/scenario-slug` for focused work.
 
-### Triage
+### Inbox
 
-For brownfield projects, `specs/triage.md` is a temporary inbox. Items are migrated to specs or scenarios as the project adopts governance. The goal is for triage to eventually be empty.
+For brownfield projects, `specs/inbox.md` is a temporary inbox. Items are migrated to specs or scenarios as the project adopts governance. The goal is for the inbox to eventually be empty.
 
 ## Updating an Adopted Project
 
