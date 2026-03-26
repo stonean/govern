@@ -29,10 +29,10 @@ Rename files and update all references from `triage` to `inbox` across the frame
 
 Create the `/capture` command in both platform-agnostic and Claude Code forms.
 
-- [ ] Create `commands/capture.md` with freeform input flow, skeleton spec creation, session target update, and post-capture options
-- [ ] Create `.claude/commands/gov/capture.md` as Claude Code instance with `/gov:` prefix and `.claude` paths
-- [ ] Verify command file parity between the two files
-- [ ] Run `markdownlint-cli2` on both files
+- [x] Create `commands/capture.md` with freeform input flow, skeleton spec creation, session target update, and post-capture options
+- [x] Create `.claude/commands/gov/capture.md` as Claude Code instance with `/gov:` prefix and `.claude` paths
+- [x] Verify command file parity between the two files
+- [x] Run `markdownlint-cli2` on both files
 
 **Done when:** both capture command files exist, pass lint, and follow the same structure as other commands.
 
