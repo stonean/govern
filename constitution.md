@@ -233,6 +233,23 @@ Scenarios do not have their own status field. A scenario is either written (merg
 - The spec itself was missing or ambiguous — fix the spec directly
 - The behavior is already captured by an existing scenario — update the existing file
 
+<!-- §scenario-promotion -->
+
+#### Scenario promotion
+
+In brownfield projects, scenarios serve a dual purpose: they elaborate edge cases (as in greenfield) and they decompose broad features into distinct workflows. When a scenario grows complex enough, it signals that the behavior warrants its own feature spec.
+
+Indicators that a scenario should be promoted:
+
+- The scenario has more than three edge cases
+- The scenario's behavior section is longer than the parent spec's
+- The scenario has open questions unrelated to the parent spec's domain
+- Multiple scenarios in the same feature share overlapping concerns that would be better unified in their own spec
+
+To promote: the user runs `/specify` (for new behavior) or `/capture` (for another existing feature) to create the new spec, then replaces the original scenario with a dependency reference in the parent spec.
+
+Promotion is a user decision, not automated. The framework provides the pattern; the user recognizes when decomposition is needed.
+
 <!-- §brownfield-inbox -->
 
 ### Brownfield Inbox
@@ -246,6 +263,27 @@ Inbox rules:
 - As specs are written, items migrate from the inbox into their proper home
 - The goal is for `inbox.md` to eventually be empty and deleted
 
+<!-- §brownfield-process -->
+
+### Brownfield Process
+
+Brownfield projects adopt governance incrementally. The `/capture` command initializes a skeleton spec from freeform user input — no pressure to be comprehensive. Start broad; decompose through scenarios over time.
+
+#### Capture → incremental growth → promotion
+
+1. **Capture** — the user describes an existing feature in their own words. `/capture` drafts a skeleton spec at `draft` status with whatever behavior is known. Sparse acceptance criteria are expected and valid.
+2. **Incremental growth** — every subsequent touch on the feature adds precision:
+   - A **bug fix** reveals missing behavior → adds an acceptance criterion or scenario
+   - An **enhancement** adds new behavior → follows the normal pipeline (spec change before implementation)
+   - A **clarification** resolves an open question → narrows ambiguity
+3. **Promotion** — when a scenario outgrows its parent spec, the user promotes it to its own feature spec (see [Scenario promotion](#scenario-promotion))
+
+Over time the spec converges on a complete description of the feature — not from a documentation effort, but as a side effect of doing work.
+
+#### Inbox integration
+
+When an inbox item does not map to any existing spec, `/inbox` directs the user to run `/capture` to initialize a spec first, then return to process the item. The commands stay decoupled — `/inbox` processes items, `/capture` creates specs.
+
 <!-- §pipeline-boundaries -->
 
 ## Pipeline Boundaries
@@ -255,6 +293,27 @@ Inbox rules:
 - Never skip phases — each phase produces artifacts the next phase consumes
 - Never transition a spec to the next status without explicit user approval — present the work done and wait for the user to confirm before updating the status field
 - Specs and plans are living documents — update them when decisions change, but don't backtrack silently
+
+<!-- §cross-spec-impact -->
+
+### Cross-Spec Impact
+
+Specs are self-contained. When work on one spec identifies changes that affect another spec, those changes are recorded in the affected spec — not left as a note in the originating spec. The affected spec is the source of truth for its own behavior.
+
+This applies when:
+
+- A feature renames or supersedes an artifact from a prior spec
+- Work on spec A reveals that spec B needs a new acceptance criterion or scenario
+- A scenario in spec A exposes an edge case that belongs to spec B
+- An implementation decision in spec A's plan creates a constraint for spec B
+
+In each case:
+
+- The change is recorded in the affected spec as a new acceptance criterion, scenario, or signpost note
+- The signpost references the originating spec so the reader understands why the change was made
+- If the affected spec is `done`, adding the change reopens it to `in-progress` per the normal lifecycle
+
+The originating spec's acceptance criteria include delivering the cross-spec update. This ensures the change is tracked as part of the work that discovered it.
 
 <!-- §numbering -->
 

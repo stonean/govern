@@ -54,10 +54,10 @@ Add the capture command to the govern file manifests and add a triage → inbox 
 
 Add the brownfield process, scenario promotion, and cross-spec impact patterns to `constitution.md`.
 
-- [ ] Add brownfield process section under the existing brownfield inbox section — documents capture → incremental growth → promotion lifecycle
-- [ ] Add scenario promotion subsection under the existing scenarios section — documents indicators and the promotion pattern
-- [ ] Add cross-spec impact as a pipeline boundary — documents that changes land where they belong with signpost references
-- [ ] Run `markdownlint-cli2` on `constitution.md`
+- [x] Add brownfield process section under the existing brownfield inbox section — documents capture → incremental growth → promotion lifecycle
+- [x] Add scenario promotion subsection under the existing scenarios section — documents indicators and the promotion pattern
+- [x] Add cross-spec impact as a pipeline boundary — documents that changes land where they belong with signpost references
+- [x] Run `markdownlint-cli2` on `constitution.md`
 
 **Done when:** constitution documents all three patterns and passes lint.
 
