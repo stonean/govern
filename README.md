@@ -5,8 +5,13 @@ Standards and conventions for spec-driven software development. This project def
 ## Contents
 
 - [constitution.md](constitution.md) — Guiding principles, development pipeline, spec lifecycle, and quality standards
+- [sdd-context.md](sdd-context.md) — What spec-driven development is, how it differs from other approaches, and repository structure patterns
 - [templates/](templates/) — Starter files for specs, plans, tasks, data models, and research
+- [commands/](commands/) — Slash command templates that operationalize the pipeline
+- [govern/](govern/) — Platform-specific adopt commands (Claude Code, Auggie)
 - [AGENTS.md](AGENTS.md) — Agent rules template for AI-assisted development
+- [security-backend.md](security-backend.md) — Enforceable backend security rules (RFC 2119)
+- [security-frontend.md](security-frontend.md) — Enforceable frontend security rules (RFC 2119)
 - [specs/](specs/) — Feature specs for governance itself (dogfooding the pipeline)
 
 ## Feature Specs
@@ -19,14 +24,78 @@ Governance uses its own spec-driven pipeline to develop itself.
 | [001-system-spec-templates](specs/001-system-spec-templates/spec.md) | done | none | Templates for system.md, errors.md, and events.md |
 | [002-project-scaffolding](specs/002-project-scaffolding/spec.md) | done | 000, 001 | README, .gitignore, CLAUDE.md, and session file templates |
 | [003-bootstrap-automation](specs/003-bootstrap-automation/spec.md) | done | 000, 001, 002 | Slash commands and /gov:init for scaffolding new projects |
-| [005-skills-and-plugins](specs/005-skills-and-plugins/spec.md) | draft | 004 | Recommend and scaffold skills/plugins based on tech stack during init |
-| [006-bug-workflow](specs/006-bug-workflow/spec.md) | in-progress | none | Scenario support, bug decision tree, and brownfield triage |
+| [004-tech-stack-selection](specs/004-tech-stack-selection/spec.md) | done | 003 | Interactive tech stack questionnaire during init that populates AGENTS.md |
+| [005-skills-and-plugins](specs/005-skills-and-plugins/spec.md) | planned | 004 | Recommend and scaffold skills/plugins based on tech stack during init |
+| [006-bug-workflow](specs/006-bug-workflow/spec.md) | done | none | Scenario support, bug decision tree, and brownfield triage |
 | [007-adopt-workflow](specs/007-adopt-workflow/spec.md) | done | 003 | Self-contained govern command to bootstrap governance in existing projects |
 | [008-security-rules](specs/008-security-rules/spec.md) | draft | 007 | Enforceable backend and frontend security rules distributed via adopt |
-| [009-scenario-targeting](specs/009-scenario-targeting/spec.md) | draft | 006 | Promote scenarios to first-class pipeline targets for question, clarify, status, and implement commands |
+| [009-scenario-targeting](specs/009-scenario-targeting/spec.md) | done | 006 | Promote scenarios to first-class pipeline targets for question, clarify, status, and implement commands |
 | [010-agent-autonomy](specs/010-agent-autonomy/spec.md) | draft | 000 | Evaluate and adopt agent orchestration capabilities (skills, complexity routing, stuck detection, autonomy) |
 
+## Adopting in an Existing Project
+
+For brownfield projects, install the govern command and run it — no clone required.
+
+### Claude Code
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/stonean/govern/main/govern/govern.md \
+  > .claude/commands/govern.md
+```
+
+Then run `/govern {project-name}`.
+
+### Auggie
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/stonean/govern/main/govern/govern-auggie.md \
+  > .augment/commands/govern.md
+```
+
+Then run `/govern {project-name}`.
+
+The command fetches governance files, scaffolds the spec directory, installs slash commands, and displays next steps. It is idempotent — safe to run again to pick up new governance files.
+
+## Slash Commands
+
+Adoption installs a full set of slash commands that operationalize the pipeline. All commands are session-aware — run `/target` first to set the working feature, then use pipeline commands in context.
+
+### Session and navigation
+
+| Command | Purpose |
+| --- | --- |
+| `/target` | Set the working feature (or `feature/scenario`) for the session |
+| `/status` | Dashboard showing all features' progress, or focused view of the current target |
+| `/about` | Display project overview, constitution summary, and governance version |
+
+### Pipeline
+
+| Command | Purpose |
+| --- | --- |
+| `/specify` | Create a new feature spec — asks qualifying questions to choose standard or lightweight track |
+| `/clarify` | Resolve open questions in the current spec, advance status to `clarified` |
+| `/plan` | Create plan.md with technical decisions, affected files, and resolved questions |
+| `/implement` | Work through tasks, update spec status to `in-progress` then `done` |
+| `/validate` | Audit spec, plan, tasks, and scenarios for completeness and consistency |
+
+### Bug workflow
+
+| Command | Purpose |
+| --- | --- |
+| `/question` | Ask a question about the current feature or scenario |
+| `/scenario` | Create a scenario for a bug fix, edge case, or behavior clarification |
+| `/triage` | Walk triage.md items through the bug decision tree |
+
+### Utilities
+
+| Command | Purpose |
+| --- | --- |
+| `/setup` | Configure agent permissions for governance commands |
+| `/create` | Create a new spec artifact (plan, tasks, data model, scenario) |
+
 ## Starting a New Project
+
+The recommended path is `/gov:init`, which automates the steps below — including a guided tech stack questionnaire that populates the AGENTS.md Tech Stack table automatically. The manual steps are listed here for reference or for agents that don't support the init command.
 
 ### 1. Bootstrap project structure
 
@@ -76,48 +145,33 @@ Write `specs/system.md` describing your architecture — server lifecycle, reque
 
 ### 6. Add your first feature spec
 
-Copy `templates/spec.md` into a numbered feature directory:
+Run `/specify` to create a numbered feature directory with a spec from template. The command asks qualifying questions to determine whether the feature uses the standard track (separate spec, plan, and tasks) or the lightweight track (combined spec-and-plan for small, single-module features).
+
+Alternatively, create one manually:
 
 ```bash
 mkdir specs/000-skeleton
 cp /path/to/governance/templates/spec.md specs/000-skeleton/spec.md
 ```
 
-Fill in the spec: describe what the feature does, define acceptance criteria, and list open questions. Set status to `draft`.
-
 ### 7. Work through the pipeline
 
 Follow the pipeline defined in `constitution.md`:
 
 1. **Spec** — resolve all open questions, update status to `clarified`
-2. **Plan** — copy `templates/plan.md`, make technical decisions, list affected files. If the feature involves persistence, copy `templates/data-model.md`
-3. **Tasks** — copy `templates/tasks.md`, break the plan into ordered work items. Update spec status to `planned`
-4. **Readiness check** — verify all gates pass before writing code
+2. **Plan** — create plan.md with technical decisions, list affected files. If the feature involves persistence, add data-model.md
+3. **Tasks** — create tasks.md, break the plan into ordered work items. Update spec status to `planned`
+4. **Readiness check** — run `/validate` to verify all gates pass before writing code
 5. **Implement** — follow the tasks list, update spec status to `in-progress`, then `done`
 
-## Adopting in an Existing Project
+## Security Rules
 
-For brownfield projects, install the govern command and run it — no clone required.
+The governance framework includes enforceable security rules for backend and frontend code, distributed via adopt. Rules use RFC 2119 language: **MUST/MUST NOT** are blocking violations, **SHOULD/SHOULD NOT** are advisory warnings.
 
-### Claude Code
+- [security-backend.md](security-backend.md) — Authentication, authorization, input validation, data protection, API security, logging, dependency management, and error handling
+- [security-frontend.md](security-frontend.md) — XSS prevention, CSRF protection, secure storage, authentication handling, content security, and dependency management
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/stonean/govern/main/govern/govern.md \
-  > .claude/commands/govern.md
-```
-
-Then run `/govern {project-name}`.
-
-### Auggie
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/stonean/govern/main/govern/govern-auggie.md \
-  > .augment/commands/govern.md
-```
-
-Then run `/govern {project-name}`.
-
-The command fetches governance files, scaffolds the spec directory, installs slash commands, and displays next steps. It is idempotent — safe to run again to pick up new governance files.
+Projects can reference these rules in their AGENTS.md or validate command to enforce security standards during development.
 
 ## Templates Reference
 
@@ -146,7 +200,7 @@ When a bug is reported, follow in order:
 
 ### Scenarios
 
-A scenario is a spec at a lower level of abstraction. Scenarios live in `specs/NNN-feature/scenarios/slug.md` and capture edge cases, bug fixes, and detailed behavior. Each scenario gets a linked task in the parent spec's `tasks.md`.
+A scenario is a spec at a lower level of abstraction. Scenarios live in `specs/NNN-feature/scenarios/slug.md` and capture edge cases, bug fixes, and detailed behavior. Each scenario gets a linked task in the parent spec's `tasks.md`. Scenarios can be targeted directly with `/target feature/scenario-slug` for focused work.
 
 ### Triage
 
@@ -183,6 +237,15 @@ Any file listed in `pinned.files` is treated as `skip` instead of `update` when 
 ### Manual updates
 
 If you prefer not to use adopt, governance is a reference, not a dependency. Review the governance changelog or diff, decide which changes apply to your project, and update your copies at your own pace.
+
+## Platform Support
+
+Governance currently distributes to two AI coding agents:
+
+- **Claude Code** — `.claude/` paths, `/govern` and `/gov:*` commands
+- **Auggie** — `.augment/` paths, `/govern` command variant
+
+Adding support for a new agent requires only a new `govern/govern-{agent}.md` file with platform-appropriate paths and configuration.
 
 ## Markdown
 

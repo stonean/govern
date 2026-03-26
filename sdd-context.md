@@ -1,82 +1,180 @@
 # SDD Context Document
-> This document captures a fully developed Spec Driven Development framework including
-> conventions for bugs, scenarios, repository structure, brownfield adoption, and a
-> blog series in progress. Use this as context for continuing the work.
 
----
+> This document captures the Spec Driven Development framework — principles,
+> pipeline, spec and scenario conventions, bug handling, brownfield adoption,
+> operational commands, and quality standards.
 
-## 1. The Framework
+## Core Principle
 
-### Core Principle
 The specification is the primary artifact and source of truth. Code is derived from
 the spec, not the other way around. A spec describes *what the system does*, not
 *how it does it*.
 
 ### What a Spec Is Not
+
 - Not a PRD — specs are living documents that stay accurate after code is written
 - Not Agile or Scrum — SDD is about what the source of truth is, not how teams organize work
 - Not vibe coding — SDD is the discipline layer that makes AI coding reliable
 - Not just using AI agents — agents are tools, SDD is what makes them consistent
 
----
+## Development Pipeline
 
-### Repository Structure
+Every feature follows the pipeline: **spec → plan → tasks → implement**. No code
+is written without a spec. No implementation begins without a plan.
 
-```
+| Phase | Produces | Key rule |
+| --- | --- | --- |
+| **Spec** | What the feature does, requirements, contracts, constraints | All open questions resolved before planning |
+| **Plan** | How the feature will be implemented, technical decisions, affected files | References the spec, addresses all open questions, produces data model if needed |
+| **Tasks** | Discrete, ordered work items derived from the plan | Each task has a definition of done and can be completed in a single session |
+| **Implement** | Code, tests, and migrations following the tasks list | Follows the tasks in order, updates spec status as work progresses |
+
+### Pipeline Boundaries
+
+- Never implement without a spec
+- Never plan without resolving open questions
+- Never skip phases — each phase produces artifacts the next phase consumes
+- Never transition a spec to the next status without explicit user approval — present the work done and wait for the user to confirm before updating the status field
+- Specs and plans are living documents — update them when decisions change, but don't backtrack silently
+
+## Spec Lifecycle
+
+Every spec carries a status that tracks its progress through the pipeline.
+
+| Status | Meaning |
+| --- | --- |
+| `draft` | Initial spec written, may have unresolved open questions |
+| `clarified` | All open questions resolved, acceptance criteria are concrete and testable |
+| `planned` | Plan and tasks exist, readiness check passed |
+| `in-progress` | Implementation has started |
+| `done` | All acceptance criteria verified, code merged |
+
+A spec advances forward through these states. Moving backward (e.g., `planned` →
+`clarified`) is allowed when new questions surface during implementation. A `done`
+spec is reopened by adding a new scenario — the spec status moves to `in-progress`.
+
+## Repository Structure
+
+```text
 specs/
-  features/
-    user-auth/
-      spec.md             ← high level behavior, stable, core scenarios only
-      scenarios/
-        token-expiry.md
-        invalid-credentials.md
-    checkout/
-      spec.md
-      scenarios/
-        rounding-error.md
-    security/
-      spec.md             ← cross-cutting concerns are first class specs
-    data-integrity/
-      spec.md
-  triage.md               ← temporary inbox for brownfield adoption, should shrink to nothing
+  system.md                # Architecture, shared conventions, request flow
+  events.md                # Global event catalog (grows with features)
+  errors.md                # Error handling conventions
+  triage.md                # Temporary inbox for brownfield adoption
+  000-user-auth/
+    spec.md                # Requirements, contracts, acceptance criteria
+    plan.md                # Implementation approach, technical decisions
+    tasks.md               # Discrete work items derived from the plan
+    data-model.md          # (optional) Database schema
+    research.md            # (optional) Background research, prior art
+    scenarios/
+      token-expiry.md
+      invalid-credentials.md
+  001-checkout/
+    spec.md
+    plan.md
+    tasks.md
+    scenarios/
+      rounding-error.md
+  002-security/
+    spec.md                # Cross-cutting concerns are first class specs
 ```
 
 **Rules:**
+
+- Feature directories use numbered prefixes (`NNN-feature-name`) for ordering and uniqueness
 - `spec.md` stays high level and stable — if scenarios are bloating it, they need their own files
-- Cross-cutting concerns (security, data integrity) are first class feature specs, not a floating `invariants.md`
+- Cross-cutting concerns (security, data integrity) are first class feature specs
 - Bugs do not get a top level directory — they belong to the feature they violate
-- Status metadata lives inside files, not in folder structure (no `open/` or `resolved/` directories)
+- Status metadata lives inside files, not in folder structure
 
----
+## Spec Format
 
-### Spec Format
+Specs use flexible section headings — there is no fixed set of required sections
+beyond the mandatory ones. Use headings that make sense for the feature.
 
 ```markdown
-# Feature Name
+# {NNN} — {Feature Name}
 
-## Overview
-One or two sentences describing what this feature does at a high level.
+**Status:** draft
+**Dependencies:** none
 
-## Behavior
-- Concrete behavioral statements written in plain language
-- Each statement describes what the system does in a specific situation
-- No implementation detail
+{Brief description of what this feature does and why it exists.}
 
-## Constraints
-- Rules that must always hold
-- Rate limits, validation rules, invariants specific to this feature
+## {Sections}
+
+<!-- Organize into sections that describe behavior, contracts, and constraints.
+     Use headings that make sense for this feature. -->
+
+## Acceptance Criteria
+
+- [ ] Concrete, testable conditions that define "done"
+
+## Open Questions
+
+- Uncertainties, unresolved decisions, and areas needing investigation
 ```
 
----
+**Mandatory elements:**
 
-### Scenario Format
+- **Status** — one of: draft, clarified, planned, in-progress, done
+- **Dependencies** — other specs this feature depends on
+- **Acceptance Criteria** — concrete, testable conditions that define "done"
+- **Open Questions** — uncertainties and unresolved decisions (all must be resolved before planning)
+
+### Lightweight Track
+
+Small, well-understood changes can use a combined `spec-and-plan.md` that merges
+the spec and plan into a single document, then move directly to tasks.
+
+Use the lightweight track when **all** of the following are true:
+
+- The feature touches a single module or package
+- There are no open questions — the approach is obvious
+- The data model change is trivial or nonexistent
+- The spec fits in under 50 lines
+
+The combined document adds `**Track:** lightweight`, `Technical Decisions`, and
+`Affected Files` sections alongside the spec content. If any qualifying condition
+is not met, use the full pipeline.
+
+## Plan Phase
+
+A plan references the spec it implements and contains:
+
+- Technical decisions and their rationale
+- Affected files and packages
+- Resolution of all open questions from the spec
+- A data model if the feature involves persistence
+
+## Tasks Phase
+
+Tasks are derived from the plan, not invented independently. Each task:
+
+- Has a clear definition of done
+- Is ordered to respect dependencies
+- Can be completed in a single working session
+
+## Readiness Check
+
+Before implementation begins, all gates must pass:
+
+- [ ] Spec status is `planned`
+- [ ] Acceptance criteria are concrete and testable — no empty placeholders
+- [ ] All open questions are resolved
+- [ ] Data model exists if the feature involves persistence
+- [ ] Plan does not conflict with `system.md` or other feature specs
+- [ ] Tasks are ordered and each has a clear definition of done
+
+## Scenario Format
+
 A scenario is a spec at a lower level of abstraction. Same format, same discipline,
 just narrower in scope. Anchored to the spec it elaborates on via `spec-ref`.
 
 ```markdown
 # Scenario: Token Expiry Enforced on Request
 
-spec-ref: spec.md#token-lifecycle
+**spec-ref:** 000-user-auth — Token Lifecycle
 
 ## Context
 A user has an active session token that has been inactive for 24 hours.
@@ -89,38 +187,61 @@ it with a 401 and clears the token from the session store.
 - Token that expires mid-request completes the current request but
   rejects the next
 - Clock skew of up to 30 seconds is tolerated before expiry is enforced
+
+## Open Questions
+<!-- Questions captured via the question command. Resolved during clarify. -->
+
+## Resolved Questions
+<!-- Answers to previously open questions, preserved for context. -->
 ```
 
 No Given/When/Then syntax required. Plain language is equally valid and often
 more readable for complex scenarios.
 
----
+### Scenario Lifecycle
 
-### Bug Handling
+Scenarios do not have their own status field. A scenario is either written (merged)
+or not. When a scenario is created, a task is appended to the parent spec's
+`tasks.md` referencing the scenario. The task carries the completion status — the
+scenario itself is a permanent requirement document.
 
-**The core insight:** A bug is just an unwritten scenario. Most bugs exist because
-a situation was never formally described. The fix is not a bug report — it is a
-scenario added to the spec it belongs to.
+- If the parent spec was `done`, its status reverts to `in-progress`
+- The task in `tasks.md` shows what is being worked on and links to the scenario
+- When the task is complete, the scenario stays as documentation of the expected behavior
+- If a scenario becomes obsolete, it is deleted — not marked with a status
+
+### Scenario Targeting
+
+Individual scenarios can be targeted in the session for focused work. The session
+file supports an optional `scenario` and `scenarioPath` field alongside the feature
+target.
+
+- `target {feature}` — targets the feature, clears any scenario
+- `target {feature}/{scenario-slug}` — targets the feature and a specific scenario
+
+When a scenario is targeted, scenario-aware commands (`question`, `clarify`,
+`status`, `implement`) operate on the scenario file instead of the parent spec.
+Feature-only commands (`specify`, `plan`, `validate`) always operate at the feature
+level regardless of scenario targeting. The `/scenario` command automatically sets
+the newly created scenario as the session target.
+
+## Bug Handling
+
+A bug is just an unwritten scenario. Most bugs exist because a situation was never
+formally described. The fix is not a bug report — it is a scenario added to the spec
+it belongs to.
 
 **Decision tree — in order:**
+
 1. Does a spec exist for this behavior? If not, write it first
 2. Is the spec ambiguous or incomplete? Correct or enhance it
 3. Is the spec clear but the implementation wrong? Add the missing scenario, then fix the code
 
-**A bug file is almost never needed.** The scenario captures the correct behavior.
-The git history on that file records when and why it was added. A descriptive commit
-message covers the rest.
+There is no bug file. The scenario captures the correct behavior. The git history
+on that file records when and why it was added. A descriptive commit message covers
+the rest.
 
-**A bug file is only justified when:**
-- The root cause is complex enough that losing it would be costly
-- Reproduction requires context that doesn't belong in the spec or scenario
-- A workaround needs to be documented while a fix is deferred
-
-**The rule:** A bug file should never be the first artifact created. The spec always comes first.
-
----
-
-### Brownfield Adoption
+## Brownfield Adoption
 
 - Do not frontfill bugs you aren't actively working on
 - Write specs for areas you are actively touching — let adoption spread naturally
@@ -129,311 +250,93 @@ message covers the rest.
 - The goal is for `triage.md` to eventually disappear
 - SDD adoption in a brownfield project is incremental by feature area, not a big-bang effort
 
----
+Governance can be adopted in a single command. Install the govern command for your
+agent (Claude Code or Auggie), run `/govern {project-name}`, and it fetches
+governance files, scaffolds the spec directory, installs slash commands, and displays
+next steps. The command is idempotent — safe to run again to pick up updates.
 
-### Key Mindset Shifts
+## Slash Commands
+
+The governance framework is operationalized through slash commands installed during
+adoption. All commands are session-aware — run `/target` to set the working feature,
+then use pipeline commands in context.
+
+| Command | Purpose |
+| --- | --- |
+| `/target` | Set the working feature or scenario for the session |
+| `/status` | Dashboard of all features' progress, or focused view of current target |
+| `/about` | Project overview, constitution summary, governance version |
+| `/specify` | Create a new feature spec (detects lightweight vs standard track) |
+| `/clarify` | Resolve open questions, advance to `clarified` |
+| `/plan` | Create plan with technical decisions, affected files, resolved questions |
+| `/implement` | Work through tasks, update status to `in-progress` then `done` |
+| `/validate` | Audit spec, plan, tasks, and scenarios for completeness and consistency |
+| `/question` | Ask a question about the current feature or scenario |
+| `/scenario` | Create a scenario for a bug fix, edge case, or behavior clarification |
+| `/triage` | Walk triage.md items through the bug decision tree |
+| `/setup` | Configure agent permissions for governance commands |
+| `/create` | Create a new spec artifact (plan, tasks, data model, scenario) |
+
+### Validate
+
+The validate command is a read-only consistency check. It reports issues as
+**blocking** (must fix to advance) or **advisory** (should fix):
+
+- Spec integrity — status, dependencies, acceptance criteria
+- Artifact completeness — required files for each status level
+- Plan consistency — references spec, has decisions with rationale, lists affected files
+- Task consistency — references plan, has "done when" conditions, proper ordering
+- Scenario consistency — every scenario has a corresponding task
+- Dependencies — all declared dependencies exist and are at least `clarified`
+- Cross-spec alignment — event types match events.md, error codes follow errors.md
+- Markdown lint — all files pass markdownlint-cli2
+
+## Security Rules
+
+The framework includes enforceable security rules for backend and frontend code,
+distributed via adopt. Rules use RFC 2119 language: **MUST/MUST NOT** are blocking
+violations, **SHOULD/SHOULD NOT** are advisory warnings.
+
+- **Backend rules** — authentication, authorization, input validation, data protection, API security, logging, dependency management, error handling
+- **Frontend rules** — XSS prevention, CSRF protection, secure storage, authentication handling, content security, dependency management
+
+## Constants and Configuration
+
+**Configurable values:** Any value that determines system behavior (expiry times,
+retry counts, batch sizes, thresholds, rate limits) must be backed by an environment
+variable.
+
+**Fixed constants:** Values that are fixed by design and never change across
+deployments (protocol versions, header names, media types) must be named constants,
+not bare literals.
+
+**Environment variables:**
+
+- `.env.example` is the single source of truth for what the application expects
+- Every variable must have a default fallback defined as a named constant
+- Validate all required variables at startup — fail fast with a clear error
+- Include the unit in time variable names (`_MS`, `_SECONDS`, `_MINUTES`)
+
+**Organization:**
+
+- Shared constants — values used across modules live in a centralized location
+- Module-local constants — values used within a single module live in that module
+
+## Markdown Standards
+
+All `.md` files must pass `markdownlint-cli2` using the project config. Key rules:
+
+- ATX-style headings only, incrementing by one
+- Every fenced code block specifies a language
+- Files start with a top-level heading
+- Tables use compact style
+- Ordered lists use sequential numbering
+- Link fragments reference valid heading anchors
+
+## Key Mindset Shifts
+
 - A bug is just an unwritten scenario
 - Scenarios are specs at a lower level of abstraction — same format, same discipline
 - The spec absorbs knowledge that Jira buries in closed tickets
 - No work begins without a spec or scenario to satisfy
 - A pull request that changes behavior without updating the spec is incomplete
-
----
-
-## 2. Blog Series
-
-### Series Structure
-Foundational posts read in order. Deep dives are standalone and can be read in any order.
-
-| # | Title | Type | Status |
-|---|-------|------|--------|
-| 1 | What Spec Driven Development Actually Is | Foundation | Drafted |
-| 2 | A Bug Is Just An Unwritten Scenario | Foundation | Drafted |
-| 3 | How to Structure a Spec Repository | Deep dive | Outline only |
-| 4 | Introducing SDD to a Brownfield Project | Deep dive | Outline only |
-| 5 | The Anatomy of a Good Spec | Deep dive | Outline only |
-| 6 | SDD and AI — Why Specs Make AI Coding Agents Actually Useful | Deep dive | Outline only |
-
-**Target audience:** Developers, engineering leads, CTOs, architects, general tech audience
-**Tone:** Thought leadership
-**Length:** ~1000 words per post
-
----
-
-### Post Outlines (not yet drafted)
-
-**Post 3 — How to Structure a Spec Repository**
-- Folder structure and the reasoning behind it
-- What belongs in spec.md vs scenarios/
-- Cross-cutting concerns as first class specs
-- How the structure scales as the system grows
-- Naming conventions and spec versioning
-
-**Post 4 — Introducing SDD to a Brownfield Project**
-- Why big-bang spec adoption fails
-- The triage.md pattern as a temporary inbox
-- Starting with the areas you're actively touching
-- How to write a spec for code that already exists
-- What done looks like — when triage.md disappears
-
-**Post 5 — The Anatomy of a Good Spec**
-- What makes a spec too vague vs too detailed
-- The right level of abstraction for spec.md
-- When to split a spec into multiple specs
-- How scenarios extend the spec without bloating it
-- Common mistakes and how to avoid them
-
-**Post 6 — SDD and AI**
-- Why vague prompts produce vague code
-- How a well-structured spec repository becomes context for an AI agent
-- Scenarios as executable validation gates
-- The risk of AI-generated code without specs — architectural drift, security gaps
-- SDD as the discipline layer that makes AI coding reliable
-
----
-
-## 3. Drafted Posts
-
-### Post 1: What Spec Driven Development Actually Is
-
-Most software teams share a common dysfunction. Requirements live in Jira tickets.
-Architecture decisions live in Confluence pages nobody reads. Business logic lives
-in the heads of the two engineers who have been around long enough to remember why
-things work the way they do. And the code — the only artifact anyone actually trusts
-— drifts further from every other document with every passing sprint.
-
-Spec Driven Development is a response to that dysfunction. But to understand what it
-is, it helps to first be precise about what it is not.
-
-**What SDD Is Not**
-
-It is not a PRD. Product Requirements Documents describe intent from a business
-perspective. They are written before development begins and rarely updated once work
-starts. By the time a feature ships, the PRD typically bears little resemblance to
-what was built. SDD specifications are living documents — they evolve with the system
-and remain accurate after the code is written, not just before.
-
-It is not Agile or Scrum. Agile is a philosophy about how teams collaborate and
-iterate. Scrum is a framework for organizing that work into sprints, ceremonies, and
-roles. Neither says anything meaningful about what artifacts teams should produce or
-how those artifacts should relate to the code. SDD is not a replacement for how your
-team organizes work — it is a discipline about what your source of truth is.
-
-It is not vibe coding. Vibe coding — using AI to generate code from loose natural
-language prompts — optimizes for speed of initial output at the expense of
-consistency, maintainability, and predictability. It works for prototypes. It breaks
-down for production systems where multiple people, and multiple AI agents, need to
-work on the same codebase over time without introducing drift.
-
-It is not just using AI coding agents. AI coding agents are tools. SDD is the
-discipline that makes those tools reliable. An AI agent given a well-structured spec
-produces consistent, predictable output. An AI agent given a vague prompt produces
-code that may work today and silently break something tomorrow.
-
-**What SDD Actually Is**
-
-Spec Driven Development is a methodology in which the specification is the primary
-artifact — the source of truth from which everything else is derived. Code is an
-output of the spec, not the other way around.
-
-This is a meaningful inversion. In most teams, the code is what's real. Documentation
-is written to describe code that already exists, which means it is always slightly out
-of date, always slightly wrong, and rarely trusted. In SDD, the spec is what's real.
-Code that diverges from the spec is wrong by definition.
-
-A spec is not a long document. It is a precise, readable description of what a feature
-does — written at a level of abstraction that a developer, a product manager, and an
-engineer three years from now can all understand. It describes behavior, not
-implementation. It answers the question *what should the system do* without
-prescribing *how the system should do it*.
-
-A minimal spec looks like this:
-
-```markdown
-# User Authentication
-
-## Overview
-Users authenticate with an email address and password. Sessions persist
-for 24 hours of activity before requiring re-authentication.
-
-## Behavior
-- A user who provides valid credentials receives a session token
-- A user who provides invalid credentials receives a 401 with no
-  indication of which field was wrong
-- A session token that has been inactive for 24 hours is invalidated
-  on the next request
-- A user may explicitly sign out, immediately invalidating their token
-
-## Constraints
-- Passwords must be a minimum of 12 characters
-- Authentication attempts are rate limited to 10 per minute per IP address
-```
-
-That is the whole spec. Not a hundred acceptance criteria. Not a sequence diagram.
-Not a Jira epic with fourteen sub-tasks. A clear, version-controlled document that
-anyone on the team can read in two minutes and trust completely.
-
-**The Spec as Source of Truth**
-
-The power of this approach compounds over time. When a new engineer joins the team,
-they read the specs — not the tickets, not the wiki, not the code comments. When a
-bug surfaces, the first question is whether the spec covers the scenario — not who
-filed the ticket or which sprint it belongs to. When an AI agent is asked to implement
-a feature or fix an issue, it is given the spec as context — not a vague description
-typed into a chat window.
-
-Specs live in version control alongside the code. Changes to behavior require changes
-to the spec. A pull request that modifies behavior without updating the spec is
-incomplete by definition. This is how the spec stays alive rather than rotting into
-documentation debt.
-
-**Where This Series Goes**
-
-This post establishes the foundation. What follows builds on it.
-
-The next post tackles the question every team hits immediately after adopting SDD:
-where do bugs go? The answer reframes what a bug actually is — and leads to a workflow
-that is leaner than anything a Jira-based process can offer.
-
-Subsequent posts go deeper: how to structure a spec repository as a system grows, how
-to introduce SDD to a codebase that already exists, what makes a spec genuinely good
-versus superficially correct, and how a well-structured spec repository transforms
-what AI coding agents can do.
-
-The throughline across all of it is simple. The teams that build reliable software —
-whether with human engineers, AI agents, or both — are the ones who agree on what the
-system should do before they talk about how it works. Spec Driven Development is the
-discipline that makes that agreement stick.
-
----
-
-### Post 2: A Bug Is Just An Unwritten Scenario
-
-Every team that adopts Spec Driven Development hits the same wall. The methodology
-is compelling for new features — write the spec, derive the implementation, keep the
-two in sync. But then a bug surfaces, and the process breaks down. Nobody agrees
-where it goes. Does it get a ticket in Jira? A note in Slack? A comment in the code?
-The spec-driven workflow, which felt so clean moments ago, has no obvious answer.
-
-The reason is that most SDD material is written with greenfield features in mind.
-Bugs are treated as an afterthought — a separate category managed by a separate tool.
-But this is a false separation, and resolving it leads to a cleaner system than most
-teams are running today.
-
-**The Reframe: A Bug Is a Spec Violation**
-
-The insight that changes everything is simple: a bug is not a standalone event. It
-is evidence that the system's behavior diverges from what was specified. That means
-every bug is one of two things — either the spec is wrong, or the implementation is
-wrong. In both cases, the resolution flows back into the spec.
-
-This reframe has a practical consequence. Before reaching for Jira, the first question
-should always be: does a spec exist for this behavior? The answer determines everything
-that follows.
-
-- No spec exists — the bug is actually a gap. Write the spec first, describing the
-  correct behavior. The implementation fix follows from that.
-- The spec exists but is ambiguous — the bug is a spec deficiency. Correct or enhance
-  the spec, then fix the implementation to match.
-- The spec is clear and the implementation is wrong — add a scenario to the spec that
-  captures the correct behavior explicitly, then fix the code to satisfy it.
-
-In all three cases, the spec becomes more precise. This is the compounding value that
-issue trackers never deliver: closed tickets bury knowledge, while an evolving spec
-encodes it permanently.
-
-**A Bug Is Just An Unwritten Scenario**
-
-Following this decision tree to its conclusion leads to a more specific claim: most
-bugs exist because a scenario was never specified. The system behaved unexpectedly in
-a situation that was never formally described.
-
-The fix, then, is not a bug report. It is a scenario — a concrete description of what
-the system should do in that specific situation, added to the spec it belongs to.
-
-```
-specs/
-  features/
-    user-auth/
-      spec.md
-      scenarios/
-        token-expiry.md
-        invalid-credentials.md
-    checkout/
-      spec.md
-      scenarios/
-        rounding-error.md
-```
-
-`spec.md` stays high level and stable — the authoritative description of what a
-feature does. Scenarios live alongside it, each one capturing a specific context,
-behavior, and edge cases. The scenario file for a bug that was just fixed tells the
-whole story: what situation triggered it, what the correct behavior is, and what edge
-cases surround it.
-
-A scenario follows the same format as a spec, just narrower in scope:
-
-```markdown
-# Scenario: Token Expiry Enforced on Request
-
-spec-ref: spec.md#token-lifecycle
-
-## Context
-A user has an active session token that has been inactive for 24 hours.
-
-## Behavior
-When the user makes a request with the expired token, the system rejects
-it with a 401 and clears the token from the session store.
-
-## Edge Cases
-- Token that expires mid-request completes the current request but
-  rejects the next
-- Clock skew of up to 30 seconds is tolerated before expiry is enforced
-```
-
-No Given/When/Then syntax required. No separate methodology to learn. A scenario is
-a spec at a lower level of abstraction — same format, same discipline, same source
-of truth.
-
-**What This Means for Bug Files**
-
-If the spec absorbs the knowledge, what is a bug file actually for? In most cases,
-nothing. The scenario captures the correct behavior. The git history on that file
-records when it was added and why. A descriptive commit message covers the rest.
-
-A bug file only earns its place when the root cause or reproduction context is complex
-enough that losing it would be costly — a subtle race condition, a dependency on a
-third-party service, a class of inputs that are genuinely hard to reason about. Even
-then, the bar should be high. If the information belongs in the spec or scenario,
-that is where it should live.
-
-**Replacing Jira**
-
-This is where the approach becomes genuinely disruptive. Jira exists because teams
-need somewhere to put work that isn't code. But if every bug either corrects a spec
-or adds a scenario, the spec repository becomes the complete record of system behavior
-and the problems that refined it. Nothing lives in a separate tool. Nothing gets
-buried in a closed ticket.
-
-The one concession for brownfield projects is a temporary `triage.md` at the root of
-the spec tree — a flat inbox for known issues that haven't been assigned to a feature
-spec yet. As specs get written for each area of the system, items migrate from triage
-into their proper home. The goal is for that file to eventually disappear.
-
-**The Discipline That Makes It Work**
-
-None of this functions without one rule: no work begins without a spec or scenario to
-satisfy. Not a bug fix, not a refactor, not a hotfix under pressure. The spec always
-comes first.
-
-This is the discipline that separates SDD from documentation theater. When the spec
-is genuinely the source of truth — when the implementation is derived from it, and
-bugs flow back into it — the system gets more precise over time rather than more
-fragile. Every bug that surfaces makes the spec stronger. Every scenario added narrows
-the space where the next bug can hide.
-
-The industry is converging on spec-driven development as the workflow for the
-AI-assisted era. But the conversation has been almost entirely about greenfield
-features. The teams that figure out how to handle bugs with the same rigor — without
-the overhead of a separate tool — will end up with something much more powerful: a
-living specification that is also a complete history of everything the system learned.
