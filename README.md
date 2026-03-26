@@ -27,7 +27,7 @@ Governance uses its own spec-driven pipeline to develop itself.
 | [004-tech-stack-selection](specs/004-tech-stack-selection/spec.md) | done | 003 | Interactive tech stack questionnaire during init that populates AGENTS.md |
 | [005-skills-and-plugins](specs/005-skills-and-plugins/spec.md) | planned | 004 | Recommend and scaffold skills/plugins based on tech stack during init |
 | [006-bug-workflow](specs/006-bug-workflow/spec.md) | done | none | Scenario support, bug decision tree, and brownfield triage |
-| [007-adopt-workflow](specs/007-adopt-workflow/spec.md) | done | 003 | Self-contained govern command to bootstrap governance in existing projects |
+| [007-govern-workflow](specs/007-govern-workflow/spec.md) | done | 003 | Self-contained govern command to bootstrap and update governance in existing projects |
 | [008-security-rules](specs/008-security-rules/spec.md) | draft | 007 | Enforceable backend and frontend security rules distributed via adopt |
 | [009-scenario-targeting](specs/009-scenario-targeting/spec.md) | done | 006 | Promote scenarios to first-class pipeline targets for question, clarify, status, and implement commands |
 | [010-agent-autonomy](specs/010-agent-autonomy/spec.md) | draft | 000 | Evaluate and adopt agent orchestration capabilities (skills, complexity routing, stuck detection, autonomy) |

@@ -22,6 +22,18 @@ The rename touches 16 files. To keep the diff reviewable, the rename is done as 
 
 Both `govern/govern.md` and `govern/govern-auggie.md` reference `triage` in three places each: the file manifest (template source → destination), the slash command manifest, and the post-scaffolding output. All six references update to `inbox`. The new `/capture` command is added to both manifests.
 
+### Govern migration for triage → inbox
+
+The govern command only creates and updates files — it does not delete files removed from the manifest. Projects that adopted governance before the rename will have orphaned `specs/triage.md` and `{cli-config-dir}/commands/{project}/triage.md` files after re-running `/govern`.
+
+A migration step is added to both govern files. Before the file manifest is processed, the command checks:
+
+- If `specs/triage.md` exists and `specs/inbox.md` does not → rename `specs/triage.md` to `specs/inbox.md`
+- If `specs/triage.md` exists and `specs/inbox.md` also exists → merge items from `triage.md` into `inbox.md`, then delete `triage.md`
+- If the old triage command exists at `{cli-config-dir}/commands/{project}/triage.md` → delete it
+
+The migration is reported in the post-scaffolding summary.
+
 ### Constitution additions
 
 Three new sections added to `constitution.md`:
@@ -30,9 +42,11 @@ Three new sections added to `constitution.md`:
 - **Scenario promotion** — under the existing scenarios section. Documents when and how to promote a scenario to its own spec.
 - **Cross-spec impact** — new pipeline boundary. Documents that changes land where they belong with a signpost back to the originating spec.
 
-### Cross-spec signpost in 006
+### Cross-spec signposts
 
 A brief note is added to 006-bug-workflow's spec.md indicating that `triage` was renamed to `inbox` by 011. The note does not change 006's status — it is informational only, not a behavioral change.
+
+A brief note is added to 007-govern-workflow's spec.md indicating that the govern command gains a triage → inbox migration step and `/capture` in the command manifest by 011. This is also informational — 007's status does not change.
 
 ## Affected Files
 
@@ -60,8 +74,8 @@ Not modified (historical specs — self-contained at time of writing):
 
 - `specs/006-bug-workflow/plan.md`
 - `specs/006-bug-workflow/tasks.md`
-- `specs/007-adopt-workflow/spec.md`
-- `specs/007-adopt-workflow/plan.md`
+- `specs/007-govern-workflow/spec.md`
+- `specs/007-govern-workflow/plan.md`
 
 ## Open Questions Resolved
 

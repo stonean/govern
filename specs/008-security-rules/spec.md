@@ -1,7 +1,7 @@
 # 008 — Security Rules
 
 **Status:** draft
-**Dependencies:** 007-adopt-workflow
+**Dependencies:** 007-govern-workflow
 
 Comprehensive, enforceable security rules for backend and frontend development. Distributed to adopting projects via the govern command as two files — `security-backend.md` and `security-frontend.md`. These are rules, not guidelines: the validate command checks implementation against them.
 

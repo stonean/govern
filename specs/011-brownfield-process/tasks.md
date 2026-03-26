@@ -36,15 +36,19 @@ Create the `/capture` command in both platform-agnostic and Claude Code forms.
 
 **Done when:** both capture command files exist, pass lint, and follow the same structure as other commands.
 
-## 3. Update govern file manifests
+## 3. Update govern file manifests and add migration
 
-Add the capture command to the govern file manifests so it is distributed during adoption.
+Add the capture command to the govern file manifests and add a triage → inbox migration step.
 
 - [ ] Add `commands/capture.md` to `govern/govern.md` slash command manifest with `update` strategy
 - [ ] Add `commands/capture.md` to `govern/govern-auggie.md` slash command manifest with `update` strategy
-- [ ] Run `markdownlint-cli2` on both govern files
+- [ ] Add triage → inbox migration to `govern/govern.md`: rename `specs/triage.md` to `specs/inbox.md` if needed, merge if both exist, delete old triage command
+- [ ] Add triage → inbox migration to `govern/govern-auggie.md`: same migration with Auggie paths
+- [ ] Migration is reported in post-scaffolding summary
+- [ ] Add signpost to `specs/007-govern-workflow/spec.md` noting the govern command changes by this spec
+- [ ] Run `markdownlint-cli2` on both govern files and 007 spec
 
-**Done when:** both govern files include the capture command in their manifests.
+**Done when:** both govern files include the capture command in their manifests and perform the triage → inbox migration for previously adopted projects.
 
 ## 4. Document brownfield process in constitution
 

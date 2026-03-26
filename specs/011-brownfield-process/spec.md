@@ -1,7 +1,7 @@
 # 011 — Brownfield Process
 
 **Status:** in-progress
-**Dependencies:** 006-bug-workflow, 007-adopt-workflow
+**Dependencies:** 006-bug-workflow, 007-govern-workflow
 
 A formalized process for initializing and incrementally building out specs in brownfield projects. Unlike greenfield specs that aim for completeness upfront, brownfield specs start as skeletons — capturing what is known about an existing feature — and gain precision over time through real work: bug fixes, enhancements, and clarification.
 
@@ -130,6 +130,7 @@ For this spec specifically: 006-bug-workflow gets a signpost noting that `triage
 - [ ] Scenario promotion pattern is documented in `constitution.md`
 - [ ] `triage` is renamed to `inbox` across all governance artifacts (templates, commands, constitution, sdd-context, README)
 - [ ] 006-bug-workflow spec includes a signpost noting the `triage` → `inbox` rename by this spec
+- [ ] 007-govern-workflow spec includes a signpost noting the govern command gains a triage → inbox migration and `/capture` in the manifest by this spec
 - [ ] Cross-spec impact pattern is documented in `constitution.md`
 - [ ] The brownfield process is documented in `constitution.md` under brownfield adoption
 - [ ] `sdd-context.md` is updated to reflect the brownfield process
