@@ -39,6 +39,16 @@ files = [
 
 Any file listed in `pinned.files` that would normally use `update` strategy is treated as `skip` instead. Report pinned files in the post-scaffolding summary.
 
+## Migration: triage → inbox
+
+Before processing the file manifest, check for artifacts from the pre-rename `triage` naming:
+
+1. If `specs/triage.md` exists and `specs/inbox.md` does not — rename `specs/triage.md` to `specs/inbox.md`.
+2. If `specs/triage.md` exists and `specs/inbox.md` also exists — merge items from `triage.md` into `inbox.md`, then delete `triage.md`.
+3. If `.augment/commands/{project}/triage.md` exists — delete it.
+
+Report any migration actions in the post-scaffolding summary.
+
 ## File Manifest
 
 Fetch each file from the governance repo and copy it to the destination path. The source URL pattern is:
@@ -98,6 +108,7 @@ Fetch each command template and copy it into `.augment/commands/{project}/`. In 
 | `commands/target.md` | `.augment/commands/{project}/target.md` |
 | `commands/inbox.md` | `.augment/commands/{project}/inbox.md` |
 | `commands/validate.md` | `.augment/commands/{project}/validate.md` |
+| `commands/capture.md` | `.augment/commands/{project}/capture.md` |
 | `commands/create.md` | `.augment/commands/{project}/create.md` |
 
 ### Slash command cleanup

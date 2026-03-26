@@ -40,13 +40,13 @@ Create the `/capture` command in both platform-agnostic and Claude Code forms.
 
 Add the capture command to the govern file manifests and add a triage → inbox migration step.
 
-- [ ] Add `commands/capture.md` to `govern/govern.md` slash command manifest with `update` strategy
-- [ ] Add `commands/capture.md` to `govern/govern-auggie.md` slash command manifest with `update` strategy
-- [ ] Add triage → inbox migration to `govern/govern.md`: rename `specs/triage.md` to `specs/inbox.md` if needed, merge if both exist, delete old triage command
-- [ ] Add triage → inbox migration to `govern/govern-auggie.md`: same migration with Auggie paths
-- [ ] Migration is reported in post-scaffolding summary
-- [ ] Add signpost to `specs/007-govern-workflow/spec.md` noting the govern command changes by this spec
-- [ ] Run `markdownlint-cli2` on both govern files and 007 spec
+- [x] Add `commands/capture.md` to `govern/govern.md` slash command manifest with `update` strategy
+- [x] Add `commands/capture.md` to `govern/govern-auggie.md` slash command manifest with `update` strategy
+- [x] Add triage → inbox migration to `govern/govern.md`: rename `specs/triage.md` to `specs/inbox.md` if needed, merge if both exist, delete old triage command
+- [x] Add triage → inbox migration to `govern/govern-auggie.md`: same migration with Auggie paths
+- [x] Migration is reported in post-scaffolding summary
+- [x] Add signpost to `specs/007-govern-workflow/spec.md` noting the govern command changes by this spec
+- [x] Run `markdownlint-cli2` on both govern files and 007 spec
 
 **Done when:** both govern files include the capture command in their manifests and perform the triage → inbox migration for previously adopted projects.
 

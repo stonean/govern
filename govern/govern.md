@@ -39,6 +39,16 @@ files = [
 
 Any file listed in `pinned.files` that would normally use `update` strategy is treated as `skip` instead. Report pinned files in the post-scaffolding summary.
 
+## Migration: triage → inbox
+
+Before processing the file manifest, check for artifacts from the pre-rename `triage` naming:
+
+1. If `specs/triage.md` exists and `specs/inbox.md` does not — rename `specs/triage.md` to `specs/inbox.md`.
+2. If `specs/triage.md` exists and `specs/inbox.md` also exists — merge items from `triage.md` into `inbox.md`, then delete `triage.md`.
+3. If `.claude/commands/{project}/triage.md` exists — delete it.
+
+Report any migration actions in the post-scaffolding summary.
+
 ## File Manifest
 
 Fetch each file from the governance repo and copy it to the destination path. The source URL pattern is:
@@ -98,6 +108,7 @@ Fetch each command template and copy it into `.claude/commands/{project}/`. In e
 | `commands/target.md` | `.claude/commands/{project}/target.md` |
 | `commands/inbox.md` | `.claude/commands/{project}/inbox.md` |
 | `commands/validate.md` | `.claude/commands/{project}/validate.md` |
+| `commands/capture.md` | `.claude/commands/{project}/capture.md` |
 | `commands/create.md` | `.claude/commands/{project}/create.md` |
 
 ### Slash command cleanup

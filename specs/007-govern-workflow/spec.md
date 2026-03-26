@@ -78,7 +78,7 @@ These files are identical regardless of target CLI:
 - `specs/system.md` — from `templates/system.md`
 - `specs/errors.md` — from `templates/errors.md`
 - `specs/events.md` — from `templates/events.md`
-- `specs/triage.md` — from `templates/triage.md`
+- `specs/inbox.md` — from `templates/inbox.md`
 - `specs/templates/spec.md` — from `templates/spec.md`
 - `specs/templates/spec-and-plan.md` — from `templates/spec-and-plan.md` (if it exists)
 - `specs/templates/plan.md` — from `templates/plan.md`
@@ -131,8 +131,8 @@ After scaffolding, display:
   1. Run `/{project}:setup` to configure permissions
   2. Fill in `AGENTS.md` — tech stack, project structure, code style, testing conventions, gotchas
   3. Fill in `specs/system.md` — architecture, request lifecycle, shared infrastructure
-  4. Populate `specs/triage.md` with known issues and bugs
-  5. Run `/{project}:triage` to migrate items to specs and scenarios
+  4. Populate `specs/inbox.md` with known issues and bugs
+  5. Run `/{project}:inbox` to migrate items to specs and scenarios
   6. Create your first feature spec: `/{project}:specify {feature description}`
 
 ## Self-Maintenance
@@ -158,7 +158,7 @@ The command file remains in the CLI's command directory after execution. It is i
 - [ ] Fetch failures for individual files do not abort the entire process
 - [ ] All generated files pass `markdownlint-cli2`
 - [ ] Slash commands are installed in the CLI's native command directory with `{project}` and `{cli-config-dir}` placeholders resolved
-- [ ] `specs/triage.md` is created as the brownfield entry point
+- [ ] `specs/inbox.md` is created as the brownfield entry point
 - [ ] The command is idempotent — safe to run again without duplicating content
 - [ ] Post-scaffolding output displays brownfield-specific next steps
 - [ ] Invalid project names are rejected with a clear error message
