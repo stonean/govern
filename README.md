@@ -40,6 +40,7 @@ For brownfield projects, install the govern command and run it — no clone requ
 ### Claude Code
 
 ```bash
+mkdir -p .claude/commands
 curl -fsSL https://raw.githubusercontent.com/stonean/govern/main/govern/govern.md \
   > .claude/commands/govern.md
 ```
@@ -49,6 +50,7 @@ Then run `/govern {project-name}`.
 ### Auggie
 
 ```bash
+mkdir -p .augment/commands
 curl -fsSL https://raw.githubusercontent.com/stonean/govern/main/govern/govern-auggie.md \
   > .augment/commands/govern.md
 ```
