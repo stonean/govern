@@ -1,9 +1,12 @@
 # {NNN} — {Feature Name} Data Model
 
-<!-- Optional. Generated during the plan phase when the feature involves persistence.
-     Define tables, indexes, and column notes. Example:
+<!-- Optional. Generated during the plan phase when the feature introduces or
+     modifies domain entities or data structures. Define the structures relevant
+     to the feature — database tables, language-level types, or both.
 
-## {Table Name}
+     Include whichever sections apply to the feature.
+
+## Database Tables
 
 ```sql
 CREATE TABLE example (
@@ -16,9 +19,29 @@ CREATE TABLE example (
 CREATE INDEX idx_example_tenant ON example (tenant_id);
 ```
 
-## Column Notes
+## Types / Structs
 
-- `tenant_id` — all queries must be scoped by tenant
-- `name` — unique within a tenant (enforced by unique index)
+```go
+type Example struct {
+    ID        int64     `json:"id"`
+    TenantID  int64     `json:"tenant_id"`
+    Name      string    `json:"name"`
+    CreatedAt time.Time `json:"created_at"`
+}
+```
+
+```typescript
+interface Example {
+  id: number;
+  tenantId: number;
+  name: string;
+  createdAt: Date;
+}
+```
+
+## Notes
+
+- `tenant_id` / `TenantID` — all queries must be scoped by tenant
+- `name` — unique within a tenant
 
 -->

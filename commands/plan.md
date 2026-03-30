@@ -37,7 +37,7 @@ Before creating the plan, load only the cross-spec context this feature actually
 - **Read if the feature emits or consumes events:** `specs/events.md` — check for naming conflicts and reuse opportunities.
 - **Read if the feature introduces error codes:** `specs/errors.md` — check code ranges and format conventions.
 - **Read if the feature has dependencies:** the spec file (not plan or tasks) of each dependency — confirm status and understand the contracts this feature builds on.
-- **Read if the feature involves persistence:** `data-model.md` files from related specs — check for table/column conflicts.
+- **Read if the feature introduces or modifies domain entities or data structures:** `data-model.md` files from related specs — check for structural conflicts.
 - **Do NOT read** plans, tasks, scenarios, or source code from other features.
 
 ### Create the plan
@@ -48,7 +48,7 @@ If the spec file is `spec-and-plan.md` (lightweight track), the plan section is 
 2. Fill in:
    - **Technical Decisions**: each decision with rationale. Code snippets, function signatures, and package paths belong here.
    - **Affected Files**: every file that will be created or modified.
-   - **Data Model**: database schema changes. Create `data-model.md` if the feature involves persistence.
+   - **Data Model**: data structure definitions. Create `data-model.md` if the feature introduces or modifies domain entities or data structures.
    - **Trade-offs**: what was considered and rejected, known limitations.
 3. Cross-validate against the files loaded in the checklist above:
    - Plan must not conflict with `specs/system.md`.
@@ -70,7 +70,7 @@ Before updating status, verify:
 
 - [ ] Acceptance criteria are concrete and testable
 - [ ] All open questions are resolved
-- [ ] Data model exists if the feature involves persistence
+- [ ] Data model exists if the feature introduces or modifies domain entities or data structures
 - [ ] Plan does not conflict with `system.md` or other feature specs
 - [ ] Data model is consistent with related specs
 - [ ] Event types align with `events.md`

@@ -54,7 +54,7 @@ specs/
     spec.md              # Requirements, contracts, acceptance criteria
     research.md          # (optional) Background research, prior art
     plan.md              # Implementation approach, technical decisions
-    data-model.md        # (optional) Database schema, generated during plan phase
+    data-model.md        # (optional) Domain entities and data structures, generated during plan phase
     tasks.md             # Discrete work items derived from the plan
     scenarios/           # (optional) Scenario files elaborating spec sections
       {slug}.md          # One file per scenario
@@ -97,7 +97,7 @@ Define *how* the feature will be implemented. A plan makes technical decisions, 
 - Lists technical decisions and their rationale
 - Identifies affected files and packages
 - Addresses all open questions from the spec
-- Produces a data model if the feature involves persistence
+- Produces a data model if the feature introduces or modifies domain entities or data structures
 
 <!-- §tasks-phase -->
 
@@ -121,7 +121,7 @@ Before implementation begins, verify the feature is ready to build. This is a qu
 - [ ] Spec status is `planned`
 - [ ] Acceptance criteria are concrete and testable — no empty placeholders
 - [ ] All open questions are resolved
-- [ ] Data model exists if the feature involves persistence
+- [ ] Data model exists if the feature introduces or modifies domain entities or data structures
 - [ ] Plan does not conflict with `system.md` or other feature specs
 - [ ] Tasks are ordered and each has a clear definition of done
 

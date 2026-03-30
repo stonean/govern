@@ -32,7 +32,7 @@ Read every file in `specs/{feature}/` and run the following checks. Each check i
 ### Artifact completeness (blocking)
 
 - [ ] If status is `planned` or later: plan.md exists (or spec-and-plan.md contains a plan section)
-- [ ] If status is `planned` or later and feature involves persistence: data-model.md exists
+- [ ] If status is `planned` or later and feature introduces or modifies domain entities or data structures: data-model.md exists
 - [ ] If status is `planned` or later: tasks.md exists
 
 ### Plan consistency (blocking if plan exists)
@@ -63,7 +63,7 @@ Read every file in `specs/{feature}/` and run the following checks. Each check i
 
 - [ ] Event types mentioned in spec or plan align with `specs/events.md`
 - [ ] Error codes follow the convention from `specs/errors.md`
-- [ ] Data model tables do not conflict with other specs' data-model.md files
+- [ ] Data model definitions do not conflict with other specs' data-model.md files
 
 ### Markdown lint (advisory)
 
