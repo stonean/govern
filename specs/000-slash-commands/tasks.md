@@ -69,3 +69,9 @@ Done when: all ten commands pass lint, use consistent placeholders, and cross-re
 - [x] Implement the behavior described in `scenarios/target-argument-parsing.md`
 
 Done when: the scenario's described behavior is correctly implemented and tested.
+
+## 10. Implement scenario: clarify-one-at-a-time
+
+- [x] Implement the behavior described in `scenarios/clarify-one-at-a-time.md`
+
+Done when: the scenario's described behavior is correctly implemented and tested.

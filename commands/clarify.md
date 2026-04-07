@@ -37,7 +37,14 @@ Read the spec status. If the status is not `draft`, stop and report:
 
 Perform the clarify gate defined in `constitution.md` (§spec-requirements, §spec-lifecycle):
 
-1. **Resolve open questions** — for each open question, propose an answer with rationale or ask the user to decide.
+1. **Resolve open questions one at a time** — process each open question individually in sequence:
+   1. Display the question with its full context.
+   2. Propose an answer with rationale, or ask the user to decide.
+   3. Wait for the user to review, discuss, refine, or approve the resolution.
+   4. Only after the user confirms, move the question to Resolved Questions and proceed to the next one.
+   5. If the user wants to skip a question, move to the next and revisit skipped questions at the end.
+   6. If resolving one question invalidates or changes another, note the impact when presenting the affected question.
+   - Do NOT present multiple questions at once. Do NOT batch resolutions.
 2. **Enumerate edge cases** — for each behavior, identify what happens with empty inputs, missing data, duplicates, boundary values, and concurrent access.
 3. **Confirm error scenarios** — verify every failure mode has a defined behavior (HTTP status, error code, message). Flag gaps.
 4. **Verify acceptance criteria** — check each is concrete, testable, and unambiguous. Rewrite vague ones. Flag missing criteria.
@@ -61,7 +68,13 @@ After the review:
 
 ### Instructions
 
-1. **Resolve open questions** — for each open question in the scenario's `## Open Questions` section, propose an answer with rationale or ask the user to decide.
+1. **Resolve open questions one at a time** — process each open question in the scenario's `## Open Questions` section individually in sequence:
+   1. Display the question with its full context.
+   2. Propose an answer with rationale, or ask the user to decide.
+   3. Wait for the user to review, discuss, refine, or approve the resolution.
+   4. Only after the user confirms, move the question to Resolved Questions and proceed to the next one.
+   5. If the user wants to skip a question, move to the next and revisit skipped questions at the end.
+   - Do NOT present multiple questions at once. Do NOT batch resolutions.
 2. **Enumerate edge cases** — identify edge cases specific to the scenario's behavior (empty inputs, missing data, boundary values, concurrent access).
 3. **Verify behavior section** — confirm the scenario's Behavior section is unambiguous and complete.
 
