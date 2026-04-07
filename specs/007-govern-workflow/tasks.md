@@ -1,5 +1,7 @@
 # 007 — Govern Command Tasks
 
+Tasks derived from the [plan](plan.md). Complete in order.
+
 ## 1. Add `{cli-config-dir}` placeholder to command templates
 
 - [x] Update all `.md` files in `commands/` to replace hardcoded `.claude/` references with `{cli-config-dir}/`.

@@ -167,7 +167,9 @@ The command file remains in the CLI's command directory after execution. It is i
 
 ## Open Questions
 
-<!-- All resolved. -->
+None — all resolved.
+
+## Resolved Questions
 
 - ~~Should the command also fetch `sdd-context.md`?~~ No — governance-internal only.
 - ~~Should there be a `--dry-run` mode?~~ No — the command is idempotent with create/skip/merge strategies, making dry-run unnecessary.
