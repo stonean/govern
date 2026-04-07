@@ -81,3 +81,9 @@ Done when: the scenario's described behavior is correctly implemented and tested
 - [x] Implement the behavior described in `scenarios/validation-gates.md`
 
 Done when: the scenario's described behavior is correctly implemented and tested.
+
+## 12. Implement scenario: validate-fix-mode
+
+- [x] Implement the behavior described in `scenarios/validate-fix-mode.md`
+
+Done when: the scenario's described behavior is correctly implemented and tested.

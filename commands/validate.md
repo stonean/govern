@@ -4,15 +4,18 @@ Check a feature's artifacts for consistency and cross-spec alignment.
 
 ## Purpose
 
-Read-only audit of a feature's spec, plan, tasks, and data model. Reports issues without modifying files. Use this to catch problems before advancing to the next pipeline phase.
+Audit a feature's spec, plan, tasks, and data model for consistency. By default, reports issues without modifying files. With `--fix`, automatically corrects fixable checkbox state mismatches. Use this to catch problems before advancing to the next pipeline phase.
 
 ## Context
 
-Use the session target from `{cli-config-dir}/{project}-session.json`. If `$ARGUMENTS` is provided, use it to override the session target. If no session target is set and no arguments provided, stop and tell the user to run `/{project}:target` first.
+Use the session target from `{cli-config-dir}/{project}-session.json`. If `$ARGUMENTS` contains a feature identifier, use it to override the session target. If `$ARGUMENTS` contains `--fix`, enable fix mode. Both can be combined (e.g., `001 --fix`).
+
+If no session target is set and no feature argument provided, scan all feature directories under `specs/` and validate each one. Report results grouped by feature.
 
 ## Scope Boundaries
 
-- This is a read-only command. Do NOT modify any files.
+- By default, this is a read-only command. Do NOT modify any files.
+- In fix mode (`--fix`), modify only checkbox state (`- [ ]` → `- [x]`) in spec and task files where the fix is mechanically safe (see Fix Mode section below). Do not modify any other content.
 - Read only files within the target feature's directory and the cross-spec files needed for reference checks (`specs/system.md`, `specs/events.md`, `specs/errors.md`, dependency spec files). Do NOT read source code or test files.
 - Reference: §spec-requirements, §plan-phase, §tasks-phase, §readiness-check, §scenarios (constitution loaded by `/{project}:target` — do not re-read).
 
@@ -77,3 +80,29 @@ Separate results into two sections:
 2. **Advisory** — issues that should be fixed but do not block advancement.
 
 For each FAIL, include: what failed, what was expected, what was found, and a suggested fix.
+
+## Fix Mode
+
+When `$ARGUMENTS` contains `--fix`, after running all checks, automatically correct fixable checkbox mismatches:
+
+### Fixable (auto-correct)
+
+- Acceptance criteria checkboxes (`- [ ]` → `- [x]`) in specs with status `done`
+- Task checkboxes (`- [ ]` → `- [x]`) in `tasks.md` where all sub-item checkboxes are already `- [x]`
+- Scenario-linked task checkboxes (`- [ ]` → `- [x]`) where the spec status is `done`
+
+### Not fixable (report only)
+
+- Checkboxes in specs with status `in-progress` — cannot determine which criteria are truly met without verification
+- Missing artifacts (no plan, no tasks) — structural issues require human decisions
+- Lint failures — require manual correction
+- Any non-checkbox issue
+
+### Fix mode behavior
+
+1. Run all checks as normal.
+2. For each fixable issue, display the file, the checkbox line, and the correction being made.
+3. Apply the corrections to the files.
+4. Run `markdownlint-cli2` on modified files.
+5. Report a summary: number of fixes applied, number of remaining issues (non-fixable).
+6. If no fixable issues are found, report "No fixes needed."
