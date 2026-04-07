@@ -253,4 +253,4 @@ Adding support for a new agent requires only a new `govern/govern-{agent}.md` fi
 
 ## Markdown
 
-All `.md` files must pass `markdownlint-cli2` using the project config. See [constitution.md](constitution.md#markdown-standards) for the full rule set.
+All `.md` files must pass `npx markdownlint-cli2` using the project config. See [constitution.md](constitution.md#markdown-standards) for the full rule set.

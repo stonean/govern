@@ -48,7 +48,7 @@ Add `skills/registry.json` to the file manifest in both `govern/govern.md` and `
 
 Run markdownlint on all new and modified files. Verify registry entries and template files are consistent.
 
-- [ ] Run `markdownlint-cli2` on all new and modified files
+- [ ] Run `npx markdownlint-cli2` on all new and modified files
 - [ ] Verify every registry entry points to an existing template
 - [ ] Verify spec acceptance criteria are met
 

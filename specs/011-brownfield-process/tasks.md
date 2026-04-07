@@ -21,7 +21,7 @@ Rename files and update all references from `triage` to `inbox` across the frame
 - [x] Update `.claude/commands/gov/about.md` references
 - [x] Update `AGENTS.md` references
 - [x] Add signpost to `specs/006-bug-workflow/spec.md` noting the rename
-- [x] Run `markdownlint-cli2` on all modified files
+- [x] Run `npx markdownlint-cli2` on all modified files
 
 **Done when:** no file in the repository contains `triage` except in 006's historical spec content and the signpost note, and 011's own spec references.
 
@@ -32,7 +32,7 @@ Create the `/capture` command in both platform-agnostic and Claude Code forms.
 - [x] Create `commands/capture.md` with freeform input flow, skeleton spec creation, session target update, and post-capture options
 - [x] Create `.claude/commands/gov/capture.md` as Claude Code instance with `/gov:` prefix and `.claude` paths
 - [x] Verify command file parity between the two files
-- [x] Run `markdownlint-cli2` on both files
+- [x] Run `npx markdownlint-cli2` on both files
 
 **Done when:** both capture command files exist, pass lint, and follow the same structure as other commands.
 
@@ -46,7 +46,7 @@ Add the capture command to the govern file manifests and add a triage → inbox 
 - [x] Add triage → inbox migration to `govern/govern-auggie.md`: same migration with Auggie paths
 - [x] Migration is reported in post-scaffolding summary
 - [x] Add signpost to `specs/007-govern-workflow/spec.md` noting the govern command changes by this spec
-- [x] Run `markdownlint-cli2` on both govern files and 007 spec
+- [x] Run `npx markdownlint-cli2` on both govern files and 007 spec
 
 **Done when:** both govern files include the capture command in their manifests and perform the triage → inbox migration for previously adopted projects.
 
@@ -57,7 +57,7 @@ Add the brownfield process, scenario promotion, and cross-spec impact patterns t
 - [x] Add brownfield process section under the existing brownfield inbox section — documents capture → incremental growth → promotion lifecycle
 - [x] Add scenario promotion subsection under the existing scenarios section — documents indicators and the promotion pattern
 - [x] Add cross-spec impact as a pipeline boundary — documents that changes land where they belong with signpost references
-- [x] Run `markdownlint-cli2` on `constitution.md`
+- [x] Run `npx markdownlint-cli2` on `constitution.md`
 
 **Done when:** constitution documents all three patterns and passes lint.
 
@@ -70,6 +70,6 @@ Update documentation to reflect the brownfield process.
 - [x] Add cross-spec impact to `sdd-context.md`
 - [x] Update `README.md` slash commands table — add `/capture`, rename `/triage` to `/inbox`
 - [x] Update `README.md` brownfield section to reference the process
-- [x] Run `markdownlint-cli2` on both files
+- [x] Run `npx markdownlint-cli2` on both files
 
 **Done when:** both files reflect the brownfield process, capture command, inbox rename, and pass lint.

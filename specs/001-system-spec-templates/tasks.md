@@ -31,7 +31,7 @@ Done when: `templates/events.md` exists with catalog structure, example entry, r
 
 ## 4. Final review and lint
 
-- [x] Run `markdownlint-cli2` on all three new templates
+- [x] Run `npx markdownlint-cli2` on all three new templates
 - [x] Verify consistency with existing template style (compare against `templates/spec.md` and `templates/plan.md`)
 - [x] Verify no technology-specific language, framework, or library references
 - [x] Update spec status to `planned`

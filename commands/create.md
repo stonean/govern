@@ -125,7 +125,7 @@ If no initialize command exists, skip this step.
 
 ### 11. Run markdownlint
 
-Run `markdownlint-cli2` on all generated `.md` files in the new project directory. Fix any issues found.
+Run `npx markdownlint-cli2` on all generated `.md` files in the new project directory. Fix any issues found.
 
 ### 12. Display next steps
 

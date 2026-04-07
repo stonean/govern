@@ -124,7 +124,7 @@ This feature produces the following changes to the governance framework:
 - [x] `/gov:next` suggests `/gov:scenario` as a next action when context warrants it
 - [x] `/gov:validate` checks that scenario-linked tasks in `tasks.md` are complete
 - [x] `README.md` documents the bug workflow and scenario conventions
-- [x] All new and modified markdown files pass `markdownlint-cli2`
+- [x] All new and modified markdown files pass `npx markdownlint-cli2`
 
 ## Edge Cases
 

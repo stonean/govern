@@ -325,7 +325,7 @@ Feature directories use three-digit zero-padded numbers: `000-skeleton`, `001-ob
 
 ## Markdown Standards
 
-All `.md` files must pass `markdownlint-cli2` using the project config in `.markdownlint-cli2.jsonc`.
+All `.md` files must pass `npx markdownlint-cli2` using the project config in `.markdownlint-cli2.jsonc`.
 
 Key rules:
 

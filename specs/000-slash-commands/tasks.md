@@ -57,7 +57,7 @@ Done when: validate reports PASS/FAIL for all checks including markdownlint, and
 
 ## 8. Final review and lint
 
-- [x] Run `markdownlint-cli2` on all files in `commands/`
+- [x] Run `npx markdownlint-cli2` on all files in `commands/`
 - [x] Verify every command uses `{project}` consistently (no hardcoded project names)
 - [x] Verify all cross-references between commands are correct
 - [x] Update spec status to `planned`

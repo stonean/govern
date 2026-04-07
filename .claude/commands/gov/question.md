@@ -48,7 +48,7 @@ The goal is a question that is precise, actionable, and self-contained — someo
 ### Record the question
 
 1. Append the accepted question to the `## Open Questions` section of the target artifact. If the section does not exist, create it in the appropriate location per the template.
-2. Run `markdownlint-cli2` on the modified file.
+2. Run `npx markdownlint-cli2` on the modified file.
 
 ### Status warning
 

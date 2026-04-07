@@ -21,7 +21,7 @@ Done when: `/gov:init` exists with all scaffolding steps, input collection, pre-
 
 ## 3. Final review and lint
 
-- [x] Run `markdownlint-cli2` on all files in `.claude/commands/gov/`
+- [x] Run `npx markdownlint-cli2` on all files in `.claude/commands/gov/`
 - [x] Verify no `{project}` placeholders remain in standard commands (should all be `gov`)
 - [x] Verify init command uses `{project}` only where it refers to the new project being scaffolded
 - [x] Spot-check a few commands against their `commands/` templates to confirm accurate derivation

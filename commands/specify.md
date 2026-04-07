@@ -48,7 +48,7 @@ If the constitution has not been loaded in this session (e.g., `/{project}:targe
 
 7. Add the new feature to the table in `README.md`.
 
-8. Run `markdownlint-cli2` on the new file.
+8. Run `npx markdownlint-cli2` on the new file.
 
 9. Write `{cli-config-dir}/{project}-session.json` to set this feature as the session target.
 

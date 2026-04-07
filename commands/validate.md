@@ -76,7 +76,7 @@ Read every file in `specs/{feature}/` and run the following checks. Each check i
 
 ### Markdown lint (advisory)
 
-- [ ] All `.md` files in the feature directory pass `markdownlint-cli2`
+- [ ] All `.md` files in the feature directory pass `npx markdownlint-cli2`
 
 ### Report
 
@@ -109,6 +109,6 @@ When `$ARGUMENTS` contains `--fix`, after running all checks, automatically corr
 1. Run all checks as normal.
 2. For each fixable issue, display the file, the checkbox line, and the correction being made.
 3. Apply the corrections to the files.
-4. Run `markdownlint-cli2` on modified files.
+4. Run `npx markdownlint-cli2` on modified files.
 5. Report a summary: number of fixes applied, number of remaining issues (non-fixable).
 6. If no fixable issues are found, report "No fixes needed."

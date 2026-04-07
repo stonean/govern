@@ -26,7 +26,7 @@ Done when: `templates/claude-md.md` exists with both import directives, passes m
 
 ## 4. Final review and lint
 
-- [x] Run `markdownlint-cli2` on markdown templates (`project-readme.md`, `claude-md.md`)
+- [x] Run `npx markdownlint-cli2` on markdown templates (`project-readme.md`, `claude-md.md`)
 - [x] Verify `{project}` placeholder is used consistently across all templates
 - [x] Compare against anvil's README, .gitignore, and CLAUDE.md to ensure no important sections are missing
 - [x] Update spec status to `done`

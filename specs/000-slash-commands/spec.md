@@ -90,7 +90,7 @@ Pipeline commands reference spec templates from the project's `specs/templates/`
 - [x] The `specify` command determines the next feature number, creates the spec directory, and updates README
 - [x] Commands reference `specs/templates/` for templates (not governance templates)
 - [x] Commands reference `.claude/{project}-session.json` for session state
-- [x] The `validate` command runs `markdownlint-cli2` on the feature's files as part of its checks
+- [x] The `validate` command runs `npx markdownlint-cli2` on the feature's files as part of its checks
 - [x] The `specify` command prompts qualifying questions and creates `spec-and-plan.md` for lightweight track features
 - [x] Pipeline commands detect and handle both `spec.md` and `spec-and-plan.md`
 

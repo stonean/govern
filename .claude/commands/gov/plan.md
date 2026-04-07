@@ -75,7 +75,7 @@ Before proposing the status transition, run the readiness check. All checks must
 - [ ] Data model is consistent with related specs
 - [ ] Event types align with `events.md`
 - [ ] Tasks are ordered and each has a clear definition of done
-- [ ] All `.md` files in the feature directory pass `markdownlint-cli2`
+- [ ] All `.md` files in the feature directory pass `npx markdownlint-cli2`
 
 If any check fails, report the specific failures and do not propose the transition. The user fixes the issues and re-runs the command.
 

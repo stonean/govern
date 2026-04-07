@@ -30,5 +30,5 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 5. Validate
 
-- [x] Run `markdownlint-cli2` on all modified files
+- [x] Run `npx markdownlint-cli2` on all modified files
 - [x] Verify backwards compatibility: skip all categories → AGENTS.md unchanged

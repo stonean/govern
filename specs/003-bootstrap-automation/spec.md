@@ -56,7 +56,7 @@ Before scaffolding, verify the target directory does not already exist. If it do
 7. Copy slash command templates into `.claude/commands/{project}/`, replacing `{project}` placeholder
 8. Create `.gitignore` from governance template, then fetch and append language-specific patterns from github.com/github/gitignore for each primary language
 9. Create `README.md` from template, replacing `{project}` placeholder
-10. Run `markdownlint-cli2` on all generated files
+10. Run `npx markdownlint-cli2` on all generated files
 11. Display next steps: start a new Claude session in the project directory, run `/{project}:setup`, then fill in AGENTS.md and system.md
 
 ### What it does NOT do

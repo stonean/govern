@@ -45,7 +45,7 @@ This applies to: target, clarify, plan, implement, validate, next, status.
 
 ### Validate and markdownlint
 
-The validate command runs `markdownlint-cli2` on all `.md` files in the feature directory as its final check. This is reported as a PASS/FAIL alongside the other artifact checks.
+The validate command runs `npx markdownlint-cli2` on all `.md` files in the feature directory as its final check. This is reported as a PASS/FAIL alongside the other artifact checks.
 
 ## Affected Files
 

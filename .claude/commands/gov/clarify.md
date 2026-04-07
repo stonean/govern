@@ -58,7 +58,7 @@ After the review:
   - All open questions are resolved (none remain in the Open Questions section)
   - Acceptance criteria are concrete and testable — no empty placeholders
   - Dependencies are at `clarified` or later
-  - The modified spec file passes `markdownlint-cli2`
+  - The modified spec file passes `npx markdownlint-cli2`
 - If any validation check fails, report the specific failures and do not propose the transition. The user fixes the issues and re-runs the command.
 - If all checks pass, present a summary of changes and ask the user to approve the transition to `clarified`. Do not update the status until the user confirms.
 - Display the next step: "Run `/gov:plan` to create the technical plan."
@@ -89,5 +89,5 @@ After the review:
 - Add any new edge cases to the scenario's `## Edge Cases` section.
 - If questions remain that need user input, list them.
 - The scenario does not have its own status field — resolution is complete when all open questions are removed from the Open Questions section.
-- Run `markdownlint-cli2` on the modified file.
+- Run `npx markdownlint-cli2` on the modified file.
 - Display: "Scenario clarification complete." and suggest `/gov:implement` if the parent spec is `in-progress`.

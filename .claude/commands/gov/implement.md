@@ -76,7 +76,7 @@ After all tasks are done:
    - All tasks in `tasks.md` are marked `- [x]`
    - All acceptance criteria in the spec are marked `- [x]`
    - All scenario-linked tasks are complete
-   - All `.md` files in the feature directory pass `markdownlint-cli2`
+   - All `.md` files in the feature directory pass `npx markdownlint-cli2`
 3. If any validation check fails, report the specific failures and do not propose the transition. The user fixes the issues and re-runs the command.
 4. If all checks pass, present a summary and ask the user to approve the transition to `done`. Do not update the status until the user confirms.
 5. Update spec status to `done`.

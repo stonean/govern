@@ -156,7 +156,7 @@ The command file remains in the CLI's command directory after execution. It is i
 - [x] Existing files (.gitignore, AGENTS.md, CLAUDE.md) are not overwritten
 - [x] `.gitignore` merge is idempotent — running twice does not duplicate governance patterns
 - [x] Fetch failures for individual files do not abort the entire process
-- [x] All generated files pass `markdownlint-cli2`
+- [x] All generated files pass `npx markdownlint-cli2`
 - [x] Slash commands are installed in the CLI's native command directory with `{project}` and `{cli-config-dir}` placeholders resolved
 - [x] `specs/inbox.md` is created as the brownfield entry point
 - [x] The command is idempotent — safe to run again without duplicating content

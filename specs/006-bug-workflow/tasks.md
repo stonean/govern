@@ -61,7 +61,7 @@ Done when: `README.md` documents the bug workflow and the feature table reflects
 
 ## 8. Final lint and verification
 
-- [x] Run `markdownlint-cli2` on all new and modified files
+- [x] Run `npx markdownlint-cli2` on all new and modified files
 - [x] Verify all acceptance criteria from the spec are addressed by the tasks above
 
 Done when: all files pass lint and every acceptance criterion maps to a completed task.

@@ -302,7 +302,7 @@ The validate command is a read-only consistency check. It reports issues as
 - Scenario consistency — every scenario has a corresponding task
 - Dependencies — all declared dependencies exist and are at least `clarified`
 - Cross-spec alignment — event types match events.md, error codes follow errors.md
-- Markdown lint — all files pass markdownlint-cli2
+- Markdown lint — all files pass `npx markdownlint-cli2`
 
 ## Security Rules
 
@@ -337,7 +337,7 @@ not bare literals.
 
 ## Markdown Standards
 
-All `.md` files must pass `markdownlint-cli2` using the project config. Key rules:
+All `.md` files must pass `npx markdownlint-cli2` using the project config. Key rules:
 
 - ATX-style headings only, incrementing by one
 - Every fenced code block specifies a language
