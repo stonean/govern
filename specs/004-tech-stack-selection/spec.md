@@ -42,15 +42,15 @@ Language-specific `.gitignore` patterns are fetched based on the language(s) sel
 
 ## Acceptance Criteria
 
-1. Init asks project type (backend, frontend, fullstack) before any language question
-2. Backend-only projects are not asked CSS/UI or frontend framework questions
-3. Frontend-only projects are not asked database or messaging questions
-4. Fullstack projects are asked backend questions first, then frontend questions
-5. Each category offers 2–4 common choices plus "Other" and "Skip"
-6. Selected technologies populate the AGENTS.md Tech Stack table with layer, technology, and role
-7. Skipping all categories produces the same AGENTS.md as today (backwards compatible)
-8. The single "primary language(s)" question is replaced by this flow — no duplicate language prompts
-9. `.gitignore` patterns are fetched for all languages selected during the flow
+- [x] Init asks project type (backend, frontend, fullstack) before any language question
+- [x] Backend-only projects are not asked CSS/UI or frontend framework questions
+- [x] Frontend-only projects are not asked database or messaging questions
+- [x] Fullstack projects are asked backend questions first, then frontend questions
+- [x] Each category offers 2–4 common choices plus "Other" and "Skip"
+- [x] Selected technologies populate the AGENTS.md Tech Stack table with layer, technology, and role
+- [x] Skipping all categories produces the same AGENTS.md as today (backwards compatible)
+- [x] The single "primary language(s)" question is replaced by this flow — no duplicate language prompts
+- [x] `.gitignore` patterns are fetched for all languages selected during the flow
 
 ## Open Questions
 
