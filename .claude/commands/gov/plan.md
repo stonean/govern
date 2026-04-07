@@ -64,9 +64,9 @@ If the spec file is `spec-and-plan.md` (lightweight track), the plan section is 
    - Tasks respect dependency order.
    - Tasks are derived from the plan, not invented independently.
 
-### Readiness check
+### Validation gate
 
-Before updating status, verify:
+Before proposing the status transition, run the readiness check. All checks must pass — failures block the transition.
 
 - [ ] Acceptance criteria are concrete and testable
 - [ ] All open questions are resolved
@@ -75,12 +75,12 @@ Before updating status, verify:
 - [ ] Data model is consistent with related specs
 - [ ] Event types align with `events.md`
 - [ ] Tasks are ordered and each has a clear definition of done
+- [ ] All `.md` files in the feature directory pass `markdownlint-cli2`
 
-If any check fails, report the failure and do not update status.
+If any check fails, report the specific failures and do not propose the transition. The user fixes the issues and re-runs the command.
 
 ### Finalize
 
-1. Present a summary of the plan, task breakdown, and readiness check results. Ask the user to approve the transition to `planned`. Do not update the status until the user confirms.
+1. Present a summary of the plan, task breakdown, and validation gate results. Ask the user to approve the transition to `planned`. Do not update the status until the user confirms.
 2. Update spec status to `planned`.
-3. Run `markdownlint-cli2` on all new files.
-4. Display the next step: "Run `/gov:implement` to begin implementation."
+3. Display the next step: "Run `/gov:implement` to begin implementation."

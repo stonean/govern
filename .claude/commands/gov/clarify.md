@@ -54,8 +54,13 @@ After the review:
 
 - Update the spec with resolved questions and any new edge cases or acceptance criteria.
 - If questions remain that need user input, list them and keep status as `draft`.
-- If all open questions are resolved and the gate passes, present a summary of changes and ask the user to approve the transition to `clarified`. Do not update the status until the user confirms.
-- Run `markdownlint-cli2` on the modified file.
+- If all open questions are resolved, run the validation gate before proposing the status transition:
+  - All open questions are resolved (none remain in the Open Questions section)
+  - Acceptance criteria are concrete and testable — no empty placeholders
+  - Dependencies are at `clarified` or later
+  - The modified spec file passes `markdownlint-cli2`
+- If any validation check fails, report the specific failures and do not propose the transition. The user fixes the issues and re-runs the command.
+- If all checks pass, present a summary of changes and ask the user to approve the transition to `clarified`. Do not update the status until the user confirms.
 - Display the next step: "Run `/gov:plan` to create the technical plan."
 
 ## Scenario-targeted clarify

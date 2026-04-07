@@ -63,7 +63,7 @@ For each task in order:
    - Respect the contracts defined in the spec.
    - If you need to modify files outside the plan's affected files list, notify the user, explain why, and add the file to the plan's **Affected Files** section with a comment explaining why it was added.
 5. Verify the "done when" condition is met.
-6. Mark the task as complete in `tasks.md` before proceeding.
+6. Mark the task as complete in `tasks.md` — update each checkbox from `- [ ]` to `- [x]`, including nested sub-item checkboxes, before proceeding.
 7. Prompt the user to commit and push changes.
 8. Before starting the next task, assess whether sufficient context remains to complete it. If context is low, inform the user and suggest starting a new session with `/{project}:implement` to continue from the next incomplete task. If context is sufficient, proceed.
 
@@ -71,8 +71,12 @@ For each task in order:
 
 After all tasks are done:
 
-1. Walk through each acceptance criterion from the spec and verify it is met.
-2. Report any failures.
-3. If all acceptance criteria pass, present a summary and ask the user to approve the transition to `done`. Do not update the status until the user confirms.
-4. Update spec status to `done`.
-5. Run `markdownlint-cli2` on any modified markdown files.
+1. Walk through each acceptance criterion from the spec and verify it is met. Mark each passing criterion `- [x]` in the spec file at the time of verification. If a criterion fails, leave it as `- [ ]` and report the failure. Do not batch-mark — verify each individually.
+2. Run the validation gate before proposing the status transition:
+   - All tasks in `tasks.md` are marked `- [x]`
+   - All acceptance criteria in the spec are marked `- [x]`
+   - All scenario-linked tasks are complete
+   - All `.md` files in the feature directory pass `markdownlint-cli2`
+3. If any validation check fails, report the specific failures and do not propose the transition. The user fixes the issues and re-runs the command.
+4. If all checks pass, present a summary and ask the user to approve the transition to `done`. Do not update the status until the user confirms.
+5. Update spec status to `done`.

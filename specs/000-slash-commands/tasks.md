@@ -75,3 +75,9 @@ Done when: the scenario's described behavior is correctly implemented and tested
 - [x] Implement the behavior described in `scenarios/clarify-one-at-a-time.md`
 
 Done when: the scenario's described behavior is correctly implemented and tested.
+
+## 11. Implement scenario: validation-gates
+
+- [x] Implement the behavior described in `scenarios/validation-gates.md`
+
+Done when: the scenario's described behavior is correctly implemented and tested.
