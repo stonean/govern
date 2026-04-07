@@ -150,20 +150,20 @@ The command file remains in the CLI's command directory after execution. It is i
 
 ## Acceptance Criteria
 
-- [ ] One `govern.md` variant exists per supported CLI in the `govern/` directory
-- [ ] Running `curl` followed by `/govern {name}` in an existing git repo produces a complete governance scaffold
-- [ ] Each CLI variant scaffolds into its native directory paths (`.claude/` for Claude Code, `.augment/` for Auggie)
-- [ ] Existing files (.gitignore, AGENTS.md, CLAUDE.md) are not overwritten
-- [ ] `.gitignore` merge is idempotent — running twice does not duplicate governance patterns
-- [ ] Fetch failures for individual files do not abort the entire process
-- [ ] All generated files pass `markdownlint-cli2`
-- [ ] Slash commands are installed in the CLI's native command directory with `{project}` and `{cli-config-dir}` placeholders resolved
-- [ ] `specs/inbox.md` is created as the brownfield entry point
-- [ ] The command is idempotent — safe to run again without duplicating content
-- [ ] Post-scaffolding output displays brownfield-specific next steps
-- [ ] Invalid project names are rejected with a clear error message
-- [ ] Intermediate directories are created as needed
-- [ ] Adding a new CLI requires only a new govern variant file — no changes to governance core
+- [x] One `govern.md` variant exists per supported CLI in the `govern/` directory
+- [x] Running `curl` followed by `/govern {name}` in an existing git repo produces a complete governance scaffold
+- [x] Each CLI variant scaffolds into its native directory paths (`.claude/` for Claude Code, `.augment/` for Auggie)
+- [x] Existing files (.gitignore, AGENTS.md, CLAUDE.md) are not overwritten
+- [x] `.gitignore` merge is idempotent — running twice does not duplicate governance patterns
+- [x] Fetch failures for individual files do not abort the entire process
+- [x] All generated files pass `markdownlint-cli2`
+- [x] Slash commands are installed in the CLI's native command directory with `{project}` and `{cli-config-dir}` placeholders resolved
+- [x] `specs/inbox.md` is created as the brownfield entry point
+- [x] The command is idempotent — safe to run again without duplicating content
+- [x] Post-scaffolding output displays brownfield-specific next steps
+- [x] Invalid project names are rejected with a clear error message
+- [x] Intermediate directories are created as needed
+- [x] Adding a new CLI requires only a new govern variant file — no changes to governance core
 
 ## Open Questions
 

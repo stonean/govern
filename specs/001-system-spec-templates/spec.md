@@ -47,12 +47,12 @@ An event catalog — a registry of event types populated as features are built. 
 
 ## Acceptance Criteria
 
-- [ ] `templates/system.md` exists with placeholder sections for configuration, lifecycle, request flow, shared infrastructure, and module pattern
-- [ ] `templates/errors.md` exists with placeholder sections for error format, code convention, status mapping, validation errors, and logging
-- [ ] `templates/events.md` exists with placeholder sections for event catalog, envelope format, naming convention, and a comment suggesting retry/dead-letter as feature specs
-- [ ] Each template uses HTML comments with commented-out example content, consistent with existing template style
-- [ ] Templates are technology-agnostic — no language-specific code or framework references
-- [ ] Each template starts with a top-level heading and passes markdownlint
+- [x] `templates/system.md` exists with placeholder sections for configuration, lifecycle, request flow, shared infrastructure, and module pattern
+- [x] `templates/errors.md` exists with placeholder sections for error format, code convention, status mapping, validation errors, and logging
+- [x] `templates/events.md` exists with placeholder sections for event catalog, envelope format, naming convention, and a comment suggesting retry/dead-letter as feature specs
+- [x] Each template uses HTML comments with commented-out example content, consistent with existing template style
+- [x] Templates are technology-agnostic — no language-specific code or framework references
+- [x] Each template starts with a top-level heading and passes markdownlint
 
 ## Resolved Questions
 

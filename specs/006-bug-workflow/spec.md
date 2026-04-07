@@ -106,25 +106,25 @@ This feature produces the following changes to the governance framework:
 
 ## Acceptance Criteria
 
-- [ ] `templates/scenario.md` exists with spec-ref, Context, Behavior, and Edge Cases sections
-- [ ] `templates/triage.md` exists with a flat inbox format and migration rules
-- [ ] `templates/spec.md` references the scenarios directory convention
-- [ ] `constitution.md` includes a bug handling section with the decision tree
-- [ ] `constitution.md` defines scenarios as part of the spec lifecycle
-- [ ] `constitution.md` documents the scenario directory convention in the spec phase file structure
-- [ ] `/gov:triage` command exists and walks each triage item through the decision tree
-- [ ] `/gov:triage` migrates resolved items from `specs/triage.md` to the appropriate spec or scenario
-- [ ] `/gov:triage` removes migrated items from `specs/triage.md`
-- [ ] `/gov:about` documents `/gov:scenario`, `/gov:triage`, scenario conventions, and the bug workflow
-- [ ] `/gov:scenario` command exists and creates scenario files under the correct feature's `scenarios/` directory
-- [ ] `/gov:scenario` requires an active session target and confirms the target before proceeding
-- [ ] `/gov:scenario` follows the decision tree — checks for existing spec before creating a scenario
-- [ ] `/gov:scenario` appends a task to the parent spec's `tasks.md` referencing the new scenario
-- [ ] `/gov:status` displays scenario counts per spec in the pipeline dashboard
-- [ ] `/gov:next` suggests `/gov:scenario` as a next action when context warrants it
-- [ ] `/gov:validate` checks that scenario-linked tasks in `tasks.md` are complete
-- [ ] `README.md` documents the bug workflow and scenario conventions
-- [ ] All new and modified markdown files pass `markdownlint-cli2`
+- [x] `templates/scenario.md` exists with spec-ref, Context, Behavior, and Edge Cases sections
+- [x] `templates/triage.md` exists with a flat inbox format and migration rules
+- [x] `templates/spec.md` references the scenarios directory convention
+- [x] `constitution.md` includes a bug handling section with the decision tree
+- [x] `constitution.md` defines scenarios as part of the spec lifecycle
+- [x] `constitution.md` documents the scenario directory convention in the spec phase file structure
+- [x] `/gov:triage` command exists and walks each triage item through the decision tree
+- [x] `/gov:triage` migrates resolved items from `specs/triage.md` to the appropriate spec or scenario
+- [x] `/gov:triage` removes migrated items from `specs/triage.md`
+- [x] `/gov:about` documents `/gov:scenario`, `/gov:triage`, scenario conventions, and the bug workflow
+- [x] `/gov:scenario` command exists and creates scenario files under the correct feature's `scenarios/` directory
+- [x] `/gov:scenario` requires an active session target and confirms the target before proceeding
+- [x] `/gov:scenario` follows the decision tree — checks for existing spec before creating a scenario
+- [x] `/gov:scenario` appends a task to the parent spec's `tasks.md` referencing the new scenario
+- [x] `/gov:status` displays scenario counts per spec in the pipeline dashboard
+- [x] `/gov:next` suggests `/gov:scenario` as a next action when context warrants it
+- [x] `/gov:validate` checks that scenario-linked tasks in `tasks.md` are complete
+- [x] `README.md` documents the bug workflow and scenario conventions
+- [x] All new and modified markdown files pass `markdownlint-cli2`
 
 ## Edge Cases
 

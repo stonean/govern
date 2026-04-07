@@ -116,25 +116,25 @@ For this spec specifically: 006-bug-workflow gets a signpost noting that `triage
 
 ## Acceptance Criteria
 
-- [ ] `/capture` command exists and creates a skeleton spec from freeform user input
-- [ ] `/capture` uses the standard `spec.md` template
-- [ ] `/capture` does not read existing code
-- [ ] `/capture` does not create scenarios
-- [ ] `/capture` sets the session target to the new feature
-- [ ] `/capture` detects naming conflicts with existing spec directories
-- [ ] Brownfield skeleton specs pass validation at `draft` status without requiring comprehensive acceptance criteria
-- [ ] Bug fixes on a brownfield spec add either an acceptance criterion or a scenario
-- [ ] Enhancements to a brownfield spec follow the normal pipeline (spec change before implementation)
-- [ ] Inbox items migrate to acceptance criteria or scenarios — never remain standalone
-- [ ] `/inbox` directs user to `/capture` when an item has no matching spec
-- [ ] Scenario promotion pattern is documented in `constitution.md`
-- [ ] `triage` is renamed to `inbox` across all governance artifacts (templates, commands, constitution, sdd-context, README)
-- [ ] 006-bug-workflow spec includes a signpost noting the `triage` → `inbox` rename by this spec
-- [ ] 007-govern-workflow spec includes a signpost noting the govern command gains a triage → inbox migration and `/capture` in the manifest by this spec
-- [ ] Cross-spec impact pattern is documented in `constitution.md`
-- [ ] The brownfield process is documented in `constitution.md` under brownfield adoption
-- [ ] `sdd-context.md` is updated to reflect the brownfield process
-- [ ] `README.md` brownfield section references the process
+- [x] `/capture` command exists and creates a skeleton spec from freeform user input
+- [x] `/capture` uses the standard `spec.md` template
+- [x] `/capture` does not read existing code
+- [x] `/capture` does not create scenarios
+- [x] `/capture` sets the session target to the new feature
+- [x] `/capture` detects naming conflicts with existing spec directories
+- [x] Brownfield skeleton specs pass validation at `draft` status without requiring comprehensive acceptance criteria
+- [x] Bug fixes on a brownfield spec add either an acceptance criterion or a scenario
+- [x] Enhancements to a brownfield spec follow the normal pipeline (spec change before implementation)
+- [x] Inbox items migrate to acceptance criteria or scenarios — never remain standalone
+- [x] `/inbox` directs user to `/capture` when an item has no matching spec
+- [x] Scenario promotion pattern is documented in `constitution.md`
+- [x] `triage` is renamed to `inbox` across all governance artifacts (templates, commands, constitution, sdd-context, README)
+- [x] 006-bug-workflow spec includes a signpost noting the `triage` → `inbox` rename by this spec
+- [x] 007-govern-workflow spec includes a signpost noting the govern command gains a triage → inbox migration and `/capture` in the manifest by this spec
+- [x] Cross-spec impact pattern is documented in `constitution.md`
+- [x] The brownfield process is documented in `constitution.md` under brownfield adoption
+- [x] `sdd-context.md` is updated to reflect the brownfield process
+- [x] `README.md` brownfield section references the process
 
 ## Open Questions
 

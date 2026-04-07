@@ -71,26 +71,26 @@ Before scaffolding, verify the target directory does not already exist. If it do
 
 ### Standard pipeline commands
 
-- [ ] All ten command templates copied to `.claude/commands/gov/` with `{project}` replaced by `gov`
-- [ ] Commands reference `.claude/gov-session.json` for session state
-- [ ] Pipeline gates enforce status transitions (draft → clarified → planned → done)
-- [ ] Dependency checks enforced via AGENTS.md boundary rule
+- [x] All ten command templates copied to `.claude/commands/gov/` with `{project}` replaced by `gov`
+- [x] Commands reference `.claude/gov-session.json` for session state
+- [x] Pipeline gates enforce status transitions (draft → clarified → planned → done)
+- [x] Dependency checks enforced via AGENTS.md boundary rule
 
 ### /gov:init
 
-- [ ] Command exists at `.claude/commands/gov/init.md`
-- [ ] Command accepts project name, path, description, and primary language(s) as arguments or prompts for them
-- [ ] Verifies the target directory does not exist before proceeding
-- [ ] Creates a complete project directory with all governance files
-- [ ] Replaces `{project}` placeholder in all copied templates
-- [ ] Copies slash command templates into `.claude/commands/{project}/`
-- [ ] Copies spec templates into `specs/templates/`
-- [ ] Creates system spec stubs from templates
-- [ ] Creates `.gitignore` from template and appends language-specific patterns fetched from github.com/github/gitignore
-- [ ] Runs markdownlint on generated files
-- [ ] Displays next steps directing the user to a new session and `/{project}:setup`
-- [ ] Does not make git commits automatically
-- [ ] Does not fill in project-specific content (AGENTS.md sections, system.md)
+- [x] Command exists at `.claude/commands/gov/init.md`
+- [x] Command accepts project name, path, description, and primary language(s) as arguments or prompts for them
+- [x] Verifies the target directory does not exist before proceeding
+- [x] Creates a complete project directory with all governance files
+- [x] Replaces `{project}` placeholder in all copied templates
+- [x] Copies slash command templates into `.claude/commands/{project}/`
+- [x] Copies spec templates into `specs/templates/`
+- [x] Creates system spec stubs from templates
+- [x] Creates `.gitignore` from template and appends language-specific patterns fetched from github.com/github/gitignore
+- [x] Runs markdownlint on generated files
+- [x] Displays next steps directing the user to a new session and `/{project}:setup`
+- [x] Does not make git commits automatically
+- [x] Does not fill in project-specific content (AGENTS.md sections, system.md)
 
 ## Resolved Questions
 
