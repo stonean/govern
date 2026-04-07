@@ -63,7 +63,7 @@ Same approach as the init command: fetch from `https://raw.githubusercontent.com
 | `commands/commit-push.md` | Modify | Replace `.claude/` with `{cli-config-dir}/` (if it references CLI paths) |
 | `.claude/commands/gov/*.md` | Modify | Re-derive from updated templates with `{cli-config-dir}` → `.claude` |
 | `.claude/commands/gov/init.md` | Modify | Update to resolve `{cli-config-dir}` during scaffolding |
-| `specs/007-adopt-workflow/spec.md` | Modify | Update status to `planned` |
+| `specs/007-govern-workflow/spec.md` | Modify | Update status to `done` |
 
 ## Trade-offs
 

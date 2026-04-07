@@ -26,8 +26,8 @@ Done when: `govern/govern.md` exists, passes markdownlint, and contains the comp
 
 Done when: `govern/govern-auggie.md` exists, passes markdownlint, and targets `.augment/` paths.
 
-## 5. Update spec status to `planned`
+## 5. Update spec status to `done`
 
-- [x] Set the spec status to `planned` and run markdownlint on all modified files.
+- [x] Set the spec status to `done` and run markdownlint on all modified files.
 
-Done when: spec status is `planned`, all modified files pass markdownlint.
+Done when: spec status is `done`, all modified files pass markdownlint.
