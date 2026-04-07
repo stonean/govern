@@ -140,4 +140,4 @@ This feature produces the following changes to the governance framework:
 
 ## Open Questions
 
-<!-- All resolved. -->
+None — all resolved.
