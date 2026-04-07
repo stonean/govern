@@ -63,3 +63,9 @@ Done when: validate reports PASS/FAIL for all checks including markdownlint, and
 - [ ] Update spec status to `planned`
 
 Done when: all ten commands pass lint, use consistent placeholders, and cross-reference correctly.
+
+## 9. Implement scenario: target-argument-parsing
+
+- [x] Implement the behavior described in `scenarios/target-argument-parsing.md`
+
+Done when: the scenario's described behavior is correctly implemented and tested.

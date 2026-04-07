@@ -10,7 +10,7 @@ Establishes which feature spec all subsequent `/gov:*` commands operate on. Opti
 
 ### No arguments — display current target
 
-If `$ARGUMENTS` is empty:
+If `$ARGUMENTS` is empty or contains only whitespace (note: `0`, `00`, `000`, or any other valid string is NOT empty — treat any non-whitespace value as a feature identifier):
 
 1. Read `.claude/gov-session.json`. If the file does not exist or is empty, report: "No target set. Run `/gov:target {feature}` to set one."
 2. Display the current target:
