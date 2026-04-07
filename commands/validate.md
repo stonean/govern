@@ -36,7 +36,7 @@ Read every file in `specs/{feature}/` and run the following checks. Each check i
 - [ ] Acceptance criteria section exists with at least one checkbox item
 - [ ] No placeholder or empty acceptance criteria
 - [ ] Open questions consistent with status (`clarified` or later must have none)
-- [ ] No code blocks, function signatures, or package paths in the spec (those belong in plan.md)
+- [ ] No implementation code blocks (function signatures, package paths, language-specific snippets) in the spec — those belong in plan.md. Format examples, directory structures, and user-facing commands are acceptable when they define behavioral contracts.
 
 ### Artifact completeness (blocking)
 
