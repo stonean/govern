@@ -65,21 +65,21 @@ If the user's tech stack selections match no registry entries (e.g., all categor
 
 ## Acceptance Criteria
 
-1. A skill registry exists at `skills/registry.json` in governance, using JSON format
-2. Each registry entry specifies a single-field trigger, skill name, category, template path, and description
-3. Categories are drawn from the fixed set: Testing, Linting, Formatting, Migrations, Code Review, Deployment
-4. During init, after tech stack selection, matched skills are presented to the user grouped by category
-5. The user can accept or skip each category group — no skills are scaffolded without consent
-6. Accepted skill templates are copied into `.claude/commands/{slug}/` with placeholders replaced
-7. Skipping all skill recommendations produces the same project as today (backwards compatible)
-8. If no registry entries match the user's tech stack, the skill step is skipped silently
-9. Skill templates use the naming convention `{workflow}-{language}-{tool}.md`
-10. Skill templates follow the same `.md` format and placeholder conventions as existing slash commands
-11. The registry is extensible — adding a new skill requires only a registry entry and a template file
-12. Init warns and continues (does not fail) if the registry file is missing or malformed
-13. Init warns and skips individual skills whose template file is missing
-14. `/{project}:govern` updates the registry and offers new, unscaffolded skills to the user
-15. Govern does not overwrite skill files that already exist in the project
+- [ ] A skill registry exists at `skills/registry.json` in governance, using JSON format
+- [ ] Each registry entry specifies a single-field trigger, skill name, category, template path, and description
+- [ ] Categories are drawn from the fixed set: Testing, Linting, Formatting, Migrations, Code Review, Deployment
+- [ ] During init, after tech stack selection, matched skills are presented to the user grouped by category
+- [ ] The user can accept or skip each category group — no skills are scaffolded without consent
+- [ ] Accepted skill templates are copied into `.claude/commands/{slug}/` with placeholders replaced
+- [ ] Skipping all skill recommendations produces the same project as today (backwards compatible)
+- [ ] If no registry entries match the user's tech stack, the skill step is skipped silently
+- [ ] Skill templates use the naming convention `{workflow}-{language}-{tool}.md`
+- [ ] Skill templates follow the same `.md` format and placeholder conventions as existing slash commands
+- [ ] The registry is extensible — adding a new skill requires only a registry entry and a template file
+- [ ] Init warns and continues (does not fail) if the registry file is missing or malformed
+- [ ] Init warns and skips individual skills whose template file is missing
+- [ ] `/{project}:govern` updates the registry and offers new, unscaffolded skills to the user
+- [ ] Govern does not overwrite skill files that already exist in the project
 
 ## Resolved Questions
 
