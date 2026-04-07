@@ -1,6 +1,6 @@
 # 000 — Slash Command Templates
 
-**Status:** in-progress
+**Status:** done
 **Dependencies:** none
 
 Generic, project-agnostic slash command templates that operationalize the governance development pipeline. Projects copy these commands into their `.claude/commands/{project}/` directory and customize the project name and any project-specific paths.
@@ -78,21 +78,21 @@ Pipeline commands reference spec templates from the project's `specs/templates/`
 
 ## Acceptance Criteria
 
-- [ ] Ten command template files exist in `commands/` directory
-- [ ] Each template uses `{project}` as the only project-specific placeholder
-- [ ] Pipeline commands (specify, clarify, plan, implement) enforce gates matching the constitution's spec lifecycle
-- [ ] The `about` command prints a self-contained guide without reading any files
-- [ ] The `target` command writes a session file and displays feature status
-- [ ] The `status` command scans all spec directories and displays a dashboard table
-- [ ] The `next` command maps current status to the correct pipeline command
-- [ ] The `validate` command checks spec integrity, artifact completeness, plan consistency, task consistency, dependencies, and cross-spec references
-- [ ] The `setup` command configures permissions for common operations (git, lint, file reads)
-- [ ] The `specify` command determines the next feature number, creates the spec directory, and updates README
-- [ ] Commands reference `specs/templates/` for templates (not governance templates)
-- [ ] Commands reference `.claude/{project}-session.json` for session state
-- [ ] The `validate` command runs `markdownlint-cli2` on the feature's files as part of its checks
-- [ ] The `specify` command prompts qualifying questions and creates `spec-and-plan.md` for lightweight track features
-- [ ] Pipeline commands detect and handle both `spec.md` and `spec-and-plan.md`
+- [x] Ten command template files exist in `commands/` directory
+- [x] Each template uses `{project}` as the only project-specific placeholder
+- [x] Pipeline commands (specify, clarify, plan, implement) enforce gates matching the constitution's spec lifecycle
+- [x] The `about` command prints a self-contained guide without reading any files
+- [x] The `target` command writes a session file and displays feature status
+- [x] The `status` command scans all spec directories and displays a dashboard table
+- [x] The `next` command maps current status to the correct pipeline command
+- [x] The `validate` command checks spec integrity, artifact completeness, plan consistency, task consistency, dependencies, and cross-spec references
+- [x] The `setup` command configures permissions for common operations (git, lint, file reads)
+- [x] The `specify` command determines the next feature number, creates the spec directory, and updates README
+- [x] Commands reference `specs/templates/` for templates (not governance templates)
+- [x] Commands reference `.claude/{project}-session.json` for session state
+- [x] The `validate` command runs `markdownlint-cli2` on the feature's files as part of its checks
+- [x] The `specify` command prompts qualifying questions and creates `spec-and-plan.md` for lightweight track features
+- [x] Pipeline commands detect and handle both `spec.md` and `spec-and-plan.md`
 
 ## Resolved Questions
 
