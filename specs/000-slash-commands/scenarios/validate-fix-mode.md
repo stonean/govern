@@ -19,7 +19,8 @@ The `validate` command detects issues like unchecked checkboxes on completed ite
   - Missing artifacts (no plan, no tasks) — structural issues require human decisions
   - Lint failures — require manual correction
 - Fix mode displays each correction it makes, showing the file, line, and change.
-- Fix mode can target a single feature (using the session target) or scan all features when no target is set.
+- The `--all` flag scans every feature directory under `specs/`. Without `--all`, validate operates on a single feature (from argument or session target).
+- `--all` and `--fix` can be combined: `--all --fix` scans and fixes all features.
 - After applying fixes, run `markdownlint-cli2` on modified files.
 
 ## Edge Cases

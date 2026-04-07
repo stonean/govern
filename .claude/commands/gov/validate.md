@@ -8,9 +8,15 @@ Audit a feature's spec, plan, tasks, and data model for consistency. By default,
 
 ## Context
 
-Use the session target from `.claude/gov-session.json`. If `$ARGUMENTS` contains a feature identifier, use it to override the session target. If `$ARGUMENTS` contains `--fix`, enable fix mode. Both can be combined (e.g., `001 --fix`).
+Parse `$ARGUMENTS` for flags and an optional feature identifier:
 
-If no session target is set and no feature argument provided, scan all feature directories under `specs/` and validate each one. Report results grouped by feature.
+- **Feature identifier** — a feature number, partial name, or full directory name. Overrides the session target.
+- **`--fix`** — enable fix mode (see Fix Mode section below).
+- **`--all`** — scan all feature directories under `specs/` instead of a single target. Report results grouped by feature.
+
+Flags can be combined (e.g., `--all --fix`, `001 --fix`).
+
+If `--all` is not present, use the feature identifier if provided, otherwise fall back to the session target from `.claude/gov-session.json`. If no target can be resolved, stop and tell the user to run `/gov:target` first or use `--all`.
 
 ## Scope Boundaries
 
