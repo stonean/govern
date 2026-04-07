@@ -20,7 +20,7 @@ Governance uses its own spec-driven pipeline to develop itself.
 
 | Spec | Status | Dependencies | Description |
 | --- | --- | --- | --- |
-| [000-slash-commands](specs/000-slash-commands/spec.md) | done | none | Generic slash command templates that operationalize the pipeline |
+| [000-slash-commands](specs/000-slash-commands/spec.md) | in-progress | none | Generic slash command templates that operationalize the pipeline |
 | [001-system-spec-templates](specs/001-system-spec-templates/spec.md) | done | none | Templates for system.md, errors.md, and events.md |
 | [002-project-scaffolding](specs/002-project-scaffolding/spec.md) | done | 000, 001 | README, .gitignore, CLAUDE.md, and session file templates |
 | [003-bootstrap-automation](specs/003-bootstrap-automation/spec.md) | done | 000, 001, 002 | Slash commands and /gov:init for scaffolding new projects |
@@ -79,7 +79,7 @@ Adoption installs a full set of slash commands that operationalize the pipeline.
 | `/clarify` | Resolve open questions in the current spec, advance status to `clarified` |
 | `/plan` | Create plan.md with technical decisions, affected files, and resolved questions |
 | `/implement` | Work through tasks, update spec status to `in-progress` then `done` |
-| `/validate` | Audit spec, plan, tasks, and scenarios for completeness and consistency |
+| `/validate` | Audit spec, plan, tasks, and scenarios for completeness and consistency. `--all` scans every feature. `--fix` auto-corrects fixable checkbox mismatches. Composable: `--all --fix` |
 
 ### Bug workflow
 
