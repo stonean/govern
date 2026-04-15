@@ -109,7 +109,7 @@ Fetch each command template and copy it into `.augment/commands/{project}/`. In 
 | `commands/plan.md` | `.augment/commands/{project}/plan.md` |
 | `commands/question.md` | `.augment/commands/{project}/question.md` |
 | `commands/scenario.md` | `.augment/commands/{project}/scenario.md` |
-| `commands/setup.md` | `.augment/commands/{project}/setup.md` |
+| `commands/setup-auggie.md` | `.augment/commands/{project}/setup.md` |
 | `commands/specify.md` | `.augment/commands/{project}/specify.md` |
 | `commands/status.md` | `.augment/commands/{project}/status.md` |
 | `commands/target.md` | `.augment/commands/{project}/target.md` |
