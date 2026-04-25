@@ -52,13 +52,15 @@ Then run `/govern {project-name}`.
 
 ```bash
 mkdir -p .augment/commands
-curl -fsSL https://raw.githubusercontent.com/stonean/govern/main/govern/govern-auggie.md \
+curl -fsSL https://raw.githubusercontent.com/stonean/govern/main/govern/govern.md \
   > .augment/commands/govern.md
 ```
 
 Then run `/govern {project-name}`.
 
 The command fetches governance files, scaffolds the spec directory, installs slash commands, and displays next steps. It is idempotent — safe to run again to pick up new governance files.
+
+The same `govern.md` supports every CLI listed above. Use whichever curl snippet matches the agent you want to start with — adopting additional agents later does not require a second curl. Re-run `/govern --add-agent` from any adopted agent to pick up the others, and the unified file scaffolds them alongside the existing setup.
 
 ## Slash Commands
 

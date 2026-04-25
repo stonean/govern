@@ -32,6 +32,7 @@ Configure `.claude/settings.local.json` with the permissions needed for slash co
    - `Bash(git status *)`
 
    **Utility:**
+   - `Bash(curl *)`
    - `Bash(gh api *)`
    - `Bash(mkdir -p *)`
 

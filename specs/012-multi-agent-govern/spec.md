@@ -1,6 +1,6 @@
 # 012 — Multi-Agent Govern
 
-**Status:** clarified
+**Status:** done
 **Dependencies:** 007-govern-workflow
 
 A single `govern.md` command that supports adopting governance for multiple AI coding CLIs in the same project, with the target agent(s) selected at run time rather than baked into the file. Re-runs are additive — a project initialized for one agent can later adopt another by re-running `/govern` and selecting the new agent.
@@ -130,25 +130,25 @@ The signpost note added to 007 is delivered by this spec. 007 keeps its `done` s
 
 ## Acceptance Criteria
 
-- [ ] A single `govern/govern.md` file replaces both `govern/govern.md` and `govern/govern-auggie.md` — only one govern source exists in `govern/`
-- [ ] Running `/govern` in a project with at least one detected agent dir (`.claude/` or `.augment/`) updates the detected agents silently — no agent-selection prompt is shown (routine-update path)
-- [ ] Running `/govern --add-agent` shows the agent-selection prompt with detected agents pre-selected, allowing the user to add additional agents
-- [ ] Running `/govern` for the first time in a project with no detected agent dirs (e.g., immediately after the curl install) shows the agent-selection prompt with the agent whose dir holds the running `govern.md` pre-selected
-- [ ] An explicit `--agents=...` list in `$ARGUMENTS` selects exactly those agents and bypasses the prompt
-- [ ] Selecting zero agents in any prompt path (add-agent or first-run) is rejected with a clear message
-- [ ] For each selected agent, scaffolding produces: project commands at `{cli-config-dir}/commands/{project}/`, the agent's setup source written as `setup.md`, an empty session JSON, a settings file in the agent's native format, and a copy of `govern.md` at `{cli-config-dir}/commands/govern.md`
-- [ ] Claude Code's `settings.local.json` uses `permissions.allow`/`permissions.deny`; Auggie's uses a `toolPermissions` array — neither agent receives the other's format
-- [ ] Re-running `/govern` and adding a previously unselected agent scaffolds that agent's tree alongside the existing one without modifying the existing agent's command dir, settings, or session JSON
-- [ ] Re-running `/govern` with the same selection updates the agent's slash commands per the manifest's `update` strategy and leaves `create`-strategy files alone
-- [ ] Shared files (`constitution.md`, `specs/templates/*`, `.markdownlint-cli2.jsonc`, `AGENTS.md`, `CLAUDE.md`, `.gitignore`, `specs/system.md`, `specs/errors.md`, `specs/events.md`, `specs/inbox.md`) are scaffolded once per run and untouched by which agents are selected
-- [ ] Adding support for a new agent requires only adding the agent's per-agent values (config dir, settings format, setup source) inside the unified command — no new top-level govern file is created
-- [ ] Existing projects scaffolded under 007's multi-file model can run the unified `/govern` and have their installed `govern.md` replaced by the unified version without manual intervention
-- [ ] The README documents the install path for each supported agent and states that subsequent agents do not require a second curl
-- [ ] 007's spec gains a signpost note pointing to 012, marking the multi-file design as superseded
-- [ ] The `CLAUDE.md` "Govern File Parity" rule is removed — there is only one govern file
-- [ ] An unknown agent key in `--agents=` is rejected with a clear error before any scaffolding occurs
-- [ ] `settings.local.json` entries added by `/{project}:setup` or the user are preserved across `/govern` re-runs — only the bootstrap curl/ls entries are added if missing
-- [ ] All shipped markdown files pass `npx markdownlint-cli2`
+- [x] A single `govern/govern.md` file replaces both `govern/govern.md` and `govern/govern-auggie.md` — only one govern source exists in `govern/`
+- [x] Running `/govern` in a project with at least one detected agent dir (`.claude/` or `.augment/`) updates the detected agents silently — no agent-selection prompt is shown (routine-update path)
+- [x] Running `/govern --add-agent` shows the agent-selection prompt with detected agents pre-selected, allowing the user to add additional agents
+- [x] Running `/govern` for the first time in a project with no detected agent dirs (e.g., immediately after the curl install) shows the agent-selection prompt with the agent whose dir holds the running `govern.md` pre-selected
+- [x] An explicit `--agents=...` list in `$ARGUMENTS` selects exactly those agents and bypasses the prompt
+- [x] Selecting zero agents in any prompt path (add-agent or first-run) is rejected with a clear message
+- [x] For each selected agent, scaffolding produces: project commands at `{cli-config-dir}/commands/{project}/`, the agent's setup source written as `setup.md`, an empty session JSON, a settings file in the agent's native format, and a copy of `govern.md` at `{cli-config-dir}/commands/govern.md`
+- [x] Claude Code's `settings.local.json` uses `permissions.allow`/`permissions.deny`; Auggie's uses a `toolPermissions` array — neither agent receives the other's format
+- [x] Re-running `/govern` and adding a previously unselected agent scaffolds that agent's tree alongside the existing one without modifying the existing agent's command dir, settings, or session JSON
+- [x] Re-running `/govern` with the same selection updates the agent's slash commands per the manifest's `update` strategy and leaves `create`-strategy files alone
+- [x] Shared files (`constitution.md`, `specs/templates/*`, `.markdownlint-cli2.jsonc`, `AGENTS.md`, `CLAUDE.md`, `.gitignore`, `specs/system.md`, `specs/errors.md`, `specs/events.md`, `specs/inbox.md`) are scaffolded once per run and untouched by which agents are selected
+- [x] Adding support for a new agent requires only adding the agent's per-agent values (config dir, settings format, setup source) inside the unified command — no new top-level govern file is created
+- [x] Existing projects scaffolded under 007's multi-file model migrate to the unified `/govern` via the documented one-time curl, after which subsequent re-runs handle updates without further manual intervention (see [Migration from 007's Multi-File Model](#migration-from-007s-multi-file-model))
+- [x] The README documents the install path for each supported agent and states that subsequent agents do not require a second curl
+- [x] 007's spec gains a signpost note pointing to 012, marking the multi-file design as superseded
+- [x] The `CLAUDE.md` "Govern File Parity" rule is removed — there is only one govern file
+- [x] An unknown agent key in `--agents=` is rejected with a clear error before any scaffolding occurs
+- [x] `settings.local.json` entries added by `/{project}:setup` or the user are preserved across `/govern` re-runs — only the bootstrap curl/ls entries are added if missing
+- [x] All shipped markdown files pass `npx markdownlint-cli2`
 
 ## Open Questions
 
