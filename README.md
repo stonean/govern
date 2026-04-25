@@ -32,6 +32,7 @@ Governance uses its own spec-driven pipeline to develop itself.
 | [009-scenario-targeting](specs/009-scenario-targeting/spec.md) | done | 006 | Promote scenarios to first-class pipeline targets for question, clarify, status, and implement commands |
 | [010-agent-autonomy](specs/010-agent-autonomy/spec.md) | draft | 000 | Evaluate and adopt agent orchestration capabilities (skills, complexity routing, stuck detection, autonomy) |
 | [011-brownfield-process](specs/011-brownfield-process/spec.md) | done | 006, 007 | Formalized process for initializing and incrementally building out specs in brownfield projects |
+| [012-multi-agent-govern](specs/012-multi-agent-govern/spec.md) | clarified | 007 | Unified govern command with runtime agent selection — supports adopting multiple AI CLIs in one project and adding agents on re-run |
 
 ## Adopting in an Existing Project
 
