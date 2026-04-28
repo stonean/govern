@@ -59,12 +59,12 @@ git init
 
 Copy these files from the governance repo into the new project root:
 
-- `framework/rules/constitution.md` → `constitution.md`
+- `framework/constitution.md` → `constitution.md`
 - `.markdownlint-cli2.jsonc` → `.markdownlint-cli2.jsonc`
 
 ### 3. Copy and customize AGENTS.md
 
-Copy `framework/templates/agents.md` from the governance repo into the new project root as `AGENTS.md`. Replace every `{project-name}` placeholder with the user-provided project slug. Replace `{One-line project description.}` with the user-provided description.
+Copy `framework/templates/project/agents.md` from the governance repo into the new project root as `AGENTS.md`. Replace every `{project-name}` placeholder with the user-provided project slug. Replace `{One-line project description.}` with the user-provided description.
 
 Then, if the user selected any technologies in the tech stack questionnaire (step 4), replace the Tech Stack comment placeholder with an actual table. Build the table from the user's selections using this layer-to-role mapping:
 
@@ -87,19 +87,19 @@ Only include rows for categories the user answered (not skipped). If all categor
 
 ### 4. Create CLAUDE.md
 
-Copy `framework/templates/claude-md.md` from the governance repo into the new project as `CLAUDE.md`.
+Copy `framework/templates/project/claude-md.md` from the governance repo into the new project as `CLAUDE.md`.
 
 ### 5. Create specs directory with system spec templates
 
-Create `specs/` and copy these files from `framework/templates/` in the governance repo:
+Create `specs/` and copy these files from `framework/templates/project/` in the governance repo:
 
-- `framework/templates/system.md` → `specs/system.md`
-- `framework/templates/errors.md` → `specs/errors.md`
-- `framework/templates/events.md` → `specs/events.md`
+- `framework/templates/project/system.md` → `specs/system.md`
+- `framework/templates/project/errors.md` → `specs/errors.md`
+- `framework/templates/project/events.md` → `specs/events.md`
 
 ### 6. Copy spec templates
 
-Create `specs/templates/` and copy all spec development templates from `framework/templates/` in the governance repo:
+Create `specs/templates/` and copy all spec-pipeline templates from `framework/templates/spec/` in the governance repo (the destination is flat — no `spec/` subdirectory):
 
 - `spec.md`
 - `spec-and-plan.md`
@@ -111,13 +111,15 @@ Create `specs/templates/` and copy all spec development templates from `framewor
 
 ### 7. Copy slash command templates
 
-Create `.claude/commands/{slug}/` and copy every `.md` file from the governance repo's `framework/commands/` directory into it (excluding `govern.md` and the `setup/` subdirectory — those are handled separately by govern). In each copied file, replace every `{project}` with the user-provided project name and every `{cli-config-dir}` with `.claude`.
+Create `.claude/commands/{slug}/` and copy every `.md` file from the governance repo's `framework/commands/` directory into it. In each copied file, replace every `{project}` with the user-provided project name and every `{cli-config-dir}` with `.claude`.
 
-Additionally, copy `framework/templates/initialize.md` from the governance repo into `.claude/commands/{slug}/initialize.md`. Replace `{project}` with the user-provided project name. This provides a stub initialize command that the project fills in with language-specific post-copy steps for use by the create command.
+Additionally, copy `framework/bootstrap/configure/claude.md` into `.claude/commands/{slug}/configure.md` (renaming it), substituting placeholders the same way.
+
+Additionally, copy `framework/templates/project/initialize.md` from the governance repo into `.claude/commands/{slug}/initialize.md`. Replace `{project}` with the user-provided project name. This provides a stub initialize command that the project fills in with language-specific post-copy steps for use by the spawn command.
 
 ### 8. Create .gitignore
 
-Copy `framework/templates/gitignore` from the governance repo into the new project as `.gitignore`.
+Copy `framework/templates/project/gitignore` from the governance repo into the new project as `.gitignore`.
 
 Then, for each language selected in the tech stack questionnaire (backend language and/or frontend language from step 4), fetch the language-specific patterns:
 
@@ -136,7 +138,7 @@ If a fetch fails (404 or network error), report the failure and continue with th
 
 ### 9. Create README.md
 
-Copy `framework/templates/project-readme.md` from the governance repo into the new project as `README.md`. Replace every `{project}` with the user-provided project name. Replace `{Brief description of what this project does.}` with the user-provided description.
+Copy `framework/templates/project/project-readme.md` from the governance repo into the new project as `README.md`. Replace every `{project}` with the user-provided project name. Replace `{Brief description of what this project does.}` with the user-provided description.
 
 ### 10. Create session file
 
@@ -157,10 +159,10 @@ After scaffolding is complete, display:
 Next steps:
 
 1. Start a new Claude Code session in the project directory: `cd {path}/{slug}`
-2. Run `/{slug}:setup` to configure permissions
+2. Run `/{slug}:configure` to apply the full permission set
 3. Fill in `AGENTS.md` — project structure, code style, testing conventions, and gotchas (Tech Stack table was populated from your selections)
 4. Fill in `specs/system.md` — architecture, request lifecycle, shared infrastructure
-5. Fill in `.claude/commands/{slug}/initialize.md` — language-specific post-copy steps for `/{slug}:create`
+5. Fill in `.claude/commands/{slug}/initialize.md` — language-specific post-copy steps for `/{slug}:spawn`
 6. Create your first feature spec: `/{slug}:specify {feature description}`
 
 ---
@@ -171,4 +173,4 @@ Next steps:
 - Write system.md content — that requires architectural decisions
 - Create the first feature spec — the user does that via `/{slug}:specify`
 - Make any git commits — the user decides when to commit
-- Run `/{slug}:setup` — that runs in the new project's Claude session, not governance's
+- Run `/{slug}:configure` — that runs in the new project's Claude session, not governance's

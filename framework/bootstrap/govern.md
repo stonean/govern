@@ -19,7 +19,7 @@ For each agent, these paths are computed by convention from the row above. They 
 
 | Derived value | Formula |
 | --- | --- |
-| Setup source path | `framework/commands/setup/{key}.md` |
+| Configure source path | `framework/bootstrap/configure/{key}.md` |
 | Session JSON path | `{config_dir}/{project}-session.json` |
 | Project commands directory | `{config_dir}/commands/{project}/` |
 | Govern install path | `{config_dir}/commands/govern.md` |
@@ -29,7 +29,7 @@ For each agent, these paths are computed by convention from the row above. They 
 A new agent is one row above plus two satellite files:
 
 1. Append a row with the five required fields.
-2. Add `framework/commands/setup/{key}.md` with the agent's full permission set in its native settings format.
+2. Add `framework/bootstrap/configure/{key}.md` with the agent's full permission set in its native settings format.
 3. Add a curl snippet for the new agent to the README's adoption section.
 
 No other changes are required.
@@ -81,10 +81,10 @@ The user must end up with at least one selected agent in every path. Removing an
 For each selected agent, before fetching any files:
 
 1. Read `{config_dir}/settings.local.json` (create it if missing, with the agent's `settings_template` from the registry).
-2. Merge the agent's `settings_template` entries into the existing file: add any entries that are missing, do not deduplicate or reorder anything else, and do not overwrite entries the user or `/{project}:setup` previously added.
+2. Merge the agent's `settings_template` entries into the existing file: add any entries that are missing, do not deduplicate or reorder anything else, and do not overwrite entries the user or `/{project}:configure` previously added.
 3. Write the file if anything was added.
 
-This prevents repeated permission prompts during the fetch and scaffolding phases. The full permission set is applied later by `/{project}:setup`.
+This prevents repeated permission prompts during the fetch and scaffolding phases. The full permission set is applied later by `/{project}:configure`.
 
 ## Project Configuration
 
@@ -101,18 +101,6 @@ files = [
 ```
 
 Any file listed in `pinned.files` that would normally use `update` strategy is treated as `skip` instead. Report pinned files in the post-scaffolding summary.
-
-A project that pins its installed `govern.md` (e.g., `.claude/commands/govern.md`) will not migrate from 007's multi-file model until the pin is removed. This is documented as a footgun, not solved programmatically.
-
-## Migration: triage → inbox
-
-Before processing the file manifest, check for artifacts from the pre-rename `triage` naming. Run these checks once per `/govern` invocation, regardless of how many agents are selected:
-
-1. If `specs/triage.md` exists and `specs/inbox.md` does not — rename `specs/triage.md` to `specs/inbox.md`.
-2. If `specs/triage.md` exists and `specs/inbox.md` also exists — merge items from `triage.md` into `inbox.md`, then delete `triage.md`.
-3. For each selected agent, if `{config_dir}/commands/{project}/triage.md` exists — delete it.
-
-Report any migration actions in the post-scaffolding summary.
 
 ## File Fetching
 
@@ -134,38 +122,38 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 
 | Source Path | Destination Path |
 | --- | --- |
-| `framework/rules/constitution.md` | `constitution.md` |
+| `framework/constitution.md` | `constitution.md` |
 | `.markdownlint-cli2.jsonc` | `.markdownlint-cli2.jsonc` |
-| `framework/templates/spec.md` | `specs/templates/spec.md` |
-| `framework/templates/plan.md` | `specs/templates/plan.md` |
-| `framework/templates/tasks.md` | `specs/templates/tasks.md` |
-| `framework/templates/data-model.md` | `specs/templates/data-model.md` |
-| `framework/templates/research.md` | `specs/templates/research.md` |
-| `framework/templates/scenario.md` | `specs/templates/scenario.md` |
-| `framework/templates/spec-and-plan.md` | `specs/templates/spec-and-plan.md` |
+| `framework/templates/spec/spec.md` | `specs/templates/spec.md` |
+| `framework/templates/spec/plan.md` | `specs/templates/plan.md` |
+| `framework/templates/spec/tasks.md` | `specs/templates/tasks.md` |
+| `framework/templates/spec/data-model.md` | `specs/templates/data-model.md` |
+| `framework/templates/spec/research.md` | `specs/templates/research.md` |
+| `framework/templates/spec/scenario.md` | `specs/templates/scenario.md` |
+| `framework/templates/spec/spec-and-plan.md` | `specs/templates/spec-and-plan.md` |
 
 ### Project-specific shared files (strategy: create)
 
 | Source Path | Destination Path |
 | --- | --- |
-| `framework/templates/system.md` | `specs/system.md` |
-| `framework/templates/errors.md` | `specs/errors.md` |
-| `framework/templates/events.md` | `specs/events.md` |
-| `framework/templates/inbox.md` | `specs/inbox.md` |
+| `framework/templates/project/system.md` | `specs/system.md` |
+| `framework/templates/project/errors.md` | `specs/errors.md` |
+| `framework/templates/project/events.md` | `specs/events.md` |
+| `framework/templates/project/inbox.md` | `specs/inbox.md` |
 
 ### Shared files with conflict handling
 
-**AGENTS.md** (strategy: skip) — if it exists, leave it alone. If not, fetch `framework/templates/agents.md` from the governance repo and copy it as `AGENTS.md`, substituting `{project-name}` with the project name and `{One-line project description.}` with the project description.
+**AGENTS.md** (strategy: skip) — if it exists, leave it alone. If not, fetch `framework/templates/project/agents.md` from the governance repo and copy it as `AGENTS.md`, substituting `{project-name}` with the project name and `{One-line project description.}` with the project description.
 
-**CLAUDE.md** (strategy: skip) — if it exists, leave it alone. If not, fetch `framework/templates/claude-md.md` from the governance repo and copy it as `CLAUDE.md`. Both supported agents read `CLAUDE.md` natively (see each row's `rules_file_note`).
+**CLAUDE.md** (strategy: skip) — if it exists, leave it alone. If not, fetch `framework/templates/project/claude-md.md` from the governance repo and copy it as `CLAUDE.md`. Both supported agents read `CLAUDE.md` natively (see each row's `rules_file_note`).
 
 **.gitignore** (strategy: merge) — if it exists, check for a `# Governance` comment header. If the header exists, skip (already merged). If no header, append governance patterns below existing content:
 
-1. Fetch `framework/templates/gitignore` from the governance repo.
+1. Fetch `framework/templates/project/gitignore` from the governance repo.
 2. Append its content below a `# Governance` comment header.
 3. For each primary language provided by the user, fetch from `https://raw.githubusercontent.com/github/gitignore/main/{Language}.gitignore` and append below a `# {Language}` comment header.
 
-If `.gitignore` does not exist, create it from `framework/templates/gitignore` plus language patterns.
+If `.gitignore` does not exist, create it from `framework/templates/project/gitignore` plus language patterns.
 
 ## Per-Agent Scaffolding
 
@@ -177,7 +165,7 @@ Created on first run, skipped on re-run.
 
 | Source Path | Destination Path |
 | --- | --- |
-| `framework/templates/initialize.md` | `{config_dir}/commands/{project}/initialize.md` |
+| `framework/templates/project/initialize.md` | `{config_dir}/commands/{project}/initialize.md` |
 
 ### Slash commands (strategy: update)
 
@@ -185,22 +173,23 @@ Fetch each command template and copy it into `{config_dir}/commands/{project}/`.
 
 | Source Path | Destination Path |
 | --- | --- |
-| `framework/commands/about.md` | `{config_dir}/commands/{project}/about.md` |
+| `framework/commands/ask.md` | `{config_dir}/commands/{project}/ask.md` |
+| `framework/commands/capture.md` | `{config_dir}/commands/{project}/capture.md` |
 | `framework/commands/clarify.md` | `{config_dir}/commands/{project}/clarify.md` |
+| `framework/commands/elaborate.md` | `{config_dir}/commands/{project}/elaborate.md` |
+| `framework/commands/groom.md` | `{config_dir}/commands/{project}/groom.md` |
+| `framework/commands/help.md` | `{config_dir}/commands/{project}/help.md` |
 | `framework/commands/implement.md` | `{config_dir}/commands/{project}/implement.md` |
+| `framework/commands/log.md` | `{config_dir}/commands/{project}/log.md` |
 | `framework/commands/plan.md` | `{config_dir}/commands/{project}/plan.md` |
-| `framework/commands/question.md` | `{config_dir}/commands/{project}/question.md` |
-| `framework/commands/scenario.md` | `{config_dir}/commands/{project}/scenario.md` |
-| `framework/commands/setup/{key}.md` | `{config_dir}/commands/{project}/setup.md` |
+| `framework/commands/spawn.md` | `{config_dir}/commands/{project}/spawn.md` |
 | `framework/commands/specify.md` | `{config_dir}/commands/{project}/specify.md` |
 | `framework/commands/status.md` | `{config_dir}/commands/{project}/status.md` |
 | `framework/commands/target.md` | `{config_dir}/commands/{project}/target.md` |
-| `framework/commands/inbox.md` | `{config_dir}/commands/{project}/inbox.md` |
 | `framework/commands/validate.md` | `{config_dir}/commands/{project}/validate.md` |
-| `framework/commands/capture.md` | `{config_dir}/commands/{project}/capture.md` |
-| `framework/commands/create.md` | `{config_dir}/commands/{project}/create.md` |
+| `framework/bootstrap/configure/{key}.md` | `{config_dir}/commands/{project}/configure.md` |
 
-The setup row uses the agent-specific source `framework/commands/setup/{key}.md` and writes it as the canonical `setup.md` in the project's command directory.
+The configure row uses the agent-specific source `framework/bootstrap/configure/{key}.md` and writes it as the canonical `configure.md` in the project's command directory.
 
 ### Slash command cleanup
 
@@ -217,7 +206,7 @@ Create `{config_dir}/{project}-session.json` with empty content `{}` only if it 
 
 ### Govern self-installation (strategy: update)
 
-Fetch `framework/commands/govern.md` and write it to `{config_dir}/commands/govern.md`. This is the same unified file the user is currently running, copied into every selected agent's command directory so the command is invokable from that agent on subsequent runs.
+Fetch `framework/bootstrap/govern.md` and write it to `{config_dir}/commands/govern.md`. This is the same unified file the user is currently running, copied into every selected agent's command directory so the command is invokable from that agent on subsequent runs.
 
 In this file (and only this file), keep `{project}` and `{cli-config-dir}` as literal placeholders — do **not** substitute. Govern itself reads `$ARGUMENTS` for the project name on each run.
 
@@ -251,16 +240,16 @@ After writing `{config_dir}/commands/govern.md` for each selected agent, verify 
 - Fill in AGENTS.md content — that requires project-specific knowledge
 - Fill in system.md content — that requires architectural decisions
 - Make git commits — the user decides when to commit
-- Run `/{project}:setup` — that happens after adoption, interactively
+- Run `/{project}:configure` — that happens after adoption, interactively
 - Delete an agent's adopted tree — manual cleanup
 
 ## Edge Cases
 
 - **Unknown agent key in `--agents=`** — stop before scaffolding; report the unknown key with the list of valid keys.
 - **All supported agents already adopted with `--add-agent`** — show the prompt with all agents pre-selected; if the user confirms with no additions, treat it as a routine update and continue silently.
-- **`settings.local.json` already has entries beyond the bootstrap** — only add the curl/ls bootstrap entries if missing. Do not overwrite, deduplicate, or reorder entries added by `/{project}:setup` or by the user.
-- **`govern.md` content already matches the unified version** — when the manifest's `update` strategy compares fetched content to the installed file, identical content reports as "unchanged" and avoids a redundant write. Same rule applies to per-project `setup.md` and other update-strategy files.
-- **Pinned `govern.md` in `.governance.toml`** — pinned files are skipped, including `govern.md` itself. A project that pins its installed `govern.md` will not migrate from 007's multi-file model until the pin is removed.
+- **`settings.local.json` already has entries beyond the bootstrap** — only add the curl/ls bootstrap entries if missing. Do not overwrite, deduplicate, or reorder entries added by `/{project}:configure` or by the user.
+- **`govern.md` content already matches the version on disk** — when the manifest's `update` strategy compares fetched content to the installed file, identical content reports as "unchanged" and avoids a redundant write. Same rule applies to per-project `configure.md` and other update-strategy files.
+- **Pinned `govern.md` in `.governance.toml`** — pinned files are skipped, including `govern.md` itself. A pinned `govern.md` will not pick up upstream changes until the pin is removed.
 - **Curl fails on a single file in the manifest** — report the failure and continue with remaining files. Do not abort the entire scaffolding pass.
 - **First-run prompt with no detected dirs and only one supported agent** — the prompt still appears (the agent must be explicitly chosen), but the single agent is pre-selected. Confirming is one keystroke.
 - **Running `govern.md` cannot infer its own install path** — fall back to no pre-selection in the first-run prompt. The user picks explicitly.
@@ -273,7 +262,6 @@ After scaffolding, display:
 - For each scaffolded agent, the agent's `rules_file_note` from the registry
 - Any fetch failures encountered
 - Self-update notice (if applicable — see below)
-- Migration guidance (if applicable — see below)
 - Next steps (varies by mode):
 
 ### Self-update notice
@@ -283,14 +271,6 @@ If any selected agent's `{config_dir}/commands/govern.md` was reported as "updat
 > **The govern command itself was updated.** Start a new session and re-run `/govern` to apply the latest changes.
 
 This notice is not shown on first run (the file is new, not updated) or when the govern command was unchanged across all agents.
-
-### Migration from 007's multi-file model
-
-If the previously installed file at `{config_dir}/commands/govern.md` was the old per-CLI variant (i.e., the unified file replaced it on this run), include this notice in the summary:
-
-> **Migrated from per-CLI govern files.** Run `/{project}:setup` in each adopted agent to apply the full permission set. For Auggie, this also strips any legacy `permissions` key written by older versions.
-
-The unified file's `update` strategy is sufficient to overwrite both old per-CLI variants. No version stamping or sentinel comment is needed.
 
 ### First run (no existing `specs/` directory)
 
@@ -302,11 +282,11 @@ Adopted agents: {comma-separated `name` of selected agents}.
 
 Next steps:
 
-1. Run `/{project}:setup` in each adopted agent to configure the full permission set.
+1. Run `/{project}:configure` in each adopted agent to apply the full permission set.
 2. Fill in `AGENTS.md` — tech stack, project structure, code style, testing conventions, gotchas.
 3. Fill in `specs/system.md` — architecture, request lifecycle, shared infrastructure.
-4. Populate `specs/inbox.md` with known issues and bugs.
-5. Run `/{project}:inbox` to migrate items to specs and scenarios.
+4. Use `/{project}:log` to record any known issues or bugs into `specs/inbox.md`.
+5. Run `/{project}:groom` to walk the inbox and route each item to its proper spec or scenario.
 6. Create your first feature spec: `/{project}:specify {feature description}`.
 
 To adopt an additional agent later, re-run `/govern --add-agent`.

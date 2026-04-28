@@ -10,7 +10,7 @@
 
 ## Getting Started
 
-1. Run `/{project}:setup` to configure permissions and tooling
+1. Run `/{project}:configure` to configure permissions and tooling
 2. Run `/{project}:status` to see the current state of all feature specs
 3. Pick a spec and set it as your target: `/{project}:target 000`
 4. Advance through the pipeline: `/{project}:clarify`, `/{project}:plan`, `/{project}:implement`
@@ -46,7 +46,7 @@ Each command enforces its pipeline gate — you cannot plan without a clarified 
 
 | Command | Purpose |
 | --- | --- |
-| `/{project}:about` | Overview of the pipeline and command usage |
+| `/{project}:help` | Overview of the pipeline and command usage |
 | `/{project}:target` | Set the working feature for the session |
 | `/{project}:status` | Dashboard of all specs and their pipeline state |
 | `/{project}:specify` | Create a new feature spec from template |
@@ -54,7 +54,13 @@ Each command enforces its pipeline gate — you cannot plan without a clarified 
 | `/{project}:plan` | Create technical plan and tasks, advance `clarified` → `planned` |
 | `/{project}:implement` | Walk through tasks step by step, advance `planned` → `done` |
 | `/{project}:validate` | Check artifacts for consistency and cross-spec alignment |
-| `/{project}:setup` | Configure permissions for common operations |
+| `/{project}:ask` | Append an open question to the targeted spec or scenario |
+| `/{project}:elaborate` | Add a scenario to elaborate a section of the targeted feature |
+| `/{project}:capture` | Initialize a skeleton spec for an existing feature |
+| `/{project}:log` | Record a raw item to the inbox for later grooming |
+| `/{project}:groom` | Walk the inbox and route each item to its proper spec or scenario |
+| `/{project}:configure` | Configure permissions for common operations |
+| `/{project}:spawn` | Spawn a new project from this one |
 
 ### Working on Existing Specs
 

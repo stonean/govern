@@ -1,10 +1,10 @@
-# Setup Permissions
+# Configure
 
-Configure `.claude/settings.local.json` with the permissions needed for slash commands to run without manual approval.
+Configure `{cli-config-dir}/settings.local.json` with the permissions needed for slash commands to run without manual approval.
 
 ## Instructions
 
-1. Read `.claude/settings.local.json` (create it if missing, with `{"permissions":{"allow":[],"deny":[]}}`).
+1. Read `{cli-config-dir}/settings.local.json` (create it if missing, with `{"permissions":{"allow":[],"deny":[]}}`).
 2. Ensure the `permissions.allow` array contains **all** of the following entries. Add any that are missing; do not duplicate existing ones:
 
    **File operations:**
@@ -66,6 +66,6 @@ Configure `.claude/settings.local.json` with the permissions needed for slash co
 
 4. Ensure `permissions.additionalDirectories` contains:
    - The `specs/` directory (absolute path)
-   - The `.claude/commands/gov/` directory (absolute path)
+   - The `{cli-config-dir}/commands/{project}/` directory (absolute path)
 
 5. Write the updated file and confirm what was added.

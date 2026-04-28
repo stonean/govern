@@ -1,12 +1,11 @@
-# Setup Permissions
+# Configure
 
 Configure `{cli-config-dir}/settings.local.json` with the tool permissions needed for slash commands to run without manual approval.
 
 ## Instructions
 
 1. Read `{cli-config-dir}/settings.local.json` (create it if missing, with `{"toolPermissions":[]}`).
-2. **Migration:** if the file contains a `permissions` key (Claude Code format), remove the entire `permissions` object. Report: "Removed incompatible `permissions` key (Claude Code format)."
-3. Ensure the `toolPermissions` array contains **all** of the following entries. Add any that are missing; do not duplicate existing ones. Match on `toolName` + `shellInputRegex` (when present) to detect duplicates.
+2. Ensure the `toolPermissions` array contains **all** of the following entries. Add any that are missing; do not duplicate existing ones. Match on `toolName` + `shellInputRegex` (when present) to detect duplicates.
 
    **File operations:**
    - `{ "toolName": "str-replace-editor", "permission": { "type": "allow" } }`
@@ -64,6 +63,6 @@ Configure `{cli-config-dir}/settings.local.json` with the tool permissions neede
    **Shell commands — denied (other dangerous):**
    - `{ "toolName": "launch-process", "shellInputRegex": "^chmod -R 777 ", "permission": { "type": "deny" } }`
 
-4. **Ordering:** deny entries must appear before allow entries in the `toolPermissions` array so that destructive commands are blocked even if a broader allow rule would match. When adding entries, insert deny entries at the top and allow entries after them.
+3. **Ordering:** deny entries must appear before allow entries in the `toolPermissions` array so that destructive commands are blocked even if a broader allow rule would match. When adding entries, insert deny entries at the top and allow entries after them.
 
-5. Write the updated file and confirm what was added or migrated.
+4. Write the updated file and confirm what was added.

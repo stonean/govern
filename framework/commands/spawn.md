@@ -1,10 +1,10 @@
-# Create
+# Spawn
 
-Scaffold a new project from this one. Copies specs, commands, configuration, and — if present — implementation code to a new directory with the new project name.
+Spawn a new project from this one. Copies specs, commands, configuration, and — if present — implementation code to a new directory with the new project name.
 
 ## Purpose
 
-A spec project defines the tech stack, architecture, and foundational features for a product. When the spec project also contains implementation code, the created project inherits a working foundation and can jump straight to business-specific features. It is the greenfield counterpart to `govern`.
+A spec project defines the tech stack, architecture, and foundational features for a product. When the spec project also contains implementation code, the spawned project inherits a working foundation and can jump straight to business-specific features. This is the greenfield counterpart to `/govern` (which adopts governance into an existing project).
 
 ## Scope Boundaries
 
@@ -84,7 +84,7 @@ Create `.claude/settings.local.json` with default content `{"permissions":{"allo
 
 ### 9. Rename project references
 
-The source project name is derived from the command prefix (e.g., if this command is `/{source}:create` then the source name is `{source}`).
+The source project name is derived from the command prefix (e.g., if this command is `/{source}:spawn` then the source name is `{source}`).
 
 Replace the source project name with the new slug **in all case variants**, and replace the source display name with the new display name:
 
@@ -133,14 +133,14 @@ After scaffolding is complete, display:
 
 ---
 
-**Project created successfully at `{path}/{slug}`.**
+**Project spawned successfully at `{path}/{slug}`.**
 
-Created from `{source}`.
+Spawned from `{source}`.
 
 Next steps:
 
 1. Start a new Claude Code session in the project directory: `cd {path}/{slug}`
-2. Run `/{slug}:setup` to configure permissions
+2. Run `/{slug}:configure` to configure permissions
 3. Review `AGENTS.md` and update any project-specific details
 4. Run `/{slug}:status` to see all features and their progress
 5. Add your first business feature: `/{slug}:specify`
@@ -151,5 +151,5 @@ Next steps:
 
 - Generate code — it copies the source project as-is, including any implementation
 - Make any git commits — the user decides when to commit
-- Run `/{slug}:setup` — that runs in the new project's Claude session
+- Run `/{slug}:configure` — that runs in the new project's Claude session
 - Remove or modify the source project in any way

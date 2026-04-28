@@ -1,10 +1,10 @@
-# Scenario
+# Elaborate
 
-Create a scenario file for the targeted feature.
+Add a scenario to elaborate a section of the targeted feature.
 
 ## Purpose
 
-Walks the bug decision tree and creates a scenario file under the active feature's `scenarios/` directory. Appends a linked task to the feature's `tasks.md`. This is the primary mechanism for capturing bugs, edge cases, and detailed behavior.
+Walks the bug decision tree and creates a scenario file under the active feature's `scenarios/` directory. Appends a linked task to the feature's `tasks.md`. This is the primary mechanism for capturing bugs, edge cases, and detailed behavior at a finer grain than the parent spec.
 
 ## Context
 
@@ -44,7 +44,7 @@ Ask the user to describe the bug, edge case, or behavior they want to capture. T
 
 ### Create the scenario file
 
-1. Create `specs/{feature}/scenarios/{slug}.md` using the `templates/scenario.md` template.
+1. Create `specs/{feature}/scenarios/{slug}.md` using the `specs/templates/scenario.md` template.
 2. Fill in the spec-ref with the feature name and the relevant section.
 3. Fill in Context and Behavior based on the user's description.
 4. Include Edge Cases if the user mentioned any; otherwise remove that section.

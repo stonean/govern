@@ -19,7 +19,7 @@
 
        specs/{NNN-feature}/scenarios/{slug}.md
 
-     Use templates/scenario.md as the starter file.
+     Use specs/templates/scenario.md as the starter file.
 -->
 
 ## Acceptance Criteria

@@ -16,7 +16,7 @@ If the constitution has not been loaded in this session (e.g., `/gov:target` has
 
 - This command creates spec artifacts only. Do NOT read or write source code, test files, or implementation files.
 - Do NOT read existing code to infer behavior — the spec captures intended behavior as understood by the user.
-- Do NOT create scenarios — the user runs `/gov:scenario` separately to decompose.
+- Do NOT create scenarios — the user runs `/gov:elaborate` separately to decompose.
 - Read only what is needed: existing spec directory names (for numbering), the spec template, and `README.md` (for the feature table). Do NOT read other specs' contents unless checking for naming conflicts.
 - Reference: §spec-phase, §spec-requirements, §brownfield-process, §numbering.
 
@@ -54,6 +54,6 @@ If the constitution has not been loaded in this session (e.g., `/gov:target` has
     >
     > What to do next — depends on why you captured this:
     >
-    > - `/gov:scenario` — capture a bug or edge case
+    > - `/gov:elaborate` — capture a bug or edge case
     > - `/gov:clarify` — flesh out the spec
     > - Leave at `draft` and come back when real work arrives

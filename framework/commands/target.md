@@ -39,7 +39,7 @@ If `$ARGUMENTS` is empty or contains only whitespace (note: `0`, `00`, `000`, or
 5. Check which artifacts exist: `spec.md` (or `spec-and-plan.md`), `plan.md`, `tasks.md`, `data-model.md`.
 
 6. **Resolve scenario (if provided):**
-   - Check if `specs/{feature}/scenarios/` directory exists. If not, report: "No scenarios exist for this feature. Run `/{project}:scenario` to create one."
+   - Check if `specs/{feature}/scenarios/` directory exists. If not, report: "No scenarios exist for this feature. Run `/{project}:elaborate` to create one."
    - List `.md` files in `specs/{feature}/scenarios/`.
    - Match `{scenario-slug}` against filenames (without `.md` extension). If no match, list available scenarios and ask the user to choose.
    - Read the scenario file to extract spec-ref and context summary.
@@ -81,4 +81,4 @@ If `$ARGUMENTS` is empty or contains only whitespace (note: `0`, `00`, `000`, or
      - `clarified` → `/{project}:plan`
      - `planned` → `/{project}:implement`
      - `in-progress` → `/{project}:implement`
-     - `done` → ask the user if they want to reopen this spec. If yes, update the spec status to `in-progress` and suggest `/{project}:scenario` to capture the change. If no, confirm the spec is complete.
+     - `done` → ask the user if they want to reopen this spec. If yes, update the spec status to `in-progress` and suggest `/{project}:elaborate` to capture the change. If no, confirm the spec is complete.

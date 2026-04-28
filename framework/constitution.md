@@ -83,7 +83,26 @@ specs/
 | `in-progress` | Implementation has started |
 | `done` | All acceptance criteria verified, code merged |
 
-A spec advances forward through these states. Moving backward (e.g., `planned` → `clarified`) is allowed when new questions surface during implementation. A `done` spec is reopened by adding a new scenario — the scenario captures the change, and the spec status moves to `in-progress`. The spec then follows the normal pipeline from that point. This avoids spec proliferation; scenarios evolve the existing spec rather than spawning a new one.
+```text
+draft ──/clarify──▶ clarified ──/plan──▶ planned ──/implement──▶ in-progress ──/implement──▶ done
+```
+
+Forward edges only — `/clarify` raises status to `clarified`, `/plan` to `planned`, `/implement` to `in-progress` and then to `done`. Two back-edges exist:
+
+- **Backward via new questions** — `planned` or `in-progress` → `clarified` when `/ask` records a new open question. The next `/clarify` resolves it and the spec advances forward again.
+- **Backward via new scenario** — `done` → `in-progress` when `/elaborate` adds a scenario. The scenario's task is implemented and the spec returns to `done`.
+
+This avoids spec proliferation; scenarios evolve the existing spec rather than spawning a new one.
+
+#### The three cycles
+
+Every spec moves through one of three cycles depending on where it starts and whether new behavior surfaces:
+
+1. **Greenfield** — `/specify` → `/clarify` → `/plan` → `/implement` → `done`. A new feature designed from scratch.
+2. **Brownfield** — `/capture` (sketch spec) → real work touches the area → `/elaborate` to add a scenario, or `/clarify` to resolve open questions, or both → `/implement` → `done`. Existing reality being absorbed into specs incrementally.
+3. **Reopen** — a `done` spec is revisited because a bug, edge case, or change request surfaces. `/elaborate` adds a scenario, the spec moves back to `in-progress`, and the next pipeline command resumes from there.
+
+All three converge on the same pipeline; what differs is where the spec enters and how precision accumulates.
 
 <!-- §plan-phase -->
 
@@ -254,13 +273,13 @@ Promotion is a user decision, not automated. The framework provides the pattern;
 
 ### Brownfield Inbox
 
-For projects adopting governance incrementally, a `specs/inbox.md` file serves as a temporary inbox for known issues not yet assigned to a feature spec.
+For projects adopting governance incrementally, a `specs/inbox.md` file serves as a temporary inbox for known issues not yet assigned to a feature spec. Items are recorded with `/log` and groomed into their proper home with `/groom`.
 
 Inbox rules:
 
 - Do not frontfill bugs that are not being actively worked on
 - Write specs for areas being actively touched — let adoption spread naturally
-- As specs are written, items migrate from the inbox into their proper home
+- As specs are written, `/groom` migrates items from the inbox into their proper home
 - The goal is for `inbox.md` to eventually be empty and deleted
 
 <!-- §brownfield-process -->
@@ -282,7 +301,7 @@ Over time the spec converges on a complete description of the feature — not fr
 
 #### Inbox integration
 
-When an inbox item does not map to any existing spec, `/inbox` directs the user to run `/capture` to initialize a spec first, then return to process the item. The commands stay decoupled — `/inbox` processes items, `/capture` creates specs.
+When a `/groom` pass encounters an item that does not map to any existing spec, `/groom` directs the user to run `/capture` to initialize a spec first, then return to process the item. The commands stay decoupled — `/log` records, `/groom` routes, `/capture` creates specs.
 
 <!-- §pipeline-boundaries -->
 

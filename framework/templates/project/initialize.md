@@ -1,10 +1,10 @@
 # Initialize
 
-Post-copy setup for projects created from this one via `/{project}:create`. This command is called automatically by the create command after generic scaffolding is complete — it is not intended to be run directly.
+Post-copy setup for projects spawned from this one via `/{project}:spawn`. This command is called automatically by the spawn command after generic scaffolding is complete — it is not intended to be run directly.
 
 ## Purpose
 
-The create command handles language-agnostic scaffolding: copying specs, commands, configuration, and implementation files, then renaming project references in markdown files. This command handles everything language-specific and project-specific that create cannot do generically, such as:
+The spawn command handles language-agnostic scaffolding: copying specs, commands, configuration, and implementation files, then renaming project references in markdown files. This command handles everything language-specific and project-specific that spawn cannot do generically, such as:
 
 - Renaming module paths and import statements in source code
 - Updating build configuration files with the new project name
@@ -13,7 +13,7 @@ The create command handles language-agnostic scaffolding: copying specs, command
 
 ## Context
 
-This command runs in the new project directory. It receives the following inputs from the create command:
+This command runs in the new project directory. It receives the following inputs from the spawn command:
 
 - `{slug}` — the new project slug
 - `{display-name}` — the new project display name
@@ -23,9 +23,9 @@ This command runs in the new project directory. It receives the following inputs
 ## Steps
 
 <!-- Fill in the language-specific and project-specific post-copy steps for your
-     tech stack. The create command handles generic scaffolding (copying specs,
+     tech stack. The spawn command handles generic scaffolding (copying specs,
      commands, markdown files, renaming project references in markdown). This
-     command handles everything create cannot do generically.
+     command handles everything spawn cannot do generically.
 
      Common steps to include:
 
@@ -40,7 +40,7 @@ This command runs in the new project directory. It receives the following inputs
         (e.g., go mod tidy, npm install, bundle install)
 
      4. **Update project metadata** — any project-specific references in config
-        files that the generic rename in create.md would miss (e.g., binary
+        files that the generic rename in spawn.md would miss (e.g., binary
         names, container image tags, service names)
 
      Delete this comment block and replace it with your concrete steps. See

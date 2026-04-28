@@ -5,13 +5,16 @@ Standards and conventions for spec-driven software development. This project def
 ## Contents
 
 - [framework/](framework/) — Everything that ships to adopting projects
-  - [framework/rules/](framework/rules/) — Normative documents distributed verbatim
-    - [constitution.md](framework/rules/constitution.md) — Guiding principles, development pipeline, spec lifecycle, quality standards
+  - [constitution.md](framework/constitution.md) — Guiding principles, development pipeline, spec lifecycle, quality standards. Authoritative.
+  - [framework/rules/](framework/rules/) — Domain rule sets adopted by reference
     - [security-backend.md](framework/rules/security-backend.md) — Enforceable backend security rules (RFC 2119)
     - [security-frontend.md](framework/rules/security-frontend.md) — Enforceable frontend security rules (RFC 2119)
-  - [framework/templates/](framework/templates/) — Starter files customized per project (specs, plans, tasks, data models, agents.md, project README)
-  - [framework/commands/](framework/commands/) — Slash command templates that operationalize the pipeline, including the `govern.md` installer
-- [docs/spec-driven-development.md](docs/spec-driven-development.md) — What spec-driven development is, how it differs from other approaches, and repository structure patterns
+  - [framework/templates/](framework/templates/) — Starter files customized per project, split by consumer
+    - `templates/spec/` — Templates consumed during the pipeline (spec, plan, tasks, data-model, research, scenario, spec-and-plan)
+    - `templates/project/` — Templates consumed during adoption (agents.md, claude-md.md, system.md, errors.md, events.md, project-readme.md, gitignore, inbox.md, initialize.md)
+  - [framework/commands/](framework/commands/) — Slash command sources for the operational commands
+  - [framework/bootstrap/](framework/bootstrap/) — The `govern.md` installer plus per-agent permission files (`configure/{agent}.md`)
+- [docs/introduction.md](docs/introduction.md) — Long-form pitch for spec-driven development. The constitution is authoritative for normative rules.
 - [specs/](specs/) — Feature specs for governance itself (dogfooding the pipeline)
 - [scripts/](scripts/) — Maintenance scripts (e.g., regenerate `.claude/commands/gov/` from `framework/commands/`)
 
@@ -45,7 +48,7 @@ For brownfield projects, install the govern command and run it — no clone requ
 
 ```bash
 mkdir -p .claude/commands
-curl -fsSL https://raw.githubusercontent.com/stonean/govern/main/framework/commands/govern.md \
+curl -fsSL https://raw.githubusercontent.com/stonean/govern/main/framework/bootstrap/govern.md \
   > .claude/commands/govern.md
 ```
 
@@ -55,7 +58,7 @@ Then run `/govern {project-name}`.
 
 ```bash
 mkdir -p .augment/commands
-curl -fsSL https://raw.githubusercontent.com/stonean/govern/main/framework/commands/govern.md \
+curl -fsSL https://raw.githubusercontent.com/stonean/govern/main/framework/bootstrap/govern.md \
   > .augment/commands/govern.md
 ```
 
@@ -67,17 +70,9 @@ The same `govern.md` supports every CLI listed above. Use whichever curl snippet
 
 ## Slash Commands
 
-Adoption installs a full set of slash commands that operationalize the pipeline. All commands are session-aware — run `/target` first to set the working feature, then use pipeline commands in context.
+Adoption installs a full set of slash commands that operationalize the pipeline. All commands are verb-named and session-aware — run `/target` first to set the working feature, then use pipeline commands in context.
 
-### Session and navigation
-
-| Command | Purpose |
-| --- | --- |
-| `/target` | Set the working feature (or `feature/scenario`) for the session |
-| `/status` | Dashboard showing all features' progress, or focused view of the current target |
-| `/about` | Display project overview, constitution summary, and governance version |
-
-### Pipeline
+### Pipeline (advance state)
 
 | Command | Purpose |
 | --- | --- |
@@ -87,21 +82,36 @@ Adoption installs a full set of slash commands that operationalize the pipeline.
 | `/implement` | Work through tasks, update spec status to `in-progress` then `done` |
 | `/validate` | Audit spec, plan, tasks, and scenarios for completeness and consistency. `--all` scans every feature. `--fix` auto-corrects fixable checkbox mismatches. Composable: `--all --fix` |
 
-### Bug workflow
+### Elaborate (add precision)
 
 | Command | Purpose |
 | --- | --- |
-| `/question` | Ask a question about the current feature or scenario |
-| `/scenario` | Create a scenario for a bug fix, edge case, or behavior clarification |
-| `/inbox` | Walk inbox.md items through the bug decision tree |
-| `/capture` | Initialize a skeleton spec from freeform description of an existing feature |
+| `/ask` | Append an open question to the targeted spec or scenario for resolution during clarify |
+| `/elaborate` | Add a scenario to elaborate a section of the targeted feature (bug fix, edge case, detailed behavior) |
 
-### Utilities
+### Brownfield (absorb existing reality)
 
 | Command | Purpose |
 | --- | --- |
-| `/setup` | Configure agent permissions for governance commands |
-| `/create` | Create a new spec artifact (plan, tasks, data model, scenario) |
+| `/capture` | Initialize a skeleton spec from a freeform description of an existing feature |
+| `/log` | Record a raw item to `specs/inbox.md` for later grooming |
+| `/groom` | Walk `specs/inbox.md` and route each item to its proper spec or scenario via the bug decision tree |
+
+### Orient
+
+| Command | Purpose |
+| --- | --- |
+| `/target` | Set the working feature (or `feature/scenario`) for the session |
+| `/status` | Dashboard showing all features' progress, or focused view of the current target |
+| `/help` | Display project overview and slash command reference |
+
+### Bootstrap (one-time per project)
+
+| Command | Purpose |
+| --- | --- |
+| `/govern` | Adopt or update governance in an existing project (the installer that placed every other command) |
+| `/configure` | Configure agent permissions for governance commands |
+| `/spawn` | Spawn a new project from this one — copies specs, commands, configuration, and (if present) implementation code |
 
 ## Starting a New Project
 
@@ -120,8 +130,8 @@ Copy these files from governance into your project root:
 
 | Source | Destination | Purpose |
 | --- | --- | --- |
-| `framework/rules/constitution.md` | `constitution.md` | Principles, pipeline, spec lifecycle — customize the intro, keep the rest |
-| `framework/templates/agents.md` | `AGENTS.md` | Agent rules template — fill in every section for your tech stack |
+| `framework/constitution.md` | `constitution.md` | Principles, pipeline, spec lifecycle — customize the intro, keep the rest |
+| `framework/templates/project/agents.md` | `AGENTS.md` | Agent rules template — fill in every section for your tech stack |
 | `.markdownlint-cli2.jsonc` | `.markdownlint-cli2.jsonc` | Markdown linting config — use as-is |
 
 ### 3. Fill in AGENTS.md
@@ -161,7 +171,7 @@ Alternatively, create one manually:
 
 ```bash
 mkdir specs/000-skeleton
-cp /path/to/governance/framework/templates/spec.md specs/000-skeleton/spec.md
+cp /path/to/governance/framework/templates/spec/spec.md specs/000-skeleton/spec.md
 ```
 
 ### 7. Work through the pipeline
@@ -185,16 +195,31 @@ Projects can reference these rules in their AGENTS.md or validate command to enf
 
 ## Templates Reference
 
+Spec-pipeline templates (consumed by an agent during the pipeline):
+
 | Template | When to use |
 | --- | --- |
-| [spec.md](framework/templates/spec.md) | Starting a new feature — requirements, acceptance criteria, open questions |
-| [spec-and-plan.md](framework/templates/spec-and-plan.md) | Lightweight track — combined spec and plan for small, single-module features |
-| [plan.md](framework/templates/plan.md) | Planning phase — technical decisions, affected files, resolved questions |
-| [tasks.md](framework/templates/tasks.md) | Tasks phase — ordered work items derived from the plan |
-| [data-model.md](framework/templates/data-model.md) | Plan phase — when the feature involves database persistence |
-| [research.md](framework/templates/research.md) | Optional — background research, prior art, references |
-| [scenario.md](framework/templates/scenario.md) | Bug workflow — scenario capturing specific behavior, edge case, or bug fix |
-| [inbox.md](framework/templates/inbox.md) | Bug workflow — temporary inbox for known issues during brownfield adoption |
+| [spec.md](framework/templates/spec/spec.md) | Starting a new feature — requirements, acceptance criteria, open questions |
+| [spec-and-plan.md](framework/templates/spec/spec-and-plan.md) | Lightweight track — combined spec and plan for small, single-module features |
+| [plan.md](framework/templates/spec/plan.md) | Planning phase — technical decisions, affected files, resolved questions |
+| [tasks.md](framework/templates/spec/tasks.md) | Tasks phase — ordered work items derived from the plan |
+| [data-model.md](framework/templates/spec/data-model.md) | Plan phase — when the feature involves database persistence |
+| [research.md](framework/templates/spec/research.md) | Optional — background research, prior art, references |
+| [scenario.md](framework/templates/spec/scenario.md) | Brownfield/elaborate workflow — scenario capturing specific behavior, edge case, or bug fix |
+
+Project-scaffolding templates (consumed once at adoption):
+
+| Template | Purpose |
+| --- | --- |
+| [agents.md](framework/templates/project/agents.md) | `AGENTS.md` — tech stack, conventions, code style, boundaries |
+| [claude-md.md](framework/templates/project/claude-md.md) | `CLAUDE.md` — Claude Code-specific configuration |
+| [project-readme.md](framework/templates/project/project-readme.md) | Starter project README |
+| [system.md](framework/templates/project/system.md) | `specs/system.md` — architecture and shared conventions |
+| [errors.md](framework/templates/project/errors.md) | `specs/errors.md` — error handling conventions |
+| [events.md](framework/templates/project/events.md) | `specs/events.md` — global event catalog |
+| [inbox.md](framework/templates/project/inbox.md) | `specs/inbox.md` — temporary inbox for known issues during brownfield adoption |
+| [gitignore](framework/templates/project/gitignore) | Governance-related patterns merged into `.gitignore` |
+| [initialize.md](framework/templates/project/initialize.md) | Hook for `/spawn` to do tech-stack-specific post-copy work |
 
 ## Bug Workflow
 
@@ -214,7 +239,7 @@ A scenario is a spec at a lower level of abstraction. Scenarios live in `specs/N
 
 ### Inbox
 
-For brownfield projects, `specs/inbox.md` is a temporary inbox. Items are migrated to specs or scenarios as the project adopts governance. The goal is for the inbox to eventually be empty.
+For brownfield projects, `specs/inbox.md` is a temporary inbox. Items are recorded with `/log` and groomed into specs or scenarios with `/groom`. The goal is for the inbox to eventually be empty.
 
 ## Updating an Adopted Project
 
@@ -255,8 +280,8 @@ Governance currently distributes to two AI coding agents:
 - **Claude Code** — `.claude/` paths, `/govern` and `/gov:*` commands
 - **Auggie** — `.augment/` paths, `/govern` command variant
 
-Adding a new agent is a single registry row plus an agent-specific `framework/commands/setup/{key}.md` permission file — see [framework/commands/govern.md](framework/commands/govern.md#agent-registry) for the full rules.
+Adding a new agent is a single registry row plus an agent-specific `framework/bootstrap/configure/{key}.md` permission file — see [framework/bootstrap/govern.md](framework/bootstrap/govern.md#agent-registry) for the full rules.
 
 ## Markdown
 
-All `.md` files must pass `npx markdownlint-cli2` using the project config. See [constitution.md](framework/rules/constitution.md#markdown-standards) for the full rule set.
+All `.md` files must pass `npx markdownlint-cli2` using the project config. See [constitution.md](framework/constitution.md#markdown-standards) for the full rule set.
