@@ -4,7 +4,7 @@ Scaffold a new project with governance files, templates, and slash commands.
 
 ## Purpose
 
-Automates the manual bootstrap process from the governance README. Creates a complete project directory with all governance files, spec templates, and slash commands ready to use. This command is governance-specific — it does not exist in the `commands/` template set.
+Automates the manual bootstrap process from the governance README. Creates a complete project directory with all governance files, spec templates, and slash commands ready to use. This command is governance-specific — it does not exist in the `framework/commands/` template set.
 
 ## Inputs
 
@@ -57,14 +57,14 @@ git init
 
 ### 2. Copy governance files
 
-Copy these files from the governance repo root into the new project root:
+Copy these files from the governance repo into the new project root:
 
-- `constitution.md`
-- `.markdownlint-cli2.jsonc`
+- `framework/rules/constitution.md` → `constitution.md`
+- `.markdownlint-cli2.jsonc` → `.markdownlint-cli2.jsonc`
 
 ### 3. Copy and customize AGENTS.md
 
-Copy `AGENTS.md` from the governance repo into the new project root. Replace every `{project-name}` placeholder with the user-provided project slug. Replace `{One-line project description.}` with the user-provided description.
+Copy `framework/templates/agents.md` from the governance repo into the new project root as `AGENTS.md`. Replace every `{project-name}` placeholder with the user-provided project slug. Replace `{One-line project description.}` with the user-provided description.
 
 Then, if the user selected any technologies in the tech stack questionnaire (step 4), replace the Tech Stack comment placeholder with an actual table. Build the table from the user's selections using this layer-to-role mapping:
 
@@ -87,19 +87,19 @@ Only include rows for categories the user answered (not skipped). If all categor
 
 ### 4. Create CLAUDE.md
 
-Copy `templates/claude-md.md` from the governance repo into the new project as `CLAUDE.md`.
+Copy `framework/templates/claude-md.md` from the governance repo into the new project as `CLAUDE.md`.
 
 ### 5. Create specs directory with system spec templates
 
-Create `specs/` and copy these files from `templates/` in the governance repo:
+Create `specs/` and copy these files from `framework/templates/` in the governance repo:
 
-- `templates/system.md` → `specs/system.md`
-- `templates/errors.md` → `specs/errors.md`
-- `templates/events.md` → `specs/events.md`
+- `framework/templates/system.md` → `specs/system.md`
+- `framework/templates/errors.md` → `specs/errors.md`
+- `framework/templates/events.md` → `specs/events.md`
 
 ### 6. Copy spec templates
 
-Create `specs/templates/` and copy all spec development templates from `templates/` in the governance repo:
+Create `specs/templates/` and copy all spec development templates from `framework/templates/` in the governance repo:
 
 - `spec.md`
 - `spec-and-plan.md`
@@ -111,13 +111,13 @@ Create `specs/templates/` and copy all spec development templates from `template
 
 ### 7. Copy slash command templates
 
-Create `.claude/commands/{slug}/` and copy every `.md` file from the governance repo's `commands/` directory into it. In each copied file, replace every `{project}` with the user-provided project name and every `{cli-config-dir}` with `.claude`.
+Create `.claude/commands/{slug}/` and copy every `.md` file from the governance repo's `framework/commands/` directory into it (excluding `govern.md` and the `setup/` subdirectory — those are handled separately by govern). In each copied file, replace every `{project}` with the user-provided project name and every `{cli-config-dir}` with `.claude`.
 
-Additionally, copy `templates/initialize.md` from the governance repo into `.claude/commands/{slug}/initialize.md`. Replace `{project}` with the user-provided project name. This provides a stub initialize command that the project fills in with language-specific post-copy steps for use by the create command.
+Additionally, copy `framework/templates/initialize.md` from the governance repo into `.claude/commands/{slug}/initialize.md`. Replace `{project}` with the user-provided project name. This provides a stub initialize command that the project fills in with language-specific post-copy steps for use by the create command.
 
 ### 8. Create .gitignore
 
-Copy `templates/gitignore` from the governance repo into the new project as `.gitignore`.
+Copy `framework/templates/gitignore` from the governance repo into the new project as `.gitignore`.
 
 Then, for each language selected in the tech stack questionnaire (backend language and/or frontend language from step 4), fetch the language-specific patterns:
 
@@ -136,7 +136,7 @@ If a fetch fails (404 or network error), report the failure and continue with th
 
 ### 9. Create README.md
 
-Copy `templates/project-readme.md` from the governance repo into the new project as `README.md`. Replace every `{project}` with the user-provided project name. Replace `{Brief description of what this project does.}` with the user-provided description.
+Copy `framework/templates/project-readme.md` from the governance repo into the new project as `README.md`. Replace every `{project}` with the user-provided project name. Replace `{Brief description of what this project does.}` with the user-provided description.
 
 ### 10. Create session file
 

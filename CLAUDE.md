@@ -1,5 +1,15 @@
 # Governance Repo Rules
 
-## Command File Parity
+## Command Source of Truth
 
-Commands exist in two locations: `commands/` (platform-agnostic templates) and `.claude/commands/gov/` (Claude Code instances). Any change to a command must be applied to both files. The `.claude/commands/gov/` versions use `/gov:` prefixes and `.claude/gov-session.json`; the `commands/` versions use `/{project}:` prefixes and `{cli-config-dir}/{project}-session.json`.
+All slash command templates live in `framework/commands/`. The Claude Code instances under `.claude/commands/gov/` are **generated** from those sources by `scripts/gen-claude-commands.sh`.
+
+Never edit `.claude/commands/gov/*.md` directly — your changes will be overwritten the next time the generator runs. Edit the source under `framework/commands/`, then run:
+
+```bash
+./scripts/gen-claude-commands.sh
+```
+
+The generator substitutes `{project}` → `gov` and `{cli-config-dir}` → `.claude` and writes the agent-specific setup file (`framework/commands/setup/claude.md`) as `setup.md` in the gov command directory.
+
+`.claude/commands/gov/init.md` is the one exception — it is governance-specific (no source counterpart) and is hand-maintained. The generator leaves it untouched.

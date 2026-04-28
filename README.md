@@ -4,19 +4,22 @@ Standards and conventions for spec-driven software development. This project def
 
 ## Contents
 
-- [constitution.md](constitution.md) — Guiding principles, development pipeline, spec lifecycle, and quality standards
-- [sdd-context.md](sdd-context.md) — What spec-driven development is, how it differs from other approaches, and repository structure patterns
-- [templates/](templates/) — Starter files for specs, plans, tasks, data models, and research
-- [commands/](commands/) — Slash command templates that operationalize the pipeline
-- [govern/](govern/) — Platform-specific adopt commands (Claude Code, Auggie)
-- [AGENTS.md](AGENTS.md) — Agent rules template for AI-assisted development
-- [security-backend.md](security-backend.md) — Enforceable backend security rules (RFC 2119)
-- [security-frontend.md](security-frontend.md) — Enforceable frontend security rules (RFC 2119)
+- [framework/](framework/) — Everything that ships to adopting projects
+  - [framework/rules/](framework/rules/) — Normative documents distributed verbatim
+    - [constitution.md](framework/rules/constitution.md) — Guiding principles, development pipeline, spec lifecycle, quality standards
+    - [security-backend.md](framework/rules/security-backend.md) — Enforceable backend security rules (RFC 2119)
+    - [security-frontend.md](framework/rules/security-frontend.md) — Enforceable frontend security rules (RFC 2119)
+  - [framework/templates/](framework/templates/) — Starter files customized per project (specs, plans, tasks, data models, agents.md, project README)
+  - [framework/commands/](framework/commands/) — Slash command templates that operationalize the pipeline, including the `govern.md` installer
+- [docs/spec-driven-development.md](docs/spec-driven-development.md) — What spec-driven development is, how it differs from other approaches, and repository structure patterns
 - [specs/](specs/) — Feature specs for governance itself (dogfooding the pipeline)
+- [scripts/](scripts/) — Maintenance scripts (e.g., regenerate `.claude/commands/gov/` from `framework/commands/`)
 
 ## Feature Specs
 
 Governance uses its own spec-driven pipeline to develop itself.
+
+See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred work.
 
 | Spec | Status | Dependencies | Description |
 | --- | --- | --- | --- |
@@ -42,7 +45,7 @@ For brownfield projects, install the govern command and run it — no clone requ
 
 ```bash
 mkdir -p .claude/commands
-curl -fsSL https://raw.githubusercontent.com/stonean/govern/main/govern/govern.md \
+curl -fsSL https://raw.githubusercontent.com/stonean/govern/main/framework/commands/govern.md \
   > .claude/commands/govern.md
 ```
 
@@ -52,7 +55,7 @@ Then run `/govern {project-name}`.
 
 ```bash
 mkdir -p .augment/commands
-curl -fsSL https://raw.githubusercontent.com/stonean/govern/main/govern/govern.md \
+curl -fsSL https://raw.githubusercontent.com/stonean/govern/main/framework/commands/govern.md \
   > .augment/commands/govern.md
 ```
 
@@ -115,11 +118,11 @@ git init
 
 Copy these files from governance into your project root:
 
-| File | Purpose |
-| --- | --- |
-| `constitution.md` | Principles, pipeline, spec lifecycle — customize the intro, keep the rest |
-| `AGENTS.md` | Agent rules template — fill in every section for your tech stack |
-| `.markdownlint-cli2.jsonc` | Markdown linting config — use as-is |
+| Source | Destination | Purpose |
+| --- | --- | --- |
+| `framework/rules/constitution.md` | `constitution.md` | Principles, pipeline, spec lifecycle — customize the intro, keep the rest |
+| `framework/templates/agents.md` | `AGENTS.md` | Agent rules template — fill in every section for your tech stack |
+| `.markdownlint-cli2.jsonc` | `.markdownlint-cli2.jsonc` | Markdown linting config — use as-is |
 
 ### 3. Fill in AGENTS.md
 
@@ -158,7 +161,7 @@ Alternatively, create one manually:
 
 ```bash
 mkdir specs/000-skeleton
-cp /path/to/governance/templates/spec.md specs/000-skeleton/spec.md
+cp /path/to/governance/framework/templates/spec.md specs/000-skeleton/spec.md
 ```
 
 ### 7. Work through the pipeline
@@ -175,8 +178,8 @@ Follow the pipeline defined in `constitution.md`:
 
 The governance framework includes enforceable security rules for backend and frontend code, distributed via adopt. Rules use RFC 2119 language: **MUST/MUST NOT** are blocking violations, **SHOULD/SHOULD NOT** are advisory warnings.
 
-- [security-backend.md](security-backend.md) — Authentication, authorization, input validation, data protection, API security, logging, dependency management, and error handling
-- [security-frontend.md](security-frontend.md) — XSS prevention, CSRF protection, secure storage, authentication handling, content security, and dependency management
+- [framework/rules/security-backend.md](framework/rules/security-backend.md) — Authentication, authorization, input validation, data protection, API security, logging, dependency management, and error handling
+- [framework/rules/security-frontend.md](framework/rules/security-frontend.md) — XSS prevention, CSRF protection, secure storage, authentication handling, content security, and dependency management
 
 Projects can reference these rules in their AGENTS.md or validate command to enforce security standards during development.
 
@@ -184,14 +187,14 @@ Projects can reference these rules in their AGENTS.md or validate command to enf
 
 | Template | When to use |
 | --- | --- |
-| [spec.md](templates/spec.md) | Starting a new feature — requirements, acceptance criteria, open questions |
-| [spec-and-plan.md](templates/spec-and-plan.md) | Lightweight track — combined spec and plan for small, single-module features |
-| [plan.md](templates/plan.md) | Planning phase — technical decisions, affected files, resolved questions |
-| [tasks.md](templates/tasks.md) | Tasks phase — ordered work items derived from the plan |
-| [data-model.md](templates/data-model.md) | Plan phase — when the feature involves database persistence |
-| [research.md](templates/research.md) | Optional — background research, prior art, references |
-| [scenario.md](templates/scenario.md) | Bug workflow — scenario capturing specific behavior, edge case, or bug fix |
-| [inbox.md](templates/inbox.md) | Bug workflow — temporary inbox for known issues during brownfield adoption |
+| [spec.md](framework/templates/spec.md) | Starting a new feature — requirements, acceptance criteria, open questions |
+| [spec-and-plan.md](framework/templates/spec-and-plan.md) | Lightweight track — combined spec and plan for small, single-module features |
+| [plan.md](framework/templates/plan.md) | Planning phase — technical decisions, affected files, resolved questions |
+| [tasks.md](framework/templates/tasks.md) | Tasks phase — ordered work items derived from the plan |
+| [data-model.md](framework/templates/data-model.md) | Plan phase — when the feature involves database persistence |
+| [research.md](framework/templates/research.md) | Optional — background research, prior art, references |
+| [scenario.md](framework/templates/scenario.md) | Bug workflow — scenario capturing specific behavior, edge case, or bug fix |
+| [inbox.md](framework/templates/inbox.md) | Bug workflow — temporary inbox for known issues during brownfield adoption |
 
 ## Bug Workflow
 
@@ -252,8 +255,8 @@ Governance currently distributes to two AI coding agents:
 - **Claude Code** — `.claude/` paths, `/govern` and `/gov:*` commands
 - **Auggie** — `.augment/` paths, `/govern` command variant
 
-Adding support for a new agent requires only a new `govern/govern-{agent}.md` file with platform-appropriate paths and configuration.
+Adding a new agent is a single registry row plus an agent-specific `framework/commands/setup/{key}.md` permission file — see [framework/commands/govern.md](framework/commands/govern.md#agent-registry) for the full rules.
 
 ## Markdown
 
-All `.md` files must pass `npx markdownlint-cli2` using the project config. See [constitution.md](constitution.md#markdown-standards) for the full rule set.
+All `.md` files must pass `npx markdownlint-cli2` using the project config. See [constitution.md](framework/rules/constitution.md#markdown-standards) for the full rule set.

@@ -19,7 +19,7 @@ For each agent, these paths are computed by convention from the row above. They 
 
 | Derived value | Formula |
 | --- | --- |
-| Setup source path | `commands/setup/{key}.md` |
+| Setup source path | `framework/commands/setup/{key}.md` |
 | Session JSON path | `{config_dir}/{project}-session.json` |
 | Project commands directory | `{config_dir}/commands/{project}/` |
 | Govern install path | `{config_dir}/commands/govern.md` |
@@ -29,7 +29,7 @@ For each agent, these paths are computed by convention from the row above. They 
 A new agent is one row above plus two satellite files:
 
 1. Append a row with the five required fields.
-2. Add `commands/setup/{key}.md` with the agent's full permission set in its native settings format.
+2. Add `framework/commands/setup/{key}.md` with the agent's full permission set in its native settings format.
 3. Add a curl snippet for the new agent to the README's adoption section.
 
 No other changes are required.
@@ -134,38 +134,38 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 
 | Source Path | Destination Path |
 | --- | --- |
-| `constitution.md` | `constitution.md` |
+| `framework/rules/constitution.md` | `constitution.md` |
 | `.markdownlint-cli2.jsonc` | `.markdownlint-cli2.jsonc` |
-| `templates/spec.md` | `specs/templates/spec.md` |
-| `templates/plan.md` | `specs/templates/plan.md` |
-| `templates/tasks.md` | `specs/templates/tasks.md` |
-| `templates/data-model.md` | `specs/templates/data-model.md` |
-| `templates/research.md` | `specs/templates/research.md` |
-| `templates/scenario.md` | `specs/templates/scenario.md` |
-| `templates/spec-and-plan.md` | `specs/templates/spec-and-plan.md` |
+| `framework/templates/spec.md` | `specs/templates/spec.md` |
+| `framework/templates/plan.md` | `specs/templates/plan.md` |
+| `framework/templates/tasks.md` | `specs/templates/tasks.md` |
+| `framework/templates/data-model.md` | `specs/templates/data-model.md` |
+| `framework/templates/research.md` | `specs/templates/research.md` |
+| `framework/templates/scenario.md` | `specs/templates/scenario.md` |
+| `framework/templates/spec-and-plan.md` | `specs/templates/spec-and-plan.md` |
 
 ### Project-specific shared files (strategy: create)
 
 | Source Path | Destination Path |
 | --- | --- |
-| `templates/system.md` | `specs/system.md` |
-| `templates/errors.md` | `specs/errors.md` |
-| `templates/events.md` | `specs/events.md` |
-| `templates/inbox.md` | `specs/inbox.md` |
+| `framework/templates/system.md` | `specs/system.md` |
+| `framework/templates/errors.md` | `specs/errors.md` |
+| `framework/templates/events.md` | `specs/events.md` |
+| `framework/templates/inbox.md` | `specs/inbox.md` |
 
 ### Shared files with conflict handling
 
-**AGENTS.md** (strategy: skip) — if it exists, leave it alone. If not, fetch `AGENTS.md` from the governance repo root and substitute `{project-name}` with the project name and `{One-line project description.}` with the project description.
+**AGENTS.md** (strategy: skip) — if it exists, leave it alone. If not, fetch `framework/templates/agents.md` from the governance repo and copy it as `AGENTS.md`, substituting `{project-name}` with the project name and `{One-line project description.}` with the project description.
 
-**CLAUDE.md** (strategy: skip) — if it exists, leave it alone. If not, fetch `templates/claude-md.md` from the governance repo and copy it as `CLAUDE.md`. Both supported agents read `CLAUDE.md` natively (see each row's `rules_file_note`).
+**CLAUDE.md** (strategy: skip) — if it exists, leave it alone. If not, fetch `framework/templates/claude-md.md` from the governance repo and copy it as `CLAUDE.md`. Both supported agents read `CLAUDE.md` natively (see each row's `rules_file_note`).
 
 **.gitignore** (strategy: merge) — if it exists, check for a `# Governance` comment header. If the header exists, skip (already merged). If no header, append governance patterns below existing content:
 
-1. Fetch `templates/gitignore` from the governance repo.
+1. Fetch `framework/templates/gitignore` from the governance repo.
 2. Append its content below a `# Governance` comment header.
 3. For each primary language provided by the user, fetch from `https://raw.githubusercontent.com/github/gitignore/main/{Language}.gitignore` and append below a `# {Language}` comment header.
 
-If `.gitignore` does not exist, create it from `templates/gitignore` plus language patterns.
+If `.gitignore` does not exist, create it from `framework/templates/gitignore` plus language patterns.
 
 ## Per-Agent Scaffolding
 
@@ -177,7 +177,7 @@ Created on first run, skipped on re-run.
 
 | Source Path | Destination Path |
 | --- | --- |
-| `templates/initialize.md` | `{config_dir}/commands/{project}/initialize.md` |
+| `framework/templates/initialize.md` | `{config_dir}/commands/{project}/initialize.md` |
 
 ### Slash commands (strategy: update)
 
@@ -185,22 +185,22 @@ Fetch each command template and copy it into `{config_dir}/commands/{project}/`.
 
 | Source Path | Destination Path |
 | --- | --- |
-| `commands/about.md` | `{config_dir}/commands/{project}/about.md` |
-| `commands/clarify.md` | `{config_dir}/commands/{project}/clarify.md` |
-| `commands/implement.md` | `{config_dir}/commands/{project}/implement.md` |
-| `commands/plan.md` | `{config_dir}/commands/{project}/plan.md` |
-| `commands/question.md` | `{config_dir}/commands/{project}/question.md` |
-| `commands/scenario.md` | `{config_dir}/commands/{project}/scenario.md` |
-| `commands/setup/{key}.md` | `{config_dir}/commands/{project}/setup.md` |
-| `commands/specify.md` | `{config_dir}/commands/{project}/specify.md` |
-| `commands/status.md` | `{config_dir}/commands/{project}/status.md` |
-| `commands/target.md` | `{config_dir}/commands/{project}/target.md` |
-| `commands/inbox.md` | `{config_dir}/commands/{project}/inbox.md` |
-| `commands/validate.md` | `{config_dir}/commands/{project}/validate.md` |
-| `commands/capture.md` | `{config_dir}/commands/{project}/capture.md` |
-| `commands/create.md` | `{config_dir}/commands/{project}/create.md` |
+| `framework/commands/about.md` | `{config_dir}/commands/{project}/about.md` |
+| `framework/commands/clarify.md` | `{config_dir}/commands/{project}/clarify.md` |
+| `framework/commands/implement.md` | `{config_dir}/commands/{project}/implement.md` |
+| `framework/commands/plan.md` | `{config_dir}/commands/{project}/plan.md` |
+| `framework/commands/question.md` | `{config_dir}/commands/{project}/question.md` |
+| `framework/commands/scenario.md` | `{config_dir}/commands/{project}/scenario.md` |
+| `framework/commands/setup/{key}.md` | `{config_dir}/commands/{project}/setup.md` |
+| `framework/commands/specify.md` | `{config_dir}/commands/{project}/specify.md` |
+| `framework/commands/status.md` | `{config_dir}/commands/{project}/status.md` |
+| `framework/commands/target.md` | `{config_dir}/commands/{project}/target.md` |
+| `framework/commands/inbox.md` | `{config_dir}/commands/{project}/inbox.md` |
+| `framework/commands/validate.md` | `{config_dir}/commands/{project}/validate.md` |
+| `framework/commands/capture.md` | `{config_dir}/commands/{project}/capture.md` |
+| `framework/commands/create.md` | `{config_dir}/commands/{project}/create.md` |
 
-The setup row uses the agent-specific source `commands/setup/{key}.md` and writes it as the canonical `setup.md` in the project's command directory.
+The setup row uses the agent-specific source `framework/commands/setup/{key}.md` and writes it as the canonical `setup.md` in the project's command directory.
 
 ### Slash command cleanup
 
@@ -217,7 +217,7 @@ Create `{config_dir}/{project}-session.json` with empty content `{}` only if it 
 
 ### Govern self-installation (strategy: update)
 
-Fetch `govern/govern.md` and write it to `{config_dir}/commands/govern.md`. This is the same unified file the user is currently running, copied into every selected agent's command directory so the command is invokable from that agent on subsequent runs.
+Fetch `framework/commands/govern.md` and write it to `{config_dir}/commands/govern.md`. This is the same unified file the user is currently running, copied into every selected agent's command directory so the command is invokable from that agent on subsequent runs.
 
 In this file (and only this file), keep `{project}` and `{cli-config-dir}` as literal placeholders — do **not** substitute. Govern itself reads `$ARGUMENTS` for the project name on each run.
 
