@@ -1,7 +1,7 @@
 ---
 status: done
 dependencies: [006-bug-workflow, 007-govern-workflow]
-tags: []
+tags: [brownfield, process]
 ---
 
 # 011 — Brownfield Process

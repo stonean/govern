@@ -180,3 +180,12 @@ These tasks may proceed in parallel within a session. Each command file is touch
 - [x] Edit `framework/constitution.md` §text-first-artifacts to draw the markdown-vs-non-markdown distinction in the structured-derived-view rule. Markdown derived views may be committed when their diffs are valuable to humans; non-markdown derived views (SQLite, JSON, binary, generated graph data) remain gitignored.
 
 Done when: the scenario's described behavior is correctly implemented in `framework/constitution.md` and the file lints clean.
+
+### 25. Tag-curation pass across all specs
+
+- [x] Walked every `specs/*/spec.md` and reviewed the `tags:` frontmatter. 10 specs (000, 001, 002, 003, 004, 006, 007, 009, 011, 012) had empty `tags: []`; populated each. 4 specs (005, 008, 010, 013) had pre-existing tags; reviewed and kept as-is.
+- [x] Used a coherent taxonomy drawn from values already in use (`bootstrap`, `templates`, `format`, `migration`, `pipeline`, `agent`, `process`, `security`) plus three new shared values (`commands`, `scenarios`, `brownfield`) where existing tags would have been misleading.
+- [x] All values are lowercase, short, and 1–3 tags per spec.
+- [x] Repo lints clean (verified at end of Phase 8 after task 14 in 000 also lands).
+
+Done when: every `specs/*/spec.md` has a non-empty, coherent `tags` value and the repo lints clean.

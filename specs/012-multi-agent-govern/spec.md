@@ -1,7 +1,7 @@
 ---
 status: done
 dependencies: [007-govern-workflow]
-tags: []
+tags: [bootstrap, agent]
 ---
 
 # 012 — Multi-Agent Govern

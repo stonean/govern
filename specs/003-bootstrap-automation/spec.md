@@ -1,7 +1,7 @@
 ---
 status: done
 dependencies: [000-slash-commands, 001-system-spec-templates, 002-project-scaffolding]
-tags: []
+tags: [bootstrap, commands]
 ---
 
 # 003 — Bootstrap Automation

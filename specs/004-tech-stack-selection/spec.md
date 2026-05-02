@@ -1,7 +1,7 @@
 ---
 status: done
 dependencies: [003-bootstrap-automation]
-tags: []
+tags: [bootstrap]
 ---
 
 # 004 — Tech Stack Selection

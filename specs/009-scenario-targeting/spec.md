@@ -1,7 +1,7 @@
 ---
 status: done
 dependencies: [006-bug-workflow]
-tags: []
+tags: [scenarios, pipeline]
 ---
 
 # 009 — Scenario Targeting

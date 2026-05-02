@@ -1,7 +1,7 @@
 ---
 status: done
 dependencies: []
-tags: []
+tags: [templates, pipeline]
 ---
 
 # 001 — System Spec Templates

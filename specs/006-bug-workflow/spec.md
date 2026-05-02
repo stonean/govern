@@ -1,7 +1,7 @@
 ---
 status: done
 dependencies: []
-tags: []
+tags: [process, scenarios, brownfield]
 ---
 
 # 006 — Bug Workflow
