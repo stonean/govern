@@ -15,7 +15,7 @@ Configure `.claude/settings.local.json` with the permissions needed for slash co
    - `WebFetch`
    - `WebSearch`
 
-   **Bash commands used by skills (read-only shell operations):**
+   **Bash commands used by workflows (read-only shell operations):**
    - `Bash(ls *)`
    - `Bash(for *)`
    - `Bash(head *)`

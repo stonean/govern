@@ -31,7 +31,7 @@ See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred 
 | [002-project-scaffolding](specs/002-project-scaffolding/spec.md) | done | 000, 001 | README, .gitignore, CLAUDE.md, and session file templates |
 | [003-bootstrap-automation](specs/003-bootstrap-automation/spec.md) | done | 000, 001, 002 | Slash commands and /gov:init for scaffolding new projects |
 | [004-tech-stack-selection](specs/004-tech-stack-selection/spec.md) | done | 003 | Interactive tech stack questionnaire during init that populates AGENTS.md |
-| [005-skills-and-plugins](specs/005-skills-and-plugins/spec.md) | planned | 004 | Recommend and scaffold skills/plugins based on tech stack during init |
+| [005-workflows](specs/005-workflows/spec.md) | in-progress | 004 | Recommend and scaffold development workflows (lint, test, format, migrate) based on tech stack during init |
 | [006-bug-workflow](specs/006-bug-workflow/spec.md) | done | none | Scenario support, bug decision tree, and brownfield triage |
 | [007-govern-workflow](specs/007-govern-workflow/spec.md) | done | 003 | Self-contained govern command to bootstrap and update governance in existing projects |
 | [008-security-rules](specs/008-security-rules/spec.md) | draft | 007 | Enforceable backend and frontend security rules distributed via adopt |

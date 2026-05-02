@@ -125,7 +125,7 @@ Phases 2 and 3 can run in parallel within the same session; everything else is s
 | `specs/002-project-scaffolding/spec.md` | Migrate | Self-migration |
 | `specs/003-bootstrap-automation/spec.md` | Migrate | Self-migration |
 | `specs/004-tech-stack-selection/spec.md` | Migrate | Self-migration |
-| `specs/005-skills-and-plugins/spec.md` | Migrate | Self-migration |
+| `specs/005-workflows/spec.md` | Migrate | Self-migration |
 | `specs/006-bug-workflow/spec.md` | Migrate | Self-migration |
 | `specs/007-govern-workflow/spec.md` | Migrate | Self-migration |
 | `specs/008-security-rules/spec.md` | Migrate | Self-migration |

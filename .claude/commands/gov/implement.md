@@ -10,6 +10,25 @@ Pipeline gate: `planned` → `in-progress` → `done`. Walks through `tasks.md` 
 
 Use the session target from `.claude/gov-session.json`. If `$ARGUMENTS` is provided, use it to override the session target. If no session target is set and no arguments provided, stop and tell the user to run `/gov:target` first.
 
+### Flags
+
+`$ARGUMENTS` may include the `--auto` flag in any position. Strip it before treating remaining text as a feature override. The flag is per-invocation and is not persisted to `.claude/gov-session.json` — autonomy is an execution-time decision, not session state.
+
+When `--auto` is set:
+
+- Skip the per-task "prompt the user to commit and push changes" confirmation in **Walk through tasks** step 8. The agent commits on its own and proceeds to the next task.
+- **Commit, do not push.** Push is hard-to-reverse and externally visible; it stays gated even with `--auto`. Adopters who want auto-publish can wrap `/gov:implement --auto` in a script that pushes after each session.
+
+The following gates **still fire and pause** even with `--auto` on:
+
+- Phase transitions (`planned`→`in-progress`, `in-progress`→`done`) — confirmation required per §pipeline-boundaries.
+- Stuck-detection events (see Setup step 7) — auto mode does not power through cycles.
+- Out-of-bounds file writes (see **Walk through tasks** step 4) — modifying a file not in the plan's affected files list still requires user notification.
+- Spec edits, plan edits, or new tasks discovered mid-implement.
+- Risky actions per the agent's safety rules (destructive ops, secrets, force pushes, etc.).
+
+Default is unset — without the flag, the user confirms each task as today.
+
 ## Spec File Detection
 
 Check for `spec.md` first, then `spec-and-plan.md`. Use whichever exists for reading acceptance criteria.
@@ -40,7 +59,8 @@ Read the spec's `status` field from the YAML frontmatter at the top of the file.
 4. Read the spec file for acceptance criteria and contracts.
 5. If a scenario is targeted, read the scenario file for scenario-specific context, behavior, and edge cases. The scenario scopes which part of the feature is the primary focus for this implementation session.
 6. Note the plan's **Affected Files** list — this is the expected write boundary for implementation.
-7. If the spec's frontmatter `status` is `planned`, ask the user to approve the transition to `in-progress` before updating the status. On confirmation, update the frontmatter `status` field to `in-progress`.
+7. **Stuck-detection check.** If the spec's status is already `in-progress`, run `git log --oneline -- specs/{feature}/tasks.md` and count commits since the spec entered `in-progress`. Identify the first incomplete task (first `- [ ]` checkbox group) in `tasks.md`. If `git log` shows **≥ 3 commits** on `tasks.md` AND the same task is still the first incomplete one (no checkbox flipped to `- [x]` between those commits for that task), surface the cycle to the user with this message: `Task {N} ({title}) has been touched in {count} prior implement runs without completing. Consider decomposing it into smaller subtasks before continuing.` Pause and wait for user direction; do not auto-decompose. The threshold of 3 is fixed (not configurable in v1) — smallest count that distinguishes routine multi-session work from a cycle. Stuck-detection events fire even when `--auto` is set (auto mode does not power through cycles).
+8. If the spec's frontmatter `status` is `planned`, ask the user to approve the transition to `in-progress` before updating the status. On confirmation, update the frontmatter `status` field to `in-progress`.
 
 ### Progressive context loading
 
@@ -66,7 +86,7 @@ For each task in order:
 5. Verify the "done when" condition is met.
 6. Mark the task as complete in `tasks.md` — update each checkbox from `- [ ]` to `- [x]`, including nested sub-item checkboxes, before proceeding.
 7. Regenerate `specs/{feature}/code-locations.md` from the running map per the **Code-location index** section. Run `npx markdownlint-cli2` on the file.
-8. Prompt the user to commit and push changes.
+8. Prompt the user to commit and push changes. With `--auto` set, skip the prompt: commit on the agent's own, do not push.
 9. Before starting the next task, assess whether sufficient context remains to complete it. If context is low, inform the user and suggest starting a new session with `/gov:implement` to continue from the next incomplete task. If context is sufficient, proceed.
 
 ### Code-location index

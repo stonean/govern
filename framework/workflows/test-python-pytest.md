@@ -12,7 +12,7 @@ Run the pytest suite for the Python codebase.
 6. Summarize: passed, failed, skipped, errored counts and total duration.
 7. If any tests failed or errored, treat the run as failed.
 
-## What this skill does NOT do
+## What this workflow does NOT do
 
 - Modify test files or fixtures
 - Generate `.snapshot` or `pytest-snapshot` artifacts without confirmation

@@ -117,14 +117,14 @@ Additionally, copy `framework/bootstrap/configure/claude.md` into `.claude/comma
 
 Additionally, copy `framework/templates/project/initialize.md` from the governance repo into `.claude/commands/{slug}/initialize.md`. Replace `{project}` with the user-provided project name. This provides a stub initialize command that the project fills in with language-specific post-copy steps for use by the spawn command.
 
-### 8. Recommend and scaffold skills
+### 8. Recommend and scaffold workflows
 
-Match the user's tech stack selections from input step 4 against the skill registry and offer matching skills, grouped by category.
+Match the user's tech stack selections from input step 4 against the workflow registry and offer matching workflows, grouped by category.
 
-1. **Read the registry** at `framework/skills/registry.json` from the governance repo.
+1. **Read the registry** at `framework/workflows/registry.json` from the governance repo.
 
-   - If the file is missing or not valid JSON, warn `Skill registry not found or invalid, skipping skill recommendations` and skip the rest of this step entirely.
-   - Validate each entry against the schema in `specs/005-skills-and-plugins/data-model.md`: required fields, `category` in the fixed set, `trigger.field` in the recognized set, `template` ending in `.md`. Drop invalid entries with a per-entry warning.
+   - If the file is missing or not valid JSON, warn `Workflow registry not found or invalid, skipping workflow recommendations` and skip the rest of this step entirely.
+   - Validate each entry against the schema in `specs/005-workflows/data-model.md`: required fields, `category` in the fixed set, `trigger.field` in the recognized set, `template` ending in `.md`. Drop invalid entries with a per-entry warning.
 
 2. **Match entries against selections.** For each registry entry, look up the user's selection for `entry.trigger.field` from the in-memory tech stack questionnaire results. Compare case-insensitively against `entry.trigger.value`. Collect every matching entry.
 
@@ -132,16 +132,16 @@ Match the user's tech stack selections from input step 4 against the skill regis
 
 4. **Group matches by category** in the order: `Linting`, `Formatting`, `Testing`, `Migrations`, `Code Review`, `Deployment`. Within each category, list each match's `name` and `description`.
 
-5. **Present per-category accept/skip prompts.** For each non-empty category, ask the user via `AskUserQuestion`: "Scaffold these {category} skills?" with the matched entries listed. Options: `Yes, scaffold all in this category`, `No, skip this category`. The user must explicitly accept — no skills are scaffolded without consent.
+5. **Present per-category accept/skip prompts.** For each non-empty category, ask the user via `AskUserQuestion`: "Scaffold these {category} workflows?" with the matched entries listed. Options: `Yes, scaffold all in this category`, `No, skip this category`. The user must explicitly accept — no workflows are scaffolded without consent.
 
-6. **Scaffold accepted templates.** For each accepted entry:
+6. **Scaffold accepted workflows.** For each accepted entry:
 
-   - Read `framework/skills/templates/{entry.template}` from the governance repo.
-   - If the template file is missing, warn `Skill template {entry.template} not found, skipping` and continue with the next accepted entry. Do not abort.
+   - Read `framework/workflows/{entry.template}` from the governance repo. (The workflows directory is flat — no inner `templates/` subdirectory.)
+   - If the workflow file is missing, warn `Workflow file {entry.template} not found, skipping` and continue with the next accepted entry. Do not abort.
    - Replace every `{project}` with the user-provided project slug and every `{cli-config-dir}` with `.claude`.
-   - Write the substituted content to `.claude/commands/{slug}/skills/{entry.template}` (creating the `skills/` directory if needed).
+   - Write the substituted content to `.claude/commands/{slug}/workflows/{entry.template}` (creating the `workflows/` directory if needed).
 
-7. **Summarize.** Display a one-line summary: `Scaffolded N skills under .claude/commands/{slug}/skills/.` If zero skills were scaffolded (all categories skipped), say `No skills scaffolded.`
+7. **Summarize.** Display a one-line summary: `Scaffolded N workflows under .claude/commands/{slug}/workflows/.` If zero workflows were scaffolded (all categories skipped), say `No workflows scaffolded.`
 
 ### 9. Create .gitignore
 

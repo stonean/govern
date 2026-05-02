@@ -220,7 +220,7 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 | `framework/templates/spec/research.md` | `specs/templates/research.md` |
 | `framework/templates/spec/scenario.md` | `specs/templates/scenario.md` |
 | `framework/templates/spec/spec-and-plan.md` | `specs/templates/spec-and-plan.md` |
-| `framework/skills/registry.json` | `skills/registry.json` |
+| `framework/workflows/registry.json` | `workflows/registry.json` |
 
 ### Project-specific shared files (strategy: create)
 
@@ -346,11 +346,11 @@ After processing the slash command manifest above, list all `.md` files in `{con
 
 Files listed in `pinned.files` are never deleted — report them as "pinned (kept)" instead.
 
-### Skill recommendation (strategy: create per accepted skill)
+### Workflow recommendation (strategy: create per accepted workflow)
 
-After the slash command cleanup, offer any newly registered skills that match the project's tech stack and have not yet been scaffolded for this agent.
+After the slash command cleanup, offer any newly registered workflows that match the project's tech stack and have not yet been scaffolded for this agent.
 
-1. **Read the synced registry** at `skills/registry.json` (the project-local copy written by the manifest above). If the file is missing or not valid JSON, warn `Skill registry not found or invalid, skipping skill recommendations` and skip the rest of this section. Validate each entry against the schema in `specs/005-skills-and-plugins/data-model.md`; drop invalid entries with a per-entry warning.
+1. **Read the synced registry** at `workflows/registry.json` (the project-local copy written by the manifest above). If the file is missing or not valid JSON, warn `Workflow registry not found or invalid, skipping workflow recommendations` and skip the rest of this section. Validate each entry against the schema in `specs/005-workflows/data-model.md`; drop invalid entries with a per-entry warning.
 
 2. **Read the project's tech stack** from `AGENTS.md`. Locate the **Tech Stack** table and parse each row's `Layer` column to recover the canonical key:
 
@@ -369,22 +369,24 @@ After the slash command cleanup, offer any newly registered skills that match th
 
 3. **Match registry entries** against the project's tech stack. For each entry, look up the project's value for `entry.trigger.field` and compare case-insensitively against `entry.trigger.value`. Collect every matching entry.
 
-4. **Filter out already-scaffolded skills.** For each match, check whether `{config_dir}/commands/{project}/skills/{entry.template}` already exists. If it does, the skill was previously scaffolded (for this agent) — drop it from the candidate list. Already-scaffolded skill files are never overwritten, regardless of content changes upstream.
+4. **Filter out already-scaffolded workflows.** For each match, check whether `{config_dir}/commands/{project}/workflows/{entry.template}` already exists. If it does, the workflow was previously scaffolded (for this agent) — drop it from the candidate list. Already-scaffolded workflow files are never overwritten, regardless of content changes upstream.
 
 5. **Silent skip when there is nothing new to offer.** If no candidates remain, do not prompt the user and proceed to **Session state**.
 
 6. **Group remaining candidates by category** in the order: `Linting`, `Formatting`, `Testing`, `Migrations`, `Code Review`, `Deployment`. Within each category, list each match's `name` and `description`.
 
-7. **Present per-category accept/skip prompts** via `AskUserQuestion`: "Scaffold these {category} skills for {agent name}?" with the matched entries listed. Options: `Yes, scaffold all in this category`, `No, skip this category`. The user must explicitly accept — no skills are scaffolded without consent.
+7. **Present per-category accept/skip prompts** via `AskUserQuestion`: "Scaffold these {category} workflows for {agent name}?" with the matched entries listed. Options: `Yes, scaffold all in this category`, `No, skip this category`. The user must explicitly accept — no workflows are scaffolded without consent.
 
-8. **Fetch and write accepted templates.** For each accepted entry:
+8. **Fetch and write accepted workflows.** For each accepted entry:
 
-   - Fetch `framework/skills/templates/{entry.template}` from the governance repo using the same URL pattern as the rest of govern's fetches.
-   - If the fetch fails or the template is missing, warn `Skill template {entry.template} not found, skipping` and continue with the next accepted entry. Do not abort the surrounding scaffolding.
+   - Fetch `framework/workflows/{entry.template}` from the governance repo using the same URL pattern as the rest of govern's fetches. (Note: the workflows directory is flat — no inner `templates/` subdirectory.)
+   - If the fetch fails or the file is missing, warn `Workflow file {entry.template} not found, skipping` and continue with the next accepted entry. Do not abort the surrounding scaffolding.
    - Replace every `{project}` with the user-provided project name and every `{cli-config-dir}` with the agent's `config_dir`.
-   - Write the substituted content to `{config_dir}/commands/{project}/skills/{entry.template}` (creating the `skills/` directory if needed). Report the file as "scaffolded" in the post-scaffolding summary.
+   - Write the substituted content to `{config_dir}/commands/{project}/workflows/{entry.template}` (creating the `workflows/` directory if needed). Report the file as "scaffolded" in the post-scaffolding summary.
 
-9. **Discovery note for Auggie.** Auggie's official docs document subdirectory namespacing for one level (`.augment/commands/foo/bar.md` → `/foo:bar`). Multi-level paths like `.augment/commands/{project}/skills/lint.md` should resolve to `/{project}:skills:lint` by the same colon-namespace convention, but a user adopting Auggie may want to confirm autocomplete the first time. Claude Code's two-level path is documented and works as expected.
+9. **Discovery note for Auggie.** Auggie's official docs document subdirectory namespacing for one level (`.augment/commands/foo/bar.md` → `/foo:bar`). Multi-level paths like `.augment/commands/{project}/workflows/lint.md` should resolve to `/{project}:workflows:lint` by the same colon-namespace convention, but a user adopting Auggie may want to confirm autocomplete the first time. Claude Code's two-level path is documented and works as expected.
+
+10. **Adopter migration note.** Adopters who already ran `/{project}:govern` before this rename will have a `skills/` directory in their project. After re-running govern, they should manually delete the legacy `skills/` directory — workflow files have been re-created under `workflows/`, and the old directory is no longer referenced.
 
 ### Session state (strategy: create)
 

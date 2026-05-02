@@ -10,10 +10,10 @@ Format the Go codebase with gofmt.
 4. Display the results. For check mode, list each file that needs formatting. For write mode, summarize the count of files changed.
 5. If check mode lists any files, treat the run as failed.
 
-## What this skill does NOT do
+## What this workflow does NOT do
 
 - Reformat files without an explicit user request — default mode is `-l`
-- Run `goimports` (which also reorders imports). Use a separate skill for that.
+- Run `goimports` (which also reorders imports). Use a separate workflow for that.
 - Install Go
 
 ## Common follow-ups

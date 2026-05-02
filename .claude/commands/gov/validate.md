@@ -102,6 +102,39 @@ Reference: the schema is canonically declared in `framework/constitution.md` §t
 - [ ] Error codes follow the convention from `specs/errors.md`
 - [ ] Data model definitions do not conflict with other specs' data-model.md files
 
+### Security rules (blocking and advisory)
+
+Load `specs/security-backend.md` and `specs/security-frontend.md` if either is present in the project. Each file is independently optional — only the files that exist are loaded. The rule-file schema is canonically declared in `specs/008-security-rules/data-model.md`.
+
+**Rule file integrity** — for each present rule file:
+
+- [ ] Every rule heading is level-3 and contains only the rule ID (no surrounding text)
+- [ ] Every rule has the three required fields: a block-quoted Statement, `**Rationale:**` paragraph, and `**Verification:**` paragraph
+- [ ] Every rule's ID matches the format `{BE|FE}-{CATEGORY}-{NNN}` (zero-padded) with `CATEGORY` drawn from the data-model's per-surface set
+- [ ] No two rules in the same file share an ID
+
+If any check above fails, the affected rule file is treated as unloadable for the remainder of this validate pass — no rules from that file are applied to the per-rule check below. Emit one of:
+
+- `Malformed security rule file {path} at {location}: {reason}` — for missing required fields, ID-format violations, or malformed headings (**blocking**)
+- `Duplicate rule ID {ID} in {file}; refusing to load` — when two rules in the same file share an ID (**blocking**)
+
+**No rule files present**:
+
+- [ ] If neither `specs/security-backend.md` nor `specs/security-frontend.md` is present, emit `No security rule files found, skipping security checks` (**advisory**) and skip the per-rule and reference checks below
+
+**Per-rule check** — when at least one rule file is loaded and well-formed, iterate every loaded rule and execute its **Verification** instruction against the project's `spec.md`, `spec-and-plan.md`, `plan.md`, `scenarios/*.md`, and `specs/system.md` content:
+
+- [ ] For each MUST or MUST NOT rule whose Verification trigger fires against an artifact that does not include the required commitment, emit `{Rule ID}: {artifact path} — {one-line gap summary}` (**blocking**)
+- [ ] For each SHOULD or SHOULD NOT rule whose trigger fires, emit `{Rule ID}: {artifact path} — {one-line gap summary}` (**advisory**)
+- [ ] A rule whose Verification trigger does not fire against any artifact produces no finding (silently inert — the contextual-application property)
+
+**Rule references** — scan all project artifacts for inline rule-ID references (e.g., `BE-AUTHN-001`, `FE-XSS-002`):
+
+- [ ] If an artifact references an ID not present in any loaded rule file, emit `Spec at {path} references unknown rule {ID}` (**blocking**)
+- [ ] If an artifact references an ID that exists but is marked `DEPRECATED`, emit `Spec at {path} references deprecated rule {ID}; targeted for removal in {version}` (**advisory**)
+
+Findings produced by this section are surfaced under validate's existing severity headers in the report — blocking findings join **Blocking**, advisory findings join **Advisory**.
+
 ### Markdown lint (advisory)
 
 - [ ] All `.md` files in the feature directory pass `npx markdownlint-cli2`

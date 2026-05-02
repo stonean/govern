@@ -11,7 +11,7 @@ Format the TypeScript codebase with Prettier.
 5. Display the results. For `--check`, list files that would be reformatted. For `--write`, summarize the count of files changed.
 6. If `--check` finds files that need formatting, treat the run as failed.
 
-## What this skill does NOT do
+## What this workflow does NOT do
 
 - Reformat files without an explicit user request — default mode is `--check`
 - Override `.prettierignore`

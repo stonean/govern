@@ -12,7 +12,7 @@ Run the Go test suite via the go toolchain.
 6. Summarize: count of packages with passed/failed/skipped tests and total duration.
 7. If any tests failed, treat the run as failed.
 
-## What this skill does NOT do
+## What this workflow does NOT do
 
 - Generate or update test fixtures (`*.golden`, snapshot files) without confirmation
 - Run race or coverage modes by default — the user adds `-race` or `-cover` explicitly

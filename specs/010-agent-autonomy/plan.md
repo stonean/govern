@@ -10,7 +10,7 @@ Land six small, independent governance changes plus one cross-spec rename:
 4. "Skills" index section in the `AGENTS.md` project template
 5. Cost-conscious cross-reference paragraph in the constitution
 6. Concurrent-features note (single-target sessions; point at `git worktree` and platform isolation)
-7. Cross-spec rename: 005's "skills" → "command templates" (reopens 005 per §cross-spec-impact)
+7. Cross-spec rename: 005's "skills" → "workflows" (reopens 005 per §cross-spec-impact)
 
 The work is almost entirely prompt and prose — no application code, no new schemas, no events, no error codes, no data model. The risk is in two places: the cross-spec rename (broad blast radius across paths and prose) and getting the command-file parity right so `framework/commands/*.md` and `.claude/commands/gov/*.md` stay in sync via `scripts/gen-claude-commands.sh`.
 
@@ -123,30 +123,33 @@ Insert a new optional `## Skills` section after `## Project Structure` and befor
 
 Empty-by-default ensures backwards-compatibility for projects that don't decompose. The HTML comment teaches the pattern in place without bloating the rendered template.
 
-### Cross-spec rename of 005's "skills" → "command templates"
+### Cross-spec rename of 005's "skills" → "workflows"
 
 Per §cross-spec-impact, 005 is reopened from `done` to `in-progress` because 010's adoption of "skills" terminology conflicts with 005's existing use. 010 owns the implementation; 005 records the new acceptance criterion as a signpost.
 
+Term chosen: **workflows**. The .md files literally are workflow definitions (lint, test, format, migrate) and 005's existing template-naming convention is `{workflow}-{language}-{tool}.md` — so "workflow" is the unit the artifacts already describe themselves with. "Workflows" reads cleanly alongside the other one-word framework directories (`commands/`, `templates/`, `rules/`, `bootstrap/`) and avoids the redundant `templates/templates/` nesting that "command templates" would have produced. Initial plan-time term was "command templates" (per 010's spec); the term was revisited mid-implement and the spec updated to "workflows" once the redundant-nesting drawback became apparent.
+
 Scope of the rename:
 
-- **Directory rename:** `framework/skills/` → `framework/command-templates/` (directory move). The directory contains `registry.json` and `templates/` (nine `.md` files).
-- **Project-side path rename:** in `framework/bootstrap/govern.md` manifest and recommendation step, `skills/registry.json` (project-side) → `command-templates/registry.json`. Adopters who already ran `/gov:govern` will have a `skills/` directory in their project — govern's update strategy will replace it on the next run; we do not write a migration tool. A one-line note is added to the rename task documenting that adopted projects should manually delete the old `skills/` directory after re-running `/gov:govern` (low cost — adopters with active skill files will see them re-created under `command-templates/`).
-- **Scaffold destination rename:** `{config_dir}/commands/{project}/skills/` → `{config_dir}/commands/{project}/command-templates/`. Affects `init.md` and `govern.md` instructions and the slash-command cleanup walk.
-- **Prose:** update "skill" / "skills" terminology to "command template" / "command templates" wherever it refers to 005's concept (NOT where it refers to 010's new concept of context-loaded instruction packs, e.g., in the new `AGENTS.md` Skills index section, the constitution Cost levers paragraph, or anywhere we describe Anthropic/Claude Code's skills feature). Files with prose to update:
-  - `specs/005-skills-and-plugins/spec.md` (title, body, acceptance criteria, resolved questions)
-  - `specs/005-skills-and-plugins/plan.md` (title, body, affected files table, trade-offs)
-  - `specs/005-skills-and-plugins/tasks.md` (title, body)
-  - `specs/005-skills-and-plugins/data-model.md` (terminology in schema description)
-  - `specs/005-skills-and-plugins/code-locations.md` (terminology and updated paths)
+- **Directory rename and flatten:** `framework/skills/` → `framework/workflows/` (directory move) **and flattened** — `registry.json` and the nine workflow `.md` files now sit at the same level under `framework/workflows/`, no inner `templates/` directory. Flattening is included in this pass because the new top-level name "workflows" makes the inner `templates/` redundantly named ("workflows/templates" reads worse than "command-templates/templates").
+- **Project-side path rename:** in `framework/bootstrap/govern.md` manifest and recommendation step, `skills/registry.json` (project-side) → `workflows/registry.json`. Adopters who already ran `/gov:govern` will have a `skills/` directory in their project — govern's update strategy will replace it on the next run; we do not write a migration tool. A one-line note is added to the rename task documenting that adopted projects should manually delete the old `skills/` directory after re-running `/gov:govern` (low cost — adopters with active workflow files will see them re-created under `workflows/`).
+- **Scaffold destination rename:** `{config_dir}/commands/{project}/skills/` → `{config_dir}/commands/{project}/workflows/`. Affects `init.md` and `govern.md` instructions and the slash-command cleanup walk.
+- **Prose:** update "skill" / "skills" terminology to "workflow" / "workflows" wherever it refers to 005's concept (NOT where it refers to 010's new concept of context-loaded instruction packs, e.g., in the new `AGENTS.md` Skills index section, the constitution Cost levers paragraph, or anywhere we describe Anthropic/Claude Code's skills feature). Files with prose to update:
+  - `specs/005-workflows/spec.md` (title, body, acceptance criteria, resolved questions)
+  - `specs/005-workflows/plan.md` (title, body, affected files table, trade-offs)
+  - `specs/005-workflows/tasks.md` (title, body)
+  - `specs/005-workflows/data-model.md` (terminology in schema description)
+  - `specs/005-workflows/code-locations.md` (terminology and updated paths)
   - `framework/bootstrap/govern.md` (manifest row, recommendation step, all prose)
   - `.claude/commands/gov/init.md` (recommendation step, all prose — hand-maintained, generator skips)
   - `framework/bootstrap/configure/claude.md` ("Bash commands used by skills" comment label)
+  - `specs/013-text-first-artifacts/plan.md` (one-row migration entry references the old spec dir)
   - `README.md` (any references)
-- **Spec directory name unchanged.** The directory `specs/005-skills-and-plugins/` stays. Renaming the directory would cascade across cross-references in this repo and any downstream adopter pinning to a specific path; out of scope. The title inside `spec.md` updates to "005 — Command Templates" and the directory's slug becomes a historical artifact.
+- **Spec directory renamed.** `specs/005-skills-and-plugins/` → `specs/005-workflows/`. Initial plan-time decision was to leave the slug as a historical artifact, but a quick blast-radius check during implementation found only seven files reference the old slug, six of which are already on the touch list for prose updates — the seventh is a single-row mention in `specs/013-text-first-artifacts/plan.md`. Adopter projects do not reference 005's spec directory (they only consume the template files via govern), so the rename is internal-only. Number `005` stays; only the slug changes. Git detects the rename automatically when contents are unchanged on the move.
 - **005's reopen path:**
-  1. Add a new acceptance criterion to 005's spec: "Rename internal terminology from 'skills' to 'command templates' to free the term 'skills' for Anthropic-style context-loaded instruction packs (signpost: driven by 010-agent-autonomy)."
+  1. Add a new acceptance criterion to 005's spec: "Rename internal terminology from 'skills' to 'workflows' to free the term 'skills' for Anthropic-style context-loaded instruction packs (signpost: driven by 010-agent-autonomy)."
   2. Set 005's frontmatter `status` from `done` to `in-progress`.
-  3. Add a task to `specs/005-skills-and-plugins/tasks.md` for the rename, marked as carried out by 010's implementation.
+  3. Add a task to `specs/005-workflows/tasks.md` for the rename, marked as carried out by 010's implementation.
   4. After 010's implementation completes, the user runs `/gov:implement` against 005 separately to verify the new AC and advance 005 back to `done`. 010 does not auto-advance 005's status — that follows the normal pipeline.
 
 ### Command file parity
@@ -165,7 +168,7 @@ Explicit non-goals to keep the scope tight:
 - No platform-specific shipping (no Claude Code skills directory, no Cursor rules directory). Governance documents the pattern only.
 - No execution log, no per-task token tracking, no budget files, no `[complex]` tier — all explicitly declined in the spec.
 - No multi-target session, no `--feature` flag on commands, no worktree management — declined in the spec.
-- No directory rename for `specs/005-skills-and-plugins/` — out of scope as noted above.
+- No platform-specific install of the new workflow files (governance ships the registry + workflow definitions; init/govern scaffold them per agent).
 
 ## Affected Files
 
@@ -176,17 +179,19 @@ Explicit non-goals to keep the scope tight:
 | `framework/commands/implement.md` | Modify | Add stuck-detection step; accept `--auto` flag with documented gates |
 | `framework/templates/project/agents.md` | Modify | Insert optional `## Skills` index section (empty by default) |
 | `framework/constitution.md` | Modify | Add `### Cost levers` subsection and `### Concurrent Features` subsection |
-| `framework/skills/` → `framework/command-templates/` | Rename | Directory move (registry.json + templates/) |
-| `framework/skills/registry.json` → `framework/command-templates/registry.json` | Rename | (carried by directory rename) |
-| `framework/skills/templates/*.md` → `framework/command-templates/templates/*.md` | Rename | Nine template files (carried by directory rename) |
-| `framework/bootstrap/govern.md` | Modify | Update manifest path, recommendation-step paths, and all prose to "command templates" |
-| `framework/bootstrap/configure/claude.md` | Modify | Replace "Bash commands used by skills" comment label with "command templates" |
+| `framework/skills/` → `framework/workflows/` | Rename + flatten | Directory move and flatten — registry and nine workflow files sit at the same level (no inner `templates/`) |
+| `framework/skills/registry.json` → `framework/workflows/registry.json` | Rename | (carried by directory rename) |
+| `framework/skills/templates/*.md` → `framework/workflows/*.md` | Rename + move-up | Nine workflow files moved out of inner `templates/` directory |
+| `framework/bootstrap/govern.md` | Modify | Update manifest path, recommendation-step paths, and all prose to "workflows" |
+| `framework/bootstrap/configure/claude.md` | Modify | Replace "Bash commands used by skills" comment label with "workflows" |
 | `.claude/commands/gov/init.md` | Modify | Hand-edit (generator skips): update recommendation step paths and prose |
-| `specs/005-skills-and-plugins/spec.md` | Modify | Reopen to `in-progress`; add new AC + signpost; rename prose; update title |
-| `specs/005-skills-and-plugins/plan.md` | Modify | Update title, prose, affected-files table, trade-offs |
-| `specs/005-skills-and-plugins/tasks.md` | Modify | Update title, prose; add new task for the cross-spec rename |
-| `specs/005-skills-and-plugins/data-model.md` | Modify | Update terminology in schema description |
-| `specs/005-skills-and-plugins/code-locations.md` | Modify | Update terminology and renamed paths |
+| `specs/005-skills-and-plugins/` → `specs/005-workflows/` | Rename | Spec directory rename |
+| `specs/005-workflows/spec.md` | Modify | Reopen to `in-progress`; add new AC + signpost; rename prose; update title |
+| `specs/005-workflows/plan.md` | Modify | Update title, prose, affected-files table, trade-offs |
+| `specs/005-workflows/tasks.md` | Modify | Update title, prose; add new task for the cross-spec rename |
+| `specs/005-workflows/data-model.md` | Modify | Update terminology in schema description |
+| `specs/005-workflows/code-locations.md` | Modify | Update terminology and renamed paths |
+| `specs/013-text-first-artifacts/plan.md` | Modify | Update one-row migration entry that references the old spec directory |
 | `README.md` | Modify | Update references to "skills" feature where they refer to 005's concept |
 | `.claude/commands/gov/plan.md` | Regenerate | Output of `gen-claude-commands.sh` after editing source |
 | `.claude/commands/gov/implement.md` | Regenerate | Output of `gen-claude-commands.sh` after editing source |

@@ -11,7 +11,7 @@ Run ESLint against the TypeScript codebase and surface findings.
 5. Summarize: count of errors, warnings, files with findings.
 6. If errors are present, treat the run as failed.
 
-## What this skill does NOT do
+## What this workflow does NOT do
 
 - Auto-fix findings — the user runs `--fix` explicitly if desired
 - Modify the ESLint config

@@ -22,7 +22,7 @@ Composable, context-specific instruction sets loaded based on task type. Current
 
 **Verdict: adapt.** Adopt Anthropic/Claude Code's "skills" terminology for context-loaded instruction packs (the only mainstream vendor using the term — they use it for agent-loaded specialized capabilities, matching this concept). Layering, not replacement: `AGENTS.md` stays as the always-loaded baseline; the `AGENTS.md` template gains an optional "Skills" index section listing available skill files and the task types/topics that activate them. Governance documents the pattern and the per-platform mapping (Claude Code skills, Cursor rules, etc.) but does not prescribe a fixed directory or ship platform-specific files. Adopters who don't decompose leave the index empty.
 
-Cross-spec impact on 005: 005's "skills" are functionally tech-stack-conditional **slash commands** (scaffolded into `.claude/commands/{slug}/`), not skills in the Anthropic sense. To free the term for 010's use, 005's concept is renamed to "command templates" — see Acceptance Criteria.
+Cross-spec impact on 005: 005's "skills" are functionally tech-stack-conditional development **workflows** (lint, test, format, migrate — scaffolded as slash commands into `.claude/commands/{slug}/`), not skills in the Anthropic sense. To free the term for 010's use, 005's concept is renamed to "workflows" — see Acceptance Criteria.
 
 ### Complexity routing
 
@@ -106,26 +106,26 @@ No new artifact, no per-task estimates, no budget files. The cross-reference par
 
 ### Evaluation completeness
 
-- [ ] Each capability has a recommendation: adopt, adapt, or decline
-- [ ] Adopted/adapted capabilities have a clear description of what changes to governance artifacts
-- [ ] Declined capabilities have a rationale explaining why they don't fit
-- [ ] No capability introduces a runtime dependency or requires a specific AI platform
-- [ ] Changes respect command file parity (commands/ and .claude/commands/gov/)
-- [ ] Changes respect govern file parity (govern/ variants stay in sync)
+- [x] Each capability has a recommendation: adopt, adapt, or decline
+- [x] Adopted/adapted capabilities have a clear description of what changes to governance artifacts
+- [x] Declined capabilities have a rationale explaining why they don't fit
+- [x] No capability introduces a runtime dependency or requires a specific AI platform
+- [x] Changes respect command file parity (commands/ and .claude/commands/gov/)
+- [x] Changes respect govern file parity (govern/ variants stay in sync)
 
 ### Concrete deliverables (from adapted capabilities)
 
-- [ ] `tasks.md` template documents the optional `[simple]` inline marker convention (one tier; no marker = default)
-- [ ] `/gov:plan` command instructions include a step to propose `[simple]` markers on tasks the agent judges trivial
-- [ ] `/gov:implement` command instructions include a stuck-detection step that reads `git log` for affected paths and `tasks.md` checkbox state, surfaces cycles, and suggests decomposition
-- [ ] `/gov:implement` command accepts an `--auto` flag that skips per-task confirmations within a phase, with the documented gates (phase transitions, stuck detection, spec/plan edits, mid-implement discovery, risky actions) still firing
-- [ ] Constitution `## Guiding Principles` → `Cost-conscious` (or a new dedicated subsection) gains a cross-reference paragraph naming governance's cost levers (lightweight track, `[simple]` marker, stuck detection, default-off autonomy) and pointing at platform tooling for runtime controls
-- [ ] `AGENTS.md` project template gains an optional "Skills" index section listing available skill files and their activation conditions (empty by default)
-- [ ] Documentation note added (constitution or `AGENTS.md` template) directing users to `git worktree` and platform isolation for concurrent feature work
+- [x] `tasks.md` template documents the optional `[simple]` inline marker convention (one tier; no marker = default)
+- [x] `/gov:plan` command instructions include a step to propose `[simple]` markers on tasks the agent judges trivial
+- [x] `/gov:implement` command instructions include a stuck-detection step that reads `git log` for affected paths and `tasks.md` checkbox state, surfaces cycles, and suggests decomposition
+- [x] `/gov:implement` command accepts an `--auto` flag that skips per-task confirmations within a phase, with the documented gates (phase transitions, stuck detection, spec/plan edits, mid-implement discovery, risky actions) still firing
+- [x] Constitution `## Guiding Principles` → `Cost-conscious` (or a new dedicated subsection) gains a cross-reference paragraph naming governance's cost levers (lightweight track, `[simple]` marker, stuck detection, default-off autonomy) and pointing at platform tooling for runtime controls
+- [x] `AGENTS.md` project template gains an optional "Skills" index section listing available skill files and their activation conditions (empty by default)
+- [x] Documentation note added (constitution or `AGENTS.md` template) directing users to `git worktree` and platform isolation for concurrent feature work
 
 ### Cross-spec deliverable
 
-- [ ] If the skills capability is delivered, 005's concept is renamed from "skills" to "command templates" (cross-spec impact: reopens 005 to `in-progress` per §cross-spec-impact). Affected paths in governance: `framework/skills/` → `framework/command-templates/`, `skills/registry.json` → `command-templates/registry.json`, and prose updates in 005's spec, plan, tasks, and any project templates that reference the term.
+- [x] If the skills capability is delivered, 005's concept is renamed from "skills" to "workflows" (cross-spec impact: reopens 005 to `in-progress` per §cross-spec-impact). Affected paths in governance: `framework/skills/` → `framework/workflows/` (flattened — registry and workflow files sit at the same level, no inner `templates/` directory), `skills/registry.json` → `workflows/registry.json`, `specs/005-skills-and-plugins/` → `specs/005-workflows/` (spec directory rename), and prose updates in 005's spec, plan, tasks, and any project templates that reference the term.
 
 ## Open Questions
 
@@ -133,7 +133,7 @@ No new artifact, no per-task estimates, no budget files. The cross-reference par
 
 ## Resolved Questions
 
-1. **Skills system: replace `AGENTS.md` or layer on top?** — Layer on top. `AGENTS.md` remains the always-loaded baseline; the template gains an optional "Skills" index section listing available skill files and the task types/topics that activate them (empty by default). Verdict for the capability is **adapt**: governance documents the pattern and per-platform mapping (Claude Code skills, Cursor rules, etc.) without prescribing a fixed directory or shipping platform-specific files. Terminology aligns with Anthropic/Claude Code's "skills" — the only mainstream vendor using the term, and they use it for context-loaded instruction packs (matching this concept). 005's "skills" are functionally slash command templates; per §cross-spec-impact, 005 is renamed to "command templates" so 010 can use the standard term — see Acceptance Criteria.
+1. **Skills system: replace `AGENTS.md` or layer on top?** — Layer on top. `AGENTS.md` remains the always-loaded baseline; the template gains an optional "Skills" index section listing available skill files and the task types/topics that activate them (empty by default). Verdict for the capability is **adapt**: governance documents the pattern and per-platform mapping (Claude Code skills, Cursor rules, etc.) without prescribing a fixed directory or shipping platform-specific files. Terminology aligns with Anthropic/Claude Code's "skills" — the only mainstream vendor using the term, and they use it for context-loaded instruction packs (matching this concept). 005's "skills" are functionally tech-stack-conditional development workflows (lint, test, format, migrate); per §cross-spec-impact, 005 is renamed to "workflows" so 010 can use the standard term — see Acceptance Criteria.
 2. **Complexity routing: who assigns?** — Hybrid: `/gov:plan` proposes, user may override. Granularity: single optional `[simple]` inline marker on tasks (no marker = default tier). Verdict for the capability is **adapt**. Rationale: agentic-coding cost is rising and platform autorouting is opaque, so an explicit signal in `tasks.md` gives the user visibility and control. The marker is the durable signal; the per-platform model mapping ("simple" → which model today) lives in adopter config so model churn doesn't rot specs. `[complex]` tier declined as redundant against the default.
 3. **Execution log: worth maintaining?** — No. Verdict for the capability is **decline the artifact, adopt the behavior**. No persisted execution log: an append-only markdown file duplicates `git log`, creates per-invocation git churn that fights text-first-artifacts (artifacts should change with intent), and goes out of sync on squash/rebase. The stuck-detection *behavior* is adopted using existing signals — `/gov:implement` reads `git log` for affected paths and `tasks.md` checkbox state to detect tasks touched across N invocations without completing, then surfaces the cycle and suggests decomposition.
 4. **Autonomous execution: opt-in or default?** — Opt-in via `/gov:implement --auto`, default off. Verdict for the capability is **adapt**. Per-invocation flag rather than session state or spec frontmatter — autonomy is an execution-time decision, not a selection-time or spec-level property, and putting it on the verb that does work matches CLI convention. `gov-session.json` does not gain an `autoAdvance` field. Phase boundaries, stuck-detection events, spec/plan edits, mid-implement task discovery, and risky actions all continue to gate even with the flag on; the flag only skips per-task confirmations within a phase. Default-off matches the constitutional spirit (§pipeline-boundaries) of keeping the human in the loop unless explicitly opted out.

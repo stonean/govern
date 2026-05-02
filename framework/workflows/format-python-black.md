@@ -10,7 +10,7 @@ Format the Python codebase with Black.
 4. Display the results. For `--check`, list files that would be reformatted. For the write mode, summarize the count of files changed.
 5. If `--check` finds files that need formatting, treat the run as failed.
 
-## What this skill does NOT do
+## What this workflow does NOT do
 
 - Reformat files without an explicit user request — default mode is `--check`
 - Override `extend-exclude`

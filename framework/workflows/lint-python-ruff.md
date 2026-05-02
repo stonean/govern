@@ -11,11 +11,11 @@ Run Ruff against the Python codebase and surface findings.
 5. Summarize: count of errors per rule.
 6. If findings are present, treat the run as failed.
 
-## What this skill does NOT do
+## What this workflow does NOT do
 
 - Auto-fix findings — the user runs `ruff check --fix` explicitly if desired
 - Modify the Ruff config
-- Run Ruff format (that is the formatter skill)
+- Run Ruff format (that is the formatter workflow)
 
 ## Common follow-ups
 

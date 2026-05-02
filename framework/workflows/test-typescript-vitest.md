@@ -12,7 +12,7 @@ Run the Vitest suite for the TypeScript codebase.
 6. Summarize: passed, failed, skipped counts and total duration.
 7. If any tests failed, treat the run as failed.
 
-## What this skill does NOT do
+## What this workflow does NOT do
 
 - Run Vitest in watch mode — use `npx vitest` directly if you want watch
 - Modify test files or fixtures

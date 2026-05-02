@@ -27,3 +27,41 @@
 ## AC: Documentation note added (constitution or `AGENTS.md` template) directing users to `git worktree` and platform isolation for concurrent feature work
 
 - `framework/constitution.md`
+
+## AC: Changes respect command file parity (commands/ and .claude/commands/gov/)
+
+- `.claude/commands/gov/configure.md`
+- `.claude/commands/gov/implement.md`
+- `.claude/commands/gov/plan.md`
+- `framework/commands/implement.md`
+- `framework/commands/plan.md`
+- `scripts/gen-claude-commands.sh`
+
+## AC: Changes respect govern file parity (govern/ variants stay in sync)
+
+- `.claude/commands/gov/init.md`
+- `framework/bootstrap/configure/claude.md`
+- `framework/bootstrap/govern.md`
+
+## AC: If the skills capability is delivered, 005's concept is renamed from "skills" to "workflows" (cross-spec impact: reopens 005 to `in-progress` per §cross-spec-impact)
+
+- `.claude/commands/gov/init.md`
+- `README.md`
+- `framework/bootstrap/configure/claude.md`
+- `framework/bootstrap/govern.md`
+- `framework/workflows/format-go-gofmt.md`
+- `framework/workflows/format-python-black.md`
+- `framework/workflows/format-typescript-prettier.md`
+- `framework/workflows/lint-go-golangci-lint.md`
+- `framework/workflows/lint-python-ruff.md`
+- `framework/workflows/lint-typescript-eslint.md`
+- `framework/workflows/registry.json`
+- `framework/workflows/test-go-gotest.md`
+- `framework/workflows/test-python-pytest.md`
+- `framework/workflows/test-typescript-vitest.md`
+- `specs/005-workflows/code-locations.md`
+- `specs/005-workflows/data-model.md`
+- `specs/005-workflows/plan.md`
+- `specs/005-workflows/spec.md`
+- `specs/005-workflows/tasks.md`
+- `specs/013-text-first-artifacts/plan.md`

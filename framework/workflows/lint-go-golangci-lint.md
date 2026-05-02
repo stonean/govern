@@ -11,7 +11,7 @@ Run golangci-lint against the Go codebase and surface findings.
 5. Summarize: count of findings per linter.
 6. If findings are present, treat the run as failed.
 
-## What this skill does NOT do
+## What this workflow does NOT do
 
 - Install golangci-lint
 - Auto-fix findings — the user runs `--fix` explicitly if desired (only some linters support fix)

@@ -85,59 +85,62 @@ Modify `framework/constitution.md` to add a new subsection under `## Pipeline Bo
 
 ## 8. Reopen 005 and record the cross-spec rename
 
-Update `specs/005-skills-and-plugins/spec.md` to reopen the spec and record the new acceptance criterion before performing any rename work.
+Update `specs/005-workflows/spec.md` (the spec dir is renamed in task 9; for this task it is still at `specs/005-skills-and-plugins/`) to reopen the spec and record the new acceptance criterion before performing any rename work.
 
-- [ ] Set 005's frontmatter `status` from `done` to `in-progress`
-- [ ] Add a new acceptance criterion to 005's spec: "Rename internal terminology from 'skills' to 'command templates' to free the term 'skills' for Anthropic-style context-loaded instruction packs (signpost: driven by 010-agent-autonomy)."
-- [ ] Add a new task to `specs/005-skills-and-plugins/tasks.md` for the cross-spec rename, marked as carried out by 010's implementation
-- [ ] 005 spec.md and tasks.md both pass `npx markdownlint-cli2`
+- [x] Set 005's frontmatter `status` from `done` to `in-progress`
+- [x] Add a new acceptance criterion to 005's spec: "Rename internal terminology from 'skills' to 'workflows' to free the term 'skills' for Anthropic-style context-loaded instruction packs (signpost: driven by 010-agent-autonomy)."
+- [x] Add a new task to 005's tasks.md for the cross-spec rename, marked as carried out by 010's implementation
+- [x] 005 spec.md and tasks.md both pass `npx markdownlint-cli2`
 
 **Done when:** 005 is reopened to `in-progress` with the new acceptance criterion and a corresponding task entry, before any rename is applied.
 
-## 9. Rename `framework/skills/` directory to `framework/command-templates/`
+## 9. Rename `framework/skills/` to `framework/workflows/` (flatten) and `specs/005-skills-and-plugins/` to `specs/005-workflows/`
 
-Perform the directory move and verify all artifact files came across.
+Perform both directory moves. The framework directory is also flattened: the inner `templates/` directory is eliminated and the registry + nine workflow files sit at the same level.
 
-- [ ] `git mv framework/skills framework/command-templates`
-- [ ] Verify `framework/command-templates/registry.json` exists
-- [ ] Verify all nine template files exist under `framework/command-templates/templates/` with their original filenames
-- [ ] Confirm no path strings inside the templates reference the old `framework/skills/` path (templates use `{project}` and `{cli-config-dir}` placeholders only)
-- [ ] All template `.md` files still pass `npx markdownlint-cli2` after the move
+- [x] `mv framework/skills framework/workflows` (note: `git mv` is denied by configure permissions; use plain `mv` and let `git add` detect the rename)
+- [x] Move the nine `.md` files out of `framework/workflows/templates/` up to `framework/workflows/` and remove the inner `templates/` directory
+- [x] `mv specs/005-skills-and-plugins specs/005-workflows`
+- [x] Verify `framework/workflows/registry.json` exists and the nine workflow files sit alongside it
+- [x] Confirm no path strings inside the workflow files reference the old `framework/skills/` path (files use `{project}` and `{cli-config-dir}` placeholders only)
+- [x] All workflow `.md` files still pass `npx markdownlint-cli2` after the move
 
-**Done when:** the directory has been moved with `git mv`, all nine templates plus the registry are in the new location, and no internal paths still point to the old name.
+**Done when:** both directories are renamed, the framework workflows directory is flattened, and no internal paths still point to the old names.
 
 ## 10. Update `framework/bootstrap/govern.md` for the rename
 
-Update the manifest, recommendation step, and all prose in `framework/bootstrap/govern.md` from "skills" / "skill" to "command templates" / "command template" wherever the term refers to 005's concept.
+Update the manifest, recommendation step, and all prose in `framework/bootstrap/govern.md` from "skills" / "skill" to "workflows" / "workflow" wherever the term refers to 005's concept.
 
-- [ ] Update the manifest row: `framework/skills/registry.json` → `framework/command-templates/registry.json` and `skills/registry.json` → `command-templates/registry.json` (project-side)
-- [ ] Update the recommendation-step path references to read from `command-templates/registry.json` and fetch from `framework/command-templates/templates/{entry.template}`
-- [ ] Update scaffold destination from `{config_dir}/commands/{project}/skills/{entry.template}` to `{config_dir}/commands/{project}/command-templates/{entry.template}`
-- [ ] Update the section heading from "Skill recommendation" to "Command-template recommendation" and update prose throughout (warning messages, summary lines, discovery note for Auggie)
-- [ ] Update the slash-command-cleanup edge-case note to reference the new directory name
-- [ ] Add a one-line migration note: adopters who already ran `/gov:govern` should manually delete the old `skills/` directory after re-running govern
-- [ ] File passes `npx markdownlint-cli2`
+- [x] Update the manifest row: `framework/skills/registry.json` → `framework/workflows/registry.json` and `skills/registry.json` → `workflows/registry.json` (project-side)
+- [x] Update the recommendation-step path references to read from `workflows/registry.json` and fetch from `framework/workflows/{entry.template}` (note: flattened — no inner `templates/`)
+- [x] Update scaffold destination from `{config_dir}/commands/{project}/skills/{entry.template}` to `{config_dir}/commands/{project}/workflows/{entry.template}`
+- [x] Update the section heading from "Skill recommendation" to "Workflow recommendation" and update prose throughout (warning messages, summary lines, discovery note for Auggie)
+- [x] Update the slash-command-cleanup edge-case note to reference the new directory name (no explicit edge-case note found in govern.md; cleanup walks top-level files only, so subdirectory immunity is implicit and documented in the recommendation step itself)
+- [x] Update the schema reference from `specs/005-skills-and-plugins/data-model.md` to `specs/005-workflows/data-model.md`
+- [x] Add a one-line migration note: adopters who already ran `/gov:govern` should manually delete the old `skills/` directory after re-running govern
+- [x] File passes `npx markdownlint-cli2`
 
-**Done when:** govern.md has no references to "skills" as 005's concept; all paths use `command-templates`; markdownlint passes.
+**Done when:** govern.md has no references to "skills" as 005's concept; all paths use `workflows`; markdownlint passes.
 
 ## 11. Update `.claude/commands/gov/init.md` for the rename
 
 Hand-edit `init.md` (the generator skips it). Update the recommendation step's paths and prose.
 
-- [ ] Update path references: `framework/skills/registry.json` → `framework/command-templates/registry.json`, `framework/skills/templates/{entry.template}` → `framework/command-templates/templates/{entry.template}`
-- [ ] Update scaffold destination from `.claude/commands/{slug}/skills/` → `.claude/commands/{slug}/command-templates/`
-- [ ] Update the step heading from "Recommend and scaffold skills" to "Recommend and scaffold command templates"
-- [ ] Update prose (warning messages, summary lines) throughout
-- [ ] File passes `npx markdownlint-cli2`
+- [x] Update path references: `framework/skills/registry.json` → `framework/workflows/registry.json`, `framework/skills/templates/{entry.template}` → `framework/workflows/{entry.template}` (flattened)
+- [x] Update scaffold destination from `.claude/commands/{slug}/skills/` → `.claude/commands/{slug}/workflows/`
+- [x] Update the step heading from "Recommend and scaffold skills" to "Recommend and scaffold workflows"
+- [x] Update prose (warning messages, summary lines) throughout
+- [x] Update the schema reference from `specs/005-skills-and-plugins/data-model.md` to `specs/005-workflows/data-model.md`
+- [x] File passes `npx markdownlint-cli2`
 
-**Done when:** init.md has no references to "skills" as 005's concept; all paths use `command-templates`; markdownlint passes.
+**Done when:** init.md has no references to "skills" as 005's concept; all paths use `workflows`; markdownlint passes.
 
 ## 12. Update `framework/bootstrap/configure/claude.md` for the rename
 
 Replace the "skills" term in the configure source.
 
-- [ ] Change the comment label `**Bash commands used by skills (read-only shell operations):**` to `**Bash commands used by command templates (read-only shell operations):**`
-- [ ] File passes `npx markdownlint-cli2`
+- [x] Change the comment label `**Bash commands used by skills (read-only shell operations):**` to `**Bash commands used by workflows (read-only shell operations):**`
+- [x] File passes `npx markdownlint-cli2`
 
 **Done when:** configure source no longer uses "skills" for 005's concept.
 
@@ -145,21 +148,22 @@ Replace the "skills" term in the configure source.
 
 Update prose and titles in 005's artifacts to reflect the new terminology and renamed paths.
 
-- [ ] `specs/005-skills-and-plugins/spec.md`: title `005 — Skills and Plugins` → `005 — Command Templates`; replace "skill" / "skills" terminology in body, acceptance criteria, and resolved questions where it refers to 005's concept; preserve the AC added in task 8
-- [ ] `specs/005-skills-and-plugins/plan.md`: title rename; prose updates; affected-files table updated to use `framework/command-templates/` paths; trade-off section terminology updated
-- [ ] `specs/005-skills-and-plugins/tasks.md`: title rename; prose updates; checkbox state preserved; the task added in task 8 is preserved
-- [ ] `specs/005-skills-and-plugins/data-model.md`: terminology updated in schema description (entry name fields, examples)
-- [ ] `specs/005-skills-and-plugins/code-locations.md`: terminology and any path entries updated to `framework/command-templates/`
-- [ ] All five files pass `npx markdownlint-cli2`
+- [x] `specs/005-workflows/spec.md`: title `005 — Skills and Plugins` → `005 — Workflows`; replace "skill" / "skills" terminology in body, acceptance criteria, and resolved questions where it refers to 005's concept; preserve the AC added in task 8
+- [x] `specs/005-workflows/plan.md`: title rename; prose updates; affected-files table updated to use `framework/workflows/` (flattened) paths; trade-off section terminology updated
+- [x] `specs/005-workflows/tasks.md`: title rename; prose updates; checkbox state preserved; the task added in task 8 is preserved
+- [x] `specs/005-workflows/data-model.md`: terminology updated in schema description (entry name fields, examples)
+- [x] `specs/005-workflows/code-locations.md`: terminology and any path entries updated to `framework/workflows/` (flattened)
+- [x] `specs/013-text-first-artifacts/plan.md`: update the one-row migration entry that references `specs/005-skills-and-plugins/spec.md` to the new path
+- [x] All six files pass `npx markdownlint-cli2`
 
-**Done when:** 005's artifacts use "command template" / "command templates" consistently for 005's concept, with renamed paths reflected in tables and code-locations entries; markdownlint passes.
+**Done when:** 005's artifacts use "workflow" / "workflows" consistently for 005's concept, with renamed paths reflected in tables and code-locations entries; 013 references the new spec dir; markdownlint passes.
 
 ## 14. Update `README.md` references
 
 Update any references to 005's "skills" feature in the top-level `README.md`.
 
-- [ ] Search `README.md` for "skill" references (case-insensitive); update those that refer to 005's concept to "command templates"; leave alone any references to Anthropic/Claude Code "skills" in the 010 sense (if any exist)
-- [ ] File passes `npx markdownlint-cli2`
+- [x] Search `README.md` for "skill" references (case-insensitive); update those that refer to 005's concept to "workflows"; leave alone any references to Anthropic/Claude Code "skills" in the 010 sense (if any exist)
+- [x] File passes `npx markdownlint-cli2`
 
 **Done when:** README.md no longer uses "skills" for 005's concept.
 
@@ -167,12 +171,12 @@ Update any references to 005's "skills" feature in the top-level `README.md`.
 
 Run the generator after all source-side edits to `framework/commands/` and `framework/bootstrap/configure/claude.md` are complete.
 
-- [ ] Run `./scripts/gen-claude-commands.sh`
-- [ ] Verify `.claude/commands/gov/plan.md` reflects the `[simple]` marker step
-- [ ] Verify `.claude/commands/gov/implement.md` reflects stuck detection and `--auto` flag
-- [ ] Verify `.claude/commands/gov/configure.md` reflects the renamed comment label
-- [ ] Verify `.claude/commands/gov/init.md` is untouched (hand-maintained)
-- [ ] All regenerated files pass `npx markdownlint-cli2`
+- [x] Run `./scripts/gen-claude-commands.sh`
+- [x] Verify `.claude/commands/gov/plan.md` reflects the `[simple]` marker step
+- [x] Verify `.claude/commands/gov/implement.md` reflects stuck detection and `--auto` flag
+- [x] Verify `.claude/commands/gov/configure.md` reflects the renamed comment label
+- [x] Verify `.claude/commands/gov/init.md` is untouched (hand-maintained)
+- [x] All regenerated files pass `npx markdownlint-cli2`
 
 **Done when:** the regenerated files match the sources, init.md is preserved, and markdownlint passes.
 
@@ -180,14 +184,15 @@ Run the generator after all source-side edits to `framework/commands/` and `fram
 
 Run all checks and walk through 010's acceptance criteria.
 
-- [ ] `npx markdownlint-cli2` passes on all created/modified `.md` files in this feature
-- [ ] `python -m json.tool framework/command-templates/registry.json` (or equivalent JSON validator) succeeds — registry still parses after the rename
-- [ ] Every `template` path in the registry resolves to an existing file under `framework/command-templates/templates/`
-- [ ] No remaining references to `framework/skills/` exist anywhere except in:
+- [x] `npx markdownlint-cli2` passes on all created/modified `.md` files in this feature
+- [x] `python -m json.tool framework/workflows/registry.json` (or equivalent JSON validator) succeeds — registry still parses after the rename
+- [x] Every `template` path in the registry resolves to an existing file at `framework/workflows/{template}` (flattened)
+- [x] No remaining references to `framework/skills/` exist anywhere except in:
   - The 005-rename signpost AC (referencing the old term as historical context)
   - Any prose specifically discussing the rename itself
-- [ ] `grep -rn "skill" --include="*.md" .` produces no hits referring to 005's concept (only Anthropic-style skills references in `AGENTS.md` template, constitution Cost levers paragraph, and 010's spec/plan/tasks)
-- [ ] Each acceptance criterion in 010's `spec.md` is checked individually against the produced artifacts and marked `- [x]` only if satisfied
-- [ ] Cross-spec deliverable AC reflects 005 reopened to `in-progress` (005 is left at `in-progress` for a separate `/gov:implement` to advance back to `done`)
+- [x] No remaining references to `specs/005-skills-and-plugins/` exist anywhere except in commit messages or prose specifically discussing the rename
+- [x] `grep -rn "skill" --include="*.md" .` produces no hits referring to 005's concept (only Anthropic-style skills references in `AGENTS.md` template, constitution Cost levers paragraph, and 010's spec/plan/tasks)
+- [x] Each acceptance criterion in 010's `spec.md` is checked individually against the produced artifacts and marked `- [x]` only if satisfied
+- [x] Cross-spec deliverable AC reflects 005 reopened to `in-progress` (005 is left at `in-progress` for a separate `/gov:implement` to advance back to `done`)
 
 **Done when:** all checks pass, the rename is complete and consistent, and every 010 acceptance criterion is verified.
