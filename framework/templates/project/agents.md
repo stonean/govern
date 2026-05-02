@@ -50,6 +50,22 @@ See [constitution.md](constitution.md) — guiding principles, development pipel
 
 <!-- Add project-specific directories below (e.g., src/, cmd/, modules/) -->
 
+## Skills
+
+<!-- Optional. List skill files (Anthropic/Claude Code "skills" — context-loaded
+     instruction packs) that augment AGENTS.md for specific task types. Leave
+     empty if you don't decompose into skills.
+
+     Example:
+     | Skill | Activates on |
+     | --- | --- |
+     | `skills/security-review.md` | Code review on auth or session paths |
+     | `skills/db-migration.md` | Editing migration files |
+
+     Per-platform mapping (Claude Code skills, Cursor rules, etc.) is the
+     adopter's call — governance defines the index pattern, not the location.
+-->
+
 ## Code Style
 
 <!-- Define code patterns and conventions specific to your tech stack. -->

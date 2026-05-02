@@ -52,10 +52,10 @@ Modify `framework/commands/implement.md` to accept and document the `--auto` fla
 
 Modify `framework/templates/project/agents.md` to insert an optional `## Skills` section after `## Project Structure` and before `## Code Style`.
 
-- [ ] Insert empty `## Skills` section with an HTML-comment guide explaining what skills are (Anthropic/Claude Code "skills" — context-loaded instruction packs), when to populate the section, and a copy-friendly example table of skill files and their activation conditions
-- [ ] Make explicit that per-platform mapping (Claude Code skills, Cursor rules, etc.) is the adopter's call — governance defines the index pattern, not the location
-- [ ] Section is empty by default (backwards-compatible for projects that don't decompose)
-- [ ] File passes `npx markdownlint-cli2`
+- [x] Insert empty `## Skills` section with an HTML-comment guide explaining what skills are (Anthropic/Claude Code "skills" — context-loaded instruction packs), when to populate the section, and a copy-friendly example table of skill files and their activation conditions
+- [x] Make explicit that per-platform mapping (Claude Code skills, Cursor rules, etc.) is the adopter's call — governance defines the index pattern, not the location
+- [x] Section is empty by default (backwards-compatible for projects that don't decompose)
+- [x] File passes `npx markdownlint-cli2`
 
 **Done when:** the template has the new section in the correct location, with the in-place guide, and adopters can populate it without re-reading governance docs.
 

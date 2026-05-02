@@ -15,3 +15,7 @@
 ## AC: `/gov:implement` command accepts an `--auto` flag that skips per-task confirmations within a phase, with the documented gates (phase transitions, stuck detection, spec/plan edits, mid-implement discovery, risky actions) still firing
 
 - `framework/commands/implement.md`
+
+## AC: `AGENTS.md` project template gains an optional "Skills" index section listing available skill files and their activation conditions (empty by default)
+
+- `framework/templates/project/agents.md`
