@@ -11,16 +11,16 @@ Primary source for actionable security rules. Each cheat sheet is maintained by 
 | Cheat Sheet | URL | Categories Informed |
 | --- | --- | --- |
 | Input Validation | cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet | BE-INPUT |
-| Authentication | cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet | BE-AUTH |
-| Session Management | cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet | BE-AUTH, FE-STORAGE |
+| Authentication | cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet | BE-AUTHN |
+| Session Management | cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet | BE-AUTHN, FE-STORAGE |
 | Authorization | cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet | BE-AUTHZ |
 | Password Storage | cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet | BE-DATA |
 | Cryptographic Storage | cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet | BE-DATA |
-| REST Security | cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet | BE-API, BE-INFRA |
+| REST Security | cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet | BE-API |
 | SQL Injection Prevention | cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet | BE-INPUT |
 | Logging | cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet | BE-LOG |
 | Secrets Management | cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet | BE-DATA |
-| Error Handling | cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet | BE-ERROR |
+| Error Handling | cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet | BE-ERR |
 | File Upload | cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet | BE-INPUT |
 | HTTP Headers | cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet | BE-API, FE-CSP |
 | XSS Prevention | cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet | FE-XSS |
