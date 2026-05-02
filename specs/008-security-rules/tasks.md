@@ -72,10 +72,10 @@ The existing rules' *content* (rationale, threat model, OWASP citations) represe
 
 Add the two rule files to `framework/bootstrap/govern.md`'s **Governance-owned shared files (strategy: update)** table.
 
-- [ ] Insert row mapping `framework/rules/security-backend.md` → `specs/security-backend.md`
-- [ ] Insert row mapping `framework/rules/security-frontend.md` → `specs/security-frontend.md`
-- [ ] Rows appear adjacent to the other governance-owned shared files
-- [ ] `framework/bootstrap/govern.md` passes `npx markdownlint-cli2`
+- [x] Insert row mapping `framework/rules/security-backend.md` → `specs/security-backend.md`
+- [x] Insert row mapping `framework/rules/security-frontend.md` → `specs/security-frontend.md`
+- [x] Rows appear adjacent to the other governance-owned shared files
+- [x] `framework/bootstrap/govern.md` passes `npx markdownlint-cli2`
 
 **Done when:** govern syncs both rule files on its next run, and the file passes markdownlint.
 

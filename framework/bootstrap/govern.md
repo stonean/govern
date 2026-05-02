@@ -210,6 +210,8 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 | Source Path | Destination Path |
 | --- | --- |
 | `framework/constitution.md` | `constitution.md` |
+| `framework/rules/security-backend.md` | `specs/security-backend.md` |
+| `framework/rules/security-frontend.md` | `specs/security-frontend.md` |
 | `.markdownlint-cli2.jsonc` | `.markdownlint-cli2.jsonc` |
 | `framework/templates/spec/spec.md` | `specs/templates/spec.md` |
 | `framework/templates/spec/plan.md` | `specs/templates/plan.md` |

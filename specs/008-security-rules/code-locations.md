@@ -22,3 +22,23 @@
 
 - `framework/rules/security-backend.md`
 - `framework/rules/security-frontend.md`
+
+## AC: Both files appear in the govern file manifest with `update` strategy
+
+- `framework/bootstrap/govern.md`
+
+## AC: The govern command fetches `framework/rules/security-backend.md` and writes it to `specs/security-backend.md` in the project
+
+- `framework/bootstrap/govern.md`
+
+## AC: The govern command fetches `framework/rules/security-frontend.md` and writes it to `specs/security-frontend.md` in the project
+
+- `framework/bootstrap/govern.md`
+
+## AC: Re-running govern updates both files to the latest governance version
+
+- `framework/bootstrap/govern.md`
+
+## AC: Projects can pin either file in `.governance.toml` to skip updates
+
+- `framework/bootstrap/govern.md`
