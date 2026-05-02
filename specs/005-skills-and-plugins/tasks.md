@@ -20,19 +20,19 @@ Create `framework/skills/registry.json` with the v1 starter set of nine entries 
 
 Create one `.md` template file under `framework/skills/templates/` for each registry entry. Each template follows the slash-command prompt format and uses the standard placeholders.
 
-- [ ] Create `framework/skills/templates/` directory
-- [ ] `lint-typescript-eslint.md`
-- [ ] `test-typescript-vitest.md`
-- [ ] `format-typescript-prettier.md`
-- [ ] `lint-python-ruff.md`
-- [ ] `test-python-pytest.md`
-- [ ] `format-python-black.md`
-- [ ] `lint-go-golangci-lint.md`
-- [ ] `test-go-gotest.md`
-- [ ] `format-go-gofmt.md`
-- [ ] Every registry entry's `template` path resolves to an existing file
-- [ ] All templates use `{project}` and `{cli-config-dir}` consistently with existing slash commands
-- [ ] All templates pass `npx markdownlint-cli2`
+- [x] Create `framework/skills/templates/` directory
+- [x] `lint-typescript-eslint.md`
+- [x] `test-typescript-vitest.md`
+- [x] `format-typescript-prettier.md`
+- [x] `lint-python-ruff.md`
+- [x] `test-python-pytest.md`
+- [x] `format-python-black.md`
+- [x] `lint-go-golangci-lint.md`
+- [x] `test-go-gotest.md`
+- [x] `format-go-gofmt.md`
+- [x] Every registry entry's `template` path resolves to an existing file
+- [x] All templates use `{project}` and `{cli-config-dir}` consistently with existing slash commands
+- [x] All templates pass `npx markdownlint-cli2`
 
 **Done when:** every registry entry has a corresponding template file, and all templates pass markdownlint.
 
