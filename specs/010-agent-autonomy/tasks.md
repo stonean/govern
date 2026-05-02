@@ -16,10 +16,10 @@ Document the optional inline `[simple]` task header marker in `framework/templat
 
 Modify `framework/commands/plan.md` to add a step that scans generated tasks and proposes `[simple]` markers on trivial ones.
 
-- [ ] In the "Create the task breakdown" section, add a sub-step after task generation: scan each task, append `[simple]` to the header if the task is trivial (single small file, no logic, no schema change, no new behavior)
-- [ ] Surface the marker proposals in the summary shown to the user before status transition (so the user can add, remove, or accept markers before approving)
-- [ ] Cross-reference the `[simple]` marker convention in the tasks template
-- [ ] File passes `npx markdownlint-cli2`
+- [x] In the "Create the task breakdown" section, add a sub-step after task generation: scan each task, append `[simple]` to the header if the task is trivial (single small file, no logic, no schema change, no new behavior)
+- [x] Surface the marker proposals in the summary shown to the user before status transition (so the user can add, remove, or accept markers before approving)
+- [x] Cross-reference the `[simple]` marker convention in the tasks template
+- [x] File passes `npx markdownlint-cli2`
 
 **Done when:** the plan command has explicit instructions for proposing `[simple]` markers and surfacing them for user review.
 

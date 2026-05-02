@@ -63,6 +63,7 @@ If the spec file is `spec-and-plan.md` (lightweight track), the plan section is 
    - Each task has a clear "done when" condition.
    - Tasks respect dependency order.
    - Tasks are derived from the plan, not invented independently.
+3. Propose `[simple]` tier markers on trivial tasks. After the task list is written, scan each task and append `[simple]` to the header (e.g., `## 4. Update README link [simple]`) when the task is genuinely trivial — single small file edit, no logic, no schema change, no new behavior. When in doubt, leave the marker off; default tier is the right call for any task that touches more than one file or carries non-obvious decisions. The marker convention is documented in the tasks template (`specs/templates/tasks.md`); see that file for the full rule.
 
 ### Validation gate
 
@@ -81,6 +82,6 @@ If any check fails, report the specific failures and do not propose the transiti
 
 ### Finalize
 
-1. Present a summary of the plan, task breakdown, and validation gate results. Ask the user to approve the transition to `planned`. Do not update the status until the user confirms.
+1. Present a summary of the plan, task breakdown, and validation gate results. List which tasks (if any) were proposed `[simple]` so the user can add, remove, or accept markers before approving. Ask the user to approve the transition to `planned`. Do not update the status until the user confirms.
 2. On confirmation, update the spec's frontmatter `status` field from `clarified` to `planned`.
 3. Display the next step: "Run `/{project}:implement` to begin implementation."
