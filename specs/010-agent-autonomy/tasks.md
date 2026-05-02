@@ -39,12 +39,12 @@ Modify `framework/commands/implement.md` to add a setup-time stuck-detection che
 
 Modify `framework/commands/implement.md` to accept and document the `--auto` flag.
 
-- [ ] In the "Context" section, document `--auto` as a recognized flag (stripped from `$ARGUMENTS` before the remaining text is treated as a feature override)
-- [ ] In the "Walk through tasks" section, document that `--auto` skips the per-task "prompt the user to commit and push changes" confirmation
-- [ ] List the gates that still fire even with `--auto` on: phase transitions (`planned`→`in-progress`, `in-progress`→`done`), stuck-detection events, out-of-bounds file writes, spec/plan edits, mid-implement task discovery, risky actions (destructive ops, secrets, force pushes)
-- [ ] Document the auto-mode commit policy: commit, do not push (push remains gated)
-- [ ] Confirm `gov-session.json` is unchanged (no `autoAdvance` field)
-- [ ] File passes `npx markdownlint-cli2`
+- [x] In the "Context" section, document `--auto` as a recognized flag (stripped from `$ARGUMENTS` before the remaining text is treated as a feature override)
+- [x] In the "Walk through tasks" section, document that `--auto` skips the per-task "prompt the user to commit and push changes" confirmation
+- [x] List the gates that still fire even with `--auto` on: phase transitions (`planned`→`in-progress`, `in-progress`→`done`), stuck-detection events, out-of-bounds file writes, spec/plan edits, mid-implement task discovery, risky actions (destructive ops, secrets, force pushes)
+- [x] Document the auto-mode commit policy: commit, do not push (push remains gated)
+- [x] Confirm `gov-session.json` is unchanged (no `autoAdvance` field)
+- [x] File passes `npx markdownlint-cli2`
 
 **Done when:** the implement command documents `--auto` as a per-invocation flag with the listed gate set and commit policy.
 

@@ -11,3 +11,7 @@
 ## AC: `/gov:implement` command instructions include a stuck-detection step that reads `git log` for affected paths and `tasks.md` checkbox state, surfaces cycles, and suggests decomposition
 
 - `framework/commands/implement.md`
+
+## AC: `/gov:implement` command accepts an `--auto` flag that skips per-task confirmations within a phase, with the documented gates (phase transitions, stuck detection, spec/plan edits, mid-implement discovery, risky actions) still firing
+
+- `framework/commands/implement.md`
