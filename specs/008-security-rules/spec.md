@@ -1,7 +1,7 @@
 ---
-status: in-progress
+status: done
 dependencies: [007-govern-workflow]
-tags: []
+tags: [security, format]
 ---
 
 # 008 — Security Rules
