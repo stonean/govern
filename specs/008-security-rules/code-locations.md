@@ -43,6 +43,50 @@
 
 - `framework/bootstrap/govern.md`
 
+## AC: The validate command reads `specs/security-backend.md` and `specs/security-frontend.md` when present in the project
+
+- `framework/commands/validate.md`
+
+## AC: MUST/MUST NOT violations are reported as errors (blocking)
+
+- `framework/commands/validate.md`
+
+## AC: SHOULD/SHOULD NOT violations are reported as warnings (non-blocking)
+
+- `framework/commands/validate.md`
+
+## AC: Rule IDs appear in validate output for each finding
+
+- `framework/commands/validate.md`
+
+## AC: Rules apply contextually — a rule that no spec or plan content exercises produces no finding
+
+- `framework/commands/validate.md`
+
+## AC: Validate emits a warning and continues when no security rule files are present
+
+- `framework/commands/validate.md`
+
+## AC: Validate runs only over the present file when one of the two is pinned out, with no finding for the missing file
+
+- `framework/commands/validate.md`
+
+## AC: Validate blocks with an error on a malformed rule file (missing required field, ID format violation, parse failure)
+
+- `framework/commands/validate.md`
+
+## AC: Validate blocks with an error on a spec/plan reference to an unknown rule ID
+
+- `framework/commands/validate.md`
+
+## AC: Validate emits a warning (not an error) on a spec/plan reference to a `DEPRECATED` rule ID
+
+- `framework/commands/validate.md`
+
+## AC: Validate blocks with an error when a rule file contains duplicate IDs
+
+- `framework/commands/validate.md`
+
 ## AC: On a govern run where a security rule file is newly created AND `specs/NNN-*` directories exist, govern audits the existing specs against the rule and writes one inbox item per finding to `specs/inbox.md`
 
 - `framework/bootstrap/govern.md`

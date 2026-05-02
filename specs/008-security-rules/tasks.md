@@ -99,19 +99,19 @@ Add a new top-level **Security audit (brownfield)** section to `framework/bootst
 
 Modify `framework/commands/validate.md` to add a new **Security rules** check section that codifies the spec's edge-case behaviors. Place it after **Cross-spec references (advisory)** and before **Markdown lint (advisory)**.
 
-- [ ] Add **Security rules (blocking and advisory)** section
-- [ ] Section opens by reading `specs/security-backend.md` and `specs/security-frontend.md` (each independently optional — only the present files are loaded)
-- [ ] Section validates rule file integrity per `data-model.md` (well-formed headings, required fields, ID format) and reports a **blocking** error per malformed rule file (`Malformed security rule file {path} at {location}: {reason}`)
-- [ ] Section reports a **blocking** error on duplicate IDs within a file (`Duplicate rule ID {ID} in {file}; refusing to load`)
-- [ ] Section reports an **advisory** warning when neither file is present (`No security rule files found, skipping security checks`)
-- [ ] When at least one rule file is loaded and well-formed, section iterates over each rule:
+- [x] Add **Security rules (blocking and advisory)** section
+- [x] Section opens by reading `specs/security-backend.md` and `specs/security-frontend.md` (each independently optional — only the present files are loaded)
+- [x] Section validates rule file integrity per `data-model.md` (well-formed headings, required fields, ID format) and reports a **blocking** error per malformed rule file (`Malformed security rule file {path} at {location}: {reason}`)
+- [x] Section reports a **blocking** error on duplicate IDs within a file (`Duplicate rule ID {ID} in {file}; refusing to load`)
+- [x] Section reports an **advisory** warning when neither file is present (`No security rule files found, skipping security checks`)
+- [x] When at least one rule file is loaded and well-formed, section iterates over each rule:
   - For each MUST/MUST NOT rule whose Verification trigger fires against any project artifact (spec, plan, `specs/system.md`), execute the Verification check and emit a **blocking** error per failing artifact, including the rule ID
   - For each SHOULD/SHOULD NOT rule whose trigger fires, emit an **advisory** warning per failing artifact, including the rule ID
   - Rules whose Verification trigger does not fire for any artifact produce no finding (silently inert)
-- [ ] Section reports a **blocking** error when a project artifact references a rule ID that does not exist in the loaded files (`Spec at {path} references unknown rule {ID}`)
-- [ ] Section reports an **advisory** warning when a project artifact references a `DEPRECATED` rule ID (`Spec at {path} references deprecated rule {ID}; targeted for removal in {version}`)
-- [ ] Findings are surfaced under the existing severity sections (Hard fail / Blocking / Advisory) in validate's report
-- [ ] `framework/commands/validate.md` passes `npx markdownlint-cli2`
+- [x] Section reports a **blocking** error when a project artifact references a rule ID that does not exist in the loaded files (`Spec at {path} references unknown rule {ID}`)
+- [x] Section reports an **advisory** warning when a project artifact references a `DEPRECATED` rule ID (`Spec at {path} references deprecated rule {ID}; targeted for removal in {version}`)
+- [x] Findings are surfaced under the existing severity sections (Hard fail / Blocking / Advisory) in validate's report
+- [x] `framework/commands/validate.md` passes `npx markdownlint-cli2`
 
 **Done when:** validate's check list includes the security rule section with all 7 edge-case behaviors, and the file passes markdownlint.
 
