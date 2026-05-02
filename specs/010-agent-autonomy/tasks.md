@@ -27,11 +27,11 @@ Modify `framework/commands/plan.md` to add a step that scans generated tasks and
 
 Modify `framework/commands/implement.md` to add a setup-time stuck-detection check.
 
-- [ ] In the "Setup" section, add a step (before walking tasks) that runs `git log --oneline -- specs/{feature}/tasks.md` and counts commits since the spec entered `in-progress`
-- [ ] Detection rule: if ≥ 3 commits AND the same task remains the next incomplete one, surface the cycle to the user with a decomposition suggestion and pause — do not auto-decompose
-- [ ] Document that stuck-detection events fire even with `--auto` set ("auto mode does not power through cycles")
-- [ ] Document the threshold of 3 as a fixed constant (not configurable in v1)
-- [ ] File passes `npx markdownlint-cli2`
+- [x] In the "Setup" section, add a step (before walking tasks) that runs `git log --oneline -- specs/{feature}/tasks.md` and counts commits since the spec entered `in-progress`
+- [x] Detection rule: if ≥ 3 commits AND the same task remains the next incomplete one, surface the cycle to the user with a decomposition suggestion and pause — do not auto-decompose
+- [x] Document that stuck-detection events fire even with `--auto` set ("auto mode does not power through cycles")
+- [x] Document the threshold of 3 as a fixed constant (not configurable in v1)
+- [x] File passes `npx markdownlint-cli2`
 
 **Done when:** the implement command has explicit instructions for the stuck-detection check, including the algorithm, threshold, and behavior under `--auto`.
 

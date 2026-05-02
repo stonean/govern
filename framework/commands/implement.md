@@ -40,7 +40,8 @@ Read the spec's `status` field from the YAML frontmatter at the top of the file.
 4. Read the spec file for acceptance criteria and contracts.
 5. If a scenario is targeted, read the scenario file for scenario-specific context, behavior, and edge cases. The scenario scopes which part of the feature is the primary focus for this implementation session.
 6. Note the plan's **Affected Files** list — this is the expected write boundary for implementation.
-7. If the spec's frontmatter `status` is `planned`, ask the user to approve the transition to `in-progress` before updating the status. On confirmation, update the frontmatter `status` field to `in-progress`.
+7. **Stuck-detection check.** If the spec's status is already `in-progress`, run `git log --oneline -- specs/{feature}/tasks.md` and count commits since the spec entered `in-progress`. Identify the first incomplete task (first `- [ ]` checkbox group) in `tasks.md`. If `git log` shows **≥ 3 commits** on `tasks.md` AND the same task is still the first incomplete one (no checkbox flipped to `- [x]` between those commits for that task), surface the cycle to the user with this message: `Task {N} ({title}) has been touched in {count} prior implement runs without completing. Consider decomposing it into smaller subtasks before continuing.` Pause and wait for user direction; do not auto-decompose. The threshold of 3 is fixed (not configurable in v1) — smallest count that distinguishes routine multi-session work from a cycle. Stuck-detection events fire even when `--auto` is set (auto mode does not power through cycles).
+8. If the spec's frontmatter `status` is `planned`, ask the user to approve the transition to `in-progress` before updating the status. On confirmation, update the frontmatter `status` field to `in-progress`.
 
 ### Progressive context loading
 
