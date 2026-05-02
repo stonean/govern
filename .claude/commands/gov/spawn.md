@@ -1,5 +1,6 @@
 ---
 description: Spawn a new project from this one, copying specs, commands, and config.
+argument-hint: "[project slug]"
 ---
 
 # Spawn

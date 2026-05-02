@@ -1,5 +1,6 @@
 ---
 description: Create a skeleton spec for an existing feature in a brownfield project.
+argument-hint: "[feature description]"
 ---
 
 # Capture

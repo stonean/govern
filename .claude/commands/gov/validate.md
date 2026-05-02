@@ -1,5 +1,6 @@
 ---
 description: Check a feature's artifacts for consistency and cross-spec alignment.
+argument-hint: "[--fix] [--all] [feature]"
 ---
 
 # Validate

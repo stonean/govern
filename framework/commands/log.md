@@ -1,5 +1,6 @@
 ---
 description: Record a raw item to the inbox.
+argument-hint: "[item text]"
 ---
 
 # Log

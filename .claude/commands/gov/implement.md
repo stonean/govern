@@ -1,5 +1,6 @@
 ---
 description: Execute implementation tasks for the targeted feature.
+argument-hint: "[--auto] [feature]"
 ---
 
 # Implement

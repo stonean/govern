@@ -1,5 +1,6 @@
 ---
 description: Create a new feature spec.
+argument-hint: "[feature description]"
 ---
 
 # Specify

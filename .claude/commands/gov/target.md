@@ -1,5 +1,6 @@
 ---
 description: Set the working feature (and optionally scenario) for this session.
+argument-hint: "[feature[/scenario]]"
 ---
 
 # Target

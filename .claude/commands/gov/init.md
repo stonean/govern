@@ -1,5 +1,6 @@
 ---
 description: Scaffold a new project with governance files, templates, and commands.
+argument-hint: "[project slug]"
 ---
 
 # Init

@@ -1,5 +1,6 @@
 ---
 description: Resolve open questions and advance a spec from draft to clarified.
+argument-hint: "[feature]"
 ---
 
 # Clarify

@@ -1,5 +1,6 @@
 ---
 description: Create a technical plan and task breakdown for a clarified spec.
+argument-hint: "[feature]"
 ---
 
 # Plan
