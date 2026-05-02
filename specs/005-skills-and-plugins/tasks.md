@@ -70,11 +70,11 @@ Modify `framework/bootstrap/govern.md` to ship the registry to adopted projects 
 
 Run all markdownlint and structural checks, and verify the spec's acceptance criteria are satisfied by the produced artifacts.
 
-- [ ] Every `template` path in `framework/skills/registry.json` points to an existing file under `framework/skills/templates/`
-- [ ] Every category value in the registry is in the fixed set
-- [ ] Every `trigger.field` value in the registry is in the recognized set
-- [ ] `npx markdownlint-cli2` passes on all created/modified `.md` files (skill templates, init, govern, plan, tasks, data-model)
-- [ ] `python -m json.tool framework/skills/registry.json` (or equivalent JSON validator) succeeds
-- [ ] Each acceptance criterion in `spec.md` is checked individually against the produced artifacts and marked `- [x]` only if satisfied
+- [x] Every `template` path in `framework/skills/registry.json` points to an existing file under `framework/skills/templates/`
+- [x] Every category value in the registry is in the fixed set
+- [x] Every `trigger.field` value in the registry is in the recognized set
+- [x] `npx markdownlint-cli2` passes on all created/modified `.md` files (skill templates, init, govern, plan, tasks, data-model)
+- [x] `python -m json.tool framework/skills/registry.json` (or equivalent JSON validator) succeeds
+- [x] Each acceptance criterion in `spec.md` is checked individually against the produced artifacts and marked `- [x]` only if satisfied
 
 **Done when:** all checks pass, the registry and templates are mutually consistent, and every acceptance criterion is satisfied.
