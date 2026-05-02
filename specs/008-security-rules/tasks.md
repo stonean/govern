@@ -24,25 +24,49 @@ Create `framework/rules/security-backend.md` with the v1 starter set. ~35 rules 
 
 **Done when:** every backend category has at least the targeted rule count, all rules conform to the data-model schema, and the file passes markdownlint.
 
-## 2. Write the frontend security rules file
+## 2. Migrate and extend the frontend security rules file
 
-Create `framework/rules/security-frontend.md` with the v1 starter set. ~21 rules across 7 categories, same format as backend.
+`framework/rules/security-frontend.md` already exists from the framework reorganization (commit `3fc76b7`) but predates 008's clarification. It contains 25 rules across 7 categories whose content is sound but whose **format, three category abbreviations, and Verification phrasing** are out of sync with the post-clarify data-model. Apply the same migration treatment used for the backend file in task 1 — see `framework/rules/security-backend.md` and commit `35502af` as the precedent.
 
-- [ ] Create `framework/rules/security-frontend.md` with file-level introduction
-- [ ] **Cross-site scripting (XSS)** category — at least 3 rules covering output encoding, CSP, and inline scripts
-- [ ] **Cross-site request forgery (CSRF)** category — at least 2 rules covering tokens and SameSite cookies
-- [ ] **Secure storage** category — at least 3 rules covering localStorage/sessionStorage and cookie attributes
-- [ ] **Authentication UX** category — at least 3 rules covering token handling, session expiration, and redirects
-- [ ] **Content security** category — at least 2 rules covering CSP and SRI
-- [ ] **Dependency management** category — at least 2 rules covering vulnerability scanning and pinned versions
-- [ ] **Sensitive data handling** category — at least 3 rules covering UI masking, URL parameters, and browser history
-- [ ] Every rule heading is a level-3 heading containing only the rule ID
-- [ ] Every rule has Statement (block quote), Rationale, and Verification fields
-- [ ] All IDs follow `FE-{CATEGORY}-{NNN}` format and start at `001` per category
-- [ ] At least one rule per category uses MUST/MUST NOT (errors)
+### Migration steps
+
+- [ ] Read the existing `framework/rules/security-frontend.md` first; do **not** overwrite without preserving content
+- [ ] Rename three category abbreviations (preserve suffix numbers — never renumber):
+  - `FE-AUTH-*` → `FE-AUTHN-*` (3 rules; matches the data-model's authentication abbreviation, parallel to BE)
+  - `FE-DEP-*` → `FE-DEPS-*` (3 rules; data-model uses DEPS, not DEP)
+  - `FE-DATA-*` → `FE-PII-*` (3 rules; the "Sensitive data handling" category is abbreviated `PII` per the data-model category table)
+- [ ] Reformat every rule to match the data-model schema:
+  - Level-3 heading contains **only** the rule ID (no title after an em-dash)
+  - Statement is a single block-quoted sentence using RFC 2119 keywords (`MUST`, `MUST NOT`, `SHOULD`, `SHOULD NOT`)
+  - `**Rationale:**`, `**Verification:**`, `**Source:**` are paragraphs (not bullet items)
+- [ ] **Rewrite every Verification field** as an instruction to the validate agent — concrete keywords to search, what artifacts to scan, what commitments must be present, what to flag. Existing Verifications are written for human reviewers ("Code review confirms…") and validate cannot act on them. See backend file's Verification fields for the right phrasing convention.
+- [ ] Audit every rule for accuracy against the constitution's Technology guiding principles (`framework/constitution.md` §guiding-principles). Backend revealed two real accuracy issues (over-prescriptive `MUST`, missing CSP/Referrer-Policy headers); frontend may have analogous issues — fix them and note each in the commit message.
+- [ ] Preserve `**Source:**` citations on every existing rule (the field is now in the data-model schema as optional). Add Source citations to any rule that lacks one (OWASP cheat sheet, RFC, MDN, etc.).
+
+### Coverage additions
+
+- [ ] **Cross-site scripting (XSS)** — existing 6 rules likely cover output encoding, framework auto-escaping, safe DOM methods, no inline scripts, HTML sanitization, URL validation. Confirm coverage; add rules only if a v1-target gap exists.
+- [ ] **Cross-site request forgery (CSRF)** — existing 3 rules likely cover token-based protection, SameSite cookies, and no state changes via GET. Confirm coverage.
+- [ ] **Secure storage** — existing 3 rules cover no secrets in browser storage, cookie security attributes, no sensitive data in URLs. Confirm coverage.
+- [ ] **Authentication UX (`FE-AUTHN` after rename)** — existing 3 rules cover redirect validation, session expiration UX, logout completeness. Plan called for token storage / session expiration / redirect validation — confirm coverage; the existing rule set is broader than the plan's targets.
+- [ ] **Content security (`FE-CSP`)** — existing 4 rules cover CSP header required, strict CSP policy, frame protection, form action restriction. Plan called for CSP + SRI; SRI is currently under `FE-DEP-002`. Decide: keep SRI under DEPS (logical grouping with other dependency-integrity concerns) or move to CSP. Document the decision.
+- [ ] **Dependency management (`FE-DEPS` after rename)** — existing 3 rules cover vulnerability scanning, subresource integrity, no dynamic third-party loading. **Add a pinned-versions rule** (`FE-DEPS-004` or next available) matching `BE-DEPS-002`'s posture for npm/pnpm/yarn lockfiles. This is the only confirmed coverage gap.
+- [ ] **Sensitive data handling (`FE-PII` after rename)** — existing 3 rules cover PII masking, autocomplete control, cache control for sensitive pages. Confirm coverage of the plan's targets (UI masking, URL parameters, browser history).
+
+### Final checks
+
+- [ ] No stale IDs remain (`grep -E '^### FE-(AUTH-|DEP-|DATA-)' framework/rules/security-frontend.md` returns nothing)
+- [ ] Every rule heading is a level-3 heading containing only the rule ID — no em-dash-and-title suffix
+- [ ] Every rule has Statement (block quote), Rationale, Verification, and Source fields
+- [ ] All IDs follow `FE-{CATEGORY}-{NNN}` format with categories from `{XSS, CSRF, STORAGE, AUTHN, CSP, DEPS, PII}`
+- [ ] At least one rule per category uses `MUST`/`MUST NOT`
 - [ ] File passes `npx markdownlint-cli2`
 
-**Done when:** every frontend category has at least the targeted rule count, all rules conform to the data-model schema, and the file passes markdownlint.
+### Why migrate, not rewrite
+
+The existing rules' *content* (rationale, threat model, OWASP citations) represents real prior thought. Throwing it away to write a fresh ~21-rule starter set loses information and mis-applies the never-renumber discipline. Migration preserves content, fixes format, and lets v1 ship with broader coverage (~26+ rules) than the original plan target.
+
+**Done when:** every frontend rule conforms to the data-model schema, no stale category abbreviations remain, every Verification is written as an agent-actionable instruction, the pinned-versions rule has been added, accuracy issues found during the audit are fixed, and the file passes markdownlint.
 
 ## 3. Update govern manifest
 
