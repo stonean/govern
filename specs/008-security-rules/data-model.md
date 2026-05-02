@@ -70,6 +70,7 @@ A rule file is a markdown document with the following structure:
 | Statement | yes | Block quote (`> …`) | One sentence using RFC 2119 keywords (MUST, MUST NOT, SHOULD, SHOULD NOT). |
 | Rationale | yes | Paragraph beginning `**Rationale:**` | Brief explanation of the threat or risk the rule mitigates. |
 | Verification | yes | Paragraph beginning `**Verification:**` | Instruction to the validate agent — see **Verification phrasing** below. |
+| Source | no | Paragraph beginning `**Source:**` | Citation to authoritative origin (e.g., OWASP cheat sheet name, RFC number, NIST publication, CIS Benchmark). Optional but recommended — aids `Learnable` (readers can trace the rule's grounding) and `Verified` (reviewers can audit the citation). |
 | Deprecated | no | Paragraph beginning `**DEPRECATED in {version}:**` | Present only on deprecated rules. Includes the removal target version. The rule remains in the file with this label until removed. |
 
 ## Verification phrasing

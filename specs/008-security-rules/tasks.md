@@ -6,21 +6,21 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 Create `framework/rules/security-backend.md` with the v1 starter set. ~35 rules across 8 categories, biased toward MUST/MUST NOT, each with statement, rationale, and verification per `data-model.md`. Coverage targets were selected by walking OWASP Top 10 (2021), OWASP API Security Top 10 (2023), and CWE Top 25.
 
-- [ ] Create `framework/rules/` directory
-- [ ] Create `framework/rules/security-backend.md` with file-level introduction
-- [ ] **Authentication** category — at least 4 rules: credential storage (memory-hard hash); session/token handling; MFA consideration; constant-time comparison of secrets
-- [ ] **Authorization** category — at least 4 rules: default-deny; explicit permission checks at every entry point; privilege escalation prevention; mass-assignment / over-posting prevention
-- [ ] **Input validation** category — at least 9 rules: boundary validation; allowlist over denylist; size limits; parameterized queries (SQL/NoSQL/command injection); SSRF prevention on outbound URL fetches; safe deserialization of untrusted data; path-traversal prevention on filesystem ops; XXE prevention on XML parsing; SSTI prevention on template rendering
-- [ ] **Data protection** category — at least 4 rules: encryption at rest commitment; secrets management; PII handling; key rotation
-- [ ] **API security** category — at least 7 rules: rate limiting; CORS policy; security headers (generic); HSTS / HTTPS-only enforcement; `Cache-Control: no-store` for sensitive responses; redirect endpoint validation; error responses do not leak internals
-- [ ] **Logging and audit** category — at least 2 rules: sensitive-data exclusion from logs; audit trail for access control changes
-- [ ] **Dependency management** category — at least 2 rules: vulnerability scanning; pinned versions
-- [ ] **Error handling** category — at least 2 rules: no stack traces in production responses; structured error codes
-- [ ] Every rule heading is a level-3 heading containing only the rule ID
-- [ ] Every rule has Statement (block quote), Rationale, and Verification fields
-- [ ] All IDs follow `BE-{CATEGORY}-{NNN}` format and start at `001` per category
-- [ ] At least one rule per category uses MUST/MUST NOT (errors); SHOULD usage is appropriate where noted
-- [ ] File passes `npx markdownlint-cli2`
+- [x] Create `framework/rules/` directory
+- [x] Create `framework/rules/security-backend.md` with file-level introduction
+- [x] **Authentication** category — at least 4 rules: credential storage (memory-hard hash); session/token handling; MFA consideration; constant-time comparison of secrets
+- [x] **Authorization** category — at least 4 rules: default-deny; explicit permission checks at every entry point; privilege escalation prevention; mass-assignment / over-posting prevention
+- [x] **Input validation** category — at least 9 rules: boundary validation; allowlist over denylist; size limits; parameterized queries (SQL/NoSQL/command injection); SSRF prevention on outbound URL fetches; safe deserialization of untrusted data; path-traversal prevention on filesystem ops; XXE prevention on XML parsing; SSTI prevention on template rendering
+- [x] **Data protection** category — at least 4 rules: encryption at rest commitment; secrets management; PII handling; key rotation
+- [x] **API security** category — at least 7 rules: rate limiting; CORS policy; security headers (generic); HSTS / HTTPS-only enforcement; `Cache-Control: no-store` for sensitive responses; redirect endpoint validation; error responses do not leak internals
+- [x] **Logging and audit** category — at least 2 rules: sensitive-data exclusion from logs; audit trail for access control changes
+- [x] **Dependency management** category — at least 2 rules: vulnerability scanning; pinned versions
+- [x] **Error handling** category — at least 2 rules: no stack traces in production responses; structured error codes
+- [x] Every rule heading is a level-3 heading containing only the rule ID
+- [x] Every rule has Statement (block quote), Rationale, and Verification fields
+- [x] All IDs follow `BE-{CATEGORY}-{NNN}` format and start at `001` per category
+- [x] At least one rule per category uses MUST/MUST NOT (errors); SHOULD usage is appropriate where noted
+- [x] File passes `npx markdownlint-cli2`
 
 **Done when:** every backend category has at least the targeted rule count, all rules conform to the data-model schema, and the file passes markdownlint.
 
