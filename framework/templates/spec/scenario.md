@@ -1,6 +1,9 @@
-# {Scenario Name}
+---
+spec-ref: "{NNN-feature-name} — {Section name}"
+tags: []
+---
 
-**spec-ref:** {NNN-feature-name} — {Section name}
+# {Scenario Name}
 
 ## Context
 

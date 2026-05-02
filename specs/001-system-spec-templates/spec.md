@@ -1,7 +1,10 @@
-# 001 — System Spec Templates
+---
+status: done
+dependencies: []
+tags: []
+---
 
-**Status:** done
-**Dependencies:** none
+# 001 — System Spec Templates
 
 Templates for the cross-cutting system specs that the constitution references but does not provide: `system.md`, `errors.md`, and `events.md`.
 

@@ -16,7 +16,7 @@ Check for `spec.md` first, then `spec-and-plan.md`. Use whichever exists for rea
 
 ## Gate
 
-Read the spec status. If the status is not `planned` or `in-progress`, stop and report:
+Read the spec's `status` field from the YAML frontmatter at the top of the file. If `status` is not `planned` or `in-progress`, stop and report:
 
 - `draft` → "Spec has unresolved open questions. Run `/gov:clarify` first."
 - `clarified` → "No plan exists. Run `/gov:plan` first."
@@ -28,7 +28,7 @@ Read the spec status. If the status is not `planned` or `in-progress`, stop and 
 - Use the plan's **Affected Files** section as the expected write boundary. If you need to modify an unlisted file, notify the user and explain why before proceeding.
 - Do NOT read or modify files belonging to other features' spec directories.
 - Do NOT read source code speculatively — only read files relevant to the current task.
-- Reference: §implement-phase, §constants, §env-vars, §pipeline-boundaries (constitution loaded by `/gov:target` — do not re-read).
+- Reference: §implement-phase, §constants, §env-vars, §pipeline-boundaries, §text-first-artifacts (constitution loaded by `/gov:target` — do not re-read).
 
 ## Instructions
 
@@ -40,7 +40,7 @@ Read the spec status. If the status is not `planned` or `in-progress`, stop and 
 4. Read the spec file for acceptance criteria and contracts.
 5. If a scenario is targeted, read the scenario file for scenario-specific context, behavior, and edge cases. The scenario scopes which part of the feature is the primary focus for this implementation session.
 6. Note the plan's **Affected Files** list — this is the expected write boundary for implementation.
-7. If spec status is `planned`, ask the user to approve the transition to `in-progress` before updating the status.
+7. If the spec's frontmatter `status` is `planned`, ask the user to approve the transition to `in-progress` before updating the status. On confirmation, update the frontmatter `status` field to `in-progress`.
 
 ### Progressive context loading
 
@@ -79,4 +79,4 @@ After all tasks are done:
    - All `.md` files in the feature directory pass `npx markdownlint-cli2`
 3. If any validation check fails, report the specific failures and do not propose the transition. The user fixes the issues and re-runs the command.
 4. If all checks pass, present a summary and ask the user to approve the transition to `done`. Do not update the status until the user confirms.
-5. Update spec status to `done`.
+5. On confirmation, update the spec's frontmatter `status` field from `in-progress` to `done`.

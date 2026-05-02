@@ -1,7 +1,10 @@
-# {NNN} — {Feature Name}
+---
+status: draft
+dependencies: []
+tags: []
+---
 
-**Status:** draft
-**Dependencies:** none
+# {NNN} — {Feature Name}
 
 {Brief description of what this feature does and why it exists.}
 

@@ -87,3 +87,9 @@ Done when: the scenario's described behavior is correctly implemented and tested
 - [x] Implement the behavior described in `scenarios/validate-fix-mode.md`
 
 Done when: the scenario's described behavior is correctly implemented and tested.
+
+## 13. Implement scenario: code-location-index
+
+- [ ] Implement the behavior described in `scenarios/code-location-index.md`
+
+Done when: the scenario's described behavior is correctly implemented and tested.

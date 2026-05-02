@@ -16,10 +16,10 @@ Tasks derived from the [plan](plan.md). Complete in order. Phase 1 must finish b
 
 ### 2. Update spec, spec-and-plan, and scenario templates
 
-- [ ] Replace the `**Status:** draft` and `**Dependencies:** none` lines in `framework/templates/spec/spec.md` with a YAML frontmatter block at the top of the file: `status: draft`, `dependencies: []`, `tags: []`. Strip the body's bold-prefix lines.
-- [ ] Apply the same change to `framework/templates/spec/spec-and-plan.md`.
-- [ ] Replace the bold-prefix `**spec-ref:**` line in `framework/templates/spec/scenario.md` with a YAML frontmatter block: `spec-ref: ""`, `tags: []`. Strip the body's bold-prefix line.
-- [ ] **Done when:** all three templates lint clean and reflect the new format.
+- [x] Replace the `**Status:** draft` and `**Dependencies:** none` lines in `framework/templates/spec/spec.md` with a YAML frontmatter block at the top of the file: `status: draft`, `dependencies: []`, `tags: []`. Strip the body's bold-prefix lines.
+- [x] Apply the same change to `framework/templates/spec/spec-and-plan.md`. (Preserved `track: lightweight` as an open-schema field.)
+- [x] Replace the bold-prefix `**spec-ref:**` line in `framework/templates/spec/scenario.md` with a YAML frontmatter block: `spec-ref: ""`, `tags: []`. Strip the body's bold-prefix line.
+- [x] **Done when:** all three templates lint clean and reflect the new format.
 
 ## Phase 2: Slash command sources
 
@@ -27,83 +27,82 @@ These tasks may proceed in parallel within a session. Each command file is touch
 
 ### 3. Update `/gov:specify`
 
-- [ ] Update `framework/commands/specify.md` to write spec metadata as YAML frontmatter rather than bold-prefix lines.
-- [ ] Add a tag prompt step: after the lightweight-track question and before file creation, instruct the command to read existing `tags` values from sibling specs in `specs/*/spec.md` and `specs/*/spec-and-plan.md` (frontmatter), display them as suggestions, and prompt the author for one or more tags. The author may pick from suggestions, enter new tags, or skip (writes `tags: []`).
-- [ ] **Done when:** the command instructions describe frontmatter-writing and the tag prompt; file lints clean.
+- [x] Update `framework/commands/specify.md` to write spec metadata as YAML frontmatter rather than bold-prefix lines.
+- [x] Add a tag prompt step: after the lightweight-track question and before file creation, instruct the command to read existing `tags` values from sibling specs in `specs/*/spec.md` and `specs/*/spec-and-plan.md` (frontmatter), display them as suggestions, and prompt the author for one or more tags. The author may pick from suggestions, enter new tags, or skip (writes `tags: []`).
+- [x] **Done when:** the command instructions describe frontmatter-writing and the tag prompt; file lints clean.
 
 ### 4. Update `/gov:clarify`
 
-- [ ] Update `framework/commands/clarify.md` to read the spec status from the YAML frontmatter `status` field rather than the `**Status:** {value}` line.
-- [ ] Update the status-write step (advance to `clarified`) to update the frontmatter field.
-- [ ] Add a missing-tags advisory check inside the validation gate: if `tags` is missing or empty, surface as one of the gate findings with severity advisory. Does not block the transition.
-- [ ] Apply the same frontmatter parsing for the scenario-targeted path (`spec-ref` from frontmatter).
-- [ ] **Done when:** the command instructions read and write frontmatter, the advisory is described, and the file lints clean.
+- [x] Update `framework/commands/clarify.md` to read the spec status from the YAML frontmatter `status` field rather than the `**Status:** {value}` line.
+- [x] Update the status-write step (advance to `clarified`) to update the frontmatter field.
+- [x] Add a missing-tags advisory check inside the validation gate: if `tags` is missing or empty, surface as one of the gate findings with severity advisory. Does not block the transition.
+- [x] Apply the same frontmatter parsing for the scenario-targeted path (`spec-ref` from frontmatter).
+- [x] **Done when:** the command instructions read and write frontmatter, the advisory is described, and the file lints clean.
 
 ### 5. Update `/gov:plan`
 
-- [ ] Update `framework/commands/plan.md` to read the spec status from frontmatter and write the status update on advance to `planned` to the frontmatter field.
-- [ ] **Done when:** instructions reference frontmatter; file lints clean.
+- [x] Update `framework/commands/plan.md` to read the spec status from frontmatter and write the status update on advance to `planned` to the frontmatter field.
+- [x] **Done when:** instructions reference frontmatter; file lints clean.
 
 ### 6. Update `/gov:implement`
 
-- [ ] Update `framework/commands/implement.md` to read/write the spec status via frontmatter (gate on `planned` or `in-progress`; advance to `in-progress` and `done`).
-- [ ] **Done when:** instructions reference frontmatter; file lints clean.
+- [x] Update `framework/commands/implement.md` to read/write the spec status via frontmatter (gate on `planned` or `in-progress`; advance to `in-progress` and `done`).
+- [x] **Done when:** instructions reference frontmatter; file lints clean.
 
 ### 7. Update `/gov:status`
 
-- [ ] Update `framework/commands/status.md` to extract `status`, `dependencies`, and `tags` from each spec's frontmatter rather than from `**Status:** {value}` and `**Dependencies:** {value}` lines.
-- [ ] Update any extraction prose that mentions "look for the bold-prefix lines" to "parse the YAML frontmatter block."
-- [ ] Confirm the dashboard rendering still works for specs with empty `tags` (display `—` or omit the column if not present in any spec; choose one and apply consistently).
-- [ ] **Done when:** the dashboard reads from frontmatter; file lints clean.
+- [x] Update `framework/commands/status.md` to extract `status`, `dependencies`, and `tags` from each spec's frontmatter rather than from `**Status:** {value}` and `**Dependencies:** {value}` lines.
+- [x] Update any extraction prose that mentions "look for the bold-prefix lines" to "parse the YAML frontmatter block."
+- [x] Confirm the dashboard rendering still works for specs with empty `tags` — chose to display tags only as an aggregate "tags in use" line below the table (skipped entirely when no spec has tags); kept the table columns unchanged for now.
+- [x] **Done when:** the dashboard reads from frontmatter; file lints clean.
 
 ### 8. Update `/gov:target`
 
-- [ ] Update `framework/commands/target.md` to read the spec status from frontmatter when displaying the target detail view.
-- [ ] **Done when:** instructions reference frontmatter; file lints clean.
+- [x] Update `framework/commands/target.md` to read the spec status from frontmatter when displaying the target detail view.
+- [x] **Done when:** instructions reference frontmatter; file lints clean.
 
 ### 9. Update `/gov:validate`
 
-- [ ] Update `framework/commands/validate.md` with the strict/advisory split per `data-model.md`'s severity table.
-- [ ] Hard-fail conditions: missing/malformed frontmatter, missing/invalid `status`, missing/invalid `dependencies`, missing `spec-ref` on scenarios.
-- [ ] Advisory: empty `tags`, unknown fields (informational), existing checkbox/cross-reference checks.
-- [ ] The command's report format should clearly separate hard fails from advisories so adopters can act on them differently.
-- [ ] **Done when:** instructions describe the split; file lints clean.
+- [x] Update `framework/commands/validate.md` with the strict/advisory split per `data-model.md`'s severity table.
+- [x] Hard-fail conditions: missing/malformed frontmatter, missing/invalid `status`, missing/invalid `dependencies`, missing `spec-ref` on scenarios.
+- [x] Advisory: empty `tags`, unknown fields (informational), existing checkbox/cross-reference checks.
+- [x] The command's report format clearly separates hard fails, blocking, advisory, and informational findings.
+- [x] **Done when:** instructions describe the split; file lints clean.
 
 ### 10. Update `/gov:capture`
 
-- [ ] Update `framework/commands/capture.md` to write frontmatter for new sketch specs (with `status: draft`, `dependencies: []`, `tags: []`).
-- [ ] **Done when:** instructions reference frontmatter; file lints clean.
+- [x] Update `framework/commands/capture.md` to write frontmatter for new sketch specs (with `status: draft`, `dependencies: []`, `tags: []`).
+- [x] **Done when:** instructions reference frontmatter; file lints clean.
 
 ### 11. Audit and update `/gov:groom`
 
-- [ ] Read `framework/commands/groom.md` and check whether it parses spec metadata as part of routing inbox items.
-- [ ] If it does: update parsing to use frontmatter.
-- [ ] If it does not: leave unchanged.
-- [ ] **Done when:** audit complete; any required updates lint clean.
+- [x] Read `framework/commands/groom.md` and check whether it parses spec metadata as part of routing inbox items.
+- [x] Audit conclusion: groom does not read or write spec metadata fields. No edit needed.
+- [x] **Done when:** audit complete; any required updates lint clean.
 
 ### 12. Audit and update `/gov:elaborate`
 
-- [ ] Read `framework/commands/elaborate.md` and check whether it writes scenario `spec-ref` or otherwise touches scenario metadata.
-- [ ] Update scenario creation to write `spec-ref` as frontmatter (it should — scenarios now use frontmatter for that field).
-- [ ] **Done when:** scenario creation produces frontmatter-formatted scenarios; file lints clean.
+- [x] Read `framework/commands/elaborate.md` and check whether it writes scenario `spec-ref` or otherwise touches scenario metadata.
+- [x] Updated the "Update spec status" section to read/write the frontmatter `status` field. (Scenario creation uses the scenario template, which already emits frontmatter from Task 2.)
+- [x] **Done when:** scenario creation produces frontmatter-formatted scenarios; file lints clean.
 
 ### 13. Audit and update `/gov:ask`
 
-- [ ] Read `framework/commands/ask.md` and check whether it reads spec/scenario metadata to identify the target.
-- [ ] If it does: update to use frontmatter.
-- [ ] **Done when:** audit complete; any required updates lint clean.
+- [x] Read `framework/commands/ask.md` and check whether it reads spec/scenario metadata to identify the target.
+- [x] Updated scope boundaries to declare that `status` is read from YAML frontmatter; references §text-first-artifacts.
+- [x] **Done when:** audit complete; any required updates lint clean.
 
 ### 14. Audit and update `/gov:spawn`
 
-- [ ] Read `framework/commands/spawn.md` and check whether it copies or transforms spec metadata when spawning a new project.
-- [ ] If it does: ensure frontmatter is preserved in the copy.
-- [ ] **Done when:** audit complete; any required updates lint clean.
+- [x] Read `framework/commands/spawn.md` and check whether it copies or transforms spec metadata when spawning a new project.
+- [x] Audit conclusion: spawn copies the entire `specs/` directory and performs string replacement on project-name references only. It does not parse, read, or write spec/scenario metadata fields. Frontmatter is preserved in the copy by virtue of full-directory copy. No edit needed.
+- [x] **Done when:** audit complete; any required updates lint clean.
 
 ### 15. Regenerate Claude command instances
 
-- [ ] Run `./scripts/gen-claude-commands.sh` to regenerate `.claude/commands/gov/*.md` from the updated `framework/commands/` and `framework/bootstrap/configure/claude.md` sources.
-- [ ] Spot-check one or two regenerated files to confirm placeholder substitution worked and frontmatter parsing instructions are present.
-- [ ] **Done when:** generation completes without error; spot-check passes.
+- [x] Run `./scripts/gen-claude-commands.sh` to regenerate `.claude/commands/gov/*.md` from the updated `framework/commands/` and `framework/bootstrap/configure/claude.md` sources.
+- [x] Spot-checked the regenerated files: 16 files regenerated, all lint clean.
+- [x] **Done when:** generation completes without error; spot-check passes.
 
 ## Phase 3: Migration logic in `/govern`
 
@@ -135,15 +134,16 @@ These tasks may proceed in parallel within a session. Each command file is touch
 
 ### 19. Migrate existing governance specs to frontmatter
 
-- [ ] For each spec under `specs/000-*` through `specs/012-*`: open `spec.md` (or `spec-and-plan.md` if that's the form used), insert a frontmatter block with the existing `status` and `dependencies` values, and remove the bold-prefix lines from the body. Tags remain empty (`tags: []`) — backfill is organic per Q2's resolution.
-- [ ] Migrate `specs/000-slash-commands/scenarios/code-location-index.md`: insert frontmatter block with `spec-ref` value, remove the bold-prefix line.
-- [ ] Migrate `specs/013-text-first-artifacts/spec.md` last so the migration process operates on the spec that motivated it.
-- [ ] **Done when:** every existing governance spec and the one scenario file uses frontmatter format.
+- [x] For each spec under `specs/000-*` through `specs/012-*`: open `spec.md`, insert a frontmatter block with the existing `status` and `dependencies` values, and remove the bold-prefix lines from the body. Tags remain empty (`tags: []`) — backfill is organic per Q2's resolution. (All 13 specs use `spec.md`; no `spec-and-plan.md` files exist in this repo.)
+- [x] Migrate `specs/000-slash-commands/scenarios/code-location-index.md`: insert frontmatter block with `spec-ref` value, remove the bold-prefix line.
+- [x] Migrate `specs/013-text-first-artifacts/spec.md` last so the migration process operates on the spec that motivated it. (Tags populated as `[format, migration, pipeline]` reflecting the spec's actual concerns.)
+- [x] Discovered and corrected a pre-existing README/spec-file mismatch for 012: spec file said `done`, README said `clarified`. README updated to match the spec file (source of truth).
+- [x] **Done when:** every existing governance spec and the one scenario file uses frontmatter format.
 
 ### 20. Add 013 cross-reference note to the code-location-index scenario
 
-- [ ] In `specs/000-slash-commands/scenarios/code-location-index.md`, add a short Note section (between Behavior and Edge Cases or as a new section near the top) pointing at 013 as the resolving framework: explain that location and maintenance are auto-resolved by 013's "structured derived view" framing, and that the consumer question becomes a gate on building anything when a real consumer emerges.
-- [ ] **Done when:** the note is present and the scenario lints clean.
+- [x] In `specs/000-slash-commands/scenarios/code-location-index.md`, added a `## Note` section near the top (between the heading and Context) pointing at 013 as the resolving framework: explains that location and maintenance are auto-resolved by 013's "structured derived view" framing, the consumer question becomes a gate on building anything, and granularity remains the one open design question.
+- [x] **Done when:** the note is present and the scenario lints clean.
 
 ## Phase 5: Documentation
 

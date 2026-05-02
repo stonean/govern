@@ -16,7 +16,7 @@ Check for `spec.md` first, then `spec-and-plan.md`. Use whichever exists. If nei
 
 ## Gate
 
-Read the spec status. If the status is not `clarified`, stop and report:
+Read the spec's `status` field from the YAML frontmatter at the top of the file. If `status` is not `clarified`, stop and report:
 
 - `draft` → "Spec has unresolved open questions. Run `/{project}:clarify` first."
 - `planned` or later → "Already planned. Run `/{project}:implement` to begin implementation."
@@ -25,7 +25,7 @@ Read the spec status. If the status is not `clarified`, stop and report:
 
 - Read only files needed for planning: the target spec, `specs/system.md`, and cross-spec files per the checklist below. Do NOT read source code, test files, or unrelated specs beyond what the checklist requires.
 - Do NOT begin implementation. This command produces `plan.md` and `tasks.md` only.
-- Reference: §plan-phase, §tasks-phase, §readiness-check (constitution loaded by `/{project}:target` — do not re-read).
+- Reference: §plan-phase, §tasks-phase, §readiness-check, §text-first-artifacts (constitution loaded by `/{project}:target` — do not re-read).
 
 ## Instructions
 
@@ -36,7 +36,7 @@ Before creating the plan, load only the cross-spec context this feature actually
 - **Always read:** `specs/system.md` — architecture patterns and shared conventions.
 - **Read if the feature emits or consumes events:** `specs/events.md` — check for naming conflicts and reuse opportunities.
 - **Read if the feature introduces error codes:** `specs/errors.md` — check code ranges and format conventions.
-- **Read if the feature has dependencies:** the spec file (not plan or tasks) of each dependency — confirm status and understand the contracts this feature builds on.
+- **Read if the feature has dependencies:** the spec file (not plan or tasks) of each dependency listed in this spec's frontmatter `dependencies` field — confirm `status` and understand the contracts this feature builds on.
 - **Read if the feature introduces or modifies domain entities or data structures:** `data-model.md` files from related specs — check for structural conflicts.
 - **Do NOT read** plans, tasks, scenarios, or source code from other features.
 
@@ -82,5 +82,5 @@ If any check fails, report the specific failures and do not propose the transiti
 ### Finalize
 
 1. Present a summary of the plan, task breakdown, and validation gate results. Ask the user to approve the transition to `planned`. Do not update the status until the user confirms.
-2. Update spec status to `planned`.
+2. On confirmation, update the spec's frontmatter `status` field from `clarified` to `planned`.
 3. Display the next step: "Run `/{project}:implement` to begin implementation."

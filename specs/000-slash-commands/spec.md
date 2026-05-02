@@ -1,7 +1,10 @@
-# 000 — Slash Command Templates
+---
+status: in-progress
+dependencies: []
+tags: []
+---
 
-**Status:** done
-**Dependencies:** none
+# 000 — Slash Command Templates
 
 Generic, project-agnostic slash command templates that operationalize the governance development pipeline. Projects copy these commands into their `.claude/commands/{project}/` directory and customize the project name and any project-specific paths.
 

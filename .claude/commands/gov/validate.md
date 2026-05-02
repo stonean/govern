@@ -23,16 +23,44 @@ If `--all` is not present, use the feature identifier if provided, otherwise fal
 - By default, this is a read-only command. Do NOT modify any files.
 - In fix mode (`--fix`), modify only checkbox state (`- [ ]` → `- [x]`) in spec and task files where the fix is mechanically safe (see Fix Mode section below). Do not modify any other content.
 - Read only files within the target feature's directory and the cross-spec files needed for reference checks (`specs/system.md`, `specs/events.md`, `specs/errors.md`, dependency spec files). Do NOT read source code or test files.
-- Reference: §spec-requirements, §plan-phase, §tasks-phase, §readiness-check, §scenarios (constitution loaded by `/gov:target` — do not re-read).
+- Reference: §spec-requirements, §plan-phase, §tasks-phase, §readiness-check, §scenarios, §text-first-artifacts (constitution loaded by `/gov:target` — do not re-read).
 
 ## Instructions
 
-Read every file in `specs/{feature}/` and run the following checks. Each check is classified as **blocking** (must fix before advancing to the next pipeline phase) or **advisory** (should fix but does not block advancement).
+Read every file in `specs/{feature}/` and run the following checks. Each check is classified by severity:
+
+- **Hard fail (blocking)** — required-field violations and malformed frontmatter. The spec is not valid until these are fixed; pipeline advancement is blocked.
+- **Blocking** — structural or content issues that must be fixed before advancing to the next pipeline phase.
+- **Advisory** — issues that should be fixed but do not block advancement.
+- **Informational** — observations that may warrant attention but are neither errors nor warnings.
+
+### Frontmatter schema (hard fail)
+
+For each spec file (`spec.md`, `spec-and-plan.md`):
+
+- [ ] A YAML frontmatter block exists at the top of the file (delimited by `---` lines).
+- [ ] The frontmatter parses as valid YAML.
+- [ ] The `status` field is present and one of: `draft`, `clarified`, `planned`, `in-progress`, `done`.
+- [ ] The `dependencies` field is present and is a list (empty list permitted).
+
+For each scenario file (`scenarios/{slug}.md`):
+
+- [ ] A YAML frontmatter block exists at the top of the file.
+- [ ] The frontmatter parses as valid YAML.
+- [ ] The `spec-ref` field is present and non-empty.
+
+Reference: the schema is canonically declared in `framework/constitution.md` §text-first-artifacts.
+
+### Frontmatter schema (advisory)
+
+- [ ] Spec files have a non-empty `tags` field. Empty or missing `tags` is reported as an advisory finding ("Tags help cross-cutting graph views; consider adding some.") but does not block.
+
+### Frontmatter schema (informational)
+
+- [ ] Unknown fields beyond the declared schema are permitted and reported as informational findings (no action required).
 
 ### Spec integrity (blocking)
 
-- [ ] Status field is present and valid (draft, clarified, planned, in-progress, done)
-- [ ] Dependencies field is present
 - [ ] Acceptance criteria section exists with at least one checkbox item
 - [ ] No placeholder or empty acceptance criteria
 - [ ] Open questions consistent with status (`clarified` or later must have none)
@@ -59,14 +87,14 @@ Read every file in `specs/{feature}/` and run the following checks. Each check i
 
 ### Scenario consistency (advisory)
 
-- [ ] Every scenario file has a spec-ref, Context, and Behavior section
+- [ ] Every scenario file has Context and Behavior sections (frontmatter `spec-ref` is checked under Frontmatter schema above)
 - [ ] Every scenario file in `scenarios/` has a corresponding task in `tasks.md`
 - [ ] Scenario-linked tasks in `tasks.md` are marked complete if the spec status is `done`
 
 ### Dependencies (blocking)
 
-- [ ] All listed dependencies exist as spec directories
-- [ ] Dependencies are at `clarified` or later (if this spec is `clarified` or later)
+- [ ] Every entry in this spec's frontmatter `dependencies` list exists as a spec directory under `specs/`
+- [ ] Each dependency's frontmatter `status` is at `clarified` or later (if this spec is `clarified` or later)
 
 ### Cross-spec references (advisory)
 
@@ -80,10 +108,12 @@ Read every file in `specs/{feature}/` and run the following checks. Each check i
 
 ### Report
 
-Separate results into two sections:
+Separate results into sections by severity:
 
-1. **Blocking** — issues that must be fixed before the spec can advance. List these first.
-2. **Advisory** — issues that should be fixed but do not block advancement.
+1. **Hard fail** — required-field violations and malformed frontmatter. The spec is not valid; pipeline advancement is blocked. List these first.
+2. **Blocking** — structural or content issues that must be fixed before advancing to the next pipeline phase.
+3. **Advisory** — issues that should be fixed but do not block advancement.
+4. **Informational** — observations (e.g., unknown frontmatter fields) that may warrant attention but are neither errors nor warnings.
 
 For each FAIL, include: what failed, what was expected, what was found, and a suggested fix.
 

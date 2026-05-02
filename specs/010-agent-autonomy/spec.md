@@ -1,7 +1,10 @@
-# 010 — Agent Autonomy
+---
+status: draft
+dependencies: [000-slash-commands]
+tags: []
+---
 
-**Status:** draft
-**Dependencies:** 000-slash-commands
+# 010 — Agent Autonomy
 
 Evaluate capabilities found in autonomous agent orchestration tools (e.g., GSD-2) and determine which can be adopted within governance's constraints: zero dependencies, markdown-only artifacts, platform-agnostic, and human-in-the-loop pipeline gates.
 

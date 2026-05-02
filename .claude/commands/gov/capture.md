@@ -18,7 +18,7 @@ If the constitution has not been loaded in this session (e.g., `/gov:target` has
 - Do NOT read existing code to infer behavior — the spec captures intended behavior as understood by the user.
 - Do NOT create scenarios — the user runs `/gov:elaborate` separately to decompose.
 - Read only what is needed: existing spec directory names (for numbering), the spec template, and `README.md` (for the feature table). Do NOT read other specs' contents unless checking for naming conflicts.
-- Reference: §spec-phase, §spec-requirements, §brownfield-process, §numbering.
+- Reference: §spec-phase, §spec-requirements, §brownfield-process, §numbering, §text-first-artifacts.
 
 ## Instructions
 
@@ -35,11 +35,12 @@ If the constitution has not been loaded in this session (e.g., `/gov:target` has
 6. Copy `specs/templates/spec.md` into the directory as `spec.md`.
 
 7. Fill in the spec from the user's description:
-   - Set status to `draft`.
-   - Populate sections with whatever behavior is known — sparse acceptance criteria are expected and valid.
+   - The frontmatter `status` field starts as `draft` (template default).
+   - Leave frontmatter `dependencies` as `[]`; add entries to the list if dependencies on other specs are apparent.
+   - Leave frontmatter `tags` as `[]`; brownfield capture is intentionally sparse, and tags can be backfilled organically as the spec gains precision through `/gov:clarify`.
+   - Populate body sections with whatever behavior is known — sparse acceptance criteria are expected and valid.
    - If no acceptance criteria are known, leave the Acceptance Criteria section empty (with a comment noting criteria will emerge from real work).
    - List any open questions the user mentioned.
-   - List dependencies on other specs if apparent.
    - Present the draft for user review before writing.
 
 8. Add the new feature to the table in `README.md`.

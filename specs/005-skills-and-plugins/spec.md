@@ -1,7 +1,10 @@
-# 005 — Skills and Plugins
+---
+status: planned
+dependencies: [004-tech-stack-selection]
+tags: []
+---
 
-**Status:** planned
-**Dependencies:** 004-tech-stack-selection
+# 005 — Skills and Plugins
 
 Based on project tech stack, recommend and scaffold relevant Claude Code skill templates during bootstrap.
 

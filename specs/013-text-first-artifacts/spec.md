@@ -1,7 +1,10 @@
-# 013 — Text-First Artifacts
+---
+status: in-progress
+dependencies: [000-slash-commands, 007-govern-workflow, 012-multi-agent-govern]
+tags: [format, migration, pipeline]
+---
 
-**Status:** in-progress
-**Dependencies:** 000-slash-commands, 007-govern-workflow, 012-multi-agent-govern
+# 013 — Text-First Artifacts
 
 Declare governance's implicit "all artifacts are markdown" principle in the constitution, formalize spec metadata as YAML frontmatter, and migrate adopted projects to the new format on the next `/govern` run.
 

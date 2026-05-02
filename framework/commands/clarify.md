@@ -22,16 +22,16 @@ Check for `spec.md` first, then `spec-and-plan.md`. Use whichever exists. If nei
 
 ### Gate
 
-Read the spec status. If the status is not `draft`, stop and report:
+Read the spec's `status` field from the YAML frontmatter at the top of the file. If `status` is not `draft`, stop and report:
 
 - `clarified` or later → "Already clarified. Run `/{project}:plan` to create the technical plan."
 
 ### Scope Boundaries
 
-- Read only the target feature's spec file and dependency spec statuses. Do NOT read plan files, tasks, source code, test files, scenarios, or unrelated specs.
+- Read only the target feature's spec file (frontmatter and body) and dependency spec frontmatter. Do NOT read plan files, tasks, source code, test files, scenarios, or unrelated specs' bodies.
 - Scenario-level open questions are not surfaced — spec-level and scenario-level questions are independent concerns.
 - Do NOT begin planning or implementation work. This command resolves questions and verifies acceptance criteria only.
-- Reference: §spec-requirements, §spec-lifecycle, §pipeline-boundaries (constitution loaded by `/{project}:target` — do not re-read).
+- Reference: §spec-requirements, §spec-lifecycle, §pipeline-boundaries, §text-first-artifacts (constitution loaded by `/{project}:target` — do not re-read).
 
 ### Instructions
 
@@ -48,28 +48,30 @@ Perform the clarify gate defined in `constitution.md` (§spec-requirements, §sp
 2. **Enumerate edge cases** — for each behavior, identify what happens with empty inputs, missing data, duplicates, boundary values, and concurrent access.
 3. **Confirm error scenarios** — verify every failure mode has a defined behavior (HTTP status, error code, message). Flag gaps.
 4. **Verify acceptance criteria** — check each is concrete, testable, and unambiguous. Rewrite vague ones. Flag missing criteria.
-5. **Check dependency readiness** — confirm dependent specs are at `clarified` or later. Flag blockers.
+5. **Check dependency readiness** — for each entry in this spec's frontmatter `dependencies` list, read that spec's frontmatter `status` field. Confirm each dependency is at `clarified` or later. Flag blockers.
 
 After the review:
 
-- Update the spec with resolved questions and any new edge cases or acceptance criteria.
-- If questions remain that need user input, list them and keep status as `draft`.
+- Update the spec body with resolved questions and any new edge cases or acceptance criteria.
+- If questions remain that need user input, list them and keep `status` at `draft`.
 - If all open questions are resolved, run the validation gate before proposing the status transition:
   - All open questions are resolved (none remain in the Open Questions section)
   - Acceptance criteria are concrete and testable — no empty placeholders
   - Dependencies are at `clarified` or later
   - The modified spec file passes `npx markdownlint-cli2`
-- If any validation check fails, report the specific failures and do not propose the transition. The user fixes the issues and re-runs the command.
-- If all checks pass, present a summary of changes and ask the user to approve the transition to `clarified`. Do not update the status until the user confirms.
+  - **Advisory** — frontmatter `tags` is non-empty. If empty, surface as a finding ("Tags are empty. Adding tags helps cross-cutting graph views.") but do NOT block the transition.
+- If any non-advisory check fails, report the specific failures and do not propose the transition. The user fixes the issues and re-runs the command.
+- If all non-advisory checks pass (advisories may remain unresolved), present a summary of changes and ask the user to approve the transition to `clarified`. Do not update the status until the user confirms.
+- On confirmation, update the frontmatter `status` field from `draft` to `clarified`.
 - Display the next step: "Run `/{project}:plan` to create the technical plan."
 
 ## Scenario-targeted clarify
 
 ### Scope Boundaries
 
-- Read only the targeted scenario file. Do NOT read the parent spec's open questions, plan files, tasks, source code, test files, or unrelated specs.
+- Read the targeted scenario file (frontmatter and body). May read the parent spec's frontmatter `status` field to decide which next-step suggestion to display. Do NOT read the parent spec's open questions or body, plan files, tasks, source code, test files, or unrelated specs.
 - Do NOT begin planning or implementation work. This command resolves scenario-level questions only.
-- Reference: §scenarios (constitution loaded by `/{project}:target` — do not re-read).
+- Reference: §scenarios, §text-first-artifacts (constitution loaded by `/{project}:target` — do not re-read).
 
 ### Instructions
 
@@ -90,4 +92,4 @@ After the review:
 - If questions remain that need user input, list them.
 - The scenario does not have its own status field — resolution is complete when all open questions are removed from the Open Questions section.
 - Run `npx markdownlint-cli2` on the modified file.
-- Display: "Scenario clarification complete." and suggest `/{project}:implement` if the parent spec is `in-progress`.
+- Read the parent spec's frontmatter `status` field. Display: "Scenario clarification complete." and suggest `/{project}:implement` if the parent spec is `in-progress`.

@@ -1,7 +1,10 @@
-# 006 — Bug Workflow
+---
+status: done
+dependencies: []
+tags: []
+---
 
-**Status:** done
-**Dependencies:** none
+# 006 — Bug Workflow
 
 Bugs are unwritten scenarios. Rather than tracking defects in a separate system, the governance framework treats every bug as evidence that a spec is missing, ambiguous, or violated. This feature adds scenario support, a bug decision tree, and brownfield triage to the governance pipeline.
 

@@ -1,7 +1,10 @@
-# 002 — Project Scaffolding Templates
+---
+status: done
+dependencies: [000-slash-commands, 001-system-spec-templates]
+tags: []
+---
 
-**Status:** done
-**Dependencies:** 000-slash-commands, 001-system-spec-templates
+# 002 — Project Scaffolding Templates
 
 Templates for the project-level files that every governance-adopting project needs beyond the constitution, AGENTS.md, and spec templates.
 

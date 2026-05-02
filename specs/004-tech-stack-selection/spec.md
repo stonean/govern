@@ -1,7 +1,10 @@
-# 004 — Tech Stack Selection
+---
+status: done
+dependencies: [003-bootstrap-automation]
+tags: []
+---
 
-**Status:** done
-**Dependencies:** 003-bootstrap-automation
+# 004 — Tech Stack Selection
 
 Interactive tech stack selection during `/gov:init` that collects richer project metadata beyond primary language(s). From those selections, populate the AGENTS.md Tech Stack table so the project's technology context is captured at creation time.
 

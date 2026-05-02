@@ -1,7 +1,10 @@
-# 009 — Scenario Targeting
+---
+status: done
+dependencies: [006-bug-workflow]
+tags: []
+---
 
-**Status:** done
-**Dependencies:** 006-bug-workflow
+# 009 — Scenario Targeting
 
 Promote scenarios to first-class targets in the governance pipeline. Currently, the session target is always a feature — commands operate on the feature's spec, plan, and tasks. This spec extends targeting so that individual scenarios within a feature can be targeted, allowing commands like `question`, `clarify`, `status`, and `implement` to operate at scenario granularity.
 

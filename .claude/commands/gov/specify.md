@@ -15,8 +15,8 @@ If the constitution has not been loaded in this session (e.g., `/gov:target` has
 ## Scope Boundaries
 
 - This command creates spec artifacts only. Do NOT read or write source code, test files, or implementation files.
-- Read only what is needed: existing spec directory names (for numbering), the spec template, and `README.md` (for the feature table). Do NOT read other specs' contents unless checking for naming conflicts.
-- Reference: §spec-phase, §spec-requirements, §lightweight-track, §numbering.
+- Read only what is needed: existing spec directory names (for numbering), existing specs' frontmatter (for tag suggestions), the spec template, and `README.md` (for the feature table). Do NOT read other specs' bodies unless checking for naming conflicts.
+- Reference: §spec-phase, §spec-requirements, §lightweight-track, §numbering, §text-first-artifacts.
 
 ## Instructions
 
@@ -33,25 +33,29 @@ If the constitution has not been loaded in this session (e.g., `/gov:target` has
 
    If all answers indicate "small and clear," this is a lightweight track feature. Otherwise, use the standard track.
 
-4. Create `specs/{NNN-feature-name}/`.
+4. **Tag prompt** — read the YAML frontmatter `tags` field from each sibling spec in `specs/*/spec.md` and `specs/*/spec-and-plan.md`. Display the union of those tag values plus the constitution's starter vocabulary as suggestions. Prompt the author: *"Tags for this spec? (Pick from existing or enter new — comma-separated. Or skip.)"* Record the response. If the author skips, leave the new spec's `tags` field as `[]`. Tags help cross-cutting graph-view consumers (Quartz, Obsidian) but are not required.
 
-5. Copy the appropriate template:
+5. Create `specs/{NNN-feature-name}/`.
+
+6. Copy the appropriate template:
    - **Standard track**: copy `specs/templates/spec.md` into the directory as `spec.md`
    - **Lightweight track**: copy `specs/templates/spec-and-plan.md` into the directory as `spec-and-plan.md`
 
-6. Fill in the spec following `constitution.md` rules (§spec-requirements):
+7. Fill in the spec following `constitution.md` rules (§spec-requirements, §text-first-artifacts):
+   - Update the frontmatter `tags` field with the values collected in step 4 (or leave as `[]` if skipped).
+   - Leave frontmatter `dependencies` as `[]`; add entries as the author identifies them or as `/clarify` resolves them.
    - Describe behavior and contracts, not implementation.
    - No language-specific code, function signatures, or package paths.
    - Acceptance criteria must be concrete and testable.
-   - List all open questions.
-   - List dependencies on other specs.
+   - List all open questions in the spec body.
+   - Add any identified dependencies to the frontmatter `dependencies` list.
 
-7. Add the new feature to the table in `README.md`.
+8. Add the new feature to the table in `README.md`.
 
-8. Run `npx markdownlint-cli2` on the new file.
+9. Run `npx markdownlint-cli2` on the new file.
 
-9. Write `.claude/gov-session.json` to set this feature as the session target.
+10. Write `.claude/gov-session.json` to set this feature as the session target.
 
-10. Display the next step:
+11. Display the next step:
     - Standard track: "Run `/gov:clarify` to resolve open questions and advance to `clarified`."
     - Lightweight track: "Run `/gov:clarify` to review the combined spec-and-plan, then `/gov:plan` to create tasks."

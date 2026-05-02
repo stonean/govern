@@ -1,7 +1,10 @@
-# 007 — Govern Workflow
+---
+status: done
+dependencies: [003-bootstrap-automation]
+tags: []
+---
 
-**Status:** done
-**Dependencies:** 003-bootstrap-automation
+# 007 — Govern Workflow
 
 > **Note:** This spec was renamed from `007-adopt-workflow` to `007-govern-workflow` by [011-brownfield-process](../011-brownfield-process/spec.md). The govern command also gains a triage → inbox migration step and `/capture` in the command manifest via 011.
 >

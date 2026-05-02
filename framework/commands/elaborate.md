@@ -64,7 +64,7 @@ Ask the user to describe the bug, edge case, or behavior they want to capture. T
 
 ### Update spec status
 
-If the spec status is `done`, update it to `in-progress` — a bug can surface after completion and the spec needs rework.
+Read the spec's `status` from the YAML frontmatter at the top of the spec file. If `status` is `done`, update the frontmatter `status` field to `in-progress` — a bug can surface after completion and the spec needs rework.
 
 ### Set scenario as session target
 

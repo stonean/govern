@@ -1,7 +1,10 @@
-# 003 — Bootstrap Automation
+---
+status: done
+dependencies: [000-slash-commands, 001-system-spec-templates, 002-project-scaffolding]
+tags: []
+---
 
-**Status:** done
-**Dependencies:** 000-slash-commands, 001-system-spec-templates, 002-project-scaffolding
+# 003 — Bootstrap Automation
 
 Governance slash commands that dogfood the same pipeline commands adopting projects use (`/gov:about`, `/gov:target`, `/gov:status`, `/gov:setup`, `/gov:specify`, `/gov:clarify`, `/gov:plan`, `/gov:implement`, `/gov:validate`, `/gov:next`), plus a governance-specific `/gov:init` that scaffolds new projects from templates.
 

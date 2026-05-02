@@ -17,7 +17,8 @@ Read `.claude/gov-session.json`. If the session includes a `scenario` and `scena
 ## Scope Boundaries
 
 - This command only reads the target artifact and appends to its Open Questions section. Do NOT modify any other section. Do NOT read or write plan files, tasks, source code, or test files.
-- Reference: §spec-requirements (constitution loaded by `/gov:target` — do not re-read).
+- Spec `status` is read from the YAML frontmatter at the top of the file (never modified by this command).
+- Reference: §spec-requirements, §text-first-artifacts (constitution loaded by `/gov:target` — do not re-read).
 
 ## Instructions
 

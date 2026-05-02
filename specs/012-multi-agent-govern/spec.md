@@ -1,7 +1,10 @@
-# 012 — Multi-Agent Govern
+---
+status: done
+dependencies: [007-govern-workflow]
+tags: []
+---
 
-**Status:** done
-**Dependencies:** 007-govern-workflow
+# 012 — Multi-Agent Govern
 
 A single `govern.md` command that supports adopting governance for multiple AI coding CLIs in the same project, with the target agent(s) selected at run time rather than baked into the file. Re-runs are additive — a project initialized for one agent can later adopt another by re-running `/govern` and selecting the new agent.
 
