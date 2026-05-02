@@ -1,7 +1,7 @@
 ---
 status: done
 dependencies: [004-tech-stack-selection]
-tags: []
+tags: [bootstrap, templates]
 ---
 
 # 005 — Workflows
