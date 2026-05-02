@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: [000-slash-commands]
 tags: [agent, process]
 ---
