@@ -119,9 +119,9 @@ Modify `framework/commands/validate.md` to add a new **Security rules** check se
 
 Append the rule-files reference to the "Secure" guiding principle in `framework/constitution.md`.
 
-- [ ] Edit the "Secure" bullet under **Guiding Principles → Technology** to read: `**Secure:** protect sensitive data through industry standards and best practices. See \`specs/security-backend.md\` and \`specs/security-frontend.md\` for enforceable rules.`
-- [ ] No other constitution edits in this task
-- [ ] `framework/constitution.md` passes `npx markdownlint-cli2`
+- [x] Edit the "Secure" bullet under **Guiding Principles → Technology** to read: `**Secure:** protect sensitive data through industry standards and best practices. See \`specs/security-backend.md\` and \`specs/security-frontend.md\` for enforceable rules.`
+- [x] No other constitution edits in this task
+- [x] `framework/constitution.md` passes `npx markdownlint-cli2`
 
 **Done when:** the "Secure" principle references the rule files by their project paths, and the file passes markdownlint.
 

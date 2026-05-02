@@ -110,3 +110,7 @@
 ## AC: Govern's post-scaffolding output reports the count of new audit items added (omitted when zero)
 
 - `framework/bootstrap/govern.md`
+
+## AC: The "Secure" principle references `specs/security-backend.md` and `specs/security-frontend.md`
+
+- `framework/constitution.md`

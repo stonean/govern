@@ -10,7 +10,7 @@ These are evaluation criteria, not implementation instructions. Use them to iden
 
 ### Technology
 
-- **Secure:** protect sensitive data through industry standards and best practices
+- **Secure:** protect sensitive data through industry standards and best practices. See `specs/security-backend.md` and `specs/security-frontend.md` for enforceable rules.
 - **Scalable:** design and implement to be dynamically scaled
 - **Learnable:** fast onboarding through clear patterns, documentation, and accessible codebase design
 - **Reliable:** graceful degradation and automatic recovery when components fail
