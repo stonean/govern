@@ -303,6 +303,69 @@ Over time the spec converges on a complete description of the feature — not fr
 
 When a `/groom` pass encounters an item that does not map to any existing spec, `/groom` directs the user to run `/capture` to initialize a spec first, then return to process the item. The commands stay decoupled — `/log` records, `/groom` routes, `/capture` creates specs.
 
+<!-- §text-first-artifacts -->
+
+## Text-First Artifacts
+
+Governance treats every artifact — constitution, specs, plans, tasks, scenarios, rules — as plain markdown the agent can edit with `Edit`. This is load-bearing: the agent's write path stays simple, PRs review glanceably, merge conflicts stay rare and human-resolvable, and adopting governance requires no bootstrap tooling beyond the AI agent itself.
+
+### Principles
+
+- All governance artifacts are markdown by default. The agent reads and writes them with the same `Edit` flow used for code.
+- Structured metadata lives in YAML frontmatter at the top of each markdown file; the document body remains markdown prose.
+- Cross-artifact references use standard relative markdown links (`[label](../path.md)`), not wiki-links — this keeps PRs reviewable on GitHub and viewers like Quartz/Obsidian still resolve them.
+- Source-of-truth artifacts are markdown. Structured derived views (SQLite caches, generated graph data, JSON indexes) are permitted only as gitignored build artifacts that consumers regenerate on demand. They never become the canonical record.
+- Exceptions to text-first source-of-truth require an explicit constitutional amendment with stated rationale.
+
+### Frontmatter Schema
+
+The frontmatter schema applies to **spec files** (`spec.md`, `spec-and-plan.md`) and **scenario files** (`scenarios/{slug}.md`). Other governance artifacts (`system.md`, `errors.md`, `events.md`, `inbox.md`, plan files, tasks files, rule files, README files) MAY include frontmatter when a specific consumer benefits, but are not required to.
+
+#### Spec files
+
+| Field | Required | Type | Allowed values | Description |
+| --- | --- | --- | --- | --- |
+| `status` | yes | string | `draft`, `clarified`, `planned`, `in-progress`, `done` | Spec lifecycle state |
+| `dependencies` | yes | list of strings | spec slugs (e.g., `002-events`); empty list permitted | Specs this feature depends on |
+| `tags` | no | list of strings | free-form; see starter vocabulary below | Cross-cutting categories used by graph-view consumers |
+
+#### Scenario files
+
+| Field | Required | Type | Allowed values | Description |
+| --- | --- | --- | --- | --- |
+| `spec-ref` | yes | string | parent spec ref, conventionally `{NNN-feature} — {Section}` | Identifies the parent spec and section the scenario elaborates |
+| `tags` | no | list of strings | free-form | Scenario-level cross-cutting tags |
+
+#### Open-schema rule
+
+Additional fields beyond those listed above are permitted and ignored by uninterested consumers. Examples adopters or future governance work might add: `owner`, `target_release`, `created_at`, `description`, `aliases`. Consumers MUST NOT error on the presence of unknown fields. `/gov:validate` reports unknown fields as informational findings (not errors).
+
+### Validation Severity
+
+`/gov:validate` checks frontmatter against this schema with the following severity:
+
+- **Hard fail** — frontmatter block missing on a spec or scenario file; frontmatter YAML malformed; `status` missing or not in the allowed set; `dependencies` missing or not a list; `spec-ref` missing on a scenario.
+- **Advisory** — `tags` missing or empty; existing checkbox/cross-reference checks.
+- **Informational** — unknown fields present.
+
+Hard fails block the validation pass. Advisory and informational findings are reported but do not block.
+
+### Starter Tag Vocabulary
+
+Published as guidance, not enforcement. Adopters and future specs MAY introduce new tags as needed; `/gov:specify` surfaces existing tags from sibling specs as autocomplete to drive convergence by reuse rather than ceremony.
+
+| Tag | Suggested use |
+| --- | --- |
+| `cli` | Specs about slash commands or command-line interactions |
+| `bootstrap` | Specs about adopting governance, project scaffolding, or initialization |
+| `process` | Specs about workflow, lifecycle, or pipeline behavior |
+| `templates` | Specs about template files (spec, plan, scenario, project-readme, etc.) |
+| `security` | Specs about security rules, authentication, authorization |
+| `agent` | Specs about AI-agent behavior, capabilities, or coordination |
+| `format` | Specs about artifact formats, schemas, or serialization conventions |
+| `pipeline` | Specs about the spec → plan → tasks → implement flow |
+| `migration` | Specs that convert existing artifacts to a new format or convention |
+
 <!-- §pipeline-boundaries -->
 
 ## Pipeline Boundaries
