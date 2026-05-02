@@ -90,6 +90,6 @@ Done when: the scenario's described behavior is correctly implemented and tested
 
 ## 13. Implement scenario: code-location-index
 
-- [ ] Implement the behavior described in `scenarios/code-location-index.md`
+- [x] Implement the behavior described in `scenarios/code-location-index.md`
 
-Done when: the scenario's described behavior is correctly implemented and tested.
+Done when: the scenario's described behavior is correctly implemented and tested. (Producer logic added to `framework/commands/implement.md` as a new "Code-location index" section + walk-tasks step 7. Will be exercised on the next `/gov:implement` run; the prose is mechanical — maintain a map, write deterministic markdown — so no fixture simulation is warranted at this time.)
