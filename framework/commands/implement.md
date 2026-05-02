@@ -1,3 +1,7 @@
+---
+description: Execute implementation tasks for the targeted feature.
+---
+
 # Implement
 
 Execute implementation tasks for the targeted feature.

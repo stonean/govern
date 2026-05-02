@@ -1,3 +1,7 @@
+---
+description: Configure settings.local.json with permissions for slash commands.
+---
+
 # Configure
 
 Configure `{cli-config-dir}/settings.local.json` with the permissions needed for slash commands to run without manual approval.

@@ -1,3 +1,7 @@
+---
+description: Scaffold a new project with governance files, templates, and commands.
+---
+
 # Init
 
 Scaffold a new project with governance files, templates, and slash commands.

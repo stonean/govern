@@ -1,7 +1,7 @@
 ---
 status: done
 dependencies: []
-tags: []
+tags: [commands, pipeline, templates]
 ---
 
 # 000 — Slash Command Templates

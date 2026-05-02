@@ -1,3 +1,7 @@
+---
+description: Append an open question to the targeted spec or scenario.
+---
+
 # Ask
 
 Append an open question to the targeted artifact (spec or scenario).

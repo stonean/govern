@@ -1,3 +1,7 @@
+---
+description: Display the pipeline dashboard for all feature specs.
+---
+
 # Status
 
 Display the pipeline dashboard for all feature specs.

@@ -1,3 +1,7 @@
+---
+description: Create a technical plan and task breakdown for a clarified spec.
+---
+
 # Plan
 
 Create a technical plan and task breakdown for a clarified spec.

@@ -1,3 +1,7 @@
+---
+description: Display an overview of the pipeline and its slash commands.
+---
+
 # Help
 
 Display an overview of the pipeline and how to use its slash commands.

@@ -1,3 +1,7 @@
+---
+description: Resolve open questions and advance a spec from draft to clarified.
+---
+
 # Clarify
 
 Resolve open questions and advance a spec from `draft` to `clarified`, or resolve open questions in a targeted scenario.

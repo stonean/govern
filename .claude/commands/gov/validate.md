@@ -1,3 +1,7 @@
+---
+description: Check a feature's artifacts for consistency and cross-spec alignment.
+---
+
 # Validate
 
 Check a feature's artifacts for consistency and cross-spec alignment.

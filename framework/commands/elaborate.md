@@ -1,3 +1,7 @@
+---
+description: Add a scenario to elaborate a section of the targeted feature.
+---
+
 # Elaborate
 
 Add a scenario to elaborate a section of the targeted feature.

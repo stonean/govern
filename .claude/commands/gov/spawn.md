@@ -1,3 +1,7 @@
+---
+description: Spawn a new project from this one, copying specs, commands, and config.
+---
+
 # Spawn
 
 Spawn a new project from this one. Copies specs, commands, configuration, and — if present — implementation code to a new directory with the new project name.

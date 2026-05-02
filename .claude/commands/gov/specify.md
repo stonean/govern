@@ -1,3 +1,7 @@
+---
+description: Create a new feature spec.
+---
+
 # Specify
 
 Create a new feature spec.

@@ -1,3 +1,7 @@
+---
+description: Walk the inbox and route each item to its proper home.
+---
+
 # Groom
 
 Walk the inbox and route each item to its proper home.

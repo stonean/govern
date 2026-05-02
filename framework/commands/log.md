@@ -1,3 +1,7 @@
+---
+description: Record a raw item to the inbox.
+---
+
 # Log
 
 Record a raw item to the inbox.
