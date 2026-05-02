@@ -75,11 +75,11 @@ Modify `framework/constitution.md` to add a new subsection immediately after the
 
 Modify `framework/constitution.md` to add a new subsection under `## Pipeline Boundaries`.
 
-- [ ] Insert `### Concurrent Features` heading under `## Pipeline Boundaries`
-- [ ] Paragraph states `gov-session.json` holds a single target by design
-- [ ] Paragraph directs users to `git worktree` and platform isolation features (Claude Code's `isolation: "worktree"` agent parameter, Cursor's worktree integration) for concurrent feature work
-- [ ] Paragraph stays short (3–5 sentences)
-- [ ] File passes `npx markdownlint-cli2`
+- [x] Insert `### Concurrent Features` heading under `## Pipeline Boundaries`
+- [x] Paragraph states `gov-session.json` holds a single target by design
+- [x] Paragraph directs users to `git worktree` and platform isolation features (Claude Code's `isolation: "worktree"` agent parameter, Cursor's worktree integration) for concurrent feature work
+- [x] Paragraph stays short (3–5 sentences)
+- [x] File passes `npx markdownlint-cli2`
 
 **Done when:** the constitution has the new subsection in the correct location, communicating the single-target invariant and the platform/git workaround for concurrent work.
 

@@ -384,6 +384,12 @@ Published as guidance, not enforcement. Adopters and future specs MAY introduce 
 - Never transition a spec to the next status without explicit user approval — present the work done and wait for the user to confirm before updating the status field
 - Specs and plans are living documents — update them when decisions change, but don't backtrack silently
 
+<!-- §concurrent-features -->
+
+### Concurrent Features
+
+The session state file (`{cli-config-dir}/{project}-session.json`) holds a single target by design. The pipeline is serial within a feature, and concurrent work on independent features uses two independent sessions in two terminals — not multi-target session state. Isolation is provided by the platform layer: `git worktree` keeps the working trees separate, and AI-agent platforms typically expose isolation primitives (Claude Code's `isolation: "worktree"` agent parameter, Cursor's worktree integration, etc.). Reach for those rather than asking governance to track multiple targets at once.
+
 <!-- §cross-spec-impact -->
 
 ### Cross-Spec Impact
