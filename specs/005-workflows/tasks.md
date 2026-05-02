@@ -82,16 +82,16 @@ Run all markdownlint and structural checks, and verify the spec's acceptance cri
 
 Driven by [010-agent-autonomy](../010-agent-autonomy/spec.md). 010's "skills" capability adopts Anthropic/Claude Code terminology for context-loaded instruction packs, which conflicts with 005's prior use of "skills" for tech-stack-conditional development workflows (lint, test, format, migrate). To free the term, rename 005's internal concept to "workflows" throughout governance code and prose, and flatten the framework directory (the inner `templates/` becomes redundant once the parent already says "workflows"). Implementation is performed by 010's `/gov:implement` pass; this task tracks completion from 005's side.
 
-- [ ] `framework/skills/` renamed to `framework/workflows/` and flattened (registry + nine workflow files at the same level, no inner `templates/`)
-- [ ] `specs/005-skills-and-plugins/` renamed to `specs/005-workflows/`
-- [ ] `framework/bootstrap/govern.md` manifest, recommendation step, and prose updated to use "workflows" / `workflows/` paths
-- [ ] `.claude/commands/gov/init.md` recommendation step paths and prose updated (hand-maintained, generator skips)
-- [ ] `framework/bootstrap/configure/claude.md` "Bash commands used by skills" comment label updated to "workflows"
-- [ ] 005's own artifacts (`spec.md`, `plan.md`, `tasks.md`, `data-model.md`, `code-locations.md`) updated for terminology and renamed paths
-- [ ] `specs/013-text-first-artifacts/plan.md` one-row migration entry updated to the new spec dir path
-- [ ] `README.md` references to 005's "skills" feature updated to "workflows"
-- [ ] `.claude/commands/gov/configure.md` regenerated from updated source via `./scripts/gen-claude-commands.sh`
-- [ ] `npx markdownlint-cli2` passes on all modified `.md` files
-- [ ] After 010's implementation completes, advance 005 from `in-progress` back to `done` via a separate `/gov:implement` pass
+- [x] `framework/skills/` renamed to `framework/workflows/` and flattened (registry + nine workflow files at the same level, no inner `templates/`)
+- [x] `specs/005-skills-and-plugins/` renamed to `specs/005-workflows/`
+- [x] `framework/bootstrap/govern.md` manifest, recommendation step, and prose updated to use "workflows" / `workflows/` paths
+- [x] `.claude/commands/gov/init.md` recommendation step paths and prose updated (hand-maintained, generator skips)
+- [x] `framework/bootstrap/configure/claude.md` "Bash commands used by skills" comment label updated to "workflows"
+- [x] 005's own artifacts (`spec.md`, `plan.md`, `tasks.md`, `data-model.md`, `code-locations.md`) updated for terminology and renamed paths
+- [x] `specs/013-text-first-artifacts/plan.md` one-row migration entry updated to the new spec dir path
+- [x] `README.md` references to 005's "skills" feature updated to "workflows"
+- [x] `.claude/commands/gov/configure.md` regenerated from updated source via `./scripts/gen-claude-commands.sh`
+- [x] `npx markdownlint-cli2` passes on all modified `.md` files
+- [x] After 010's implementation completes, advance 005 from `in-progress` back to `done` via a separate `/gov:implement` pass
 
 **Done when:** the rename is complete and consistent across governance code and 005's artifacts, the new acceptance criterion in `spec.md` is verifiable, and 005 is ready for re-advancement to `done`.

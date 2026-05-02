@@ -75,3 +75,27 @@
 ## AC: Govern does not overwrite workflow files that already exist in the project
 
 - `framework/bootstrap/govern.md`
+
+## AC: Rename internal terminology from "skills" to "workflows" to free the term "skills" for Anthropic-style context-loaded instruction packs
+
+- `.claude/commands/gov/configure.md`
+- `.claude/commands/gov/init.md`
+- `README.md`
+- `framework/bootstrap/configure/claude.md`
+- `framework/bootstrap/govern.md`
+- `framework/workflows/format-go-gofmt.md`
+- `framework/workflows/format-python-black.md`
+- `framework/workflows/format-typescript-prettier.md`
+- `framework/workflows/lint-go-golangci-lint.md`
+- `framework/workflows/lint-python-ruff.md`
+- `framework/workflows/lint-typescript-eslint.md`
+- `framework/workflows/registry.json`
+- `framework/workflows/test-go-gotest.md`
+- `framework/workflows/test-python-pytest.md`
+- `framework/workflows/test-typescript-vitest.md`
+- `specs/005-workflows/code-locations.md`
+- `specs/005-workflows/data-model.md`
+- `specs/005-workflows/plan.md`
+- `specs/005-workflows/spec.md`
+- `specs/005-workflows/tasks.md`
+- `specs/013-text-first-artifacts/plan.md`
