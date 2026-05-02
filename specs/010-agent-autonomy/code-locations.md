@@ -19,3 +19,7 @@
 ## AC: `AGENTS.md` project template gains an optional "Skills" index section listing available skill files and their activation conditions (empty by default)
 
 - `framework/templates/project/agents.md`
+
+## AC: Constitution `## Guiding Principles` → `Cost-conscious` (or a new dedicated subsection) gains a cross-reference paragraph naming governance's cost levers (lightweight track, `[simple]` marker, stuck detection, default-off autonomy) and pointing at platform tooling for runtime controls
+
+- `framework/constitution.md`

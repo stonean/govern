@@ -63,11 +63,11 @@ Modify `framework/templates/project/agents.md` to insert an optional `## Skills`
 
 Modify `framework/constitution.md` to add a new subsection immediately after the `### Business` principles list.
 
-- [ ] Insert `### Cost levers` heading after the `### Business` list
-- [ ] Paragraph names governance's existing cost levers: lightweight track (§lightweight-track), `[simple]` marker (010), stuck detection (010), default-off autonomy (010)
-- [ ] Paragraph points at the adopter's platform tooling for runtime cost controls (Claude Code's `/cost`, Anthropic usage dashboard, Cursor's request limits — examples, not commitments)
-- [ ] Paragraph stays short (4–6 sentences); reads as guidance, not a manual
-- [ ] File passes `npx markdownlint-cli2`
+- [x] Insert `### Cost levers` heading after the `### Business` list
+- [x] Paragraph names governance's existing cost levers: lightweight track (§lightweight-track), `[simple]` marker (010), stuck detection (010), default-off autonomy (010)
+- [x] Paragraph points at the adopter's platform tooling for runtime cost controls (Claude Code's `/cost`, Anthropic usage dashboard, Cursor's request limits — examples, not commitments)
+- [x] Paragraph stays short (4–6 sentences); reads as guidance, not a manual
+- [x] File passes `npx markdownlint-cli2`
 
 **Done when:** the constitution has the new subsection in the correct location, listing all four levers and pointing at platform tooling.
 

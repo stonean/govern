@@ -31,6 +31,12 @@ These are evaluation criteria, not implementation instructions. Use them to iden
 - **Compliant:** meet regulatory, legal, and industry requirements
 - **Cost-conscious:** optimize cost across building, operating, and scaling products and services
 
+<!-- §cost-levers -->
+
+### Cost levers
+
+Per-task token tracking and budget ceilings require a runtime governance does not have — that work belongs to the AI platform. Governance contributes by offering cost-aware patterns the user can opt into. The current levers: the [Lightweight Track](#lightweight-track) skips the plan phase for small features; the optional `[simple]` marker on tasks signals to the agent (and the user) that a trivial task should be routed to a cheaper model per the adopter's platform mapping; the stuck-detection step in `/{project}:implement` catches runaway loops before they compound spend; default-off autonomy keeps the human in the loop unless `--auto` is explicitly passed. For runtime cost controls, point the adopter at the platform's tooling — Claude Code's `/cost`, the Anthropic usage dashboard, Cursor's request limits, and equivalents.
+
 <!-- §pipeline -->
 
 ## Development Pipeline
