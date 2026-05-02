@@ -41,6 +41,7 @@ See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred 
 | [011-brownfield-process](specs/011-brownfield-process/spec.md) | done | 006, 007 | Formalized process for initializing and incrementally building out specs in brownfield projects |
 | [012-multi-agent-govern](specs/012-multi-agent-govern/spec.md) | done | 007 | Unified govern command with runtime agent selection — supports adopting multiple AI CLIs in one project and adding agents on re-run |
 | [013-text-first-artifacts](specs/013-text-first-artifacts/spec.md) | done | 000, 007, 012 | Declare text-first artifacts principle, adopt YAML frontmatter for spec metadata, migrate adopted projects on next /govern |
+| [014-reclarify-backedge](specs/014-reclarify-backedge/spec.md) | clarified | 000, 009, 013 | Wire up `/ask` to own the documented `planned/in-progress → draft` back-edge so questions surfacing mid-pipeline are captured and the spec's lifecycle invariant is maintained automatically |
 
 ## Adopting in an Existing Project
 
