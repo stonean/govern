@@ -24,7 +24,7 @@ Check for `spec.md` first, then `spec-and-plan.md`. Use whichever exists. If nei
 Read the spec's `status` field from the YAML frontmatter at the top of the file. If `status` is not `clarified`, stop and report:
 
 - `draft` → "Spec has unresolved open questions. Run `/gov:clarify` first."
-- `planned` or later → "Already planned. Run `/gov:implement` to begin implementation."
+- `planned` or later → "Spec is already planned. Run `/gov:implement` to begin implementation."
 
 ## Scope Boundaries
 

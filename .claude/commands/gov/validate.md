@@ -9,7 +9,7 @@ Check a feature's artifacts for consistency and cross-spec alignment.
 
 ## Purpose
 
-Audit a feature's spec, plan, tasks, and data model for consistency. By default, reports issues without modifying files. With `--fix`, automatically corrects fixable checkbox state mismatches. Use this to catch problems before advancing to the next pipeline phase.
+Audit a feature's spec, plan, tasks, and data model for consistency. By default, reports issues without modifying files. With `--fix`, automatically corrects fixable checkbox state mismatches. Use this to catch problems before the next pipeline gate fires.
 
 ## Context
 
@@ -35,7 +35,7 @@ If `--all` is not present, use the feature identifier if provided, otherwise fal
 Read every file in `specs/{feature}/` and run the following checks. Each check is classified by severity:
 
 - **Hard fail (blocking)** — required-field violations and malformed frontmatter. The spec is not valid until these are fixed; pipeline advancement is blocked.
-- **Blocking** — structural or content issues that must be fixed before advancing to the next pipeline phase.
+- **Blocking** — structural or content issues that must be fixed before the next pipeline gate fires.
 - **Advisory** — issues that should be fixed but do not block advancement.
 - **Informational** — observations that may warrant attention but are neither errors nor warnings.
 
@@ -149,7 +149,7 @@ Findings produced by this section are surfaced under validate's existing severit
 Separate results into sections by severity:
 
 1. **Hard fail** — required-field violations and malformed frontmatter. The spec is not valid; pipeline advancement is blocked. List these first.
-2. **Blocking** — structural or content issues that must be fixed before advancing to the next pipeline phase.
+2. **Blocking** — structural or content issues that must be fixed before the next pipeline gate fires.
 3. **Advisory** — issues that should be fixed but do not block advancement.
 4. **Informational** — observations (e.g., unknown frontmatter fields) that may warrant attention but are neither errors nor warnings.
 

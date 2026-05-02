@@ -26,7 +26,7 @@ When `--auto` is set:
 
 The following gates **still fire and pause** even with `--auto` on:
 
-- Phase transitions (`planned`→`in-progress`, `in-progress`→`done`) — confirmation required per §pipeline-boundaries.
+- Pipeline gates (`planned`→`in-progress`, `in-progress`→`done`) — confirmation required per §pipeline-boundaries.
 - Stuck-detection events (see Setup step 7) — auto mode does not power through cycles.
 - Out-of-bounds file writes (see **Walk through tasks** step 4) — modifying a file not in the plan's affected files list still requires user notification.
 - Spec edits, plan edits, or new tasks discovered mid-implement.

@@ -11,6 +11,7 @@ Configure `.claude/settings.local.json` with the permissions needed for slash co
 - Read and write only `.claude/settings.local.json`. Do NOT modify any other file.
 - Add missing entries; do NOT remove, deduplicate, reorder, or rewrite entries the user (or another command) added beyond the canonical set listed below.
 - Do NOT scan source code, specs, or git history. This command only manages permissions.
+- Reference: no constitution sections apply — this command operates on agent-specific permission state, not governance artifacts.
 
 ## Instructions
 

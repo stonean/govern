@@ -27,7 +27,7 @@ Use the session target from `{cli-config-dir}/{project}-session.json` if set, bu
 1. Check if `specs/inbox.md` exists.
    - If it does not exist, stop and report: "No inbox file found at `specs/inbox.md`. Nothing to groom."
 2. Read `specs/inbox.md`.
-   - If the file has no items (only headings and comments), report: "Inbox is clean — no items to groom." Keep the file to preserve git history.
+   - If the file has no list items (no lines beginning with `-` or `*` outside HTML comments), report: "Inbox is clean — no items to groom." Keep the file to preserve git history.
 
 ### Groom each item
 
@@ -46,7 +46,7 @@ For each item in the inbox list:
    - If the existing spec does not cover the reported behavior clearly — recommend updating the spec directly. Offer to help update the spec section.
 
    **Step 3: Is the spec clear but needs a scenario?**
-   - If the spec covers the area but the specific behavior needs lower-level elaboration — create a scenario inline under the matching spec's `scenarios/` directory using the `specs/templates/scenario.md` template, then append a task to the spec's `tasks.md` referencing the new scenario. (`/groom` keeps the inbox flow moving; for a deeper interactive walk through a single scenario, the user can run `/{project}:elaborate` separately.)
+   - If the spec covers the area but the specific behavior needs lower-level elaboration — create a scenario inline under the matching spec's `scenarios/` directory using the `specs/templates/scenario.md` template, then append a task to the spec's `tasks.md` referencing the new scenario. (`/{project}:groom` keeps the inbox flow moving; for a deeper interactive walk through a single scenario, run `/{project}:elaborate` separately.)
 
 3. After migrating or resolving the item, remove it from `specs/inbox.md`.
 4. **Wait for user confirmation before moving to the next item.** Do not proceed until the user approves.

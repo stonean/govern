@@ -29,7 +29,7 @@ Check for `spec.md` first, then `spec-and-plan.md`. Use whichever exists. If nei
 
 Read the spec's `status` field from the YAML frontmatter at the top of the file. If `status` is not `draft`, stop and report:
 
-- `clarified` or later → "Already clarified. Run `/gov:plan` to create the technical plan."
+- `clarified` or later → "Spec is already clarified. Run `/gov:plan` to create the technical plan."
 
 ### Scope Boundaries
 

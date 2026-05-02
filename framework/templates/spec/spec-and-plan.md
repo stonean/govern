@@ -21,12 +21,15 @@ track: lightweight
 
 <!-- Organize the spec into sections that describe behavior, contracts, and constraints.
      Use headings that make sense for this feature — there is no fixed set of required sections
-     beyond Acceptance Criteria.
+     beyond Acceptance Criteria and Open Questions.
 
      Lightweight track: this document combines spec and plan. Use when ALL of these are true:
      - The feature touches a single module or package
      - There are no open questions — the approach is obvious
      - The change is small (roughly <50 lines of production code)
+
+     If a question surfaces later, capture it in Open Questions below and run
+     /{project}:clarify before continuing.
 -->
 
 ## Technical Decisions
@@ -59,4 +62,11 @@ Alternative considered: separate table — rejected because session data is alre
 - [ ] Session refresh extends expiry by the configured duration
 - [ ] Expired sessions return 401
 
+-->
+
+## Open Questions
+
+<!-- Lightweight specs are expected to have none at creation time — that is the qualifying
+     condition for this track. If one surfaces later (during plan or implement), capture it
+     here and run /{project}:clarify to resolve before continuing.
 -->

@@ -15,7 +15,7 @@ Establishes which feature spec all subsequent `/{project}:*` commands operate on
 
 - Read `constitution.md` once per session and the targeted feature's `spec.md` (or `spec-and-plan.md`) frontmatter and open-question count. Read the targeted scenario file only when one is specified.
 - Do NOT read plan files, tasks, source code, test files, or unrelated specs' bodies.
-- Do NOT modify any spec, plan, scenario, or source file. The only file written is the session JSON (and the targeted spec's `status` field, only when the user confirms reopening a `done` spec in step 8).
+- Do NOT modify any spec, plan, scenario, or source file. The only file written is the session JSON. Status transitions belong to the pipeline commands (`/{project}:clarify`, `/{project}:plan`, `/{project}:implement`) and to `/{project}:elaborate` (the documented `done → in-progress` back-edge).
 - Reference: §spec-lifecycle, §scenarios, §text-first-artifacts.
 
 ## Instructions
@@ -93,4 +93,4 @@ If `$ARGUMENTS` is empty or contains only whitespace (note: `0`, `00`, `000`, or
      - `clarified` → `/{project}:plan`
      - `planned` → `/{project}:implement`
      - `in-progress` → `/{project}:implement`
-     - `done` → ask the user if they want to reopen this spec. If yes, update the spec's frontmatter `status` field to `in-progress` and suggest `/{project}:elaborate` to capture the change. If no, confirm the spec is complete.
+     - `done` → confirm the spec is complete. To reopen it, run `/{project}:elaborate` to add a scenario — that command performs the documented `done → in-progress` back-edge.

@@ -8,7 +8,7 @@ Add a scenario to elaborate a section of the targeted feature.
 
 ## Purpose
 
-Walks the bug decision tree and creates a scenario file under the active feature's `scenarios/` directory. Appends a linked task to the feature's `tasks.md`. This is the primary mechanism for capturing bugs, edge cases, and detailed behavior at a finer grain than the parent spec.
+Walks the bug decision tree and creates a scenario file under the session target feature's `scenarios/` directory. Appends a linked task to the feature's `tasks.md`. This is the primary mechanism for capturing bugs, edge cases, and detailed behavior at a finer grain than the parent spec.
 
 ## Context
 
@@ -24,7 +24,7 @@ Use the session target from `{cli-config-dir}/{project}-session.json`. If no ses
 
 ### Confirm target
 
-1. Read `{cli-config-dir}/{project}-session.json` to get the active feature.
+1. Read `{cli-config-dir}/{project}-session.json` to get the session target's feature.
 2. Read the feature's spec file (`spec.md` or `spec-and-plan.md`).
 3. Display the feature name and status, and ask the user to confirm this is the correct target.
 

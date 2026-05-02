@@ -29,7 +29,7 @@ Read `{cli-config-dir}/{project}-session.json`. If the session includes a `scena
 
 ### Confirm target
 
-1. Read `{cli-config-dir}/{project}-session.json` to get the active feature and optional scenario.
+1. Read `{cli-config-dir}/{project}-session.json` to get the session target's feature and optional scenario.
 2. Read the target artifact (scenario file if targeted, otherwise spec file).
 3. Display the feature name, scenario name (if targeted), status, and a brief summary of what the artifact covers.
 

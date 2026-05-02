@@ -16,6 +16,7 @@ A spec project defines the tech stack, architecture, and foundational features f
 - This command copies files and renames references. Do NOT generate new code, specs, or plans.
 - Read only what is needed: the source project's file structure, `AGENTS.md` (for display name detection), and `initialize.md` (if present, for additional inputs and copy guidance). Do NOT read spec contents, source code logic, or plan details.
 - All operations target the new project directory. Do NOT modify the source project.
+- Reference: no constitution sections apply — this is a one-shot scaffolding command that operates on file copies, not governance artifacts.
 
 ## Inputs
 

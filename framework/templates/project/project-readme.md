@@ -37,8 +37,7 @@
 ### Pipeline
 
 ```text
-/{project}:specify  →  /{project}:clarify  →  /{project}:plan  →  /{project}:implement
-   (draft)               (clarified)            (planned)         (in-progress → done)
+/{project}:specify ──▶ draft ──/{project}:clarify──▶ clarified ──/{project}:plan──▶ planned ──/{project}:implement──▶ in-progress ──▶ done
 ```
 
 Each command enforces its pipeline gate — you cannot plan without a clarified spec, and you cannot implement without a plan. A `done` spec re-enters the pipeline at `in-progress` when a new scenario is added — the scenario captures the change, the spec evolves with it.

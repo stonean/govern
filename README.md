@@ -72,7 +72,7 @@ The same `govern.md` supports every CLI listed above. Use whichever curl snippet
 
 ## Slash Commands
 
-Adoption installs a full set of slash commands that operationalize the pipeline. All commands are verb-named and session-aware — run `/target` first to set the working feature, then use pipeline commands in context.
+Adoption installs a full set of slash commands that operationalize the pipeline. All commands are verb-named and session-aware — use `/target` to switch to an existing feature; `/specify` and `/capture` create a new feature and set it as the session target automatically.
 
 ### Pipeline (advance state)
 
@@ -117,7 +117,7 @@ Adoption installs a full set of slash commands that operationalize the pipeline.
 
 ## Starting a New Project
 
-The recommended path is `/gov:init`, which automates the steps below — including a guided tech stack questionnaire that populates the AGENTS.md Tech Stack table automatically. The manual steps are listed here for reference or for agents that don't support the init command.
+The fastest path is `/govern` (see [Adopting in an Existing Project](#adopting-in-an-existing-project) above) — it scaffolds a working setup into a fresh repo. The manual steps below are listed for reference or for agents that don't yet support `/govern`.
 
 ### 1. Bootstrap project structure
 
@@ -182,8 +182,9 @@ Follow the pipeline defined in `constitution.md`:
 
 1. **Spec** — resolve all open questions, update status to `clarified`
 2. **Plan** — run `/plan` to create plan.md (technical decisions, affected files) and tasks.md (ordered work items) in one step. If the feature involves persistence, also add data-model.md. Updates spec status to `planned`
-3. **Readiness check** — run `/validate` to verify all gates pass before writing code
-4. **Implement** — follow the tasks list, update spec status to `in-progress`, then `done`
+3. **Implement** — follow the tasks list, update spec status to `in-progress`, then `done`
+
+Run `/validate` any time to audit a feature's artifacts; it is not a pipeline gate, but it is the recommended check before starting `/implement`.
 
 ## Security Rules
 
@@ -244,7 +245,7 @@ For brownfield projects, `specs/inbox.md` is a temporary inbox. Items are record
 
 ## Updating an Adopted Project
 
-Projects that were bootstrapped with `/gov:init` or adopted governance manually can pull the latest governance files by running the govern command. It uses three strategies to decide how each file is handled:
+Projects that were bootstrapped with `/govern` or adopted governance manually can pull the latest governance files by running the govern command again. It uses three strategies to decide how each file is handled:
 
 | Strategy | Behavior | Examples |
 | --- | --- | --- |
@@ -288,7 +289,7 @@ Adding a new agent is a single registry row plus an agent-specific `framework/bo
 Governance artifacts are plain markdown with YAML frontmatter, so any markdown viewer or PKM tool can browse them. The recommended viewer for graph-style navigation is [Quartz](https://quartz.jzhao.xyz):
 
 ```bash
-npx quartz build --input specs/ --serve
+npx quartz specs/
 ```
 
 This renders the spec dependency graph, scenario backlinks, and tag cross-references as a browsable site, with no committed configuration required. Quartz reads relative markdown links and YAML frontmatter natively — the conventions governance uses by design (see [constitution.md](framework/constitution.md#text-first-artifacts)).
