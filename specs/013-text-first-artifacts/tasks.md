@@ -171,3 +171,12 @@ These tasks may proceed in parallel within a session. Each command file is touch
 - [x] Walked the spec's Acceptance Criteria list and verified each item against the implementation.
 - [x] Marked each acceptance criterion `[x]` as it is verified — all 17 criteria are satisfied.
 - [x] **Done when:** every acceptance criterion in `spec.md` is checked off and verified.
+
+## Phase 7: Post-done refinements
+
+### 24. Implement scenario: markdown-derived-views
+
+- [x] Implement the behavior described in `scenarios/markdown-derived-views.md`.
+- [x] Edit `framework/constitution.md` §text-first-artifacts to draw the markdown-vs-non-markdown distinction in the structured-derived-view rule. Markdown derived views may be committed when their diffs are valuable to humans; non-markdown derived views (SQLite, JSON, binary, generated graph data) remain gitignored.
+
+Done when: the scenario's described behavior is correctly implemented in `framework/constitution.md` and the file lints clean.
