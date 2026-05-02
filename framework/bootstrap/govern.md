@@ -102,6 +102,93 @@ files = [
 
 Any file listed in `pinned.files` that would normally use `update` strategy is treated as `skip` instead. Report pinned files in the post-scaffolding summary.
 
+## Frontmatter Migration
+
+If `specs/` does not exist (first run), skip this section — there is nothing to migrate.
+
+Bring existing spec and scenario files into the YAML frontmatter format declared in `framework/constitution.md` §text-first-artifacts. Migration is idempotent: re-running on an already-migrated project produces no further metadata changes.
+
+### Precheck
+
+Run `git status --porcelain -- specs/` (project-relative). If the output is non-empty, refuse with:
+
+> Migration requires a clean working tree under `specs/`. Commit or stash your changes, then re-run.
+
+Exit before any modifications. Unrelated in-flight work outside `specs/` does not block migration.
+
+### Walk
+
+For each file matching one of:
+
+- `specs/**/spec.md`
+- `specs/**/spec-and-plan.md`
+- `specs/**/scenarios/*.md`
+
+Determine whether the file needs migration:
+
+- Read the first non-blank line of the file. If it is `---`, the file already has frontmatter — skip with reason "already frontmatter."
+- Otherwise, scan the first few lines after the heading for bold-prefix metadata patterns (`**Status:**`, `**Dependencies:**`, `**spec-ref:**`). If at least one is found, the file needs migration.
+- If no bold-prefix lines are present and no frontmatter exists, skip with reason "no metadata to migrate."
+
+Skip files that appear in `.governance.toml` `pinned.files` with reason "pinned." The adopter is responsible for migrating pinned files manually.
+
+### Convert
+
+For each file that needs migration:
+
+**Spec files** (`spec.md`, `spec-and-plan.md`):
+
+- Extract `**Status:** {value}` and `**Dependencies:** {value}` from the body.
+- For dependencies, parse the comma-separated slug list. The literal value `none` becomes an empty list (`[]`).
+- Preserve any additional bold-prefix fields the project may have added (e.g., `**Track:** lightweight` becomes `track: lightweight` under the open-schema rule).
+- Construct the YAML frontmatter block:
+
+  ```yaml
+  ---
+  status: {value}
+  dependencies: [{slug, slug, ...}]
+  tags: []
+  ---
+  ```
+
+- Remove the bold-prefix lines from the body.
+- Insert the frontmatter block at the very top of the file, with one blank line separating it from the heading.
+
+**Scenario files** (`scenarios/{slug}.md`):
+
+- Extract `**spec-ref:** {value}` from the body.
+- Construct the YAML frontmatter block:
+
+  ```yaml
+  ---
+  spec-ref: "{value}"
+  tags: []
+  ---
+  ```
+
+  Quote the `spec-ref` value because it conventionally contains an em-dash and spaces.
+
+- Remove the bold-prefix line from the body.
+- Insert the frontmatter block at the very top of the file, with one blank line separating it from the heading.
+
+### Edge cases
+
+- **Partially migrated file** (frontmatter present and bold-prefix lines also present in body): the precheck above treats this as "already frontmatter" and skips. The user may run a manual cleanup pass; the migration does not attempt mixed-state recovery.
+- **Malformed bold-prefix metadata** (e.g., missing `**Status:**` line, typo in field name, unparseable value): log a warning to the summary as `skipped (malformed metadata): {file path}` with a brief reason. The user repairs manually before re-running.
+- **Bold-prefix metadata with custom fields**: preserved as additional frontmatter fields under the open-schema rule.
+
+### Summary
+
+Print a per-file summary at the end of the migration step:
+
+- `migrated: {file path}` for converted files
+- `skipped (already frontmatter): {file path}` for files that were already in the new format
+- `skipped (pinned): {file path}` for files listed in `.governance.toml`
+- `skipped (no metadata to migrate): {file path}` for files without recognizable metadata
+- `skipped (malformed metadata): {file path} — {reason}` for files that could not be parsed
+
+The user reviews the result via `git diff` and commits or aborts via `git restore`. No backup directory is created — git is the recovery mechanism.
+
 ## File Fetching
 
 Fetch each file from the governance repo and copy it to the destination path. The source URL pattern is:
@@ -291,6 +378,8 @@ Next steps:
 
 To adopt an additional agent later, re-run `/govern --add-agent`.
 
+Tip: `npx quartz specs/` renders your specs as a navigable graph view in the browser. Other PKM tools (Obsidian, Logseq, MkDocs) work unchanged — pick whichever fits your workflow, or none.
+
 ---
 
 ### Update mode (existing `specs/` directory detected)
@@ -302,6 +391,8 @@ To adopt an additional agent later, re-run `/govern --add-agent`.
 Updated agents: {comma-separated `name` of selected agents}.
 
 Review changes to updated files and commit when ready. To adopt an additional agent, re-run `/govern --add-agent`.
+
+Tip: `npx quartz specs/` renders your specs as a navigable graph view in the browser. Other PKM tools (Obsidian, Logseq, MkDocs) work unchanged.
 
 ---
 

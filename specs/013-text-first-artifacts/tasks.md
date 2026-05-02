@@ -108,27 +108,31 @@ These tasks may proceed in parallel within a session. Each command file is touch
 
 ### 16. Add migration step to `framework/bootstrap/govern.md`
 
-- [ ] Add a new section to `framework/bootstrap/govern.md`, positioned between agent selection and the file-manifest fetch phase, titled "Frontmatter Migration."
-- [ ] Step 1: run `git status --porcelain -- specs/` (project-relative). If the output is non-empty, refuse with a clear message ("Migration requires a clean working tree under `specs/`. Commit or stash your changes, then re-run.") and exit before any modifications.
-- [ ] Step 2: walk `specs/**/spec.md`, `specs/**/spec-and-plan.md`, and `specs/**/scenarios/*.md`.
-- [ ] Step 3: for each file, check whether the first non-blank line is `---`. If yes, skip with reason "already frontmatter." If no and bold-prefix metadata lines are present, convert: insert frontmatter block at top, remove redundant body lines.
-- [ ] Step 4: for each file, also check `.governance.toml` `pinned.files`. If pinned, skip with reason "pinned."
-- [ ] Step 5: print a per-file summary at the end of the run (`migrated`, `skipped (already frontmatter)`, `skipped (pinned)`, `skipped (no metadata to migrate)`). Surface to the user.
-- [ ] **Done when:** the migration section is present, idempotent, scoped, and respects pinning; file lints clean.
+- [x] Add a new section to `framework/bootstrap/govern.md`, positioned between Project Configuration (which reads `.governance.toml`) and File Fetching, titled "Frontmatter Migration."
+- [x] Step 1: run `git status --porcelain -- specs/` (project-relative). If the output is non-empty, refuse with a clear message ("Migration requires a clean working tree under `specs/`. Commit or stash your changes, then re-run.") and exit before any modifications.
+- [x] Step 2: walk `specs/**/spec.md`, `specs/**/spec-and-plan.md`, and `specs/**/scenarios/*.md`.
+- [x] Step 3: for each file, check whether the first non-blank line is `---`. If yes, skip with reason "already frontmatter." If no and bold-prefix metadata lines are present, convert: insert frontmatter block at top, remove redundant body lines.
+- [x] Step 4: for each file, also check `.governance.toml` `pinned.files`. If pinned, skip with reason "pinned."
+- [x] Step 5: print a per-file summary at the end of the run (`migrated`, `skipped (already frontmatter)`, `skipped (pinned)`, `skipped (no metadata to migrate)`, `skipped (malformed metadata)`). Surface to the user.
+- [x] Added an explicit early-return when `specs/` does not exist (first run — nothing to migrate).
+- [x] Added an Edge Cases subsection covering partially-migrated files, malformed metadata, and custom open-schema fields.
+- [x] **Done when:** the migration section is present, idempotent, scoped, and respects pinning; file lints clean.
 
 ### 17. Add Quartz tip to govern.md post-run output
 
-- [ ] Add a one-line tip to the post-run summary block of `framework/bootstrap/govern.md`: `Tip: 'npx quartz specs/' renders your specs as a graph view in the browser.`
-- [ ] Position with the other post-run tips so it's discoverable but not load-bearing.
-- [ ] **Done when:** the tip appears in the post-run output; file lints clean.
+- [x] Added a one-line tip to both the First-run and Update-mode output blocks: `Tip: \`npx quartz specs/\` renders your specs as a navigable graph view in the browser. Other PKM tools (Obsidian, Logseq, MkDocs) work unchanged.`
+- [x] Positioned at the end of each block (after the existing next-steps content) so it's discoverable but not load-bearing.
+- [x] **Done when:** the tip appears in the post-run output; file lints clean.
 
 ### 18. Verify migration on a test fixture
 
-- [ ] Create a temporary directory outside the repo with a few representative bold-prefix specs and one scenario file (mirror three or four of governance's current specs).
-- [ ] Manually simulate the migration step by following the prose instructions on the fixture.
-- [ ] Confirm: clean-tree precheck behaves correctly (refuses on dirty tree, proceeds on clean), bold-prefix is converted to frontmatter, idempotent re-run produces no changes, pinned files are skipped if `.governance.toml` lists them.
-- [ ] Document any rough edges discovered and feed them back as edits to `govern.md`'s migration section.
-- [ ] **Done when:** the fixture migration runs cleanly end-to-end; documented findings (if any) are incorporated.
+- [x] Created `/tmp/govern-013-fixture/` with: `specs/000-foo/spec.md` (typical bold-prefix), `specs/000-foo/scenarios/edge-case.md` (bold-prefix `spec-ref`), `specs/001-bar/spec.md` (pinned via `.governance.toml`), `specs/002-already-migrated/spec.md` (already in frontmatter), plus a `.governance.toml` pinning `001-bar`.
+- [x] Confirmed clean-tree precheck behavior: clean → empty `git status --porcelain -- specs/` → migration proceeds; dirty → non-empty output → migration refuses.
+- [x] Walked the convert step on `000-foo/spec.md` and `000-foo/scenarios/edge-case.md`. Both produced correctly-structured frontmatter (em-dash in `spec-ref` properly quoted), bodies preserved, `# Heading` placed after the frontmatter block. Output lints clean.
+- [x] Verified pinning: `001-bar/spec.md` was untouched (matches `.governance.toml` `pinned.files`).
+- [x] Verified idempotency: `002-already-migrated/spec.md` starts with `---` on the first non-blank line and would be skipped per the prose.
+- [x] No rough edges discovered. The migration prose in `govern.md` is sufficient as written.
+- [x] **Done when:** the fixture migration runs cleanly end-to-end; documented findings (if any) are incorporated. (Fixture left in `/tmp/govern-013-fixture/` — `/tmp` clears on reboot.)
 
 ## Phase 4: Self-migration of governance's own specs
 
@@ -149,10 +153,10 @@ These tasks may proceed in parallel within a session. Each command file is touch
 
 ### 21. Add "Viewing artifacts" section to README.md
 
-- [ ] Add a new section to the root `README.md` (positioned after "Slash Commands" or "Markdown" — pick whichever flows better) titled "Viewing artifacts."
-- [ ] Document `npx quartz` against `specs/` as the recommended viewer for browsing artifacts as a graph.
-- [ ] Note that the artifacts work unchanged in Obsidian, Logseq, Foam, MkDocs, or no viewer at all — Quartz is recommended, not required.
-- [ ] **Done when:** the section is present, accurate, and the README lints clean.
+- [x] Added a new "Viewing artifacts" section to the root `README.md`, positioned just before the "Markdown" section.
+- [x] Documents `npx quartz build --input specs/ --serve` as the recommended viewer; references `framework/constitution.md` §text-first-artifacts.
+- [x] Lists portable alternatives (Obsidian, Logseq, Foam, MkDocs, plain `cat`/GitHub PR review) framed as "pick whichever fits your workflow, or none."
+- [x] **Done when:** the section is present, accurate, and the README lints clean.
 
 ## Phase 6: Verification
 

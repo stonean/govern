@@ -283,6 +283,26 @@ Governance currently distributes to two AI coding agents:
 
 Adding a new agent is a single registry row plus an agent-specific `framework/bootstrap/configure/{key}.md` permission file — see [framework/bootstrap/govern.md](framework/bootstrap/govern.md#agent-registry) for the full rules.
 
+## Viewing artifacts
+
+Governance artifacts are plain markdown with YAML frontmatter, so any markdown viewer or PKM tool can browse them. The recommended viewer for graph-style navigation is [Quartz](https://quartz.jzhao.xyz):
+
+```bash
+npx quartz build --input specs/ --serve
+```
+
+This renders the spec dependency graph, scenario backlinks, and tag cross-references as a browsable site, with no committed configuration required. Quartz reads relative markdown links and YAML frontmatter natively — the conventions governance uses by design (see [constitution.md](framework/constitution.md#text-first-artifacts)).
+
+Quartz is recommended, not enforced. The same artifacts work unchanged in:
+
+- **[Obsidian](https://obsidian.md)** — graph view + backlinks; point at the repo and open
+- **[Logseq](https://logseq.com)** — open-source PKM, similar graph model
+- **[Foam](https://foambubble.github.io/foam/)** — VS Code extension for markdown knowledge graphs
+- **[MkDocs](https://www.mkdocs.org)** — static documentation site generator
+- Plain `cat`, GitHub PR review, or any markdown editor — no viewer required
+
+Pick whichever fits your workflow, or none. The principle is that artifacts stay portable and source-of-truth markdown, with structured viewers as derived views.
+
 ## Markdown
 
 All `.md` files must pass `npx markdownlint-cli2` using the project config. See [constitution.md](framework/constitution.md#markdown-standards) for the full rule set.
