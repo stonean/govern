@@ -83,15 +83,15 @@ Add the two rule files to `framework/bootstrap/govern.md`'s **Governance-owned s
 
 Add a new top-level **Security audit (brownfield)** section to `framework/bootstrap/govern.md`, slotted after **Shared Files** and before **Per-Agent Scaffolding**. The section reads each rule file that was newly created by the manifest pass, evaluates each rule's Verification trigger against existing `specs/NNN-*` artifacts, and appends findings to `specs/inbox.md`.
 
-- [ ] Insert **Security audit (brownfield)** section between **Shared Files** and **Per-Agent Scaffolding**
-- [ ] Section's trigger: at least one of `specs/security-backend.md` or `specs/security-frontend.md` was newly **created** by the manifest pass AND the project contains at least one `specs/NNN-*` directory
-- [ ] Section silently skips when the trigger does not fire (greenfield run, or routine re-run with rule files already present)
-- [ ] Section loads each newly created rule file using the same integrity checks validate uses (well-formed headings, required fields, valid IDs, no duplicates); on load failure, reports the failure and skips the audit for that file
-- [ ] Section iterates loaded rules; for each rule whose Verification trigger fires against an existing project artifact (`spec.md`, `spec-and-plan.md`, `plan.md`, scenario files under `specs/NNN-*/`), produces a finding
-- [ ] Section appends each finding to `specs/inbox.md` as `- [ ] {Rule ID}: {affected artifact path} does not address — {one-line summary}`
-- [ ] Section deduplicates against existing inbox content: skip any finding whose `- [ ] {Rule ID}: {affected artifact path}` prefix already appears in the inbox
-- [ ] Add an audit-summary line to **Post-Scaffolding Output**: `{N} security audit items added to specs/inbox.md. Run /{project}:groom to triage.` Omit when N is zero
-- [ ] `framework/bootstrap/govern.md` passes `npx markdownlint-cli2`
+- [x] Insert **Security audit (brownfield)** section between **Shared Files** and **Per-Agent Scaffolding**
+- [x] Section's trigger: at least one of `specs/security-backend.md` or `specs/security-frontend.md` was newly **created** by the manifest pass AND the project contains at least one `specs/NNN-*` directory
+- [x] Section silently skips when the trigger does not fire (greenfield run, or routine re-run with rule files already present)
+- [x] Section loads each newly created rule file using the same integrity checks validate uses (well-formed headings, required fields, valid IDs, no duplicates); on load failure, reports the failure and skips the audit for that file
+- [x] Section iterates loaded rules; for each rule whose Verification trigger fires against an existing project artifact (`spec.md`, `spec-and-plan.md`, `plan.md`, scenario files under `specs/NNN-*/`), produces a finding
+- [x] Section appends each finding to `specs/inbox.md` as `- [ ] {Rule ID}: {affected artifact path} does not address — {one-line summary}`
+- [x] Section deduplicates against existing inbox content: skip any finding whose `- [ ] {Rule ID}: {affected artifact path}` prefix already appears in the inbox
+- [x] Add an audit-summary line to **Post-Scaffolding Output**: `{N} security audit items added to specs/inbox.md. Run /{project}:groom to triage.` Omit when N is zero
+- [x] `framework/bootstrap/govern.md` passes `npx markdownlint-cli2`
 
 **Done when:** govern runs the audit only when the trigger conditions hold, writes deduplicated findings to inbox in the documented format, reports the count, and the file passes markdownlint.
 

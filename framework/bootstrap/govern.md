@@ -245,6 +245,62 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 
 If `.gitignore` does not exist, create it from `framework/templates/project/gitignore` plus language patterns.
 
+## Security Audit (brownfield)
+
+Run a one-time security audit when the project newly receives a security rule file alongside existing feature specs. This is the brownfield-adoption hook described in `specs/008-security-rules/spec.md` — it routes findings through `specs/inbox.md` so the adopter can triage them via `/{project}:groom` at their own pace, rather than having every legacy spec immediately fail validate.
+
+### Trigger
+
+Run the audit only when **both** conditions hold after the **Shared Files** manifest pass has completed:
+
+1. At least one of `specs/security-backend.md` or `specs/security-frontend.md` was **newly created** by the manifest pass (the destination file did not exist before this run). A file that was merely updated or unchanged does not trigger the audit.
+2. The project contains at least one feature spec directory under `specs/` matching the `NNN-*` pattern (zero-padded, three-digit prefix followed by a hyphen and a slug).
+
+If either condition fails, skip this section silently — no output, no finding, no inbox entry. This covers the two routine cases:
+
+- **Greenfield adoption** — no `specs/NNN-*/` directories exist, so the audit has nothing to scan against.
+- **Routine re-run** — the rule files were created on a prior run; the manifest pass reports them as "updated" or "unchanged" rather than "created".
+
+### Loading rule files
+
+For each rule file that passed the trigger:
+
+1. Read the file from its destination path (`specs/security-backend.md` or `specs/security-frontend.md`).
+2. Apply the same integrity checks `/{project}:validate` uses for the security-rule check section: well-formed level-3 headings of the form `### {ID}`, the four required fields (Statement, Rationale, Verification, Source), an ID matching `{FE|BE}-{CATEGORY}-{NNN}`, and no duplicate IDs within the file.
+3. If a file fails any integrity check, report `Security audit: {path} failed to load — {reason}; skipping audit for this file.` and continue with the other rule file (if applicable). Do not abort the surrounding govern run.
+
+This mirrors validate's posture — partial or guessed-at parsing produces unreliable findings, so an unloadable file is treated as absent for audit purposes.
+
+### Per-rule check
+
+For each rule that loaded successfully:
+
+1. Identify the artifacts in scope: `specs/NNN-*/spec.md`, `specs/NNN-*/spec-and-plan.md`, `specs/NNN-*/plan.md`, and any `specs/NNN-*/scenarios/*.md`.
+2. Read the rule's **Verification** field. The field describes the trigger — what makes the rule applicable to a given artifact — and the commitment the artifact must include when triggered.
+3. For each artifact whose content fires the rule's trigger but does not include the required commitment, produce one finding.
+
+Rules whose Verification trigger does not fire for any artifact produce no finding (the contextual-application property — silently inert when no spec exercises the rule's surface).
+
+### Writing findings to the inbox
+
+Each finding is one line appended to `specs/inbox.md`:
+
+```text
+- [ ] {Rule ID}: {affected artifact path} does not address — {one-line summary}
+```
+
+The `{one-line summary}` describes the gap concretely (e.g., `does not name a memory-hard password hashing algorithm`, `does not specify an output encoding strategy`). Prefixing each line with the rule ID makes related findings group naturally during `/{project}:groom` and gives the adopter a stable handle for cross-referencing.
+
+### Deduplication
+
+Before appending each finding, scan the existing `specs/inbox.md` (if it exists) for any line beginning with `- [ ] {Rule ID}: {affected artifact path}` — the prefix up to the first em-dash. If a matching line is already present, skip the new finding. This makes the audit safe to re-trigger after a user deletes and re-installs a rule file.
+
+Findings the user has already groomed (lines that have been removed or rewritten) are not re-emitted — once the adopter has triaged a finding, govern does not resurrect it.
+
+### Audit summary
+
+Track the count of newly appended findings (post-deduplication). The total is reported by **Post-Scaffolding Output**; when the count is zero, the audit-summary line is omitted entirely.
+
 ## Per-Agent Scaffolding
 
 For each selected agent (in registry row order), run these steps with `{config_dir}` resolved to the agent's value and `{key}` to the agent's key.
@@ -392,6 +448,7 @@ After scaffolding, display:
 - For each scaffolded agent, the agent's `rules_file_note` from the registry
 - Any fetch failures encountered
 - Self-update notice (if applicable — see below)
+- Security audit summary (if applicable — see below)
 - Next steps (varies by mode):
 
 ### Self-update notice
@@ -401,6 +458,20 @@ If any selected agent's `{config_dir}/commands/govern.md` was reported as "updat
 > **The govern command itself was updated.** Start a new session and re-run `/govern` to apply the latest changes.
 
 This notice is not shown on first run (the file is new, not updated) or when the govern command was unchanged across all agents.
+
+### Security audit summary
+
+If the **Security Audit (brownfield)** section ran and appended one or more new findings to `specs/inbox.md`, append this single line to the file summary:
+
+> {N} security audit items added to `specs/inbox.md`. Run `/{project}:groom` to triage.
+
+Where `{N}` is the count of newly appended findings (after deduplication). Omit this line when:
+
+- The audit did not run (trigger conditions did not fire — greenfield run, or routine re-run with rule files already present), OR
+- The audit ran but every finding was already in the inbox (`N == 0`), OR
+- The audit ran but produced no findings (no rule's Verification trigger fired against any existing artifact).
+
+This summary complements `/{project}:groom`, which is the user's path to working through the inbox at their own pace.
 
 ### First run (no existing `specs/` directory)
 

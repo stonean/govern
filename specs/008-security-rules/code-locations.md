@@ -42,3 +42,27 @@
 ## AC: Projects can pin either file in `.governance.toml` to skip updates
 
 - `framework/bootstrap/govern.md`
+
+## AC: On a govern run where a security rule file is newly created AND `specs/NNN-*` directories exist, govern audits the existing specs against the rule and writes one inbox item per finding to `specs/inbox.md`
+
+- `framework/bootstrap/govern.md`
+
+## AC: On a greenfield run (no existing `specs/NNN-*` directories), the audit is silently skipped
+
+- `framework/bootstrap/govern.md`
+
+## AC: On a routine re-run (rule files already present), the audit is silently skipped
+
+- `framework/bootstrap/govern.md`
+
+## AC: Inbox items follow the format `- [ ] {Rule ID}: {affected artifact path} does not address — {one-line summary}`
+
+- `framework/bootstrap/govern.md`
+
+## AC: Audit findings are deduplicated against existing inbox content (no duplicate items emitted on re-trigger)
+
+- `framework/bootstrap/govern.md`
+
+## AC: Govern's post-scaffolding output reports the count of new audit items added (omitted when zero)
+
+- `framework/bootstrap/govern.md`
