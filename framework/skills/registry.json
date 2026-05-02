@@ -1,0 +1,65 @@
+[
+  {
+    "name": "ESLint",
+    "category": "Linting",
+    "trigger": { "field": "backend_language", "value": "TypeScript" },
+    "template": "lint-typescript-eslint.md",
+    "description": "Run ESLint against the TypeScript codebase and surface findings"
+  },
+  {
+    "name": "Vitest",
+    "category": "Testing",
+    "trigger": { "field": "backend_language", "value": "TypeScript" },
+    "template": "test-typescript-vitest.md",
+    "description": "Run the Vitest suite for the TypeScript codebase"
+  },
+  {
+    "name": "Prettier",
+    "category": "Formatting",
+    "trigger": { "field": "backend_language", "value": "TypeScript" },
+    "template": "format-typescript-prettier.md",
+    "description": "Format the TypeScript codebase with Prettier"
+  },
+  {
+    "name": "Ruff",
+    "category": "Linting",
+    "trigger": { "field": "backend_language", "value": "Python" },
+    "template": "lint-python-ruff.md",
+    "description": "Run Ruff against the Python codebase and surface findings"
+  },
+  {
+    "name": "pytest",
+    "category": "Testing",
+    "trigger": { "field": "backend_language", "value": "Python" },
+    "template": "test-python-pytest.md",
+    "description": "Run the pytest suite for the Python codebase"
+  },
+  {
+    "name": "Black",
+    "category": "Formatting",
+    "trigger": { "field": "backend_language", "value": "Python" },
+    "template": "format-python-black.md",
+    "description": "Format the Python codebase with Black"
+  },
+  {
+    "name": "golangci-lint",
+    "category": "Linting",
+    "trigger": { "field": "backend_language", "value": "Go" },
+    "template": "lint-go-golangci-lint.md",
+    "description": "Run golangci-lint against the Go codebase and surface findings"
+  },
+  {
+    "name": "go test",
+    "category": "Testing",
+    "trigger": { "field": "backend_language", "value": "Go" },
+    "template": "test-go-gotest.md",
+    "description": "Run the Go test suite via the go toolchain"
+  },
+  {
+    "name": "gofmt",
+    "category": "Formatting",
+    "trigger": { "field": "backend_language", "value": "Go" },
+    "template": "format-go-gofmt.md",
+    "description": "Format the Go codebase with gofmt"
+  }
+]
