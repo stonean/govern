@@ -129,10 +129,10 @@ Append the rule-files reference to the "Secure" guiding principle in `framework/
 
 Run all structural and lint checks; verify each acceptance criterion is satisfied by the produced artifacts.
 
-- [ ] `npx markdownlint-cli2` passes on all created/modified files: `framework/rules/security-backend.md`, `framework/rules/security-frontend.md`, `framework/bootstrap/govern.md`, `framework/commands/validate.md`, `framework/constitution.md`, and the feature directory (`spec.md`, `plan.md`, `tasks.md`, `data-model.md`, `code-locations.md`)
-- [ ] Every rule ID in both files matches the `{surface}-{category}-{NNN}` format
-- [ ] No duplicate rule IDs within either file (check via `grep '^### ' framework/rules/security-*.md | sort | uniq -d`)
-- [ ] Every rule has Statement, Rationale, and Verification fields present
-- [ ] Each acceptance criterion in `spec.md` is checked individually against the produced artifacts and marked `- [x]` only if satisfied
+- [x] `npx markdownlint-cli2` passes on all created/modified files: `framework/rules/security-backend.md`, `framework/rules/security-frontend.md`, `framework/bootstrap/govern.md`, `framework/commands/validate.md`, `framework/constitution.md`, and the feature directory (`spec.md`, `plan.md`, `tasks.md`, `data-model.md`, `code-locations.md`)
+- [x] Every rule ID in both files matches the `{surface}-{category}-{NNN}` format
+- [x] No duplicate rule IDs within either file (check via `grep '^### ' framework/rules/security-*.md | sort | uniq -d`)
+- [x] Every rule has Statement, Rationale, and Verification fields present
+- [x] Each acceptance criterion in `spec.md` is checked individually against the produced artifacts and marked `- [x]` only if satisfied
 
 **Done when:** all checks pass, the rule files are internally consistent, and every acceptance criterion is satisfied.
