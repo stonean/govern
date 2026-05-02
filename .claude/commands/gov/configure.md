@@ -6,6 +6,12 @@ description: Configure settings.local.json with permissions for slash commands.
 
 Configure `.claude/settings.local.json` with the permissions needed for slash commands to run without manual approval.
 
+## Scope Boundaries
+
+- Read and write only `.claude/settings.local.json`. Do NOT modify any other file.
+- Add missing entries; do NOT remove, deduplicate, reorder, or rewrite entries the user (or another command) added beyond the canonical set listed below.
+- Do NOT scan source code, specs, or git history. This command only manages permissions.
+
 ## Instructions
 
 1. Read `.claude/settings.local.json` (create it if missing, with `{"permissions":{"allow":[],"deny":[]}}`).

@@ -13,6 +13,7 @@ Standards and conventions for spec-driven software development. This project def
     - `templates/spec/` — Templates consumed during the pipeline (spec, plan, tasks, data-model, research, scenario, spec-and-plan)
     - `templates/project/` — Templates consumed during adoption (agents.md, claude-md.md, system.md, errors.md, events.md, project-readme.md, gitignore, inbox.md, initialize.md)
   - [framework/commands/](framework/commands/) — Slash command sources for the operational commands
+  - [framework/workflows/](framework/workflows/) — Tech-stack-specific workflow files (lint, test, format, migrate) plus `registry.json` mapping stack selections to workflows
   - [framework/bootstrap/](framework/bootstrap/) — The `govern.md` installer plus per-agent permission files (`configure/{agent}.md`)
 - [docs/introduction.md](docs/introduction.md) — Long-form pitch for spec-driven development. The constitution is authoritative for normative rules.
 - [specs/](specs/) — Feature specs for governance itself (dogfooding the pipeline)
@@ -34,9 +35,9 @@ See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred 
 | [005-workflows](specs/005-workflows/spec.md) | done | 004 | Recommend and scaffold development workflows (lint, test, format, migrate) based on tech stack during init |
 | [006-bug-workflow](specs/006-bug-workflow/spec.md) | done | none | Scenario support, bug decision tree, and brownfield triage |
 | [007-govern-workflow](specs/007-govern-workflow/spec.md) | done | 003 | Self-contained govern command to bootstrap and update governance in existing projects |
-| [008-security-rules](specs/008-security-rules/spec.md) | draft | 007 | Enforceable backend and frontend security rules distributed via adopt |
+| [008-security-rules](specs/008-security-rules/spec.md) | done | 007 | Enforceable backend and frontend security rules distributed via `/govern` |
 | [009-scenario-targeting](specs/009-scenario-targeting/spec.md) | done | 006 | Promote scenarios to first-class pipeline targets for question, clarify, status, and implement commands |
-| [010-agent-autonomy](specs/010-agent-autonomy/spec.md) | draft | 000 | Evaluate and adopt agent orchestration capabilities (skills, complexity routing, stuck detection, autonomy) |
+| [010-agent-autonomy](specs/010-agent-autonomy/spec.md) | done | 000 | Evaluate and adopt agent orchestration capabilities (skills, complexity routing, stuck detection, autonomy) |
 | [011-brownfield-process](specs/011-brownfield-process/spec.md) | done | 006, 007 | Formalized process for initializing and incrementally building out specs in brownfield projects |
 | [012-multi-agent-govern](specs/012-multi-agent-govern/spec.md) | done | 007 | Unified govern command with runtime agent selection — supports adopting multiple AI CLIs in one project and adding agents on re-run |
 | [013-text-first-artifacts](specs/013-text-first-artifacts/spec.md) | done | 000, 007, 012 | Declare text-first artifacts principle, adopt YAML frontmatter for spec metadata, migrate adopted projects on next /govern |
@@ -180,14 +181,13 @@ cp /path/to/governance/framework/templates/spec/spec.md specs/000-skeleton/spec.
 Follow the pipeline defined in `constitution.md`:
 
 1. **Spec** — resolve all open questions, update status to `clarified`
-2. **Plan** — create plan.md with technical decisions, list affected files. If the feature involves persistence, add data-model.md
-3. **Tasks** — create tasks.md, break the plan into ordered work items. Update spec status to `planned`
-4. **Readiness check** — run `/validate` to verify all gates pass before writing code
-5. **Implement** — follow the tasks list, update spec status to `in-progress`, then `done`
+2. **Plan** — run `/plan` to create plan.md (technical decisions, affected files) and tasks.md (ordered work items) in one step. If the feature involves persistence, also add data-model.md. Updates spec status to `planned`
+3. **Readiness check** — run `/validate` to verify all gates pass before writing code
+4. **Implement** — follow the tasks list, update spec status to `in-progress`, then `done`
 
 ## Security Rules
 
-The governance framework includes enforceable security rules for backend and frontend code, distributed via adopt. Rules use RFC 2119 language: **MUST/MUST NOT** are blocking violations, **SHOULD/SHOULD NOT** are advisory warnings.
+The governance framework includes enforceable security rules for backend and frontend code, distributed via `/govern`. Rules use RFC 2119 language: **MUST/MUST NOT** are blocking violations, **SHOULD/SHOULD NOT** are advisory warnings.
 
 - [framework/rules/security-backend.md](framework/rules/security-backend.md) — Authentication, authorization, input validation, data protection, API security, logging, dependency management, and error handling
 - [framework/rules/security-frontend.md](framework/rules/security-frontend.md) — XSS prevention, CSRF protection, secure storage, authentication handling, content security, and dependency management
@@ -256,7 +256,7 @@ The `.gitignore` uses a `merge` strategy — governance patterns are appended be
 
 ### Pinning files with .governance.toml
 
-If your project has customized a file that governance normally overwrites (`update` strategy), you can pin it to prevent adopt from overwriting your changes. Create a `.governance.toml` file in your project root:
+If your project has customized a file that governance normally overwrites (`update` strategy), you can pin it to prevent `/govern` from overwriting your changes. Create a `.governance.toml` file in your project root:
 
 ```toml
 [pinned]
@@ -268,11 +268,11 @@ files = [
 ]
 ```
 
-Any file listed in `pinned.files` is treated as `skip` instead of `update` when adopt runs. Pinned files are reported in the post-scaffolding summary.
+Any file listed in `pinned.files` is treated as `skip` instead of `update` when `/govern` runs. Pinned files are reported in the post-scaffolding summary.
 
 ### Manual updates
 
-If you prefer not to use adopt, governance is a reference, not a dependency. Review the governance changelog or diff, decide which changes apply to your project, and update your copies at your own pace.
+If you prefer not to use `/govern`, governance is a reference, not a dependency. Review the governance changelog or diff, decide which changes apply to your project, and update your copies at your own pace.
 
 ## Platform Support
 

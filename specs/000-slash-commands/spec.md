@@ -8,6 +8,8 @@ tags: [commands, pipeline, templates]
 
 Generic, project-agnostic slash command templates that operationalize the governance development pipeline. Projects copy these commands into their `.claude/commands/{project}/` directory and customize the project name and any project-specific paths.
 
+> **Note:** subsequent specs renamed several commands and removed one. References below to `about`, `setup`, and `next` reflect the original design; the current names are `help` (about), `configure` (setup, renamed by [012-multi-agent-govern](../012-multi-agent-govern/spec.md)), and the auto-advance `next` command was retired in favor of explicit pipeline gates surfaced by `/{project}:status` and `/{project}:target`.
+
 ## Problem
 
 The constitution defines the pipeline (spec, plan, tasks, implement) and the spec lifecycle (draft, clarified, planned, in-progress, done), but provides no interactive tooling to enforce it. Projects like anvil have built their own slash commands from scratch, duplicating the pipeline logic that should be shared.

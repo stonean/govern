@@ -8,6 +8,8 @@ tags: [brownfield, process]
 
 A formalized process for initializing and incrementally building out specs in brownfield projects. Unlike greenfield specs that aim for completeness upfront, brownfield specs start as skeletons — capturing what is known about an existing feature — and gain precision over time through real work: bug fixes, enhancements, and clarification.
 
+> **Note:** the `/inbox` command this spec introduces was subsequently renamed to `/{project}:groom`. The artifact remains `specs/inbox.md`. References below to `/inbox` reflect the original design.
+
 ## Problem
 
 After a brownfield project adopts governance, the team faces existing features with no specs. The current framework assumes specs are written before code, but brownfield features already have code and no documentation. Reverse-engineering full acceptance criteria from existing code is impractical, and gathering accurate information from issue trackers and wikis is unreliable.

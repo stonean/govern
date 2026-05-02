@@ -21,7 +21,7 @@ Use the session target from `.claude/gov-session.json`. If `$ARGUMENTS` is provi
 
 When `--auto` is set:
 
-- Skip the per-task "prompt the user to commit and push changes" confirmation in **Walk through tasks** step 8. The agent commits on its own and proceeds to the next task.
+- Skip the per-task "prompt the user to commit and push changes" confirmation in **Walk through tasks** step 8. Commit on your own and proceed to the next task.
 - **Commit, do not push.** Push is hard-to-reverse and externally visible; it stays gated even with `--auto`. Adopters who want auto-publish can wrap `/gov:implement --auto` in a script that pushes after each session.
 
 The following gates **still fire and pause** even with `--auto` on:
@@ -44,7 +44,7 @@ Read the spec's `status` field from the YAML frontmatter at the top of the file.
 
 - `draft` → "Spec has unresolved open questions. Run `/gov:clarify` first."
 - `clarified` → "No plan exists. Run `/gov:plan` first."
-- `done` → "Feature is already complete."
+- `done` → "Spec is already complete."
 - No tasks.md → "No task breakdown exists. Run `/gov:plan` first."
 
 ## Scope Boundaries
@@ -91,7 +91,7 @@ For each task in order:
 5. Verify the "done when" condition is met.
 6. Mark the task as complete in `tasks.md` — update each checkbox from `- [ ]` to `- [x]`, including nested sub-item checkboxes, before proceeding.
 7. Regenerate `specs/{feature}/code-locations.md` from the running map per the **Code-location index** section. Run `npx markdownlint-cli2` on the file.
-8. Prompt the user to commit and push changes. With `--auto` set, skip the prompt: commit on the agent's own, do not push.
+8. Prompt the user to commit and push changes. With `--auto` set, skip the prompt: commit on your own, do not push.
 9. Before starting the next task, assess whether sufficient context remains to complete it. If context is low, inform the user and suggest starting a new session with `/gov:implement` to continue from the next incomplete task. If context is sufficient, proceed.
 
 ### Code-location index

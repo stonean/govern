@@ -341,12 +341,12 @@ The frontmatter schema applies to **spec files** (`spec.md`, `spec-and-plan.md`)
 
 | Field | Required | Type | Allowed values | Description |
 | --- | --- | --- | --- | --- |
-| `spec-ref` | yes | string | parent spec ref, conventionally `{NNN-feature} — {Section}` | Identifies the parent spec and section the scenario elaborates |
+| `spec-ref` | yes | string | parent spec ref, conventionally `"{NNN-feature-name} — {Section}"` (quoted because the value commonly contains an em-dash and slash) | Identifies the parent spec and section the scenario elaborates |
 | `tags` | no | list of strings | free-form | Scenario-level cross-cutting tags |
 
 #### Open-schema rule
 
-Additional fields beyond those listed above are permitted and ignored by uninterested consumers. Examples adopters or future governance work might add: `owner`, `target_release`, `created_at`, `description`, `aliases`. Consumers MUST NOT error on the presence of unknown fields. `/gov:validate` reports unknown fields as informational findings (not errors).
+Additional fields beyond those listed above are permitted and ignored by uninterested consumers. Examples adopters or future governance work might add: `owner`, `target_release`, `created_at`, `description`, `aliases`. The `spec-and-plan.md` template uses the open-schema rule to carry `track: lightweight` — a human-readable marker, not a pipeline-consumed field. Consumers MUST NOT error on the presence of unknown fields. `/gov:validate` reports unknown fields as informational findings (not errors).
 
 ### Validation Severity
 

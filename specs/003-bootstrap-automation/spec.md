@@ -8,6 +8,8 @@ tags: [bootstrap, commands]
 
 Governance slash commands that dogfood the same pipeline commands adopting projects use (`/gov:about`, `/gov:target`, `/gov:status`, `/gov:setup`, `/gov:specify`, `/gov:clarify`, `/gov:plan`, `/gov:implement`, `/gov:validate`, `/gov:next`), plus a governance-specific `/gov:init` that scaffolds new projects from templates.
 
+> **Note:** the command set evolved after this spec shipped. `/gov:about` is now `/gov:help`, `/gov:setup` is now `/gov:configure` (renamed by [012-multi-agent-govern](../012-multi-agent-govern/spec.md)), and `/gov:next` was retired — pipeline next-step suggestions are surfaced by `/gov:status` and `/gov:target` instead. The brownfield commands (`/gov:capture`, `/gov:log`, `/gov:groom`) and elaborate commands (`/gov:ask`, `/gov:elaborate`) were added by later specs and are scaffolded alongside the original set.
+
 ## Problem
 
 The governance README describes a 7-step manual bootstrap process: init git, copy files, fill in AGENTS.md, create CLAUDE.md, create specs directory, add first spec, follow the pipeline. This is error-prone and tedious. A slash command can automate the mechanical steps while prompting for the decisions that require human input.

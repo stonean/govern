@@ -30,7 +30,7 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 
 #### Pipeline (advance state)
 
-| Command | Stage Transition | Description |
+| Command | Pipeline Gate | Description |
 | --- | --- | --- |
 | `/gov:specify` | → draft | Create a new numbered feature spec. Pass a short description, e.g. `/gov:specify webhook delivery`. |
 | `/gov:clarify` | draft → clarified | Resolve open questions in the spec. Works on the session target or pass a feature identifier. |
@@ -57,7 +57,7 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 
 | Command | Description |
 | --- | --- |
-| `/gov:target` | Set the active feature (or feature/scenario) for the session. Pass a number (`001`), partial name (`api-versioning`), or full directory name. |
+| `/gov:target` | Set the working feature (or feature/scenario) for the session. Pass a number (`001`), partial name (`api-versioning`), or full directory name. |
 | `/gov:status` | Dashboard showing every feature's progress, dependencies, artifacts, and blockers. |
 | `/gov:help` | This overview. |
 

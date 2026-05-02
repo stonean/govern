@@ -32,7 +32,7 @@ Delimiters are `---` on the first line and a closing `---` on a subsequent line.
 
 | Field | Required | Type | Allowed values | Description |
 | --- | --- | --- | --- | --- |
-| `spec-ref` | yes | string | parent spec ref, conventionally `{NNN-feature} — {Section}` | Identifies the parent spec and section the scenario elaborates. |
+| `spec-ref` | yes | string | parent spec ref, conventionally `"{NNN-feature-name} — {Section}"` (quoted because the value commonly contains an em-dash and slash) | Identifies the parent spec and section the scenario elaborates. |
 | `tags` | no | list of strings | free-form | Scenario-level cross-cutting tags. May overlap with parent spec tags. |
 
 ### Open-schema rule

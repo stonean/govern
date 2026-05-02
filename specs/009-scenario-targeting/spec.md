@@ -10,6 +10,8 @@ Promote scenarios to first-class targets in the governance pipeline. Currently, 
 
 The motivation is context management: as specs grow, loading the entire spec to work on a single scenario wastes agent context. Scenario-level targeting keeps the agent focused on a bounded artifact.
 
+> **Note:** the `question` command is now `/{project}:ask` and the `scenario` command is now `/{project}:elaborate`. Behavior described below is unchanged; only the command names differ in the current framework.
+
 ## Session Target Extension
 
 The session file gains an optional `scenario` field. When present, commands that support scenario-level operation use the scenario file as their primary context instead of the feature spec.

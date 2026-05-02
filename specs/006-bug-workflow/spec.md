@@ -10,6 +10,8 @@ Bugs are unwritten scenarios. Rather than tracking defects in a separate system,
 
 Most projects adopting governance are not greenfield — they have existing code, existing bugs, and incomplete specifications. Scenarios are the primary mechanism for incrementally bringing brownfield projects under governance. Every bug fix, edge case discovery, or behavior clarification produces a scenario that makes the specs more precise over time.
 
+> **Note:** several commands introduced here were renamed by later specs. `/gov:scenario` is now `/gov:elaborate`, `/gov:triage` is now `/gov:groom` (operating on `specs/inbox.md` — see [011-brownfield-process](../011-brownfield-process/spec.md)), and `/gov:next` was retired. References to the original names appear below as historical context.
+
 ## Bug Decision Tree
 
 When a bug is reported, the following decision tree determines the response — in order:
@@ -80,7 +82,7 @@ The rule: a bug file should never be the first artifact created. The spec or sce
 
 ## Brownfield Triage
 
-> **Note:** `triage` was renamed to `inbox` by [011-brownfield-process](../011-brownfield-process/spec.md). The artifact is now `specs/inbox.md` and the command is `/inbox`.
+> **Note:** `triage` was renamed to `inbox` by [011-brownfield-process](../011-brownfield-process/spec.md). The artifact is `specs/inbox.md` and the command is `/{project}:groom`.
 
 For projects adopting governance incrementally, a `specs/triage.md` file serves as a temporary inbox for known issues not yet assigned to a feature spec.
 

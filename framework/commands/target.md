@@ -11,6 +11,13 @@ Set the working feature (and optionally scenario) for this session.
 
 Establishes which feature spec all subsequent `/{project}:*` commands operate on. Optionally targets a specific scenario within the feature for scenario-aware commands. Must be run before any pipeline command. Remains active for the session unless changed by running `/{project}:target` again.
 
+## Scope Boundaries
+
+- Read `constitution.md` once per session and the targeted feature's `spec.md` (or `spec-and-plan.md`) frontmatter and open-question count. Read the targeted scenario file only when one is specified.
+- Do NOT read plan files, tasks, source code, test files, or unrelated specs' bodies.
+- Do NOT modify any spec, plan, scenario, or source file. The only file written is the session JSON (and the targeted spec's `status` field, only when the user confirms reopening a `done` spec in step 8).
+- Reference: §spec-lifecycle, §scenarios, §text-first-artifacts.
+
 ## Instructions
 
 ### No arguments — display current target

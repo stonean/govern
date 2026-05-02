@@ -39,7 +39,7 @@ See [constitution.md](constitution.md) — guiding principles, development pipel
   - `errors.md` -- Error handling conventions and codes
   - `inbox.md` -- Temporary inbox for known issues not yet assigned to a spec
   - `templates/` -- Starter files for specs, plans, tasks, scenarios
-  - `{NNN-feature}/`
+  - `{NNN-feature-name}/`
     - `spec.md` -- Requirements, contracts, acceptance criteria
     - `research.md` -- *(optional)* Background research, prior art, context
     - `plan.md` -- Implementation approach, technical decisions

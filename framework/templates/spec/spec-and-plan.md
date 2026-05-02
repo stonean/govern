@@ -5,6 +5,14 @@ tags: []
 track: lightweight
 ---
 
+<!-- The `track: lightweight` field marks this as a combined spec+plan document
+     created via the lightweight track of /{project}:specify. No pipeline gate
+     reads it — it is preserved under the constitution's open-schema rule so
+     that human readers and future tooling (graph views, validation reports)
+     can distinguish this artifact from a standard spec.md without parsing the
+     filename. Leave it set; remove only if promoting this feature to the
+     standard track. -->
+
 # {NNN} — {Feature Name}
 
 {Brief description of what this feature does and why it exists.}

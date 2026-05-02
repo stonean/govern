@@ -22,7 +22,8 @@
 - [specs/system.md](specs/system.md) — System architecture, request lifecycle, shared infrastructure
 - [specs/errors.md](specs/errors.md) — Error handling conventions
 - [specs/events.md](specs/events.md) — Global event catalog
-- [specs/templates/](specs/templates/) — Templates for spec, plan, and tasks documents
+- [specs/inbox.md](specs/inbox.md) — Temporary inbox for known issues during brownfield adoption
+- [specs/templates/](specs/templates/) — Templates for spec, plan, tasks, data-model, research, scenario, and spec-and-plan documents
 
 ### Feature Specs
 
@@ -31,16 +32,22 @@
 
 ## Development Pipeline
 
-{project} follows a spec-driven workflow: **spec → clarify → plan → implement**. See [constitution.md](constitution.md#development-pipeline) for the full pipeline definition, spec lifecycle states, and readiness checks.
+{project} follows a spec-driven workflow. See [constitution.md](constitution.md#development-pipeline) for the full pipeline definition, spec lifecycle states, and readiness checks.
 
 ### Pipeline
 
 ```text
 /{project}:specify  →  /{project}:clarify  →  /{project}:plan  →  /{project}:implement
-   (draft)               (clarified)            (planned)            (done)
+   (draft)               (clarified)            (planned)         (in-progress → done)
 ```
 
-Each command enforces its pipeline gate — you cannot plan without a clarified spec, and you cannot implement without a plan.
+Each command enforces its pipeline gate — you cannot plan without a clarified spec, and you cannot implement without a plan. A `done` spec re-enters the pipeline at `in-progress` when a new scenario is added — the scenario captures the change, the spec evolves with it.
+
+Three cycles are supported:
+
+- **Greenfield** — `/{project}:specify` → clarify → plan → implement, aiming for completeness up front.
+- **Brownfield** — `/{project}:capture` initializes a skeleton spec from what is known about an existing feature, then bug fixes and enhancements add precision over time.
+- **Reopen** — `/{project}:elaborate` adds a scenario to a `done` spec, reverting it to `in-progress` until the scenario's task ships.
 
 ### Slash Commands
 
@@ -61,6 +68,7 @@ Each command enforces its pipeline gate — you cannot plan without a clarified 
 | `/{project}:groom` | Walk the inbox and route each item to its proper spec or scenario |
 | `/{project}:configure` | Configure permissions for common operations |
 | `/{project}:spawn` | Spawn a new project from this one |
+| `/govern` | Adopt or update governance in this project (top-level command, no project namespace) |
 
 ### Working on Existing Specs
 
