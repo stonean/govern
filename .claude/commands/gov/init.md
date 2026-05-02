@@ -117,7 +117,33 @@ Additionally, copy `framework/bootstrap/configure/claude.md` into `.claude/comma
 
 Additionally, copy `framework/templates/project/initialize.md` from the governance repo into `.claude/commands/{slug}/initialize.md`. Replace `{project}` with the user-provided project name. This provides a stub initialize command that the project fills in with language-specific post-copy steps for use by the spawn command.
 
-### 8. Create .gitignore
+### 8. Recommend and scaffold skills
+
+Match the user's tech stack selections from input step 4 against the skill registry and offer matching skills, grouped by category.
+
+1. **Read the registry** at `framework/skills/registry.json` from the governance repo.
+
+   - If the file is missing or not valid JSON, warn `Skill registry not found or invalid, skipping skill recommendations` and skip the rest of this step entirely.
+   - Validate each entry against the schema in `specs/005-skills-and-plugins/data-model.md`: required fields, `category` in the fixed set, `trigger.field` in the recognized set, `template` ending in `.md`. Drop invalid entries with a per-entry warning.
+
+2. **Match entries against selections.** For each registry entry, look up the user's selection for `entry.trigger.field` from the in-memory tech stack questionnaire results. Compare case-insensitively against `entry.trigger.value`. Collect every matching entry.
+
+3. **Silent skip when there is nothing to offer.** If no entries match, do not prompt the user and proceed to step 9. The project still gets the standard pipeline commands.
+
+4. **Group matches by category** in the order: `Linting`, `Formatting`, `Testing`, `Migrations`, `Code Review`, `Deployment`. Within each category, list each match's `name` and `description`.
+
+5. **Present per-category accept/skip prompts.** For each non-empty category, ask the user via `AskUserQuestion`: "Scaffold these {category} skills?" with the matched entries listed. Options: `Yes, scaffold all in this category`, `No, skip this category`. The user must explicitly accept — no skills are scaffolded without consent.
+
+6. **Scaffold accepted templates.** For each accepted entry:
+
+   - Read `framework/skills/templates/{entry.template}` from the governance repo.
+   - If the template file is missing, warn `Skill template {entry.template} not found, skipping` and continue with the next accepted entry. Do not abort.
+   - Replace every `{project}` with the user-provided project slug and every `{cli-config-dir}` with `.claude`.
+   - Write the substituted content to `.claude/commands/{slug}/skills/{entry.template}` (creating the `skills/` directory if needed).
+
+7. **Summarize.** Display a one-line summary: `Scaffolded N skills under .claude/commands/{slug}/skills/.` If zero skills were scaffolded (all categories skipped), say `No skills scaffolded.`
+
+### 9. Create .gitignore
 
 Copy `framework/templates/project/gitignore` from the governance repo into the new project as `.gitignore`.
 
@@ -136,19 +162,19 @@ Append each fetched content below the template entries, separated by a comment h
 
 If a fetch fails (404 or network error), report the failure and continue with the remaining languages. The minimal template is still valid without language-specific patterns.
 
-### 9. Create README.md
+### 10. Create README.md
 
 Copy `framework/templates/project/project-readme.md` from the governance repo into the new project as `README.md`. Replace every `{project}` with the user-provided project name. Replace `{Brief description of what this project does.}` with the user-provided description.
 
-### 10. Create session file
+### 11. Create session file
 
 Create `.claude/{slug}-session.json` with empty content `{}`.
 
-### 11. Run markdownlint
+### 12. Run markdownlint
 
 Run `npx markdownlint-cli2` on all generated `.md` files in the new project directory. Fix any issues found.
 
-### 12. Display next steps
+### 13. Display next steps
 
 After scaffolding is complete, display:
 

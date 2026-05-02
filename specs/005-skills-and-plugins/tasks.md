@@ -38,16 +38,16 @@ Create one `.md` template file under `framework/skills/templates/` for each regi
 
 ## 3. Add the skill recommendation step to init
 
-Modify `.claude/commands/gov/init.md` to insert the skill recommendation step after the tech stack questionnaire. This is a hand-maintained, governance-specific command (no source counterpart).
+Modify `.claude/commands/gov/init.md` to insert the skill recommendation step after the slash command templates are scaffolded (so `.claude/commands/{slug}/` exists). This is a hand-maintained, governance-specific command (no source counterpart).
 
-- [ ] Insert a new "Recommend and scaffold skills" step between current step 4 (tech stack questionnaire) and current step 5 (Create CLAUDE.md)
-- [ ] Renumber steps 5–12 to 6–13
-- [ ] The new step reads `framework/skills/registry.json` from the governance repo, matches entries case-insensitively against the in-memory tech stack selections, groups matches by category, presents per-category accept/skip prompts, and copies accepted templates to `.claude/commands/{slug}/skills/{template-stem}.md` with `{project}` and `{cli-config-dir}` substituted
-- [ ] Step warns and continues if registry is missing or malformed (`Skill registry not found or invalid, skipping skill recommendations`)
-- [ ] Step warns and skips individual templates whose file is missing
-- [ ] Step is silently skipped if no entries match the user's selections
-- [ ] All cross-references to step numbers elsewhere in `init.md` reflect the new numbering
-- [ ] `.claude/commands/gov/init.md` passes `npx markdownlint-cli2`
+- [x] Insert a new "Recommend and scaffold skills" step as scaffolding step 8, after step 7 ("Copy slash command templates"), so the project commands directory exists before skills are written into it
+- [x] Renumber steps 8–12 to 9–13 to make room
+- [x] The new step reads `framework/skills/registry.json` from the governance repo, matches entries case-insensitively against the in-memory tech stack selections, groups matches by category, presents per-category accept/skip prompts, and copies accepted templates to `.claude/commands/{slug}/skills/{template-stem}.md` with `{project}` and `{cli-config-dir}` substituted
+- [x] Step warns and continues if registry is missing or malformed (`Skill registry not found or invalid, skipping skill recommendations`)
+- [x] Step warns and skips individual templates whose file is missing
+- [x] Step is silently skipped if no entries match the user's selections
+- [x] All cross-references to step numbers elsewhere in `init.md` reflect the new numbering
+- [x] `.claude/commands/gov/init.md` passes `npx markdownlint-cli2`
 
 **Done when:** init's step list includes the recommendation step, all step numbers and cross-references are consistent, and the file passes markdownlint.
 
@@ -55,14 +55,14 @@ Modify `.claude/commands/gov/init.md` to insert the skill recommendation step af
 
 Modify `framework/bootstrap/govern.md` to ship the registry to adopted projects and offer new skills on subsequent runs.
 
-- [ ] Add a new row to **Governance-owned shared files (strategy: update)** mapping `framework/skills/registry.json` → `skills/registry.json`
-- [ ] Add a new "Skill Recommendation" step in the per-agent scaffolding flow, after **Slash command cleanup** and before **Session state**
-- [ ] The step reads `skills/registry.json` (the just-synced local copy), matches entries case-insensitively against the AGENTS.md Tech Stack table, filters out entries whose target file already exists at `{config_dir}/commands/{project}/skills/{template-stem}.md`, groups remaining matches by category, presents per-category accept/skip prompts, fetches accepted templates from upstream (`framework/skills/templates/{template-stem}.md`), and writes them with `{project}` and `{cli-config-dir}` substituted
-- [ ] Step is silently skipped if no AGENTS.md exists, no Tech Stack table is found, no entries match, or all matches are already scaffolded
-- [ ] Step warns and continues if registry is missing or malformed
-- [ ] Step warns and skips individual templates whose upstream fetch fails
-- [ ] Edge case noted: scaffolded skill files in `{config_dir}/commands/{project}/skills/` are not affected by the existing slash command cleanup (the cleanup only walks top-level `.md` files in the project commands directory)
-- [ ] `framework/bootstrap/govern.md` passes `npx markdownlint-cli2`
+- [x] Add a new row to **Governance-owned shared files (strategy: update)** mapping `framework/skills/registry.json` → `skills/registry.json`
+- [x] Add a new "Skill Recommendation" step in the per-agent scaffolding flow, after **Slash command cleanup** and before **Session state**
+- [x] The step reads `skills/registry.json` (the just-synced local copy), matches entries case-insensitively against the AGENTS.md Tech Stack table, filters out entries whose target file already exists at `{config_dir}/commands/{project}/skills/{template-stem}.md`, groups remaining matches by category, presents per-category accept/skip prompts, fetches accepted templates from upstream (`framework/skills/templates/{template-stem}.md`), and writes them with `{project}` and `{cli-config-dir}` substituted
+- [x] Step is silently skipped if no AGENTS.md exists, no Tech Stack table is found, no entries match, or all matches are already scaffolded
+- [x] Step warns and continues if registry is missing or malformed
+- [x] Step warns and skips individual templates whose upstream fetch fails
+- [x] Edge case noted: scaffolded skill files in `{config_dir}/commands/{project}/skills/` are not affected by the existing slash command cleanup (the cleanup only walks top-level `.md` files in the project commands directory)
+- [x] `framework/bootstrap/govern.md` passes `npx markdownlint-cli2`
 
 **Done when:** govern syncs the registry as an `update`-strategy file, offers new skills after sync, never overwrites already-scaffolded skill files, and the file passes markdownlint.
 

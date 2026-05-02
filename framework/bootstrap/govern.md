@@ -218,6 +218,7 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 | `framework/templates/spec/research.md` | `specs/templates/research.md` |
 | `framework/templates/spec/scenario.md` | `specs/templates/scenario.md` |
 | `framework/templates/spec/spec-and-plan.md` | `specs/templates/spec-and-plan.md` |
+| `framework/skills/registry.json` | `skills/registry.json` |
 
 ### Project-specific shared files (strategy: create)
 
@@ -286,6 +287,46 @@ After processing the slash command manifest above, list all `.md` files in `{con
 - Report it as "removed" in the post-scaffolding summary.
 
 Files listed in `pinned.files` are never deleted — report them as "pinned (kept)" instead.
+
+### Skill recommendation (strategy: create per accepted skill)
+
+After the slash command cleanup, offer any newly registered skills that match the project's tech stack and have not yet been scaffolded for this agent.
+
+1. **Read the synced registry** at `skills/registry.json` (the project-local copy written by the manifest above). If the file is missing or not valid JSON, warn `Skill registry not found or invalid, skipping skill recommendations` and skip the rest of this section. Validate each entry against the schema in `specs/005-skills-and-plugins/data-model.md`; drop invalid entries with a per-entry warning.
+
+2. **Read the project's tech stack** from `AGENTS.md`. Locate the **Tech Stack** table and parse each row's `Layer` column to recover the canonical key:
+
+   - `Language` → `backend_language` for backend-only projects, `frontend_language` for frontend-only projects (use the project context from the rest of AGENTS.md to disambiguate; if unclear, treat the row as both)
+   - `Backend language` → `backend_language`
+   - `Frontend language` → `frontend_language`
+   - `Backend framework` → `backend_framework`
+   - `Frontend framework` → `frontend_framework`
+   - `Database` → `database`
+   - `Messaging` → `messaging`
+   - `Backend test runner` → `backend_test_runner`
+   - `Frontend test runner` → `frontend_test_runner`
+   - `CSS/UI` → `css_ui`
+
+   If `AGENTS.md` is missing, has no Tech Stack table, or the table is empty (still the comment placeholder), skip the rest of this section silently — there is nothing to match against.
+
+3. **Match registry entries** against the project's tech stack. For each entry, look up the project's value for `entry.trigger.field` and compare case-insensitively against `entry.trigger.value`. Collect every matching entry.
+
+4. **Filter out already-scaffolded skills.** For each match, check whether `{config_dir}/commands/{project}/skills/{entry.template}` already exists. If it does, the skill was previously scaffolded (for this agent) — drop it from the candidate list. Already-scaffolded skill files are never overwritten, regardless of content changes upstream.
+
+5. **Silent skip when there is nothing new to offer.** If no candidates remain, do not prompt the user and proceed to **Session state**.
+
+6. **Group remaining candidates by category** in the order: `Linting`, `Formatting`, `Testing`, `Migrations`, `Code Review`, `Deployment`. Within each category, list each match's `name` and `description`.
+
+7. **Present per-category accept/skip prompts** via `AskUserQuestion`: "Scaffold these {category} skills for {agent name}?" with the matched entries listed. Options: `Yes, scaffold all in this category`, `No, skip this category`. The user must explicitly accept — no skills are scaffolded without consent.
+
+8. **Fetch and write accepted templates.** For each accepted entry:
+
+   - Fetch `framework/skills/templates/{entry.template}` from the governance repo using the same URL pattern as the rest of govern's fetches.
+   - If the fetch fails or the template is missing, warn `Skill template {entry.template} not found, skipping` and continue with the next accepted entry. Do not abort the surrounding scaffolding.
+   - Replace every `{project}` with the user-provided project name and every `{cli-config-dir}` with the agent's `config_dir`.
+   - Write the substituted content to `{config_dir}/commands/{project}/skills/{entry.template}` (creating the `skills/` directory if needed). Report the file as "scaffolded" in the post-scaffolding summary.
+
+9. **Discovery note for Auggie.** Auggie's official docs document subdirectory namespacing for one level (`.augment/commands/foo/bar.md` → `/foo:bar`). Multi-level paths like `.augment/commands/{project}/skills/lint.md` should resolve to `/{project}:skills:lint` by the same colon-namespace convention, but a user adopting Auggie may want to confirm autocomplete the first time. Claude Code's two-level path is documented and works as expected.
 
 ### Session state (strategy: create)
 
