@@ -1,6 +1,9 @@
-# Clarify One at a Time
+---
+spec-ref: "000-slash-commands — Command Set / clarify"
+tags: []
+---
 
-**spec-ref:** 000-slash-commands — Command Set / clarify
+# Clarify One at a Time
 
 ## Context
 

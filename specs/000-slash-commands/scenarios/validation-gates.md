@@ -1,6 +1,9 @@
-# Validation Gates
+---
+spec-ref: "000-slash-commands — Command Set"
+tags: []
+---
 
-**spec-ref:** 000-slash-commands — Command Set
+# Validation Gates
 
 ## Context
 

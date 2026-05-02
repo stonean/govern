@@ -1,6 +1,9 @@
-# Validate Fix Mode
+---
+spec-ref: "000-slash-commands — Command Set / validate"
+tags: []
+---
 
-**spec-ref:** 000-slash-commands — Command Set / validate
+# Validate Fix Mode
 
 ## Context
 

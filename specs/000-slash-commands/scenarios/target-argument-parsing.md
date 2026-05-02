@@ -1,6 +1,9 @@
-# Target Argument Parsing
+---
+spec-ref: "000-slash-commands — Command Set / target"
+tags: []
+---
 
-**spec-ref:** 000-slash-commands — Command Set / target
+# Target Argument Parsing
 
 ## Context
 
