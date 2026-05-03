@@ -25,8 +25,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 4. Rewrite the Edge Cases bullet for fetch failures
 
-- [ ] In `framework/bootstrap/govern.md`'s **Edge Cases** section, replace the `Curl fails on a single file in the manifest` bullet with two bullets covering: (a) archive fetch/extract failure → clean abort; (b) a required source file absent from the extracted archive → per-entry warning, continue.
-- [ ] Done when: the Edge Cases section accurately describes both failure modes and no longer mentions per-file curl failures (which are no longer how the manifest pass fails).
+- [x] In `framework/bootstrap/govern.md`'s **Edge Cases** section, replace the `Curl fails on a single file in the manifest` bullet with two bullets covering: (a) archive fetch/extract failure → clean abort; (b) a required source file absent from the extracted archive → per-entry warning, continue.
+- [x] Done when: the Edge Cases section accurately describes both failure modes and no longer mentions per-file curl failures (which are no longer how the manifest pass fails).
 
 ## 5. Smoke-test `/govern` end-to-end against a throwaway repo
 

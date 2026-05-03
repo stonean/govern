@@ -465,7 +465,8 @@ After writing `{config_dir}/commands/govern.md` for each selected agent, verify 
 - **`settings.local.json` already has entries beyond the bootstrap** — only add the curl/ls bootstrap entries if missing. Do not overwrite, deduplicate, or reorder entries added by `/{project}:configure` or by the user.
 - **`govern.md` content already matches the version on disk** — when the manifest's `update` strategy compares fetched content to the installed file, identical content reports as "unchanged" and avoids a redundant write. Same rule applies to per-project `configure.md` and other update-strategy files.
 - **Pinned `govern.md` in `.governance.toml`** — pinned files are skipped, including `govern.md` itself. A pinned `govern.md` will not pick up upstream changes until the pin is removed.
-- **Curl fails on a single file in the manifest** — report the failure and continue with remaining files. Do not abort the entire scaffolding pass.
+- **Archive fetch or extract fails** — clean abort with the error message defined in **File Fetching → Archive fetch and extract**. No partial scaffolding: a missing archive means every manifest entry would be missing, and the user re-runs after the transient failure clears.
+- **A required source file is absent from the extracted archive** — warn `Source not found in archive: {source-path}; skipping.` and continue with the remaining manifest entries. Preserves the per-entry "do not abort on a single fetch error" guarantee at the entry level even though the archive itself is fetched once.
 - **First-run prompt with no detected dirs and only one supported agent** — the prompt still appears (the agent must be explicitly chosen), but the single agent is pre-selected. Confirming is one keystroke.
 - **Running `govern.md` cannot infer its own install path** — fall back to no pre-selection in the first-run prompt. The user picks explicitly.
 
