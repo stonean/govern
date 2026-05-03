@@ -11,10 +11,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 2. Update §bug-handling decision tree to include rule promotion
 
-- [ ] Edit `framework/constitution.md` §bug-handling. Rewrite the intro to acknowledge the three-tier framing (rule / spec / scenario chosen by scope) before listing the decision tree.
-- [ ] Reorder the decision tree to four steps: (1) no rule covers this cross-cutting concern → promote to rule; (2) no spec exists; (3) spec is ambiguous; (4) spec is clear, implementation wrong.
-- [ ] Preserve the closing line: "In all four cases, the spec or rule becomes more precise."
-- [ ] **Done when:** the §bug-handling section reads as a four-step tree with the rule check first, and `npx markdownlint-cli2` passes.
+- [x] Edit `framework/constitution.md` §bug-handling. Rewrite the intro to acknowledge the three-tier framing (rule / spec / scenario chosen by scope) before listing the decision tree.
+- [x] Reorder the decision tree to four steps: (1) no rule covers this cross-cutting concern → promote to rule; (2) no spec exists; (3) spec is ambiguous; (4) spec is clear, implementation wrong.
+- [x] Preserve the closing line: "In all four cases, the spec or rule becomes more precise."
+- [x] **Done when:** the §bug-handling section reads as a four-step tree with the rule check first, and `npx markdownlint-cli2` passes.
 
 ## 3. Add optional "Applicable Rules" section to the spec template
 

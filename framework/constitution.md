@@ -212,17 +212,18 @@ If any of these conditions are not met, use the full pipeline.
 
 ## Bug Handling
 
-Bugs are unwritten scenarios. Rather than tracking defects in a separate system, every bug is evidence that a spec is missing, ambiguous, or violated.
+Bugs are unwritten or violated requirements. Every bug is evidence that one of the framework's three artifact tiers — rules (cross-cutting), specs (feature-wide), or scenarios (situational) — has a gap. Rather than tracking defects in a separate system, fixing a bug means making the requirement at the right tier more precise. See [§rules](#rules) for the rule tier and [§scenarios](#scenarios) for the scenario tier.
 
 ### Bug Decision Tree
 
-When a bug is reported, follow this decision tree in order:
+When a bug is reported, follow this decision tree in order. The first matching condition determines the route:
 
-1. **No spec exists for the behavior** — the bug is a gap. Write the spec first, then fix the code.
-2. **Spec exists but is ambiguous or incomplete** — the bug is a spec deficiency. Correct or enhance the spec, then fix the implementation.
-3. **Spec is clear but implementation is wrong** — add a scenario capturing the correct behavior, then fix the code.
+1. **No rule covers this cross-cutting concern** — the bug surfaces a class of behavior the framework should govern at the rules tier (perf budget, observability commitment, security control, accessibility minimum, etc.). Promote to a rule (new or amended), then fix the code.
+2. **No spec exists for the behavior** — the bug is a feature-level gap. Write the spec first, then fix the code.
+3. **Spec exists but is ambiguous or incomplete** — the bug is a spec deficiency. Correct or enhance the spec, then fix the implementation.
+4. **Spec is clear but implementation is wrong** — add a scenario capturing the correct behavior, then fix the code.
 
-In all three cases, the spec becomes more precise. The scenario or spec update is the primary artifact, not a bug report.
+In all four cases, the rule, spec, or scenario becomes more precise. The artifact update is the primary outcome, not a bug report.
 
 <!-- §scenarios -->
 
