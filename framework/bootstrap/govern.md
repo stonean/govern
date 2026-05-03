@@ -572,7 +572,7 @@ Next steps:
 
 To adopt an additional agent later, re-run `/govern --add-agent`.
 
-Tip: `npx quartz specs/` renders your specs as a navigable graph view in the browser. Other PKM tools (Obsidian, Logseq, MkDocs) work unchanged — pick whichever fits your workflow, or none.
+Tip: `specs/` is plain markdown and works in any PKM tool (Obsidian, Logseq, Foam) or as a published site (Quartz, MkDocs). Pick whichever fits your workflow, or none.
 
 ---
 
@@ -586,7 +586,7 @@ Updated agents: {comma-separated `name` of selected agents}.
 
 Review changes to updated files and commit when ready. To adopt an additional agent, re-run `/govern --add-agent`.
 
-Tip: `npx quartz specs/` renders your specs as a navigable graph view in the browser. Other PKM tools (Obsidian, Logseq, MkDocs) work unchanged.
+Tip: `specs/` is plain markdown and works in any PKM tool (Obsidian, Logseq, Foam) or as a published site (Quartz, MkDocs).
 
 ---
 

@@ -291,23 +291,17 @@ Adding a new agent is a single registry row plus an agent-specific `framework/bo
 
 ## Viewing artifacts
 
-Governance artifacts are plain markdown with YAML frontmatter, so any markdown viewer or PKM tool can browse them. The recommended viewer for graph-style navigation is [Quartz](https://quartz.jzhao.xyz):
+Governance artifacts are plain markdown with YAML frontmatter, so any markdown viewer or PKM tool can browse them. Pick whichever fits your workflow:
 
-```bash
-npx quartz specs/
-```
-
-This renders the spec dependency graph, scenario backlinks, and tag cross-references as a browsable site, with no committed configuration required. Quartz reads relative markdown links and YAML frontmatter natively — the conventions governance uses by design (see [constitution.md](framework/constitution.md#text-first-artifacts)).
-
-Quartz is recommended, not enforced. The same artifacts work unchanged in:
-
-- **[Obsidian](https://obsidian.md)** — graph view + backlinks; point at the repo and open
-- **[Logseq](https://logseq.com)** — open-source PKM, similar graph model
+- **GitHub** — push `specs/` and browse inline; relative links resolve natively, no tooling required
+- **[Obsidian](https://obsidian.md)** — point at the repo and open; graph view and backlinks out of the box
+- **[Logseq](https://logseq.com)** — open-source PKM with a similar graph model
 - **[Foam](https://foambubble.github.io/foam/)** — VS Code extension for markdown knowledge graphs
+- **[Quartz](https://quartz.jzhao.xyz)** — publish a static graph-style site; see Quartz's docs for setup
 - **[MkDocs](https://www.mkdocs.org)** — static documentation site generator
 - Plain `cat`, GitHub PR review, or any markdown editor — no viewer required
 
-Pick whichever fits your workflow, or none. The principle is that artifacts stay portable and source-of-truth markdown, with structured viewers as derived views.
+The principle is that artifacts stay portable and source-of-truth markdown, with structured viewers as derived views (see [constitution.md](framework/constitution.md#text-first-artifacts)).
 
 ## Markdown
 
