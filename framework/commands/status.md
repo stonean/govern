@@ -22,9 +22,10 @@ Read-only overview of every feature's progress through the pipeline. Shows which
 **Steps 1–2 must complete before any other work. Do NOT read spec directories, list files, or perform any dashboard work until step 2 resolves.**
 
 1. Read `{cli-config-dir}/{project}-session.json` for the current session target (if any), including optional `scenario` and `scenarioPath` fields.
-2. If a session target exists, read **only** the target spec's `spec.md` (or `spec-and-plan.md`) to extract the YAML frontmatter `status` field.
+2. If a session target exists, read **only** the target spec's `spec.md` (or `spec-and-plan.md`) to extract the YAML frontmatter `status` field and count entries in the body's `## Open Questions` section.
    - If `status` is **not** `done`: display the target feature name and status. If a scenario is targeted, also read the scenario file (frontmatter `spec-ref` plus body) and display scenario detail: scenario name, spec-ref, context summary, and open question count. Then prompt the next pipeline command:
      - If a scenario is targeted **and** the scenario has one or more open questions → `/{project}:clarify` (scenario-targeted, resolves scenario-level open questions regardless of parent spec status).
+     - **Recovery state — `(status ∈ {clarified, planned, in-progress}, open-question count ≥ 1)`** → `/{project}:clarify` (the recovery path will surface the inconsistency before any forward action). This state usually arises from a manual frontmatter edit; the normal back-edge via `/{project}:ask` keeps spec status and open-question presence in sync.
      - Otherwise, prompt based on the spec's status: `draft` → `/{project}:clarify`, `clarified` → `/{project}:plan`, `planned`/`in-progress` → `/{project}:implement`.
 
      **Stop here — do not build the full dashboard.**

@@ -1,5 +1,7 @@
 # 000 — Slash Command Templates Plan
 
+> **Note:** this plan was written against the original layout. Command sources now live in `framework/commands/`; several command names were later renamed (`about → help`, `setup → configure`, `next` retired). See `spec.md` for the full rename history.
+
 ## Overview
 
 Create ten generic slash command `.md` files in a `commands/` directory at the governance root. Each command is derived from anvil's working implementation but generalized: anvil-specific references are replaced with `{project}` placeholders, and anvil-specific logic (Go code style, module patterns) is removed in favor of references to the constitution and AGENTS.md.

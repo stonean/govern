@@ -22,7 +22,10 @@ Print the following guide exactly (do not scan files or run commands):
 draft → clarified → planned → in-progress → done
 ```
 
-A `done` spec re-enters the pipeline at `in-progress` when a new scenario is added — the scenario captures the change, the spec evolves with it.
+Two back-edges keep the lifecycle honest:
+
+- `/{project}:ask` reverts a `clarified`, `planned`, or `in-progress` spec to `draft` when a new open question surfaces — `draft` is the only status that tolerates open questions. The next `/{project}:clarify` resolves the question and the spec advances forward again.
+- `/{project}:elaborate` reverts a `done` spec to `in-progress` when a new scenario is added — the scenario captures the change, the spec evolves with it.
 
 Each feature lives in `specs/NNN-feature-name/` and progresses through these states by running the corresponding command.
 
@@ -33,7 +36,7 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 | Command | Pipeline Gate | Description |
 | --- | --- | --- |
 | `/{project}:specify` | → draft | Create a new numbered feature spec. Pass a short description, e.g. `/{project}:specify webhook delivery`. |
-| `/{project}:clarify` | draft → clarified | Resolve open questions in the spec. Works on the session target or pass a feature identifier. |
+| `/{project}:clarify` | draft → clarified | Resolve open questions in the spec. Works on the session target or pass a feature identifier. Has a recovery path for hand-edited specs that arrive non-`draft` with open questions in the body. |
 | `/{project}:plan` | clarified → planned | Generate `plan.md` and `tasks.md` with implementation details. |
 | `/{project}:implement` | planned → in-progress → done | Execute the tasks for the targeted feature. |
 | `/{project}:validate` | — | Audit artifacts for consistency, completeness, and cross-spec alignment. |
@@ -42,7 +45,7 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 
 | Command | Description |
 | --- | --- |
-| `/{project}:ask` | Append an open question to the targeted spec or scenario for resolution during clarify. |
+| `/{project}:ask` | Append an open question to the targeted spec or scenario for resolution during clarify. On a `clarified`, `planned`, or `in-progress` spec, also reverts status to `draft` (the back-edge); refuses on `done` specs and points at `/{project}:elaborate` instead. |
 | `/{project}:elaborate` | Create a scenario file for the targeted feature. Walks the bug decision tree, creates the file in `scenarios/`, and appends a task to `tasks.md`. |
 
 #### Brownfield (absorb existing reality)

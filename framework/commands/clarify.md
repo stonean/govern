@@ -126,4 +126,4 @@ After the review:
 - If questions remain that need user input, list them.
 - The scenario does not have its own status field — resolution is complete when all open questions are removed from the Open Questions section.
 - Run `npx markdownlint-cli2` on the modified file.
-- Read the parent spec's frontmatter `status` field. Display: "Scenario clarification complete." and suggest `/{project}:implement` if the parent spec is `in-progress`.
+- Read the parent spec's frontmatter `status` field. Display: "Scenario clarification complete." and suggest `/{project}:implement` if the parent spec is `planned` or `in-progress` (both states are accepted by `/{project}:implement`'s gate). For other parent-spec states (`draft`, `clarified`, `done`), display the completion message without a next-step suggestion — the parent spec's own pipeline state determines what comes next.

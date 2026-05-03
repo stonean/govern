@@ -22,7 +22,10 @@ gov is a set of slash commands that guide features from idea to implementation t
 draft → clarified → planned → in-progress → done
 ```
 
-A `done` spec re-enters the pipeline at `in-progress` when a new scenario is added — the scenario captures the change, the spec evolves with it.
+Two back-edges keep the lifecycle honest:
+
+- `/gov:ask` reverts a `clarified`, `planned`, or `in-progress` spec to `draft` when a new open question surfaces — `draft` is the only status that tolerates open questions. The next `/gov:clarify` resolves the question and the spec advances forward again.
+- `/gov:elaborate` reverts a `done` spec to `in-progress` when a new scenario is added — the scenario captures the change, the spec evolves with it.
 
 Each feature lives in `specs/NNN-feature-name/` and progresses through these states by running the corresponding command.
 
@@ -33,7 +36,7 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 | Command | Pipeline Gate | Description |
 | --- | --- | --- |
 | `/gov:specify` | → draft | Create a new numbered feature spec. Pass a short description, e.g. `/gov:specify webhook delivery`. |
-| `/gov:clarify` | draft → clarified | Resolve open questions in the spec. Works on the session target or pass a feature identifier. |
+| `/gov:clarify` | draft → clarified | Resolve open questions in the spec. Works on the session target or pass a feature identifier. Has a recovery path for hand-edited specs that arrive non-`draft` with open questions in the body. |
 | `/gov:plan` | clarified → planned | Generate `plan.md` and `tasks.md` with implementation details. |
 | `/gov:implement` | planned → in-progress → done | Execute the tasks for the targeted feature. |
 | `/gov:validate` | — | Audit artifacts for consistency, completeness, and cross-spec alignment. |
@@ -42,7 +45,7 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 
 | Command | Description |
 | --- | --- |
-| `/gov:ask` | Append an open question to the targeted spec or scenario for resolution during clarify. |
+| `/gov:ask` | Append an open question to the targeted spec or scenario for resolution during clarify. On a `clarified`, `planned`, or `in-progress` spec, also reverts status to `draft` (the back-edge); refuses on `done` specs and points at `/gov:elaborate` instead. |
 | `/gov:elaborate` | Create a scenario file for the targeted feature. Walks the bug decision tree, creates the file in `scenarios/`, and appends a task to `tasks.md`. |
 
 #### Brownfield (absorb existing reality)

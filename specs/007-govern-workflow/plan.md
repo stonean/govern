@@ -1,5 +1,7 @@
 # 007 — Govern Command Plan
 
+> **Note:** this plan was written against the original layout and the two-file distribution model. The govern installer now lives at a single `framework/bootstrap/govern.md` (the two-file model was superseded by [012-multi-agent-govern](../012-multi-agent-govern/spec.md)); command sources moved to `framework/commands/`; project-scaffolding templates to `framework/templates/project/`. Several command names were later renamed (`about → help`, `setup → configure`, `scenario → elaborate`, `triage → groom`, `next` retired). See `spec.md` for the full history.
+
 ## Overview
 
 Create one govern command file per supported CLI (`govern/govern.md` for Claude Code, `govern/govern-auggie.md` for Auggie) in the `govern/` directory. Each file is a self-contained prompt that instructs the AI agent to fetch templates from GitHub, scaffold governance files, resolve placeholders, and display next steps. The command templates in `commands/` gain a `{cli-config-dir}` placeholder so a single template set serves all CLIs.

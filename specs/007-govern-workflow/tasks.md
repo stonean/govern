@@ -2,6 +2,8 @@
 
 Tasks derived from the [plan](plan.md). Complete in order.
 
+> **Note:** these tasks were written against the original layout and command names. The govern installer now lives at `framework/bootstrap/govern.md`; command sources moved to `framework/commands/`. Several command names were later renamed (`about → help`, `setup → configure`, `scenario → elaborate`, `triage → groom`, `next` retired). See `spec.md` for the full history.
+
 ## 1. Add `{cli-config-dir}` placeholder to command templates
 
 - [x] Update all `.md` files in `commands/` to replace hardcoded `.claude/` references with `{cli-config-dir}/`.

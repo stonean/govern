@@ -28,7 +28,7 @@ If `--all` is not present, use the feature identifier if provided, otherwise fal
 - By default, this is a read-only command. Do NOT modify any files.
 - In fix mode (`--fix`), modify only checkbox state (`- [ ]` → `- [x]`) in spec and task files where the fix is mechanically safe (see Fix Mode section below). Do not modify any other content.
 - Read only files within the target feature's directory and the cross-spec files needed for reference checks (`specs/system.md`, `specs/events.md`, `specs/errors.md`, dependency spec files). Do NOT read source code or test files.
-- Reference: §spec-requirements, §plan-phase, §tasks-phase, §readiness-check, §scenarios, §text-first-artifacts (constitution loaded by `/{project}:target` — do not re-read).
+- Reference: §spec-requirements, §plan-phase, §tasks-phase, §readiness-check, §scenarios, §cross-spec-impact, §text-first-artifacts, §markdown-standards (constitution loaded by `/{project}:target` — do not re-read).
 
 ## Instructions
 

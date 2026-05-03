@@ -16,7 +16,7 @@ Establishes which feature spec all subsequent `/{project}:*` commands operate on
 - Read `constitution.md` once per session and the targeted feature's `spec.md` (or `spec-and-plan.md`) frontmatter and open-question count. Read the targeted scenario file only when one is specified.
 - Do NOT read plan files, tasks, source code, test files, or unrelated specs' bodies.
 - Do NOT modify any spec, plan, scenario, or source file. The only file written is the session JSON. Status transitions belong to the pipeline commands (`/{project}:clarify`, `/{project}:plan`, `/{project}:implement`) and to `/{project}:elaborate` (the documented `done → in-progress` back-edge).
-- Reference: §spec-lifecycle, §scenarios, §text-first-artifacts.
+- Reference: §spec-lifecycle, §scenarios, §concurrent-features, §text-first-artifacts.
 
 ## Instructions
 
@@ -88,7 +88,8 @@ If `$ARGUMENTS` is empty or contains only whitespace (note: `0`, `00`, `000`, or
    - Artifacts present
    - Dependency status
    - Open question count
-   - Next pipeline step (based on status):
+   - Next pipeline step (based on status and open-question count):
+     - **Recovery state — `(status ∈ {clarified, planned, in-progress}, open-question count ≥ 1)`** → `/{project}:clarify` (the recovery path will surface the inconsistency before any forward action). This state usually arises from a manual frontmatter edit; the normal back-edge via `/{project}:ask` keeps spec status and open-question presence in sync.
      - `draft` → `/{project}:clarify`
      - `clarified` → `/{project}:plan`
      - `planned` → `/{project}:implement`

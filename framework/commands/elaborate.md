@@ -18,7 +18,7 @@ Use the session target from `{cli-config-dir}/{project}-session.json`. If no ses
 
 - This command creates a scenario file and appends a task. Do NOT begin implementing the scenario. Do NOT read or modify source code or test files.
 - Read only the target feature's spec file, existing scenarios (for duplicate check), and `tasks.md` (for appending). Do NOT read plans, other features' specs, or source code.
-- Reference: §bug-handling, §scenarios (constitution loaded by `/{project}:target` — do not re-read).
+- Reference: §bug-handling, §scenarios, §scenario-promotion (constitution loaded by `/{project}:target` — do not re-read).
 
 ## Instructions
 

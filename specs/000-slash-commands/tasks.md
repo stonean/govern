@@ -2,6 +2,8 @@
 
 Tasks derived from the [plan](plan.md). Complete in order.
 
+> **Note:** these tasks were written against the original layout and command names. Command sources now live in `framework/commands/`; several names were later renamed (`about → help`, `setup → configure`, `next` retired). See `spec.md` for the full rename history.
+
 ## 1. Create the commands directory and about command
 
 - [x] Create `commands/` directory at governance root
