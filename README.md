@@ -47,6 +47,8 @@ See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred 
 
 For brownfield projects, install the govern command and run it — no clone required. Once adopted, use `/capture` to initialize skeleton specs for existing features and let them gain precision incrementally through bug fixes, enhancements, and clarification.
 
+Governance operates a **live-on-main** model — the snippets below fetch the latest from `main`. Tagged releases (`v0.1.0`, etc.) mark milestones for changelogs and release notes, not pinning targets. Adopters who want to lock individual files they've customized use `.governance.toml` (see [Pinning files with .governance.toml](#pinning-files-with-governancetoml) below).
+
 ### Claude Code
 
 ```bash
@@ -255,6 +257,8 @@ Projects that were bootstrapped with `/govern` or adopted governance manually ca
 | `skip` | Never overwritten | `AGENTS.md`, `CLAUDE.md` |
 
 The `.gitignore` uses a `merge` strategy — governance patterns are appended below a `# Governance` marker if the marker is not already present.
+
+Re-running `/govern` always pulls from `main` — the project does not pin to a specific tag. To track a tag instead, edit the `https://raw.githubusercontent.com/.../main/` URL inside your installed `govern.md` to point at the tag (e.g., `v0.1.0`). Most adopters won't need to — the per-file pinning below is finer-grained and usually the right tool.
 
 ### Pinning files with .governance.toml
 
