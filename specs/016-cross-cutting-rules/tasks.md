@@ -38,9 +38,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 6. Add signpost to 008-security-rules/spec.md [simple]
 
-- [ ] Edit `specs/008-security-rules/spec.md`. Insert a quoted "Signpost" note between the YAML frontmatter and the `# 008 — Security Rules` H1, of the form documented in the plan (008 is the security instance of the general rules tier defined in 016; rule-file format defined here remains canonical; see [§rules](../../framework/constitution.md) for general framing).
-- [ ] Body is not modified.
-- [ ] **Done when:** the signpost appears at the top of 008's spec.md and `npx markdownlint-cli2` passes on the file.
+- [x] Edit `specs/008-security-rules/spec.md`. Insert a quoted "Signpost" note between the YAML frontmatter and the `# 008 — Security Rules` H1, of the form documented in the plan (008 is the security instance of the general rules tier defined in 016; rule-file format defined here remains canonical; see [§rules](../../framework/constitution.md) for general framing).
+- [x] Body is not modified.
+- [x] **Done when:** the signpost appears at the top of 008's spec.md and `npx markdownlint-cli2` passes on the file.
 
 ## 7. Regenerate Claude command mirrors [simple]
 

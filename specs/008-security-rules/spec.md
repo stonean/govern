@@ -6,6 +6,8 @@ tags: [security, format]
 
 # 008 — Security Rules
 
+> **Signpost:** 008 defines the *security instance* of the general rules tier later formalized in [016 — Cross-Cutting Rules](../016-cross-cutting-rules/spec.md). The rule-file format, ID conventions, and validate enforcement defined here remain the canonical reference for any future rule file (observability, performance, accessibility, etc.). See §rules in `framework/constitution.md` for the general framing of rules as a cross-cutting artifact tier alongside specs and scenarios.
+
 Comprehensive, enforceable security rules for backend and frontend development. Distributed to adopting projects via the govern command as two files — `security-backend.md` and `security-frontend.md`. These are rules, not guidelines: the validate command checks implementation against them.
 
 ## Motivation

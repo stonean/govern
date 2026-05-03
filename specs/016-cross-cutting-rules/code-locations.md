@@ -19,3 +19,7 @@
 ## AC: `framework/commands/groom.md` includes "promote to rule" as a routing option in its decision-tree walk, alongside the existing spec/scenario routes
 
 - `framework/commands/groom.md`
+
+## AC: `specs/008-security-rules/spec.md` carries a top-of-file signpost noting it is the security instance of the general rules tier defined in 016
+
+- `specs/008-security-rules/spec.md`
