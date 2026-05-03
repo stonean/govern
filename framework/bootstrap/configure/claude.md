@@ -41,6 +41,16 @@ Configure `{cli-config-dir}/settings.local.json` with the permissions needed for
    - `Bash(git log *)`
    - `Bash(git diff *)`
    - `Bash(git status *)`
+   - `Bash(git show *)`
+
+   **Git commands targeting another working tree (`-C <path>`):**
+   - `Bash(git -C * add *)`
+   - `Bash(git -C * commit *)`
+   - `Bash(git -C * push *)`
+   - `Bash(git -C * log *)`
+   - `Bash(git -C * diff *)`
+   - `Bash(git -C * status *)`
+   - `Bash(git -C * show *)`
 
    **Utility:**
    - `Bash(curl *)`
@@ -70,6 +80,12 @@ Configure `{cli-config-dir}/settings.local.json` with the permissions needed for
    - `Bash(git reset --hard *)`
    - `Bash(git rm *)`
    - `Bash(git clean -fd *)`
+   - `Bash(git -C * mv *)`
+   - `Bash(git -C * push --force *)`
+   - `Bash(git -C * push -f *)`
+   - `Bash(git -C * reset --hard *)`
+   - `Bash(git -C * rm *)`
+   - `Bash(git -C * clean -fd *)`
 
    **Other dangerous commands:**
    - `Bash(chmod -R 777 *)`
