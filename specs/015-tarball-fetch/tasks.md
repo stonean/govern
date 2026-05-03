@@ -20,8 +20,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 3. Update the Post-Write Integrity Check wording [simple]
 
-- [ ] In `framework/bootstrap/govern.md`'s **Post-Write Integrity Check** section, change "report the error and re-fetch the file" to "report the error and re-read the file from the extracted archive."
-- [ ] Done when: no remaining wording in the file implies that the integrity-check re-read is a second network call.
+- [x] In `framework/bootstrap/govern.md`'s **Post-Write Integrity Check** section, change "report the error and re-fetch the file" to "report the error and re-read the file from the extracted archive."
+- [x] Done when: no remaining wording in the file implies that the integrity-check re-read is a second network call.
 
 ## 4. Rewrite the Edge Cases bullet for fetch failures
 

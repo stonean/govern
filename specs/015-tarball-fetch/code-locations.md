@@ -28,6 +28,10 @@
 
 - `framework/bootstrap/govern.md`
 
+## AC: The **Post-Write Integrity Check** for `govern.md` works against the local source — no additional `curl`
+
+- `framework/bootstrap/govern.md`
+
 ## AC: Per-language gitignore fetches against `github.com/github/gitignore` remain unchanged (separate `curl` calls)
 
 - `framework/bootstrap/govern.md`

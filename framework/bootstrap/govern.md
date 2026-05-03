@@ -438,7 +438,7 @@ In every copied file (except `{config_dir}/commands/govern.md` for each selected
 
 ## Post-Write Integrity Check
 
-After writing `{config_dir}/commands/govern.md` for each selected agent, verify the file starts with `# Govern`. If it does not, the write was corrupted — report the error and re-fetch the file. Apply the check independently per agent.
+After writing `{config_dir}/commands/govern.md` for each selected agent, verify the file starts with `# Govern`. If it does not, the write was corrupted — report the error and re-read the file from the extracted archive. Apply the check independently per agent.
 
 ## Re-Run Behavior
 
