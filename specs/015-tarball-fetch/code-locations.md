@@ -28,6 +28,10 @@
 
 - `framework/bootstrap/govern.md`
 
+## AC: The Claude `settings_template` also adds `Read(...)` globs for `govern-*` temp paths under both macOS temp roots and Linux `/tmp`, so per-run `Read(...)` entries do not accumulate across `/govern` invocations
+
+- `framework/bootstrap/govern.md`
+
 ## AC: The **Post-Write Integrity Check** for `govern.md` works against the local source — no additional `curl`
 
 - `framework/bootstrap/govern.md`

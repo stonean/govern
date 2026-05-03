@@ -70,14 +70,27 @@ The leftover directory is for inspection only — the next `/govern` run creates
 
 ### Permission bootstrap
 
-The agent registry's `settings_template` currently allows `Bash(curl *)` and `Bash(ls *)` (Claude) and equivalent regex entries (Auggie). The tarball flow needs two additional commands: `tar` and `mktemp`. There is no `rm` addition — the temp directory is left for the OS to sweep (see **Cleanup** above).
+The agent registry's `settings_template` currently allows `Bash(curl *)` and `Bash(ls *)` (Claude) and equivalent regex entries (Auggie). The tarball flow needs two additional commands plus, on Claude, pre-allowed `Read` globs that cover any `govern-*` temp directory. There is no `rm` addition — the temp directory is left for the OS to sweep (see **Cleanup** above).
 
 Update each registry row's `settings_template`:
 
-- **Claude:** add `Bash(tar *)` and `Bash(mktemp *)`.
-- **Auggie:** add equivalent `launch-process` entries with `shellInputRegex` patterns matching the same commands.
+- **Claude:** add `Bash(tar *)`, `Bash(mktemp *)`, and three `Read(...)` globs covering both macOS temp roots and Linux `/tmp`:
+  - `Read(/private/var/folders/**/T/govern-*/**)` (macOS canonical path)
+  - `Read(/var/folders/**/T/govern-*/**)` (macOS non-canonical, defensive)
+  - `Read(/tmp/govern-*/**)` (Linux)
+- **Auggie:** add equivalent `launch-process` entries with `shellInputRegex` patterns matching `tar` and `mktemp`. Auggie's `view` tool is broadly allowed by `configure/auggie.md`, so no per-path read entries are needed.
 
-The merge logic in **Permission Setup** is unchanged — entries are added if missing, never reordered or deduplicated. Existing adopters get the new entries on their next routine `/govern` re-run, before any `tar` or `mktemp` is invoked.
+The merge logic in **Permission Setup** is unchanged — entries are added if missing, never reordered or deduplicated. Existing adopters get the new entries on their next routine `/govern` re-run, before any `tar`, `mktemp`, or extracted-archive read is performed.
+
+#### Why pre-allow the temp-path Read globs
+
+Claude Code's permission system records a `Read(...)` allow with the **exact absolute path** when the agent first reads a file outside the project root and the user accepts the prompt. Combined with the spec's mandate that every `/govern` run gets a fresh `mktemp` directory, that means: without pre-allowed globs, every run prompts once and writes a new `Read(...)` entry into `settings.local.json` for the run's unique path. Those entries accumulate forever and never match a future run.
+
+Pre-allowing the globs at bootstrap solves this in a single entry per OS shape — future Read calls against any `govern-*` temp path match the glob and skip the prompt. The entries are scoped to `govern-*` directories under known temp roots, so they cannot grant Read on unrelated files.
+
+#### One-time cleanup of stale per-run entries
+
+Adopters who ran the tarball flow before this fix shipped will already have several `Read(/private/var/folders/.../T/govern-XXXXXX.{suffix}/...)` entries in their `settings.local.json`. The bootstrap merge does not delete them (per the spec's "never reorder or deduplicate" rule). Adopters can remove the stale entries manually — they are inert (the new glob covers any future case) but cosmetically noisy.
 
 ### Self-update notice
 
@@ -88,7 +101,7 @@ The self-update notice (shown when the installed `govern.md` differs from the fe
 ## Tradeoffs
 
 - **One archive failure vs. many per-file warnings.** Today a single 404 on `framework/templates/project/inbox.md` produces a warning and the rest of the manifest proceeds. With a tarball, that file would simply not exist in the extract, producing the same per-entry warning. The genuine new failure mode is the archive itself failing — and that's a clean abort, since partial scaffolding from a missing archive is impossible.
-- **New permissions.** Two additions (`tar`, `mktemp`). Cost is one-time per adopter, applied on the same `/govern` run that introduces the change. No `rm` allow is needed because the temp directory is left for the OS to sweep.
+- **New permissions.** For Claude, two `Bash` additions (`tar`, `mktemp`) plus three `Read(...)` globs covering `govern-*` temp paths under macOS (`/private/var/folders/**/T/`, `/var/folders/**/T/`) and Linux (`/tmp/`). For Auggie, just the two shell-command entries — `view` is unconditionally allowed by configure. Cost is one-time per adopter, applied on the same `/govern` run that introduces the change. No `rm` allow is needed because the temp directory is left for the OS to sweep.
 - **Bytes over the wire.** The full archive is ~hundreds of KB compressed; today's per-file fetches collectively pull a similar volume but spread across ~35 round-trips. Net: fewer bytes once HTTP overhead is counted, fewer tool-call invocations, faster perceived run time.
 - **Loss of partial progress.** A network failure mid-fetch today produces ~10 successful files plus warnings on the rest; with a tarball, a network failure produces zero files and a clean abort. Both outcomes leave the project in a recoverable state — re-run resumes idempotently.
 - **Pinning at a ref.** Today fetches are hardcoded to `main`. The tarball URL also points at `main`. A `.governance.toml` `[source] ref = "v0.1.0"` option that overrides the archive ref is a natural follow-up but out of scope for this spec — see **Resolved Questions**.
@@ -102,6 +115,7 @@ The self-update notice (shown when the installed `govern.md` differs from the fe
 - [ ] A missing source file within the archive produces a per-entry warning and the remaining manifest continues
 - [ ] The temp directory path is logged in the run summary (and on abort, in the error message); `/govern` does not delete it
 - [ ] Each agent's `settings_template` in the registry adds `tar` and `mktemp` allow entries, applied via the existing **Permission Setup** merge; no `rm` allow is added
+- [ ] The Claude `settings_template` also adds `Read(...)` globs for `govern-*` temp paths under both macOS temp roots and Linux `/tmp`, so per-run `Read(...)` entries do not accumulate across `/govern` invocations
 - [ ] The **Post-Write Integrity Check** for `govern.md` works against the local source — no additional `curl`
 - [ ] The self-update notice continues to fire when the installed `govern.md` differs from the archive's copy
 - [ ] Per-language gitignore fetches against `github.com/github/gitignore` remain unchanged (separate `curl` calls)
