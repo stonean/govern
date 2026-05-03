@@ -9,6 +9,8 @@ tags: [bootstrap, templates]
 Based on project tech stack, recommend and scaffold relevant development workflow files during bootstrap.
 
 > **Note:** the workflow filename convention was revised post-completion. The original convention `{category}-{language}-{tool}.md` produced redundant slash command names like `/{project}:workflows:test-go-gotest` (the tool name `gotest` already encodes both `go` and `test`). The convention is now `{tool}.md` — slash commands invoke as `/{project}:workflows:gotest`, `/{project}:workflows:pytest`, etc. The category and language are still tracked in `framework/workflows/registry.json`'s `category` and `trigger` fields and continue to drive the per-category accept/skip prompt during `/govern`. The body below has been updated to reflect the current convention; `plan.md` and `tasks.md` retain the original filenames as a historical record of the original implementation.
+>
+> Adopters who scaffolded the legacy filenames before this rename get them removed automatically on their next `/govern` re-run — see the **Legacy workflow cleanup** step in `framework/bootstrap/govern.md`'s Workflow recommendation flow. The cleanup is hardcoded to the original 9 filenames and respects `.governance.toml` `pinned.files`, so custom workflow files are never affected.
 
 ## Problem
 

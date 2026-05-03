@@ -379,9 +379,23 @@ Files listed in `pinned.files` are never deleted — report them as "pinned (kep
 
 After the slash command cleanup, offer any newly registered workflows that match the project's tech stack and have not yet been scaffolded for this agent.
 
-1. **Read the synced registry** at `workflows/registry.json` (the project-local copy written by the manifest above). If the file is missing or not valid JSON, warn `Workflow registry not found or invalid, skipping workflow recommendations` and skip the rest of this section. Validate each entry against the schema in `specs/005-workflows/data-model.md`; drop invalid entries with a per-entry warning.
+1. **Legacy workflow cleanup.** Before reading the registry, remove any workflow files left behind by `/govern` runs prior to the post-005 filename rename (which simplified `{category}-{language}-{tool}.md` to `{tool}.md`). In `{config_dir}/commands/{project}/workflows/`, delete any file whose name appears in this exact set:
 
-2. **Read the project's tech stack** from `AGENTS.md`. Locate the **Tech Stack** table and parse each row's `Layer` column to recover the canonical key:
+   - `format-go-gofmt.md`
+   - `format-python-black.md`
+   - `format-typescript-prettier.md`
+   - `lint-go-golangci-lint.md`
+   - `lint-python-ruff.md`
+   - `lint-typescript-eslint.md`
+   - `test-go-gotest.md`
+   - `test-python-pytest.md`
+   - `test-typescript-vitest.md`
+
+   Files listed in `.governance.toml` `pinned.files` are skipped — adopters who customized a legacy file and want to keep it can pin its destination path. Report each removal in the post-scaffolding summary as `removed (legacy workflow): {filename}`. The check is by exact filename match against the set above; custom user files (e.g., `pytest-fast.md`) are never affected because they aren't in the set. The cleanup runs every `/govern` invocation; once the legacy files are gone, subsequent runs are silent no-ops for this step.
+
+2. **Read the synced registry** at `workflows/registry.json` (the project-local copy written by the manifest above). If the file is missing or not valid JSON, warn `Workflow registry not found or invalid, skipping workflow recommendations` and skip the rest of this section. Validate each entry against the schema in `specs/005-workflows/data-model.md`; drop invalid entries with a per-entry warning.
+
+3. **Read the project's tech stack** from `AGENTS.md`. Locate the **Tech Stack** table and parse each row's `Layer` column to recover the canonical key:
 
    - `Language` → `backend_language` for backend-only projects, `frontend_language` for frontend-only projects (use the project context from the rest of AGENTS.md to disambiguate; if unclear, treat the row as both)
    - `Backend language` → `backend_language`
@@ -396,26 +410,26 @@ After the slash command cleanup, offer any newly registered workflows that match
 
    If `AGENTS.md` is missing, has no Tech Stack table, or the table is empty (still the comment placeholder), skip the rest of this section silently — there is nothing to match against.
 
-3. **Match registry entries** against the project's tech stack. For each entry, look up the project's value for `entry.trigger.field` and compare case-insensitively against `entry.trigger.value`. Collect every matching entry.
+4. **Match registry entries** against the project's tech stack. For each entry, look up the project's value for `entry.trigger.field` and compare case-insensitively against `entry.trigger.value`. Collect every matching entry.
 
-4. **Filter out already-scaffolded workflows.** For each match, check whether `{config_dir}/commands/{project}/workflows/{entry.template}` already exists. If it does, the workflow was previously scaffolded (for this agent) — drop it from the candidate list. Already-scaffolded workflow files are never overwritten, regardless of content changes upstream.
+5. **Filter out already-scaffolded workflows.** For each match, check whether `{config_dir}/commands/{project}/workflows/{entry.template}` already exists. If it does, the workflow was previously scaffolded (for this agent) — drop it from the candidate list. Already-scaffolded workflow files are never overwritten, regardless of content changes upstream.
 
-5. **Silent skip when there is nothing new to offer.** If no candidates remain, do not prompt the user and proceed to **Session state**.
+6. **Silent skip when there is nothing new to offer.** If no candidates remain, do not prompt the user and proceed to **Session state**.
 
-6. **Group remaining candidates by category** in the order: `Linting`, `Formatting`, `Testing`, `Migrations`, `Code Review`, `Deployment`. Within each category, list each match's `name` and `description`.
+7. **Group remaining candidates by category** in the order: `Linting`, `Formatting`, `Testing`, `Migrations`, `Code Review`, `Deployment`. Within each category, list each match's `name` and `description`.
 
-7. **Present per-category accept/skip prompts** via `AskUserQuestion`: "Scaffold these {category} workflows for {agent name}?" with the matched entries listed. Options: `Yes, scaffold all in this category`, `No, skip this category`. The user must explicitly accept — no workflows are scaffolded without consent.
+8. **Present per-category accept/skip prompts** via `AskUserQuestion`: "Scaffold these {category} workflows for {agent name}?" with the matched entries listed. Options: `Yes, scaffold all in this category`, `No, skip this category`. The user must explicitly accept — no workflows are scaffolded without consent.
 
-8. **Fetch and write accepted workflows.** For each accepted entry:
+9. **Fetch and write accepted workflows.** For each accepted entry:
 
    - Fetch `framework/workflows/{entry.template}` from the governance repo using the same URL pattern as the rest of govern's fetches. (Note: the workflows directory is flat — no inner `templates/` subdirectory.)
    - If the fetch fails or the file is missing, warn `Workflow file {entry.template} not found, skipping` and continue with the next accepted entry. Do not abort the surrounding scaffolding.
    - Replace every `{project}` with the user-provided project name and every `{cli-config-dir}` with the agent's `config_dir`.
    - Write the substituted content to `{config_dir}/commands/{project}/workflows/{entry.template}` (creating the `workflows/` directory if needed). Report the file as "scaffolded" in the post-scaffolding summary.
 
-9. **Discovery note for Auggie.** Auggie's official docs document subdirectory namespacing for one level (`.augment/commands/foo/bar.md` → `/foo:bar`). Multi-level paths like `.augment/commands/{project}/workflows/lint.md` should resolve to `/{project}:workflows:lint` by the same colon-namespace convention, but a user adopting Auggie may want to confirm autocomplete the first time. Claude Code's two-level path is documented and works as expected.
+10. **Discovery note for Auggie.** Auggie's official docs document subdirectory namespacing for one level (`.augment/commands/foo/bar.md` → `/foo:bar`). Multi-level paths like `.augment/commands/{project}/workflows/lint.md` should resolve to `/{project}:workflows:lint` by the same colon-namespace convention, but a user adopting Auggie may want to confirm autocomplete the first time. Claude Code's two-level path is documented and works as expected.
 
-10. **Adopter migration note.** Adopters who already ran `/{project}:govern` before this rename will have a `skills/` directory in their project. After re-running govern, they should manually delete the legacy `skills/` directory — workflow files have been re-created under `workflows/`, and the old directory is no longer referenced.
+11. **Adopter migration note.** Adopters who already ran `/{project}:govern` before the original `skills/` → `workflows/` rename will have a `skills/` directory in their project. After re-running govern, they should manually delete the legacy `skills/` directory — workflow files have been re-created under `workflows/`, and the old directory is no longer referenced. (The post-005 filename rename — `{category}-{language}-{tool}.md` → `{tool}.md` — does not need a manual step; the **Legacy workflow cleanup** in step 1 handles it automatically.)
 
 ### Session state (strategy: create)
 
