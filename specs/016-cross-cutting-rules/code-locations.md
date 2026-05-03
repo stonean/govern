@@ -7,3 +7,7 @@
 ## AC: §bug-handling in the constitution includes a fourth decision-tree route covering cross-cutting concerns. The "Three Tiers" framing above (or its equivalent) is reflected in the section
 
 - `framework/constitution.md`
+
+## AC: `framework/templates/spec/spec.md` includes an optional "Applicable Rules" section with prompt text explaining when to cite rule IDs (e.g., when the spec touches an area covered by a loaded rule file)
+
+- `framework/templates/spec/spec.md`

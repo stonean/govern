@@ -18,9 +18,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 3. Add optional "Applicable Rules" section to the spec template
 
-- [ ] Edit `framework/templates/spec/spec.md` to insert `## Applicable Rules` between `## Acceptance Criteria` and `## Open Questions`.
-- [ ] Body is an HTML comment explaining when to cite rule IDs (e.g., `BE-AUTHN-001`), with one or two example IDs and a note that the section can be deleted if no rules apply.
-- [ ] **Done when:** the template renders under `npx markdownlint-cli2` and a freshly-copied template still produces a passing spec without manual cleanup beyond the existing comment-prompts.
+- [x] Edit `framework/templates/spec/spec.md` to insert `## Applicable Rules` between `## Acceptance Criteria` and `## Open Questions`.
+- [x] Body is an HTML comment explaining when to cite rule IDs (e.g., `BE-AUTHN-001`), with one or two example IDs and a note that the section can be deleted if no rules apply.
+- [x] **Done when:** the template renders under `npx markdownlint-cli2` and a freshly-copied template still produces a passing spec without manual cleanup beyond the existing comment-prompts.
 
 ## 4. Generalize validate.md from "Security rules" to "Rules"
 
