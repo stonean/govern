@@ -11,3 +11,7 @@
 ## AC: `framework/templates/spec/spec.md` includes an optional "Applicable Rules" section with prompt text explaining when to cite rule IDs (e.g., when the spec touches an area covered by a loaded rule file)
 
 - `framework/templates/spec/spec.md`
+
+## AC: `framework/commands/validate.md`'s "Security rules" section is renamed to "Rules." The loading logic discovers any rule file shipped under the manifest, not only `security-backend.md` and `security-frontend.md`. Existing per-rule verification, reference-checking, and severity behavior is unchanged
+
+- `framework/commands/validate.md`

@@ -24,10 +24,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 4. Generalize validate.md from "Security rules" to "Rules"
 
-- [ ] Edit `framework/commands/validate.md`. Rename the `### Security rules (blocking and advisory)` heading to `### Rules (blocking and advisory)`.
-- [ ] Rewrite the loading prose to be parameterized: "Load each rule file in the rule-file list (currently `specs/security-backend.md` and `specs/security-frontend.md`) if present in the project. Each file is independently optional."
-- [ ] Replace remaining security-specific phrasing in the section (e.g., "security rule file," "security checks") with generic equivalents ("rule file," "rule checks") where the meaning is unchanged. Keep the security examples in skip messages where they serve as concrete illustration.
-- [ ] **Done when:** the section reads as generic rule loading without security-specific framing, the loading prose is parameterized, and `npx markdownlint-cli2` passes.
+- [x] Edit `framework/commands/validate.md`. Rename the `### Security rules (blocking and advisory)` heading to `### Rules (blocking and advisory)`.
+- [x] Rewrite the loading prose to be parameterized: "Load each rule file in the rule-file list (currently `specs/security-backend.md` and `specs/security-frontend.md`) if present in the project. Each file is independently optional."
+- [x] Replace remaining security-specific phrasing in the section (e.g., "security rule file," "security checks") with generic equivalents ("rule file," "rule checks") where the meaning is unchanged. Keep the security examples in skip messages where they serve as concrete illustration.
+- [x] **Done when:** the section reads as generic rule loading without security-specific framing, the loading prose is parameterized, and `npx markdownlint-cli2` passes.
 
 ## 5. Update groom.md decision-tree walk to include rule promotion
 
