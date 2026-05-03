@@ -16,12 +16,12 @@ Common development workflows — lint, test, format, migrate — are tech-stack-
 
 ### Workflow registry
 
-Governance maintains a workflow registry at `workflows/registry.json` — a JSON file that maps tech stack selections to recommended workflow files. Each entry in the registry contains:
+Governance maintains a workflow registry at `framework/workflows/registry.json` — a JSON file that maps tech stack selections to recommended workflow files. Each entry in the registry contains:
 
 - **Trigger** — a single tech stack field and value that activates this recommendation (e.g., `{"field": "backend_language", "value": "TypeScript"}`)
 - **Workflow name** — human-readable name (e.g., "ESLint", "pytest")
 - **Category** — one of the fixed categories: `Testing`, `Linting`, `Formatting`, `Migrations`, `Code Review`, `Deployment`
-- **Template** — path to the workflow file in governance, relative to `workflows/` (e.g., `lint-typescript-eslint.md`). Field name is `template` because the file contains placeholders that get substituted at scaffold time.
+- **Template** — path to the workflow file in governance, relative to `framework/workflows/` (e.g., `lint-typescript-eslint.md`). Field name is `template` because the file contains placeholders that get substituted at scaffold time.
 - **Description** — one-line explanation of what the workflow does
 
 Each trigger matches a single tech stack field. A workflow is recommended when the user's selection for that field matches the trigger value. Multiple entries can share the same trigger to recommend several workflows for one selection.
@@ -32,7 +32,7 @@ During `/gov:init`, after the tech stack questionnaire (step 4 from 004), the sy
 
 1. **Matches** — scans the registry for entries whose trigger field and value match any of the user's tech stack selections. If no entries match, skip the workflow step entirely — do not prompt the user.
 2. **Presents** — displays matched workflows grouped by category with name and description. The user can accept or skip each category group.
-3. **Scaffolds** — for accepted workflows, copies the workflow file from `workflows/` in governance into `.claude/commands/{slug}/workflows/` in the new project, replacing `{project}` and other standard placeholders.
+3. **Scaffolds** — for accepted workflows, copies the workflow file from `framework/workflows/` in governance into `.claude/commands/{slug}/workflows/` in the new project, replacing `{project}` and other standard placeholders.
 
 ### Workflow files
 

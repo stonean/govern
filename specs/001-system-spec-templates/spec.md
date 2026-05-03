@@ -8,7 +8,7 @@ tags: [templates, pipeline]
 
 Templates for the cross-cutting system specs that the constitution references but does not provide: `system.md`, `errors.md`, and `events.md`.
 
-> **Note:** path references below (`templates/system.md`, etc.) reflect the original layout. The repository was later reorganized so project-scaffolding templates live in `framework/templates/project/`. Adopting projects still copy these templates into their own `specs/` directory; the source paths in this governance repo changed, the destinations did not.
+> **Note:** path references below (`templates/system.md`, etc.) reflect the original layout. The repository was later reorganized so project-scaffolding templates live in `framework/templates/project/`. Adopting projects' destination paths did not change.
 
 ## Problem
 

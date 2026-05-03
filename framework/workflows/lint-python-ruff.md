@@ -1,3 +1,7 @@
+---
+description: Run Ruff against the Python codebase and surface findings.
+---
+
 # Ruff
 
 Run Ruff against the Python codebase and surface findings.

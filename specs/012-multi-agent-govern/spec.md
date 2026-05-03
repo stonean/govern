@@ -9,6 +9,8 @@ tags: [bootstrap, agent]
 A single `govern.md` command that supports adopting governance for multiple AI coding CLIs in the same project, with the target agent(s) selected at run time rather than baked into the file. Re-runs are additive — a project initialized for one agent can later adopt another by re-running `/govern` and selecting the new agent.
 
 > **Note:** this spec uses `setup` for the per-agent permissions command throughout. The command and its source files were later renamed to `configure` (the source lives at `framework/bootstrap/configure/{key}.md` and is scaffolded as `{cli-config-dir}/commands/{project}/configure.md`). Behavior is unchanged.
+>
+> **Note:** path references below (`govern/govern.md`, `govern/govern-auggie.md`, `commands/setup/{agent}.md`) reflect the original layout. The repository was later reorganized so the govern installer lives at `framework/bootstrap/govern.md` and per-agent permission sources at `framework/bootstrap/configure/{key}.md`. Adopting projects' destination paths did not change.
 
 ## Problem
 

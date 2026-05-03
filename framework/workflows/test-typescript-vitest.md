@@ -1,3 +1,7 @@
+---
+description: Run the Vitest suite for the TypeScript codebase.
+---
+
 # Vitest
 
 Run the Vitest suite for the TypeScript codebase.

@@ -10,7 +10,7 @@ Governance slash commands that dogfood the same pipeline commands adopting proje
 
 > **Note:** the command set evolved after this spec shipped. `/gov:about` is now `/gov:help`, `/gov:setup` is now `/gov:configure` (renamed by [012-multi-agent-govern](../012-multi-agent-govern/spec.md)), and `/gov:next` was retired — pipeline next-step suggestions are surfaced by `/gov:status` and `/gov:target` instead. The brownfield commands (`/gov:capture`, `/gov:log`, `/gov:groom`) and elaborate commands (`/gov:ask`, `/gov:elaborate`) were added by later specs and are scaffolded alongside the original set.
 >
-> **Note:** path references below (`commands/`) reflect the original layout. Command sources now live in `framework/commands/`; the generator script `scripts/gen-claude-commands.sh` produces `.claude/commands/gov/` from those sources. Destination paths in adopting projects (`{cli-config-dir}/commands/{project}/`) did not change.
+> **Note:** path references below (`commands/`) reflect the original layout. The repository was later reorganized so command sources live in `framework/commands/`; the generator script `scripts/gen-claude-commands.sh` produces `.claude/commands/gov/` from those sources. Adopting projects' destination paths did not change.
 
 ## Problem
 

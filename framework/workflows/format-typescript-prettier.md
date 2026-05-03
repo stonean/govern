@@ -1,3 +1,7 @@
+---
+description: Format the TypeScript codebase with Prettier.
+---
+
 # Prettier
 
 Format the TypeScript codebase with Prettier.

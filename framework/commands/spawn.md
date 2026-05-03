@@ -70,7 +70,7 @@ Copy the entire `specs/` directory (including all feature specs, templates, syst
 
 Copy all implementation directories and files that exist in the source project. Skip any that do not exist — a spec-only project will have none of these.
 
-Copy any directories and files at the project root that are clearly part of the application. Do **not** copy `.git/`, the agent's `{cli-config-dir}/` (e.g. `.claude/`, `.augment/`), or IDE-specific settings. The initialize command (if present) may list specific directories and files to copy — follow its guidance.
+Copy any directories and files at the project root that are clearly part of the application. Do **not** copy `.git/`, the agent's config directory (e.g. `.claude/`, `.augment/`), or IDE-specific settings. The initialize command (if present) may list specific directories and files to copy — follow its guidance.
 
 ### 5. Copy slash commands
 

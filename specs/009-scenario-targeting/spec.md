@@ -44,7 +44,7 @@ The `target` command accepts an extended syntax to target scenarios:
 - `target {feature}` — targets the feature, clears any scenario (current behavior)
 - `target {feature}/{scenario-slug}` — targets the feature and a specific scenario within it
 
-When targeting a scenario, the command validates that the scenario file exists under the feature's `scenarios/` directory. If the `scenarios/` directory does not exist, it reports "No scenarios exist for this feature. Run `/gov:scenario` to create one." If the directory exists but the slug does not match a file, it lists available scenarios and asks the user to choose.
+When targeting a scenario, the command validates that the scenario file exists under the feature's `scenarios/` directory. If the `scenarios/` directory does not exist, it reports "No scenarios exist for this feature. Run `/{project}:elaborate` to create one." (Per the rename signpost above, this spec drafted the message with `/gov:scenario`; the shipped command is `/{project}:elaborate`.) If the directory exists but the slug does not match a file, it lists available scenarios and asks the user to choose.
 
 When targeting a feature that does not exist, it reports "Feature `{feature}` does not exist."
 

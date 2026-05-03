@@ -10,10 +10,12 @@ Wire up `/ask` to own the `clarified` / `planned` / `in-progress` → `draft` ba
 
 ## Problem
 
-Constitution §spec-lifecycle (`framework/constitution.md` lines 96–99) defines two back-edges:
+Prior to this spec, the constitution §spec-lifecycle (`framework/constitution.md` lines 96–99) defined two back-edges:
 
 1. `done → in-progress` via `/elaborate` adding a scenario.
 2. `planned/in-progress → clarified` via `/ask` recording a new open question.
+
+The first was implemented; the second was not, and its destination state was wrong on inspection (see below). This spec wires up the second back-edge and revises the constitution's wording so source and behavior match.
 
 Back-edge 1 is implemented in `framework/commands/elaborate.md` step 7. Back-edge 2 is not implemented anywhere:
 

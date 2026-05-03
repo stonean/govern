@@ -1,3 +1,7 @@
+---
+description: Run the Go test suite via the go toolchain.
+---
+
 # go test
 
 Run the Go test suite via the go toolchain.

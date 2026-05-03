@@ -101,6 +101,12 @@ Create `specs/` and copy these files from `framework/templates/project/` in the 
 - `framework/templates/project/system.md` → `specs/system.md`
 - `framework/templates/project/errors.md` → `specs/errors.md`
 - `framework/templates/project/events.md` → `specs/events.md`
+- `framework/templates/project/inbox.md` → `specs/inbox.md`
+
+Also copy the security rule files from `framework/rules/` into `specs/` so `/{slug}:validate`'s security check has rules to load on day one:
+
+- `framework/rules/security-backend.md` → `specs/security-backend.md`
+- `framework/rules/security-frontend.md` → `specs/security-frontend.md`
 
 ### 6. Copy spec templates
 
