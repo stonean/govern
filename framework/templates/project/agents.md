@@ -55,7 +55,7 @@ See [constitution.md](constitution.md) — guiding principles, development pipel
 
 <!-- Optional. List skill files (Anthropic/Claude Code "skills" — context-loaded
      instruction packs) that augment AGENTS.md for specific task types. This is
-     distinct from this repo's `framework/workflows/` — workflows are governance-
+     distinct from this repo's `framework/workflows/` — workflows are `govern`-
      scaffolded slash commands for routine ops (lint, test, format), while skills
      are an agent-platform feature for richer in-context instruction packs. Leave
      empty if you don't decompose into skills.
@@ -68,7 +68,7 @@ See [constitution.md](constitution.md) — guiding principles, development pipel
      | `db-migration` skill | Editing migration files |
 
      Per-platform mapping (Claude Code skills, Cursor rules, etc.) is the
-     adopter's call — governance defines the index pattern, not the location.
+     adopter's call — `govern` defines the index pattern, not the location.
 -->
 
 ## Code Style

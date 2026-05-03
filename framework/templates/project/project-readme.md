@@ -67,7 +67,7 @@ Three cycles are supported:
 | `/{project}:groom` | Walk the inbox and route each item to its proper spec or scenario |
 | `/{project}:configure` | Configure permissions for common operations |
 | `/{project}:spawn` | Spawn a new project from this one |
-| `/govern` | Adopt or update governance in this project (top-level command, no project namespace) |
+| `/govern` | Adopt or update `govern` in this project (top-level command, no project namespace) |
 
 ### Working on Existing Specs
 

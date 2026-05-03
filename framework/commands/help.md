@@ -68,7 +68,7 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 
 | Command | Description |
 | --- | --- |
-| `/govern` | Adopt or update governance in an existing project. Installed in your agent's command directory; no project namespace. |
+| `/govern` | Adopt or update `govern` in an existing project. Installed in your agent's command directory; no project namespace. |
 | `/{project}:configure` | Configure `{cli-config-dir}/settings.local.json` so commands run without manual approval prompts. |
 | `/{project}:spawn` | Spawn a new project from this one — copies specs, commands, and configuration. |
 

@@ -1,11 +1,11 @@
-# Governance Specs
+# `govern` Specs
 
 Cross-cutting decisions, conventions, and deferred work that span multiple feature specs.
 
 ## Design Decisions
 
 - **Lightweight track detection** — the `specify` command determines whether a feature qualifies for lightweight track by prompting the user with qualifying questions (single module? no open questions? trivial data model? under 50 lines?). If all answers indicate "small and clear," it creates `spec-and-plan.md` from a combined template. Pipeline commands (`clarify`, `plan`) detect which file exists and adapt accordingly.
-- **Templates live at governance root** — all templates (spec, plan, system, errors, events, project scaffolding) live in `templates/` at the governance root. This is the source. The init command copies spec templates to `{project}/specs/templates/` and system spec templates to `{project}/specs/` during bootstrap. Governance is the source, not an adopting project.
+- **Templates live at the `govern` root** — all templates (spec, plan, system, errors, events, project scaffolding) live in `templates/` at the `govern` root. This is the source. The init command copies spec templates to `{project}/specs/templates/` and system spec templates to `{project}/specs/` during bootstrap. `govern` is the source, not an adopting project.
 
 ## Future Considerations
 

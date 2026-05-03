@@ -1,12 +1,12 @@
 # Security Rules — Frontend
 
-Enforceable security rules for browser-side code, UI rendering, and client-server interaction. These rules apply to all projects with a web frontend adopting governance.
+Enforceable security rules for browser-side code, UI rendering, and client-server interaction. These rules apply to all projects with a web frontend adopting `govern`.
 
 Rules use RFC 2119 language: **MUST** / **MUST NOT** are enforced by the validate command (errors); **SHOULD** / **SHOULD NOT** are flagged as warnings.
 
 Rule IDs follow the format `FE-{CATEGORY}-{NNN}` and are permanent — once assigned, an ID is never renumbered, even if the rule is moved within the file or deprecated. Categories: `XSS` (cross-site scripting), `CSRF` (cross-site request forgery), `STORAGE` (secure client-side storage), `AUTHN` (authentication UX), `CSP` (content security policy), `DEPS` (dependency management), `PII` (sensitive data handling). See `specs/008-security-rules/data-model.md` for the full schema.
 
-Projects without a frontend can pin this file in `.governance.toml` to skip it during govern updates.
+Projects without a frontend can pin this file in `.governance.toml` to skip it during `govern` updates.
 
 ## FE-XSS — Cross-Site Scripting Prevention
 

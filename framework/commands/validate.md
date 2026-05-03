@@ -146,7 +146,7 @@ Findings produced by this section are surfaced under validate's existing severit
 
 ### Project-level consistency (advisory)
 
-These checks span the project's installed command set and constitution rather than the target feature. They catch drift in the framework files governance ships, surfaced per the Drift Prevention principles in `constitution.md` §drift-prevention. Run once per `/{project}:validate` invocation regardless of which feature is targeted; with `--all`, run once before per-feature output.
+These checks span the project's installed command set and constitution rather than the target feature. They catch drift in the framework files `govern` ships, surfaced per the Drift Prevention principles in `constitution.md` §drift-prevention. Run once per `/{project}:validate` invocation regardless of which feature is targeted; with `--all`, run once before per-feature output.
 
 Read inputs:
 

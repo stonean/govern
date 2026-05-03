@@ -9,14 +9,14 @@ Spawn a new project from this one. Copies specs, commands, configuration, and �
 
 ## Purpose
 
-A spec project defines the tech stack, architecture, and foundational features for a product. When the spec project also contains implementation code, the spawned project inherits a working foundation and can jump straight to business-specific features. This is the greenfield counterpart to `/govern` (which adopts governance into an existing project).
+A spec project defines the tech stack, architecture, and foundational features for a product. When the spec project also contains implementation code, the spawned project inherits a working foundation and can jump straight to business-specific features. This is the greenfield counterpart to `/govern` (which adopts `govern` into an existing project).
 
 ## Scope Boundaries
 
 - This command copies files and renames references. Do NOT generate new code, specs, or plans.
 - Read only what is needed: the source project's file structure, `AGENTS.md` (for display name detection), and `initialize.md` (if present, for additional inputs and copy guidance). Do NOT read spec contents, source code logic, or plan details.
 - All operations target the new project directory. Do NOT modify the source project.
-- Reference: no constitution sections apply — this is a one-shot scaffolding command that operates on file copies, not governance artifacts.
+- Reference: no constitution sections apply — this is a one-shot scaffolding command that operates on file copies, not `govern` artifacts.
 
 ## Inputs
 
@@ -76,7 +76,7 @@ Copy any directories and files at the project root that are clearly part of the 
 
 Create `.claude/commands/{slug}/` and copy every `.md` file from `.claude/commands/{source}/` in the current project into `.claude/commands/{slug}/`.
 
-### 6. Copy govern command
+### 6. Copy `govern` command
 
 If `.claude/commands/govern.md` exists in the current project, copy it to `.claude/commands/govern.md` in the new project.
 
@@ -112,7 +112,7 @@ Additionally, replace the source project's display name (found in `AGENTS.md` he
 
 Do **not** replace inside:
 
-- `constitution.md` (governance-owned, no project references)
+- `constitution.md` (`govern`-owned, no project references)
 - `.gitignore` and `.markdownlint-cli2.jsonc` (no project name references)
 - Implementation files (handled by the initialize command in step 10, if present)
 

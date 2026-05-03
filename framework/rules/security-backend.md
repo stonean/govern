@@ -1,6 +1,6 @@
 # Security Rules — Backend
 
-Enforceable security rules for server-side code, APIs, data persistence, and integration boundaries. These rules apply to all projects adopting governance.
+Enforceable security rules for server-side code, APIs, data persistence, and integration boundaries. These rules apply to all projects adopting `govern`.
 
 Rules use RFC 2119 language: **MUST** / **MUST NOT** are enforced by the validate command (errors); **SHOULD** / **SHOULD NOT** are flagged as warnings.
 

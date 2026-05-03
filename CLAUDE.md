@@ -1,8 +1,8 @@
-# Governance Repo Rules
+# `govern` Repo Rules
 
 ## Framework Layout
 
-The framework is the everything-that-ships portion of this repo. It is laid out by IA primary purpose, not by file kind:
+The `govern` framework is the everything-that-ships portion of this repo. It is laid out by IA primary purpose, not by file kind:
 
 - `framework/constitution.md` — the law (singular, authoritative)
 - `framework/rules/` — domain rule sets adopted projects can reference (security-backend, security-frontend, …)
@@ -18,7 +18,7 @@ When adding files, place them by purpose, not by extension.
 
 All operational slash command templates live in `framework/commands/`. The agent-specific permission files live in `framework/bootstrap/configure/{key}.md`. The Claude Code instances under `.claude/commands/gov/` are **generated** from those sources by `scripts/gen-claude-commands.sh`.
 
-Workflow files in `framework/workflows/` ship as-is — they are not generator inputs and have no governance-side `gov:workflows:*` counterpart. Adopting projects scaffold them via `/govern` (or `/gov:init`).
+Workflow files in `framework/workflows/` ship as-is — they are not generator inputs and have no `govern`-side `gov:workflows:*` counterpart. Adopting projects scaffold them via `/govern` (or `/gov:init`).
 
 Never edit `.claude/commands/gov/*.md` directly — your changes will be overwritten the next time the generator runs. Edit the source under `framework/commands/` (or `framework/bootstrap/configure/claude.md` for the `configure` command), then run:
 
@@ -28,4 +28,4 @@ Never edit `.claude/commands/gov/*.md` directly — your changes will be overwri
 
 The generator substitutes `{project}` → `gov` and `{cli-config-dir}` → `.claude` and writes the Claude-specific permission file (`framework/bootstrap/configure/claude.md`) as `configure.md` in the gov command directory.
 
-`.claude/commands/gov/init.md` is the one exception — it is governance-specific (no source counterpart) and is hand-maintained. The generator leaves it untouched.
+`.claude/commands/gov/init.md` is the one exception — it is `govern`-specific (no source counterpart) and is hand-maintained. The generator leaves it untouched.

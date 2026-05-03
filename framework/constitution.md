@@ -35,7 +35,7 @@ These are evaluation criteria, not implementation instructions. Use them to iden
 
 ### Cost levers
 
-Per-task token tracking and budget ceilings require a runtime governance does not have — that work belongs to the AI platform. Governance contributes by offering cost-aware patterns the user can opt into. The current levers: the [Lightweight Track](#lightweight-track) skips the plan phase for small features; the optional `[simple]` marker on tasks signals to the agent (and the user) that a trivial task should be routed to a cheaper model per the adopter's platform mapping; the stuck-detection step in `/{project}:implement` catches runaway loops before they compound spend; default-off autonomy keeps the human in the loop unless `--auto` is explicitly passed. For runtime cost controls, point the adopter at the platform's tooling — Claude Code's `/cost`, the Anthropic usage dashboard, Cursor's request limits, and equivalents.
+Per-task token tracking and budget ceilings require a runtime `govern` does not have — that work belongs to the AI platform. `govern` contributes by offering cost-aware patterns the user can opt into. The current levers: the [Lightweight Track](#lightweight-track) skips the plan phase for small features; the optional `[simple]` marker on tasks signals to the agent (and the user) that a trivial task should be routed to a cheaper model per the adopter's platform mapping; the stuck-detection step in `/{project}:implement` catches runaway loops before they compound spend; default-off autonomy keeps the human in the loop unless `--auto` is explicitly passed. For runtime cost controls, point the adopter at the platform's tooling — Claude Code's `/cost`, the Anthropic usage dashboard, Cursor's request limits, and equivalents.
 
 <!-- §pipeline -->
 
@@ -279,7 +279,7 @@ Promotion is a user decision, not automated. The framework provides the pattern;
 
 ### Brownfield Inbox
 
-For projects adopting governance incrementally, a `specs/inbox.md` file serves as a temporary inbox for known issues not yet assigned to a feature spec. Items are recorded with `/log` and groomed into their proper home with `/groom`.
+For projects adopting `govern` incrementally, a `specs/inbox.md` file serves as a temporary inbox for known issues not yet assigned to a feature spec. Items are recorded with `/log` and groomed into their proper home with `/groom`.
 
 Inbox rules:
 
@@ -292,7 +292,7 @@ Inbox rules:
 
 ### Brownfield Process
 
-Brownfield projects adopt governance incrementally. The `/capture` command initializes a skeleton spec from freeform user input — no pressure to be comprehensive. Start broad; decompose through scenarios over time.
+Brownfield projects adopt `govern` incrementally. The `/capture` command initializes a skeleton spec from freeform user input — no pressure to be comprehensive. Start broad; decompose through scenarios over time.
 
 #### Capture → incremental growth → promotion
 
@@ -313,11 +313,11 @@ When a `/groom` pass encounters an item that does not map to any existing spec, 
 
 ## Text-First Artifacts
 
-Governance treats every artifact — constitution, specs, plans, tasks, scenarios, rules — as plain markdown the agent can edit with `Edit`. This is load-bearing: the agent's write path stays simple, PRs review glanceably, merge conflicts stay rare and human-resolvable, and adopting governance requires no bootstrap tooling beyond the AI agent itself.
+`govern` treats every artifact — constitution, specs, plans, tasks, scenarios, rules — as plain markdown the agent can edit with `Edit`. This is load-bearing: the agent's write path stays simple, PRs review glanceably, merge conflicts stay rare and human-resolvable, and adopting `govern` requires no bootstrap tooling beyond the AI agent itself.
 
 ### Principles
 
-- All governance artifacts are markdown by default. The agent reads and writes them with the same `Edit` flow used for code.
+- All `govern` artifacts are markdown by default. The agent reads and writes them with the same `Edit` flow used for code.
 - Structured metadata lives in YAML frontmatter at the top of each markdown file; the document body remains markdown prose.
 - Cross-artifact references use standard relative markdown links (`[label](../path.md)`), not wiki-links — this keeps PRs reviewable on GitHub and viewers like Quartz/Obsidian still resolve them.
 - Source-of-truth artifacts are markdown. Structured derived views are regenerated from canonical sources and never become the canonical record.
@@ -327,7 +327,7 @@ Governance treats every artifact — constitution, specs, plans, tasks, scenario
 
 ### Frontmatter Schema
 
-The frontmatter schema applies to **spec files** (`spec.md`, `spec-and-plan.md`) and **scenario files** (`scenarios/{slug}.md`). Other governance artifacts (`system.md`, `errors.md`, `events.md`, `inbox.md`, plan files, tasks files, rule files, README files) MAY include frontmatter when a specific consumer benefits, but are not required to.
+The frontmatter schema applies to **spec files** (`spec.md`, `spec-and-plan.md`) and **scenario files** (`scenarios/{slug}.md`). Other `govern` artifacts (`system.md`, `errors.md`, `events.md`, `inbox.md`, plan files, tasks files, rule files, README files) MAY include frontmatter when a specific consumer benefits, but are not required to.
 
 #### Spec files
 
@@ -346,7 +346,7 @@ The frontmatter schema applies to **spec files** (`spec.md`, `spec-and-plan.md`)
 
 #### Open-schema rule
 
-Additional fields beyond those listed above are permitted and ignored by uninterested consumers. Examples adopters or future governance work might add: `owner`, `target_release`, `created_at`, `description`, `aliases`. The `spec-and-plan.md` template uses the open-schema rule to carry `track: lightweight` — a human-readable marker, not a pipeline-consumed field. Consumers MUST NOT error on the presence of unknown fields. `/gov:validate` reports unknown fields as informational findings (not errors).
+Additional fields beyond those listed above are permitted and ignored by uninterested consumers. Examples adopters or future `govern` work might add: `owner`, `target_release`, `created_at`, `description`, `aliases`. The `spec-and-plan.md` template uses the open-schema rule to carry `track: lightweight` — a human-readable marker, not a pipeline-consumed field. Consumers MUST NOT error on the presence of unknown fields. `/gov:validate` reports unknown fields as informational findings (not errors).
 
 ### Validation Severity
 
@@ -368,7 +368,7 @@ Published as guidance, not enforcement. Adopters and future specs MAY introduce 
 | --- | --- |
 | `cli` | Specs about slash commands or command-line interactions |
 | `commands` | Specs that introduce, rename, or significantly change slash commands |
-| `bootstrap` | Specs about adopting governance, project scaffolding, or initialization |
+| `bootstrap` | Specs about adopting `govern`, project scaffolding, or initialization |
 | `process` | Specs about workflow, lifecycle, or pipeline behavior |
 | `templates` | Specs about template files (spec, plan, scenario, project-readme, etc.) |
 | `security` | Specs about security rules, authentication, authorization |
@@ -383,7 +383,7 @@ Published as guidance, not enforcement. Adopters and future specs MAY introduce 
 
 ## Drift Prevention
 
-These principles keep facts consistent as the framework evolves. They apply both to governance itself and to projects that adopt it. Drift is a class of bug; preventing it is part of the framework's design, not an afterthought.
+These principles keep facts consistent as the framework evolves. They apply both to `govern` itself and to projects that adopt it. Drift is a class of bug; preventing it is part of the framework's design, not an afterthought.
 
 ### Canonical sources
 
@@ -447,7 +447,7 @@ A signpost names what changed and points readers at the current source of truth.
 
 ### Concurrent Features
 
-The session state file (`{cli-config-dir}/{project}-session.json`) holds a single target by design. The pipeline is serial within a feature, and concurrent work on independent features uses two independent sessions in two terminals — not multi-target session state. Isolation is provided by the platform layer: `git worktree` keeps the working trees separate, and AI-agent platforms typically expose isolation primitives (Claude Code's `isolation: "worktree"` agent parameter, Cursor's worktree integration, etc.). Reach for those rather than asking governance to track multiple targets at once.
+The session state file (`{cli-config-dir}/{project}-session.json`) holds a single target by design. The pipeline is serial within a feature, and concurrent work on independent features uses two independent sessions in two terminals — not multi-target session state. Isolation is provided by the platform layer: `git worktree` keeps the working trees separate, and AI-agent platforms typically expose isolation primitives (Claude Code's `isolation: "worktree"` agent parameter, Cursor's worktree integration, etc.). Reach for those rather than asking `govern` to track multiple targets at once.
 
 <!-- §cross-spec-impact -->
 

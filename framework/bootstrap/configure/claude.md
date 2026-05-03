@@ -11,7 +11,7 @@ Configure `{cli-config-dir}/settings.local.json` with the permissions needed for
 - Read and write only `{cli-config-dir}/settings.local.json`. Do NOT modify any other file.
 - Add missing entries; do NOT remove, deduplicate, reorder, or rewrite entries the user (or another command) added beyond the canonical set listed below.
 - Do NOT scan source code, specs, or git history. This command only manages permissions.
-- Reference: no constitution sections apply — this command operates on agent-specific permission state, not governance artifacts.
+- Reference: no constitution sections apply — this command operates on agent-specific permission state, not `govern` artifacts.
 
 ## Instructions
 

@@ -15,7 +15,7 @@ Brownfield entry point. Creates a numbered feature directory with a skeleton spe
 
 This command does not require a session target — it creates a new feature. If `.claude/gov-session.json` exists, the session target will be overwritten with the new feature.
 
-If the constitution has not been loaded in this session (e.g., `/gov:target` has not been run), read `constitution.md` now to load governance rules. If the constitution was already loaded by `/gov:target`, do not re-read it.
+If the constitution has not been loaded in this session (e.g., `/gov:target` has not been run), read `constitution.md` now to load `govern` rules. If the constitution was already loaded by `/gov:target`, do not re-read it.
 
 ## Scope Boundaries
 

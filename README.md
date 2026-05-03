@@ -1,4 +1,4 @@
-# Governance
+# govern
 
 Standards and conventions for spec-driven software development. This project defines how we run projects — the workflow, spec structure, principles, and quality rules that apply regardless of tech stack.
 
@@ -16,12 +16,12 @@ Standards and conventions for spec-driven software development. This project def
   - [framework/workflows/](framework/workflows/) — Tech-stack-specific workflow files (lint, test, format, migrate) plus `registry.json` mapping stack selections to workflows
   - [framework/bootstrap/](framework/bootstrap/) — The `govern.md` installer plus per-agent permission files (`configure/{agent}.md`)
 - [docs/introduction.md](docs/introduction.md) — Long-form pitch for spec-driven development. The constitution is authoritative for normative rules.
-- [specs/](specs/) — Feature specs for governance itself (dogfooding the pipeline)
+- [specs/](specs/) — Feature specs for `govern` itself (dogfooding the pipeline)
 - [scripts/](scripts/) — Maintenance scripts (e.g., regenerate `.claude/commands/gov/` from `framework/commands/`)
 
 ## Feature Specs
 
-Governance uses its own spec-driven pipeline to develop itself.
+`govern` uses its own spec-driven pipeline to develop itself.
 
 See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred work.
 
@@ -34,20 +34,20 @@ See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred 
 | [004-tech-stack-selection](specs/004-tech-stack-selection/spec.md) | done | 003 | Interactive tech stack questionnaire during init that populates AGENTS.md |
 | [005-workflows](specs/005-workflows/spec.md) | done | 004 | Recommend and scaffold development workflows (lint, test, format, migrate) based on tech stack during init |
 | [006-bug-workflow](specs/006-bug-workflow/spec.md) | done | none | Scenario support, bug decision tree, and brownfield triage |
-| [007-govern-workflow](specs/007-govern-workflow/spec.md) | done | 003 | Self-contained govern command to bootstrap and update governance in existing projects |
+| [007-govern-workflow](specs/007-govern-workflow/spec.md) | done | 003 | Self-contained `govern` command to bootstrap and update `govern` in existing projects |
 | [008-security-rules](specs/008-security-rules/spec.md) | done | 007 | Enforceable backend and frontend security rules distributed via `/govern` |
 | [009-scenario-targeting](specs/009-scenario-targeting/spec.md) | done | 006 | Promote scenarios to first-class pipeline targets for question, clarify, status, and implement commands |
 | [010-agent-autonomy](specs/010-agent-autonomy/spec.md) | done | 000 | Evaluate and adopt agent orchestration capabilities (skills, complexity routing, stuck detection, autonomy) |
 | [011-brownfield-process](specs/011-brownfield-process/spec.md) | done | 006, 007 | Formalized process for initializing and incrementally building out specs in brownfield projects |
-| [012-multi-agent-govern](specs/012-multi-agent-govern/spec.md) | done | 007 | Unified govern command with runtime agent selection — supports adopting multiple AI CLIs in one project and adding agents on re-run |
+| [012-multi-agent-govern](specs/012-multi-agent-govern/spec.md) | done | 007 | Unified `govern` command with runtime agent selection — supports adopting multiple AI CLIs in one project and adding agents on re-run |
 | [013-text-first-artifacts](specs/013-text-first-artifacts/spec.md) | done | 000, 007, 012 | Declare text-first artifacts principle, adopt YAML frontmatter for spec metadata, migrate adopted projects on next /govern |
 | [014-reclarify-backedge](specs/014-reclarify-backedge/spec.md) | done | 000, 009, 013 | Wire up `/ask` to own the documented `clarified/planned/in-progress → draft` back-edge so questions surfacing mid-pipeline are captured and the spec's lifecycle invariant is maintained automatically |
 
 ## Adopting in an Existing Project
 
-For brownfield projects, install the govern command and run it — no clone required. Once adopted, use `/capture` to initialize skeleton specs for existing features and let them gain precision incrementally through bug fixes, enhancements, and clarification.
+For brownfield projects, install the `govern` command and run it — no clone required. Once adopted, use `/capture` to initialize skeleton specs for existing features and let them gain precision incrementally through bug fixes, enhancements, and clarification.
 
-Governance operates a **live-on-main** model — the snippets below fetch the latest from `main`. Tagged releases (`v0.1.0`, etc.) mark milestones for changelogs and release notes, not pinning targets. Adopters who want to lock individual files they've customized use `.governance.toml` (see [Pinning files with .governance.toml](#pinning-files-with-governancetoml) below).
+`govern` operates a **live-on-main** model — the snippets below fetch the latest from `main`. Tagged releases (`v0.1.0`, etc.) mark milestones for changelogs and release notes, not pinning targets. Adopters who want to lock individual files they've customized use `.governance.toml` (see [Pinning files with .governance.toml](#pinning-files-with-governancetoml) below).
 
 ### Claude Code
 
@@ -69,7 +69,7 @@ curl -fsSL https://raw.githubusercontent.com/stonean/govern/main/framework/boots
 
 Then run `/govern {project-name}`.
 
-The command fetches governance files, scaffolds the spec directory, installs slash commands, and displays next steps. It is idempotent — safe to run again to pick up new governance files.
+The command fetches `govern` files, scaffolds the spec directory, installs slash commands, and displays next steps. It is idempotent — safe to run again to pick up new `govern` files.
 
 The same `govern.md` supports every CLI listed above. Use whichever curl snippet matches the agent you want to start with — adopting additional agents later does not require a second curl. Re-run `/govern --add-agent` from any adopted agent to pick up the others, and the unified file scaffolds them alongside the existing setup.
 
@@ -114,8 +114,8 @@ Adoption installs a full set of slash commands that operationalize the pipeline.
 
 | Command | Purpose |
 | --- | --- |
-| `/govern` | Adopt or update governance in an existing project (the installer that placed every other command) |
-| `/configure` | Configure agent permissions for governance commands |
+| `/govern` | Adopt or update `govern` in an existing project (the installer that placed every other command) |
+| `/configure` | Configure agent permissions for `govern` commands |
 | `/spawn` | Spawn a new project from this one — copies specs, commands, configuration, and (if present) implementation code |
 
 ## Starting a New Project
@@ -129,9 +129,9 @@ mkdir my-project && cd my-project
 git init
 ```
 
-### 2. Copy governance files
+### 2. Copy `govern` files
 
-Copy these files from governance into your project root:
+Copy these files from `govern` into your project root:
 
 | Source | Destination | Purpose |
 | --- | --- | --- |
@@ -176,7 +176,7 @@ Alternatively, create one manually:
 
 ```bash
 mkdir specs/000-skeleton
-cp /path/to/governance/framework/templates/spec/spec.md specs/000-skeleton/spec.md
+cp /path/to/govern/framework/templates/spec/spec.md specs/000-skeleton/spec.md
 ```
 
 ### 7. Work through the pipeline
@@ -191,7 +191,7 @@ Run `/validate` any time to audit a feature's artifacts; it is not a pipeline ga
 
 ## Security Rules
 
-The governance framework includes enforceable security rules for backend and frontend code, distributed via `/govern`. Rules use RFC 2119 language: **MUST/MUST NOT** are blocking violations, **SHOULD/SHOULD NOT** are advisory warnings.
+The `govern` framework includes enforceable security rules for backend and frontend code, distributed via `/govern`. Rules use RFC 2119 language: **MUST/MUST NOT** are blocking violations, **SHOULD/SHOULD NOT** are advisory warnings.
 
 - [framework/rules/security-backend.md](framework/rules/security-backend.md) — Authentication, authorization, input validation, data protection, API security, logging, dependency management, and error handling
 - [framework/rules/security-frontend.md](framework/rules/security-frontend.md) — XSS prevention, CSRF protection, secure storage, authentication handling, content security, and dependency management
@@ -223,12 +223,12 @@ Project-scaffolding templates (consumed once at adoption):
 | [errors.md](framework/templates/project/errors.md) | `specs/errors.md` — error handling conventions |
 | [events.md](framework/templates/project/events.md) | `specs/events.md` — global event catalog |
 | [inbox.md](framework/templates/project/inbox.md) | `specs/inbox.md` — temporary inbox for known issues during brownfield adoption |
-| [gitignore](framework/templates/project/gitignore) | Governance-related patterns merged into `.gitignore` |
+| [gitignore](framework/templates/project/gitignore) | `govern`-related patterns merged into `.gitignore` |
 | [initialize.md](framework/templates/project/initialize.md) | Hook for `/spawn` to do tech-stack-specific post-copy work |
 
 ## Bug Workflow
 
-Bugs are unwritten scenarios. The governance framework treats every bug as evidence that a spec is missing, ambiguous, or violated.
+Bugs are unwritten scenarios. The `govern` framework treats every bug as evidence that a spec is missing, ambiguous, or violated.
 
 ### Decision tree
 
@@ -248,21 +248,21 @@ For brownfield projects, `specs/inbox.md` is a temporary inbox. Items are record
 
 ## Updating an Adopted Project
 
-Projects that were bootstrapped with `/govern` or adopted governance manually can pull the latest governance files by running the govern command again. It uses three strategies to decide how each file is handled:
+Projects that were bootstrapped with `/govern` or adopted `govern` manually can pull the latest `govern` files by running `/govern` again. It uses three strategies to decide how each file is handled:
 
 | Strategy | Behavior | Examples |
 | --- | --- | --- |
-| `update` | Always overwritten with the latest governance version | `constitution.md`, spec templates, slash commands |
+| `update` | Always overwritten with the latest `govern` version | `constitution.md`, spec templates, slash commands |
 | `create` | Created on first run, skipped on re-run | `specs/system.md`, `specs/errors.md`, initialize command |
 | `skip` | Never overwritten | `AGENTS.md`, `CLAUDE.md` |
 
-The `.gitignore` uses a `merge` strategy — governance patterns are appended below a `# Governance` marker if the marker is not already present.
+The `.gitignore` uses a `merge` strategy — `govern` patterns are appended below a `# Governance` marker if the marker is not already present.
 
 Re-running `/govern` always pulls from `main` — the project does not pin to a specific tag. To track a tag instead, edit the `https://raw.githubusercontent.com/.../main/` URL inside your installed `govern.md` to point at the tag (e.g., `v0.1.0`). Most adopters won't need to — the per-file pinning below is finer-grained and usually the right tool.
 
 ### Pinning files with .governance.toml
 
-If your project has customized a file that governance normally overwrites (`update` strategy), you can pin it to prevent `/govern` from overwriting your changes. Create a `.governance.toml` file in your project root:
+If your project has customized a file that `govern` normally overwrites (`update` strategy), you can pin it to prevent `/govern` from overwriting your changes. Create a `.governance.toml` file in your project root:
 
 ```toml
 [pinned]
@@ -278,11 +278,11 @@ Any file listed in `pinned.files` is treated as `skip` instead of `update` when 
 
 ### Manual updates
 
-If you prefer not to use `/govern`, governance is a reference, not a dependency. Review the governance changelog or diff, decide which changes apply to your project, and update your copies at your own pace.
+If you prefer not to use `/govern`, `govern` is a reference, not a dependency. Review the `govern` changelog or diff, decide which changes apply to your project, and update your copies at your own pace.
 
 ## Platform Support
 
-Governance currently distributes to two AI coding agents:
+`govern` currently distributes to two AI coding agents:
 
 - **Claude Code** — `.claude/` paths, `/govern` and `/gov:*` commands
 - **Auggie** — `.augment/` paths, `/govern` command variant
@@ -291,7 +291,7 @@ Adding a new agent is a single registry row plus an agent-specific `framework/bo
 
 ## Viewing artifacts
 
-Governance artifacts are plain markdown with YAML frontmatter, so any markdown viewer or PKM tool can browse them. Pick whichever fits your workflow:
+`govern` artifacts are plain markdown with YAML frontmatter, so any markdown viewer or PKM tool can browse them. Pick whichever fits your workflow:
 
 - **GitHub** — push `specs/` and browse inline; relative links resolve natively, no tooling required
 - **[Obsidian](https://obsidian.md)** — point at the repo and open; graph view and backlinks out of the box
