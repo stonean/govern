@@ -358,6 +358,8 @@ Additional fields beyond those listed above are permitted and ignored by uninter
 
 Hard fails block the validation pass. Advisory and informational findings are reported but do not block.
 
+For non-frontmatter checks (spec integrity, artifact completeness, plan/task consistency, dependencies, security rules), `/gov:validate` adds a fourth tier — **Blocking** — between Hard fail and Advisory. Blocking findings are structural or content issues that must be fixed before the next pipeline gate fires (e.g., missing `plan.md` on a `planned` spec, an unknown rule ID referenced in a spec). Hard fail and Blocking both prevent pipeline advancement; the distinction is that Hard fail says "the spec file itself is malformed," while Blocking says "the artifact set is incomplete or inconsistent." See `framework/commands/validate.md` for the full per-check severity assignment.
+
 ### Starter Tag Vocabulary
 
 Published as guidance, not enforcement. Adopters and future specs MAY introduce new tags as needed; `/gov:specify` surfaces existing tags from sibling specs as autocomplete to drive convergence by reuse rather than ceremony.
@@ -365,6 +367,7 @@ Published as guidance, not enforcement. Adopters and future specs MAY introduce 
 | Tag | Suggested use |
 | --- | --- |
 | `cli` | Specs about slash commands or command-line interactions |
+| `commands` | Specs that introduce, rename, or significantly change slash commands |
 | `bootstrap` | Specs about adopting governance, project scaffolding, or initialization |
 | `process` | Specs about workflow, lifecycle, or pipeline behavior |
 | `templates` | Specs about template files (spec, plan, scenario, project-readme, etc.) |
@@ -373,6 +376,8 @@ Published as guidance, not enforcement. Adopters and future specs MAY introduce 
 | `format` | Specs about artifact formats, schemas, or serialization conventions |
 | `pipeline` | Specs about the spec → plan → tasks → implement flow |
 | `migration` | Specs that convert existing artifacts to a new format or convention |
+| `scenarios` | Specs about scenario semantics, scenario targeting, or scenario tooling |
+| `brownfield` | Specs about brownfield adoption, capture, inbox grooming, or incremental spec growth |
 
 <!-- §pipeline-boundaries -->
 

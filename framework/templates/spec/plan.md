@@ -1,5 +1,7 @@
 # {NNN} — {Feature Name} Plan
 
+Implements [{NNN} — {Feature Name}](spec.md).
+
 ## Overview
 
 <!-- Brief summary of the implementation approach and key technical decisions. -->

@@ -56,8 +56,11 @@ Alternative considered: separate table — rejected because session data is alre
 
 ## Acceptance Criteria
 
+At least one concrete, testable criterion is required before `/{project}:clarify` will advance the spec.
+
 <!-- Concrete, testable conditions that define "done". Each criterion should be verifiable
-     through a test or observable behavior. Example:
+     through a test or observable behavior. Replace this comment block with real `- [ ]`
+     checkbox items. Example:
 
 - [ ] Session refresh extends expiry by the configured duration
 - [ ] Expired sessions return 401

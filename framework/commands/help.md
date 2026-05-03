@@ -35,7 +35,7 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 
 | Command | Pipeline Gate | Description |
 | --- | --- | --- |
-| `/{project}:specify` | → draft | Create a new numbered feature spec. Pass a short description, e.g. `/{project}:specify webhook delivery`. |
+| `/{project}:specify` | → draft | Create a new feature spec. Pass a short description, e.g. `/{project}:specify webhook delivery`. |
 | `/{project}:clarify` | draft → clarified | Resolve open questions in the spec. Works on the session target or pass a feature identifier. Has a recovery path for hand-edited specs that arrive non-`draft` with open questions in the body. |
 | `/{project}:plan` | clarified → planned | Generate `plan.md` and `tasks.md` with implementation details. |
 | `/{project}:implement` | planned → in-progress → done | Execute the tasks for the targeted feature. |

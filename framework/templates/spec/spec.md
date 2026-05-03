@@ -25,8 +25,11 @@ tags: []
 
 ## Acceptance Criteria
 
+At least one concrete, testable criterion is required before `/{project}:clarify` will advance the spec.
+
 <!-- Concrete, testable conditions that define "done". Each criterion should be verifiable
-     through a test or observable behavior. Example:
+     through a test or observable behavior. Replace this comment block with real `- [ ]`
+     checkbox items. Example:
 
 - [ ] Health endpoint returns 200 when all dependencies are reachable
 - [ ] Health endpoint returns 503 with a JSON body listing failures when any check fails

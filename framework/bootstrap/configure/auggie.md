@@ -66,6 +66,7 @@ Configure `{cli-config-dir}/settings.local.json` with the tool permissions neede
 
    **Shell commands — denied (other dangerous):**
    - `{ "toolName": "launch-process", "shellInputRegex": "^chmod -R 777 ", "permission": { "type": "deny" } }`
+   - `{ "toolName": "launch-process", "shellInputRegex": " > ", "permission": { "type": "deny" } }`
 
 3. **Ordering:** deny entries must appear before allow entries in the `toolPermissions` array so that destructive commands are blocked even if a broader allow rule would match. When adding entries, insert deny entries at the top and allow entries after them.
 

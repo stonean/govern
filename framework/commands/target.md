@@ -46,7 +46,7 @@ If `$ARGUMENTS` is empty or contains only whitespace (note: `0`, `00`, `000`, or
 
 3. Read `constitution.md` to load governance rules for the session. Subsequent commands reference specific §sections from this read — do not re-read the constitution unless the session is new.
 
-4. Determine which spec file exists: `spec.md` or `spec-and-plan.md`. Parse the YAML frontmatter block at the top of the file and extract `status`, `dependencies`, and `tags`. Count open questions in the body's `## Open Questions` section.
+4. Determine which spec file exists: `spec.md` or `spec-and-plan.md`. Parse the YAML frontmatter block at the top of the file and extract `status`, `dependencies`, and `tags`. Count open questions in the body's `## Open Questions` section. Count entries the same way `/{project}:clarify` does: top-level list items or `**Bold-prefix**`-style headings; treat the section as having zero entries when it is missing, empty, or contains only a placeholder line such as `*None — all resolved.*`.
 
 5. Check which artifacts exist: `spec.md` (or `spec-and-plan.md`), `plan.md`, `tasks.md`, `data-model.md`.
 

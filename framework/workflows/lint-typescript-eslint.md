@@ -1,5 +1,5 @@
 ---
-description: Run ESLint against the TypeScript codebase and surface findings.
+description: Run ESLint against the TypeScript codebase and surface findings
 ---
 
 # ESLint

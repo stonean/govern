@@ -1,5 +1,5 @@
 ---
-description: Run Ruff against the Python codebase and surface findings.
+description: Run Ruff against the Python codebase and surface findings
 ---
 
 # Ruff

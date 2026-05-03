@@ -1,5 +1,5 @@
 ---
-description: Run the pytest suite for the Python codebase.
+description: Run the pytest suite for the Python codebase
 ---
 
 # pytest

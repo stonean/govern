@@ -1,5 +1,5 @@
 ---
-description: Format the Python codebase with Black.
+description: Format the Python codebase with Black
 ---
 
 # Black

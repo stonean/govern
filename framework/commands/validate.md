@@ -68,7 +68,7 @@ Reference: the schema is canonically declared in `framework/constitution.md` §t
 
 - [ ] Acceptance criteria section exists with at least one checkbox item
 - [ ] No placeholder or empty acceptance criteria
-- [ ] Open questions consistent with status (`clarified` or later must have none)
+- [ ] Open questions consistent with status (`clarified` or later must have none). When this check fails — a spec at `clarified` / `planned` / `in-progress` with one or more open questions in the body — the spec is in the recovery state defined by spec 014. Suggested fix: run `/{project}:clarify` (its recovery path will revert status to `draft` and walk the questions), or `/{project}:ask` on a fresh question (which performs the back-edge automatically).
 - [ ] No implementation code blocks (function signatures, package paths, language-specific snippets) in the spec — those belong in plan.md. Format examples, directory structures, and user-facing commands are acceptable when they define behavioral contracts.
 
 ### Artifact completeness (blocking)

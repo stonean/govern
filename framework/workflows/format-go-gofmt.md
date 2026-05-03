@@ -1,5 +1,5 @@
 ---
-description: Format the Go codebase with gofmt.
+description: Format the Go codebase with gofmt
 ---
 
 # gofmt

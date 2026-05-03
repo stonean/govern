@@ -1,5 +1,5 @@
 ---
-description: Run the Go test suite via the go toolchain.
+description: Run the Go test suite via the go toolchain
 ---
 
 # go test

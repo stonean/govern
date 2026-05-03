@@ -1,5 +1,5 @@
 ---
-description: Run golangci-lint against the Go codebase and surface findings.
+description: Run golangci-lint against the Go codebase and surface findings
 ---
 
 # golangci-lint
