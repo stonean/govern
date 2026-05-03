@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: [007-govern-workflow, 012-multi-agent-govern]
 tags: [bootstrap, performance]
 ---
@@ -112,19 +112,19 @@ The self-update notice (shown when the installed `govern.md` differs from the fe
 
 ## Acceptance Criteria
 
-- [ ] `framework/bootstrap/govern.md`'s **File Fetching** section is replaced with the archive-fetch + extract + local-path-resolution flow above
-- [ ] A successful `/govern` run on a single-agent project issues exactly one `curl` against the governance repo (plus per-language gitignore fetches, which remain unchanged)
-- [ ] All existing manifest strategies (`update`, `create`, `skip`, `merge`, `pinned`) behave identically to today, sourcing files from the extracted archive
-- [ ] A failed archive fetch produces a clean abort with a clear error message and no partial scaffolding
-- [ ] A missing source file within the archive produces a per-entry warning and the remaining manifest continues
-- [ ] The temp directory path is logged in the run summary (and on abort, in the error message); `/govern` does not delete it
-- [ ] Each agent's `settings_template` in the registry adds `tar` and `mktemp` allow entries, applied via the existing **Permission Setup** merge; no `rm` allow is added
-- [ ] The Claude `settings_template` also adds `Read(...)` globs for `govern-*` temp paths under both macOS temp roots and Linux `/tmp`, so per-run `Read(...)` entries do not accumulate across `/govern` invocations
-- [ ] The **Post-Write Integrity Check** for `govern.md` works against the local source — no additional `curl`
-- [ ] The self-update notice continues to fire when the installed `govern.md` differs from the archive's copy
-- [ ] Per-language gitignore fetches against `github.com/github/gitignore` remain unchanged (separate `curl` calls)
-- [ ] A re-run on an already-adopted project still reports `unchanged` for files whose archive copy matches the destination
-- [ ] Each `/govern` invocation creates a fresh temp directory via `mktemp` and re-fetches the archive; a prior run's extracted directory is never reused as the source for the current run
+- [x] `framework/bootstrap/govern.md`'s **File Fetching** section is replaced with the archive-fetch + extract + local-path-resolution flow above
+- [x] A successful `/govern` run on a single-agent project issues exactly one `curl` against the governance repo (plus per-language gitignore fetches, which remain unchanged)
+- [x] All existing manifest strategies (`update`, `create`, `skip`, `merge`, `pinned`) behave identically to today, sourcing files from the extracted archive
+- [x] A failed archive fetch produces a clean abort with a clear error message and no partial scaffolding
+- [x] A missing source file within the archive produces a per-entry warning and the remaining manifest continues
+- [x] The temp directory path is logged in the run summary (and on abort, in the error message); `/govern` does not delete it
+- [x] Each agent's `settings_template` in the registry adds `tar` and `mktemp` allow entries, applied via the existing **Permission Setup** merge; no `rm` allow is added
+- [x] The Claude `settings_template` also adds `Read(...)` globs for `govern-*` temp paths under both macOS temp roots and Linux `/tmp`, so per-run `Read(...)` entries do not accumulate across `/govern` invocations
+- [x] The **Post-Write Integrity Check** for `govern.md` works against the local source — no additional `curl`
+- [x] The self-update notice continues to fire when the installed `govern.md` differs from the archive's copy
+- [x] Per-language gitignore fetches against `github.com/github/gitignore` remain unchanged (separate `curl` calls)
+- [x] A re-run on an already-adopted project still reports `unchanged` for files whose archive copy matches the destination
+- [x] Each `/govern` invocation creates a fresh temp directory via `mktemp` and re-fetches the archive; a prior run's extracted directory is never reused as the source for the current run
 
 ## Open Questions
 
