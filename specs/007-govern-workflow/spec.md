@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: [003-bootstrap-automation]
 tags: [bootstrap, commands]
 ---
