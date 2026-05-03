@@ -6,11 +6,11 @@
 .claude/*
 !.claude/commands/
 
-# Governance derived views — non-markdown caches and indexes generated from specs.
+# govern derived views — non-markdown caches and indexes generated from specs.
 # Markdown artifacts (specs, plans, scenarios) stay in git as the source of truth;
 # binary or machine-only views regenerated from them do not. See constitution
 # §text-first-artifacts.
-.governance-cache/
+.govern-cache/
 *.sqlite
 *.sqlite-journal
 

@@ -6,7 +6,7 @@ Rules use RFC 2119 language: **MUST** / **MUST NOT** are enforced by the validat
 
 Rule IDs follow the format `FE-{CATEGORY}-{NNN}` and are permanent — once assigned, an ID is never renumbered, even if the rule is moved within the file or deprecated. Categories: `XSS` (cross-site scripting), `CSRF` (cross-site request forgery), `STORAGE` (secure client-side storage), `AUTHN` (authentication UX), `CSP` (content security policy), `DEPS` (dependency management), `PII` (sensitive data handling). See `specs/008-security-rules/data-model.md` for the full schema.
 
-Projects without a frontend can pin this file in `.governance.toml` to skip it during `govern` updates.
+Projects without a frontend can pin this file in `.govern.toml` to skip it during `govern` updates.
 
 ## FE-XSS — Cross-Site Scripting Prevention
 

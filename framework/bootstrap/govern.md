@@ -86,9 +86,21 @@ For each selected agent, before fetching any files:
 
 This prevents repeated permission prompts during the fetch and scaffolding phases. The full permission set is applied later by `/{project}:configure`.
 
+## Pre-run Migrations
+
+These one-shot renames carry adopters who scaffolded under the prior `governance` naming forward without manual cleanup. Each is a no-op when the legacy artifact is absent.
+
+### `.governance.toml` → `.govern.toml`
+
+If `.governance.toml` exists in the project root and `.govern.toml` does not, rename it. Report `migrated config: .governance.toml → .govern.toml` in the post-scaffolding output. If both files exist, leave them alone and warn `Both .governance.toml and .govern.toml exist; remove the legacy file to silence this warning.`
+
+### `# Governance` gitignore marker → `# govern`
+
+If the project's `.gitignore` contains a `# Governance` line (the marker placed by `/govern`'s merge strategy) and does not already contain `# govern`, replace the first occurrence with `# govern`. Report `migrated .gitignore marker: # Governance → # govern` in the post-scaffolding output. The marker check used by the **.gitignore** merge step below uses the new spelling, so this rename keeps idempotency intact.
+
 ## Project Configuration
 
-If `.governance.toml` exists, read it before processing the file manifest. This file is optional — if it does not exist, use default behavior for all files.
+If `.govern.toml` exists, read it before processing the file manifest. This file is optional — if it does not exist, use default behavior for all files.
 
 ```toml
 [pinned]
@@ -135,9 +147,9 @@ After **Archive fetch and extract** completes and **before any other manifest pa
 For each selected agent, byte-compare `{tempdir}/govern-main/framework/bootstrap/govern.md` against the installed `{config_dir}/commands/govern.md` and assign one status:
 
 - **`no installed copy`** — the installed file does not exist (first run for this agent). Nothing to diverge from; continue.
-- **`current`** — the two files are byte-identical, **or** the installed file is byte-identical to upstream and listed in `.governance.toml` `pinned.files` (the pin had nothing to suppress this run). Continue.
+- **`current`** — the two files are byte-identical, **or** the installed file is byte-identical to upstream and listed in `.govern.toml` `pinned.files` (the pin had nothing to suppress this run). Continue.
 - **`stale`** — the two files differ and the installed file is **not** pinned. The running session is using older instructions than what the manifest pass would write.
-- **`pinned-divergent`** — the two files differ and the installed file **is** listed in `.governance.toml` `pinned.files`. The pin intentionally suppresses the update; the run continues, but the user is told once in the post-scaffolding output.
+- **`pinned-divergent`** — the two files differ and the installed file **is** listed in `.govern.toml` `pinned.files`. The pin intentionally suppresses the update; the run continues, but the user is told once in the post-scaffolding output.
 
 The check is scoped to **selected agents only** — agents whose `config_dir` exists in the project but are not in this run's selection are not diffed. An unselected stale agent will trip the check on its very next `/govern` run targeting it; drift is still detected, just lazily.
 
@@ -204,7 +216,7 @@ Determine whether the file needs migration:
 - Otherwise, scan the first few lines after the heading for bold-prefix metadata patterns (`**Status:**`, `**Dependencies:**`, `**spec-ref:**`). If at least one is found, the file needs migration.
 - If no bold-prefix lines are present and no frontmatter exists, skip with reason "no metadata to migrate."
 
-Skip files that appear in `.governance.toml` `pinned.files` with reason "pinned." The adopter is responsible for migrating pinned files manually.
+Skip files that appear in `.govern.toml` `pinned.files` with reason "pinned." The adopter is responsible for migrating pinned files manually.
 
 ### Convert
 
@@ -257,7 +269,7 @@ Print a per-file summary at the end of the migration step:
 
 - `migrated: {file path}` for converted files
 - `skipped (already frontmatter): {file path}` for files that were already in the new format
-- `skipped (pinned): {file path}` for files listed in `.governance.toml`
+- `skipped (pinned): {file path}` for files listed in `.govern.toml`
 - `skipped (no metadata to migrate): {file path}` for files without recognizable metadata
 - `skipped (malformed metadata): {file path} — {reason}` for files that could not be parsed
 
@@ -299,10 +311,10 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 
 **CLAUDE.md** (strategy: skip) — if it exists, leave it alone. If not, fetch `framework/templates/project/claude-md.md` from the `govern` repo and copy it as `CLAUDE.md`. Both supported agents read `CLAUDE.md` natively (see each row's `rules_file_note`).
 
-**.gitignore** (strategy: merge) — if it exists, check for a `# Governance` comment header. If the header exists, skip (already merged). If no header, append `govern` patterns below existing content:
+**.gitignore** (strategy: merge) — if it exists, check for a `# govern` comment header. If the header exists, skip (already merged). If no header, append `govern` patterns below existing content:
 
 1. Fetch `framework/templates/project/gitignore` from the `govern` repo.
-2. Append its content below a `# Governance` comment header.
+2. Append its content below a `# govern` comment header.
 3. For each primary language provided by the user, fetch from `https://raw.githubusercontent.com/github/gitignore/main/{Language}.gitignore` and append below a `# {Language}` comment header.
 
 If `.gitignore` does not exist, create it from `framework/templates/project/gitignore` plus language patterns.
@@ -401,7 +413,7 @@ The configure row uses the agent-specific source `framework/bootstrap/configure/
 
 ### Slash command cleanup
 
-After processing the slash command manifest above, list all `.md` files in `{config_dir}/commands/{project}/`. For each file that is **not** in the slash command manifest above, **not** the `initialize.md` file, and **not** listed in `.governance.toml` `pinned.files`:
+After processing the slash command manifest above, list all `.md` files in `{config_dir}/commands/{project}/`. For each file that is **not** in the slash command manifest above, **not** the `initialize.md` file, and **not** listed in `.govern.toml` `pinned.files`:
 
 - Delete the file.
 - Report it as "removed" in the post-scaffolding summary.
@@ -424,7 +436,7 @@ After the slash command cleanup, offer any newly registered workflows that match
    - `test-python-pytest.md`
    - `test-typescript-vitest.md`
 
-   Files listed in `.governance.toml` `pinned.files` are skipped — adopters who customized a legacy file and want to keep it can pin its destination path. Report each removal in the post-scaffolding summary as `removed (legacy workflow): {filename}`. The check is by exact filename match against the set above; custom user files (e.g., `pytest-fast.md`) are never affected because they aren't in the set. The cleanup runs every `/govern` invocation; once the legacy files are gone, subsequent runs are silent no-ops for this step.
+   Files listed in `.govern.toml` `pinned.files` are skipped — adopters who customized a legacy file and want to keep it can pin its destination path. Report each removal in the post-scaffolding summary as `removed (legacy workflow): {filename}`. The check is by exact filename match against the set above; custom user files (e.g., `pytest-fast.md`) are never affected because they aren't in the set. The cleanup runs every `/govern` invocation; once the legacy files are gone, subsequent runs are silent no-ops for this step.
 
 2. **Read the synced registry** at `workflows/registry.json` (the project-local copy written by the manifest above). If the file is missing or not valid JSON, warn `Workflow registry not found or invalid, skipping workflow recommendations` and skip the rest of this section. Validate each entry against the schema in `specs/005-workflows/data-model.md`; drop invalid entries with a per-entry warning.
 
@@ -513,7 +525,7 @@ After writing `{config_dir}/commands/govern.md` for each selected agent, verify 
 - **All supported agents already adopted with `--add-agent`** — show the prompt with all agents pre-selected; if the user confirms with no additions, treat it as a routine update and continue silently.
 - **`settings.local.json` already has entries beyond the bootstrap** — only add the curl/ls bootstrap entries if missing. Do not overwrite, deduplicate, or reorder entries added by `/{project}:configure` or by the user.
 - **`govern.md` content already matches the version on disk** — when the manifest's `update` strategy compares fetched content to the installed file, identical content reports as "unchanged" and avoids a redundant write. Same rule applies to per-project `configure.md` and other update-strategy files.
-- **Pinned `govern.md` in `.governance.toml`** — the manifest's `update` strategy still skips the file (no overwrite). The **Self-update pre-check** byte-compares anyway: matching upstream → recorded as `current`, no output; divergent from upstream → recorded as `pinned-divergent`, the run continues, and a single advisory line is printed in the post-scaffolding output. A pinned `govern.md` will not pick up upstream changes until the pin is removed, but the user is told once when the pin is currently suppressing real divergence.
+- **Pinned `govern.md` in `.govern.toml`** — the manifest's `update` strategy still skips the file (no overwrite). The **Self-update pre-check** byte-compares anyway: matching upstream → recorded as `current`, no output; divergent from upstream → recorded as `pinned-divergent`, the run continues, and a single advisory line is printed in the post-scaffolding output. A pinned `govern.md` will not pick up upstream changes until the pin is removed, but the user is told once when the pin is currently suppressing real divergence.
 - **Self-update pre-check sees a stale `govern` in an unselected adopted agent** — the check is scoped to selected agents only. The unselected agent's stale copy is not diffed and does not trigger the abort; it will be detected the next time the user runs `/govern` against it.
 - **Archive fetch or extract fails** — clean abort with the error message defined in **File Fetching → Archive fetch and extract**. No partial scaffolding: a missing archive means every manifest entry would be missing, and the user re-runs after the transient failure clears.
 - **A required source file is absent from the extracted archive** — warn `Source not found in archive: {source-path}; skipping.` and continue with the remaining manifest entries. Preserves the per-entry "do not abort on a single fetch error" guarantee at the entry level even though the archive itself is fetched once.
@@ -533,7 +545,7 @@ After scaffolding, display:
 
 ### Pinned `govern.md` advisory
 
-If the **Self-update pre-check** recorded any selected agent as `pinned-divergent` (the installed `{config_dir}/commands/govern.md` is listed in `.governance.toml` `pinned.files` and differs from upstream), append one advisory line per divergent agent after the file summary and before next steps:
+If the **Self-update pre-check** recorded any selected agent as `pinned-divergent` (the installed `{config_dir}/commands/govern.md` is listed in `.govern.toml` `pinned.files` and differs from upstream), append one advisory line per divergent agent after the file summary and before next steps:
 
 > {agent}: govern.md pinned, upstream has changed.
 
@@ -592,7 +604,7 @@ Tip: `specs/` is plain markdown and works in any PKM tool (Obsidian, Logseq, Foa
 
 ## Idempotency
 
-This command is safe to run again. Files with `update` strategy are always overwritten with the latest `govern` version — unless pinned in `.governance.toml`, in which case they are skipped. Files with `create` strategy skip existing files. The `.gitignore` merge checks for the `# Governance` marker before appending. `skip` strategy files are never overwritten.
+This command is safe to run again. Files with `update` strategy are always overwritten with the latest `govern` version — unless pinned in `.govern.toml`, in which case they are skipped. Files with `create` strategy skip existing files. The `.gitignore` merge checks for the `# govern` marker before appending. `skip` strategy files are never overwritten.
 
 Re-runs are additive across agents — adopting a new agent leaves existing agents' files untouched.
 
