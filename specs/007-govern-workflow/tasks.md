@@ -33,3 +33,9 @@ Done when: `govern/govern-auggie.md` exists, passes markdownlint, and targets `.
 - [x] Set the spec status to `done` and run markdownlint on all modified files.
 
 Done when: spec status is `done`, all modified files pass markdownlint.
+
+## 6. Implement scenario: govern-self-update-precheck
+
+- [x] Implement the behavior described in `scenarios/govern-self-update-precheck.md`
+
+Done when: the scenario's described behavior is correctly implemented and tested.

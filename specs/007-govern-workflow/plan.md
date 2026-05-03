@@ -66,6 +66,7 @@ Same approach as the init command: fetch from `https://raw.githubusercontent.com
 | `.claude/commands/gov/*.md` | Modify | Re-derive from updated templates with `{cli-config-dir}` → `.claude` |
 | `.claude/commands/gov/init.md` | Modify | Update to resolve `{cli-config-dir}` during scaffolding |
 | `specs/007-govern-workflow/spec.md` | Modify | Update status to `done` |
+| `framework/bootstrap/govern.md` | Modify | Add self-update pre-check; reorder so File Fetching runs before Frontmatter Migration (added during scenario `govern-self-update-precheck` — the unified govern installer per 012 replaced the original per-CLI `govern/govern.md` and `govern/govern-auggie.md` listed above). |
 
 ## Trade-offs
 
