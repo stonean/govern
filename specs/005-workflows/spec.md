@@ -8,6 +8,8 @@ tags: [bootstrap, templates]
 
 Based on project tech stack, recommend and scaffold relevant development workflow files during bootstrap.
 
+> **Note:** the workflow filename convention was revised post-completion. The original convention `{category}-{language}-{tool}.md` produced redundant slash command names like `/{project}:workflows:test-go-gotest` (the tool name `gotest` already encodes both `go` and `test`). The convention is now `{tool}.md` — slash commands invoke as `/{project}:workflows:gotest`, `/{project}:workflows:pytest`, etc. The category and language are still tracked in `framework/workflows/registry.json`'s `category` and `trigger` fields and continue to drive the per-category accept/skip prompt during `/govern`. The body below has been updated to reflect the current convention; `plan.md` and `tasks.md` retain the original filenames as a historical record of the original implementation.
+
 ## Problem
 
 Common development workflows — lint, test, format, migrate — are tech-stack-specific but not project-specific. Currently, init produces a project with only pipeline commands and no stack-aware workflow definitions. Users must discover and install workflow tooling manually, unaware of what's available or what fits their stack.
@@ -21,7 +23,7 @@ Governance maintains a workflow registry at `framework/workflows/registry.json` 
 - **Trigger** — a single tech stack field and value that activates this recommendation (e.g., `{"field": "backend_language", "value": "TypeScript"}`)
 - **Workflow name** — human-readable name (e.g., "ESLint", "pytest")
 - **Category** — one of the fixed categories: `Testing`, `Linting`, `Formatting`, `Migrations`, `Code Review`, `Deployment`
-- **Template** — path to the workflow file in governance, relative to `framework/workflows/` (e.g., `lint-typescript-eslint.md`). Field name is `template` because the file contains placeholders that get substituted at scaffold time.
+- **Template** — path to the workflow file in governance, relative to `framework/workflows/` (e.g., `eslint.md`). Field name is `template` because the file contains placeholders that get substituted at scaffold time.
 - **Description** — one-line explanation of what the workflow does
 
 Each trigger matches a single tech stack field. A workflow is recommended when the user's selection for that field matches the trigger value. Multiple entries can share the same trigger to recommend several workflows for one selection.
@@ -38,7 +40,7 @@ During `/gov:init`, after the tech stack questionnaire (step 4 from 004), the sy
 
 Each workflow file is a standalone `.md` file in `framework/workflows/`, one file per language-tool combination. Files follow the same format as existing slash commands and are parameterized with `{project}` and other standard placeholders. The workflows directory is flat — registry and workflow files sit at the same level.
 
-Naming convention: `{workflow}-{language}-{tool}.md` (e.g., `lint-typescript-eslint.md`, `test-python-pytest.md`, `format-go-gofmt.md`).
+Naming convention: `{tool}.md` (e.g., `eslint.md`, `pytest.md`, `gofmt.md`). The tool name is canonical and category/language information lives in the registry, not the filename.
 
 Workflow files cover common development workflows that are tech-stack-specific but not project-specific. Examples:
 
@@ -76,7 +78,7 @@ If the user's tech stack selections match no registry entries (e.g., all categor
 - [x] Accepted workflow files are copied into `.claude/commands/{slug}/workflows/` with placeholders replaced
 - [x] Skipping all workflow recommendations produces the same project as today (backwards compatible)
 - [x] If no registry entries match the user's tech stack, the workflow step is skipped silently
-- [x] Workflow files use the naming convention `{workflow}-{language}-{tool}.md`
+- [x] Workflow files use the naming convention `{tool}.md` (revised from the original `{workflow}-{language}-{tool}.md` post-completion; see preamble Note)
 - [x] Workflow files follow the same `.md` format and placeholder conventions as existing slash commands
 - [x] The registry is extensible — adding a new workflow requires only a registry entry and a workflow file
 - [x] Init warns and continues (does not fail) if the registry file is missing or malformed
@@ -92,4 +94,4 @@ If the user's tech stack selections match no registry entries (e.g., all categor
 3. **Trigger complexity** — single-value matching only. Each trigger matches one tech stack field to one value. Compound logic (AND/OR) is deferred — single triggers cover the common cases and keep the registry simple.
 4. **Workflow categories** — fixed set: Testing, Linting, Formatting, Migrations, Code Review, Deployment. Adding a new category requires a governance update. This ensures consistent grouping in the UI.
 5. **Update mechanism** — `/{project}:govern` updates the registry file and offers new workflow recommendations. This integrates naturally with the existing govern flow. A standalone `/{project}:workflows` command is not needed for v1 since govern covers the use case.
-6. **File granularity** — one file per language-tool combination (e.g., `lint-typescript-eslint.md`). Explicit, easy to maintain. Minimal duplication since each workflow file is small.
+6. **File granularity** — one file per tool (e.g., `eslint.md`). Explicit, easy to maintain. Minimal duplication since each workflow file is small.

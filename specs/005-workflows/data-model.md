@@ -75,14 +75,14 @@ Adding a new category requires a registry entry that uses it **plus** an update 
 
 Each workflow file is a `.md` file at `framework/workflows/{filename}` matching an entry's `template` path. The directory is flat — no inner `templates/` subdirectory.
 
-**Naming convention:** `{workflow}-{language}-{tool}.md` (e.g., `lint-typescript-eslint.md`).
+**Naming convention:** `{tool}.md` (e.g., `eslint.md`). Revised post-completion from the original `{workflow}-{language}-{tool}.md` — see the spec preamble Note.
 
 **Format:** the same prompt-and-instructions format as `framework/commands/*.md`. Workflow files use the standard placeholders:
 
 - `{project}` — replaced with the adopting project's slug at scaffold time
 - `{cli-config-dir}` — replaced with the agent's `config_dir` (e.g., `.claude`)
 
-**Scaffolded destination:** `{config_dir}/commands/{project}/workflows/{filename}`. The scaffold copy preserves the file stem; e.g., `lint-typescript-eslint.md` is scaffolded as `lint-typescript-eslint.md` under the project's `workflows/` subdirectory.
+**Scaffolded destination:** `{config_dir}/commands/{project}/workflows/{filename}`. The scaffold copy preserves the file stem; e.g., `eslint.md` is scaffolded as `eslint.md` under the project's `workflows/` subdirectory.
 
 Workflow files are not synced into adopted projects on `/govern` runs. They are fetched on demand from upstream at scaffold time using the same URL pattern as other governance file fetches.
 

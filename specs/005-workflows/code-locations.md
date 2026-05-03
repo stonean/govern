@@ -32,29 +32,29 @@
 
 - `.claude/commands/gov/init.md`
 
-## AC: Workflow files use the naming convention `{workflow}-{language}-{tool}.md`
+## AC: Workflow files use the naming convention `{tool}.md` (revised from the original `{workflow}-{language}-{tool}.md` post-completion; see preamble Note)
 
-- `framework/workflows/format-go-gofmt.md`
-- `framework/workflows/format-python-black.md`
-- `framework/workflows/format-typescript-prettier.md`
-- `framework/workflows/lint-go-golangci-lint.md`
-- `framework/workflows/lint-python-ruff.md`
-- `framework/workflows/lint-typescript-eslint.md`
-- `framework/workflows/test-go-gotest.md`
-- `framework/workflows/test-python-pytest.md`
-- `framework/workflows/test-typescript-vitest.md`
+- `framework/workflows/black.md`
+- `framework/workflows/eslint.md`
+- `framework/workflows/gofmt.md`
+- `framework/workflows/golangci-lint.md`
+- `framework/workflows/gotest.md`
+- `framework/workflows/prettier.md`
+- `framework/workflows/pytest.md`
+- `framework/workflows/ruff.md`
+- `framework/workflows/vitest.md`
 
 ## AC: Workflow files follow the same `.md` format and placeholder conventions as existing slash commands
 
-- `framework/workflows/format-go-gofmt.md`
-- `framework/workflows/format-python-black.md`
-- `framework/workflows/format-typescript-prettier.md`
-- `framework/workflows/lint-go-golangci-lint.md`
-- `framework/workflows/lint-python-ruff.md`
-- `framework/workflows/lint-typescript-eslint.md`
-- `framework/workflows/test-go-gotest.md`
-- `framework/workflows/test-python-pytest.md`
-- `framework/workflows/test-typescript-vitest.md`
+- `framework/workflows/black.md`
+- `framework/workflows/eslint.md`
+- `framework/workflows/gofmt.md`
+- `framework/workflows/golangci-lint.md`
+- `framework/workflows/gotest.md`
+- `framework/workflows/prettier.md`
+- `framework/workflows/pytest.md`
+- `framework/workflows/ruff.md`
+- `framework/workflows/vitest.md`
 
 ## AC: The registry is extensible — adding a new workflow requires only a registry entry and a workflow file
 
@@ -83,16 +83,16 @@
 - `README.md`
 - `framework/bootstrap/configure/claude.md`
 - `framework/bootstrap/govern.md`
-- `framework/workflows/format-go-gofmt.md`
-- `framework/workflows/format-python-black.md`
-- `framework/workflows/format-typescript-prettier.md`
-- `framework/workflows/lint-go-golangci-lint.md`
-- `framework/workflows/lint-python-ruff.md`
-- `framework/workflows/lint-typescript-eslint.md`
+- `framework/workflows/black.md`
+- `framework/workflows/eslint.md`
+- `framework/workflows/gofmt.md`
+- `framework/workflows/golangci-lint.md`
+- `framework/workflows/gotest.md`
+- `framework/workflows/prettier.md`
+- `framework/workflows/pytest.md`
 - `framework/workflows/registry.json`
-- `framework/workflows/test-go-gotest.md`
-- `framework/workflows/test-python-pytest.md`
-- `framework/workflows/test-typescript-vitest.md`
+- `framework/workflows/ruff.md`
+- `framework/workflows/vitest.md`
 - `specs/005-workflows/code-locations.md`
 - `specs/005-workflows/data-model.md`
 - `specs/005-workflows/plan.md`
