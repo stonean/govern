@@ -74,10 +74,10 @@ The agent registry's `settings_template` currently allows `Bash(curl *)` and `Ba
 
 Update each registry row's `settings_template`:
 
-- **Claude:** add `Bash(tar *)`, `Bash(mktemp *)`, and three `Read(...)` globs covering both macOS temp roots and Linux `/tmp`:
-  - `Read(/private/var/folders/**/T/govern-*/**)` (macOS canonical path)
-  - `Read(/var/folders/**/T/govern-*/**)` (macOS non-canonical, defensive)
-  - `Read(/tmp/govern-*/**)` (Linux)
+- **Claude:** add `Bash(tar *)`, `Bash(mktemp *)`, and six `Read(...)` globs covering both macOS temp roots and Linux `/tmp`, with both single-leading-slash and double-leading-slash forms (see "Why both leading-slash forms" below):
+  - `Read(/private/var/folders/**/T/govern-*/**)` and `Read(//private/var/folders/**/T/govern-*/**)` (macOS canonical path)
+  - `Read(/var/folders/**/T/govern-*/**)` and `Read(//var/folders/**/T/govern-*/**)` (macOS non-canonical, defensive)
+  - `Read(/tmp/govern-*/**)` and `Read(//tmp/govern-*/**)` (Linux)
 - **Auggie:** add equivalent `launch-process` entries with `shellInputRegex` patterns matching `tar` and `mktemp`. Auggie's `view` tool is broadly allowed by `configure/auggie.md`, so no per-path read entries are needed.
 
 The merge logic in **Permission Setup** is unchanged — entries are added if missing, never reordered or deduplicated. Existing adopters get the new entries on their next routine `/govern` re-run, before any `tar`, `mktemp`, or extracted-archive read is performed.
@@ -86,7 +86,11 @@ The merge logic in **Permission Setup** is unchanged — entries are added if mi
 
 Claude Code's permission system records a `Read(...)` allow with the **exact absolute path** when the agent first reads a file outside the project root and the user accepts the prompt. Combined with the spec's mandate that every `/govern` run gets a fresh `mktemp` directory, that means: without pre-allowed globs, every run prompts once and writes a new `Read(...)` entry into `settings.local.json` for the run's unique path. Those entries accumulate forever and never match a future run.
 
-Pre-allowing the globs at bootstrap solves this in a single entry per OS shape — future Read calls against any `govern-*` temp path match the glob and skip the prompt. The entries are scoped to `govern-*` directories under known temp roots, so they cannot grant Read on unrelated files.
+Pre-allowing the globs at bootstrap solves this in a small fixed set of entries — future Read calls against any `govern-*` temp path match the glob and skip the prompt. The entries are scoped to `govern-*` directories under known temp roots, so they cannot grant Read on unrelated files.
+
+#### Why both leading-slash forms
+
+Empirically, Claude Code's permission rule matcher treats `/private/...` and `//private/...` as **different** prefixes — the matcher is literal, not normalized. Some agent code paths invoke `Read` with a double-leading-slash path (POSIX-permitted, macOS-equivalent to a single slash), and the resulting permission prompt records the path with the double slash preserved. A single-slash glob does not match a double-slash request, so the prompt fires anyway and a per-path entry is added. Including both forms in the bootstrap is the simplest way to cover the observed variation without depending on which path-normalization branch the agent takes on a given run.
 
 #### One-time cleanup of stale per-run entries
 
@@ -101,7 +105,7 @@ The self-update notice (shown when the installed `govern.md` differs from the fe
 ## Tradeoffs
 
 - **One archive failure vs. many per-file warnings.** Today a single 404 on `framework/templates/project/inbox.md` produces a warning and the rest of the manifest proceeds. With a tarball, that file would simply not exist in the extract, producing the same per-entry warning. The genuine new failure mode is the archive itself failing — and that's a clean abort, since partial scaffolding from a missing archive is impossible.
-- **New permissions.** For Claude, two `Bash` additions (`tar`, `mktemp`) plus three `Read(...)` globs covering `govern-*` temp paths under macOS (`/private/var/folders/**/T/`, `/var/folders/**/T/`) and Linux (`/tmp/`). For Auggie, just the two shell-command entries — `view` is unconditionally allowed by configure. Cost is one-time per adopter, applied on the same `/govern` run that introduces the change. No `rm` allow is needed because the temp directory is left for the OS to sweep.
+- **New permissions.** For Claude, two `Bash` additions (`tar`, `mktemp`) plus six `Read(...)` globs covering `govern-*` temp paths under macOS (`/private/var/folders/**/T/`, `/var/folders/**/T/`) and Linux (`/tmp/`), with both single-leading-slash and double-leading-slash forms because Claude Code's permission matcher treats them as distinct prefixes (see **Permission bootstrap → Why both leading-slash forms**). For Auggie, just the two shell-command entries — `view` is unconditionally allowed by configure. Cost is one-time per adopter, applied on the same `/govern` run that introduces the change. No `rm` allow is needed because the temp directory is left for the OS to sweep.
 - **Bytes over the wire.** The full archive is ~hundreds of KB compressed; today's per-file fetches collectively pull a similar volume but spread across ~35 round-trips. Net: fewer bytes once HTTP overhead is counted, fewer tool-call invocations, faster perceived run time.
 - **Loss of partial progress.** A network failure mid-fetch today produces ~10 successful files plus warnings on the rest; with a tarball, a network failure produces zero files and a clean abort. Both outcomes leave the project in a recoverable state — re-run resumes idempotently.
 - **Pinning at a ref.** Today fetches are hardcoded to `main`. The tarball URL also points at `main`. A `.governance.toml` `[source] ref = "v0.1.0"` option that overrides the archive ref is a natural follow-up but out of scope for this spec — see **Resolved Questions**.
