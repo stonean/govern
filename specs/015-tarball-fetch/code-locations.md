@@ -39,3 +39,7 @@
 ## AC: A re-run on an already-adopted project still reports `unchanged` for files whose archive copy matches the destination
 
 - `framework/bootstrap/govern.md`
+
+## AC: Each `/govern` invocation creates a fresh temp directory via `mktemp` and re-fetches the archive; a prior run's extracted directory is never reused as the source for the current run
+
+- `framework/bootstrap/govern.md`

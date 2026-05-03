@@ -205,7 +205,7 @@ https://github.com/stonean/govern/archive/refs/heads/main.tar.gz
 
 After fetching:
 
-1. Create a temp directory: `mktemp -d -t govern-XXXXXX`. On macOS/Linux this lands under `$TMPDIR` or `/tmp`.
+1. Create a **new** temp directory on every run: `mktemp -d -t govern-XXXXXX`. On macOS/Linux this lands under `$TMPDIR` or `/tmp`. Never reuse a directory from a prior run, even if one is still on disk — a fresh fetch is the only way `/govern` picks up upstream changes, so the archive must be re-downloaded each invocation.
 2. Extract the archive into the temp directory: `tar -xzf {archive} -C {tempdir}`.
 3. Compute the framework root: `{tempdir}/govern-main/`. Treat this as the local mirror of the governance repo for the rest of the run.
 
@@ -227,6 +227,8 @@ For each manifest entry below (in **Shared Files**, **Per-Agent Scaffolding**, a
 ### Cleanup
 
 `/govern` does not delete the temp directory. The path is logged in the post-scaffolding summary (and, on abort, in the error message) so the user can inspect it if needed. Both macOS (`/var/folders/.../T/`) and Linux (`/tmp` on systemd-tmpfiles distros) sweep their temp directories automatically; a few hundred KB of extracted files waiting for the next sweep is acceptable in exchange for not granting an `rm -rf` permission to the bootstrap.
+
+The leftover directory is for inspection only — the next `/govern` run creates its own fresh temp directory via `mktemp` and never reuses a prior extract.
 
 ## Shared Files
 

@@ -30,8 +30,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 5. Smoke-test `/govern` end-to-end against a throwaway repo
 
-- [ ] In a scratch directory, `git init` a fresh repo and run the updated `/govern` flow (locally, by reading govern.md's instructions from this checkout — there is no automated test harness for govern.md).
-- [ ] Confirm: exactly one `curl` against `github.com/stonean/govern/archive/...`; per-language gitignore fetches still work; `settings.local.json` gains `Bash(tar *)` and `Bash(mktemp *)`; all manifest entries land in their expected destinations; the run summary logs the temp directory path; the temp directory is left in place after the run.
-- [ ] Re-run `/govern` against the same repo. Confirm idempotency: `update`-strategy files report `unchanged`; `create`-strategy files are skipped; settings entries are not duplicated.
+- [x] In a scratch directory, `git init` a fresh repo and run the updated `/govern` flow (locally, by reading govern.md's instructions from this checkout — there is no automated test harness for govern.md).
+- [x] Confirm: exactly one `curl` against `github.com/stonean/govern/archive/...`; per-language gitignore fetches still work; `settings.local.json` gains `Bash(tar *)` and `Bash(mktemp *)`; all manifest entries land in their expected destinations; the run summary logs the temp directory path; the temp directory is left in place after the run.
+- [ ] Re-run `/govern` against the same repo. Confirm idempotency: `update`-strategy files report `unchanged`; `create`-strategy files are skipped; settings entries are not duplicated. **Also confirm a fresh `mktemp` and `curl` against the archive are issued — a prior run's extract must not be reused as the source.**
 - [ ] Force an archive failure (e.g., point the URL at a non-existent ref by temporarily editing govern.md, then run). Confirm clean abort with the spec's error message and no partial scaffolding.
 - [ ] Done when: all three runs produce the expected behavior and govern.md is restored to the correct ref.

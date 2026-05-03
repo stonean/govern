@@ -43,7 +43,7 @@ External fetches that are **not** part of the governance repo are unchanged: per
 
 After fetching the archive:
 
-1. Create a temp directory: `mktemp -d -t govern-XXXXXX`. On macOS/Linux this lands under `$TMPDIR` or `/tmp`.
+1. Create a **new** temp directory on every run: `mktemp -d -t govern-XXXXXX`. On macOS/Linux this lands under `$TMPDIR` or `/tmp`. Never reuse a directory from a prior run, even if one is still on disk — a fresh fetch is the only way `/govern` picks up upstream changes, so the archive must be re-downloaded each invocation.
 2. Extract the archive into the temp directory: `tar -xzf {archive} -C {tempdir}`.
 3. Compute the framework root: `{tempdir}/govern-main/`. Treat this as the local mirror of the governance repo for the rest of the run.
 
@@ -65,6 +65,8 @@ The manifest's source paths (e.g., `framework/constitution.md`, `framework/comma
 ### Cleanup
 
 `/govern` does not delete the temp directory. The path is logged in the run summary (and, on abort, in the error message) so the user can inspect it if needed. Both macOS (`/var/folders/.../T/`) and Linux (`/tmp` on systemd-tmpfiles distros) sweep their temp directories automatically; a few hundred KB of extracted files waiting for the next sweep is acceptable in exchange for not granting an `rm -rf` permission to the bootstrap.
+
+The leftover directory is for inspection only — the next `/govern` run creates its own fresh temp directory via `mktemp` and never reuses a prior extract.
 
 ### Permission bootstrap
 
@@ -104,6 +106,7 @@ The self-update notice (shown when the installed `govern.md` differs from the fe
 - [ ] The self-update notice continues to fire when the installed `govern.md` differs from the archive's copy
 - [ ] Per-language gitignore fetches against `github.com/github/gitignore` remain unchanged (separate `curl` calls)
 - [ ] A re-run on an already-adopted project still reports `unchanged` for files whose archive copy matches the destination
+- [ ] Each `/govern` invocation creates a fresh temp directory via `mktemp` and re-fetches the archive; a prior run's extracted directory is never reused as the source for the current run
 
 ## Open Questions
 
