@@ -42,6 +42,7 @@ See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred 
 | [012-multi-agent-govern](specs/012-multi-agent-govern/spec.md) | done | 007 | Unified `govern` command with runtime agent selection — supports adopting multiple AI CLIs in one project and adding agents on re-run |
 | [013-text-first-artifacts](specs/013-text-first-artifacts/spec.md) | done | 000, 007, 012 | Declare text-first artifacts principle, adopt YAML frontmatter for spec metadata, migrate adopted projects on next /govern |
 | [014-reclarify-backedge](specs/014-reclarify-backedge/spec.md) | done | 000, 009, 013 | Wire up `/ask` to own the documented `clarified/planned/in-progress → draft` back-edge so questions surfacing mid-pipeline are captured and the spec's lifecycle invariant is maintained automatically |
+| [016-cross-cutting-rules](specs/016-cross-cutting-rules/spec.md) | in-progress | 006, 008 | Promote rules to a first-class artifact tier alongside specs and scenarios so cross-cutting concerns (perf, concurrency, observability, security, …) have a single home |
 
 ## Adopting in an Existing Project
 

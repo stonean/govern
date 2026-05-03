@@ -275,6 +275,60 @@ To promote: the user runs `/specify` (for new behavior) or `/capture` (for anoth
 
 Promotion is a user decision, not automated. The framework provides the pattern; the user recognizes when decomposition is needed.
 
+<!-- §rules -->
+
+### Rules
+
+A rule is an enforceable, citable requirement that applies across multiple features. Rules are the third artifact tier — alongside specs (feature-wide) and scenarios (situational), rules cover **cross-cutting** concerns the framework has opinions about regardless of which feature is being built (security, performance, concurrency, observability, accessibility, audit/compliance, data handling).
+
+Rule files ship under `specs/{rule-set}.md` and are referenced from feature specs by ID. The canonical example is `specs/security-backend.md`, whose rules (e.g., `BE-AUTHN-001`) any spec touching authentication can cite. `/{project}:validate` enforces rules — it loads each rule file, runs each rule's Verification step against feature artifacts, and reports gaps.
+
+#### Rule format (summary)
+
+Every rule has four required fields:
+
+- **ID** — a permanent identifier (e.g., `BE-AUTHN-001`) cited from feature specs.
+- **Statement** — one sentence using RFC 2119 keywords (MUST, MUST NOT, SHOULD, SHOULD NOT). MUST/MUST NOT rules are blocking; SHOULD/SHOULD NOT are advisory.
+- **Rationale** — the threat or risk the rule mitigates.
+- **Verification** — instruction to the validate agent on how to check compliance against feature artifacts.
+
+The full schema, ID stability invariants, category abbreviations, and Verification phrasing rules are canonically declared in `specs/008-security-rules/data-model.md`. New rule files follow the same schema.
+
+#### When to write a rule
+
+A new (or amended) rule is justified when **all four** of these hold:
+
+1. **Cross-cutting** — the concern applies to multiple existing or anticipated features, not a single feature's domain.
+2. **Citable** — the concern's verification can be expressed as a step a reviewer or `/{project}:validate` can check (a code-pattern check, a documentation-commitment check, or both).
+3. **Governance-recognized category** — the concern belongs to a class the framework treats as foundational (security, performance, concurrency, observability, accessibility, audit/compliance, data handling, etc.) rather than feature-specific behavior.
+4. **Generalizable wording** — the rule statement would make sense in any spec that touches the area, not only the spec that motivated it.
+
+Indicators are evaluative, not mechanical. The same judgment discipline applies to rule promotion as to scenario promotion ([§scenario-promotion](#scenario-promotion)) — the framework provides the pattern; the user recognizes when promotion is warranted.
+
+#### When a rule is not needed
+
+- The concern is **situational** (specific condition, concrete behavior) → write a scenario under the affected spec.
+- The concern is **feature-wide** (one feature, broad property) → add an acceptance criterion or section to that spec.
+- An existing rule already covers the concern → cite the existing rule from the spec rather than creating a new one.
+
+#### Lifecycle
+
+- Rule IDs are permanent. Once assigned, an ID is never renumbered, even if the rule moves within the file or is edited.
+- Rules are deprecated with a `**DEPRECATED in {version}:**` label and a removal target version, then removed only after the deprecation window has passed.
+- New rule files are introduced via their own feature spec (the same way 008 introduced `security-backend.md` and `security-frontend.md`).
+
+See `specs/008-security-rules/data-model.md` for the full ID-stability invariants and deprecation rules.
+
+#### Three tiers, selected by scope
+
+| Tier | Scope | Artifact |
+| --- | --- | --- |
+| **Rule** | Cross-cutting (applies across many features) | A rule file under `specs/{rule-set}.md`, cited by ID from the specs that depend on it |
+| **Spec / acceptance criterion** | Feature-wide (one feature, broad property) | A section or AC in the feature's `spec.md` |
+| **Scenario** | Situational (a specific condition with concrete behavior) | A file in the feature's `scenarios/` directory |
+
+Bugs route to the tier that matches the *scope* of the missing or violated requirement (see [Bug Decision Tree](#bug-decision-tree) above). A perf bug that affects every API endpoint promotes to a rule; a perf bug specific to one feature becomes an acceptance criterion; a perf bug that only manifests under a specific concurrency condition becomes a scenario.
+
 <!-- §brownfield-inbox -->
 
 ### Brownfield Inbox
@@ -399,6 +453,8 @@ For every kind of fact described in multiple places, one location is authoritati
 | Per-agent permission set | `framework/bootstrap/configure/{key}.md` |
 | Constitution section anchors | `<!-- §<anchor> -->` markers in `framework/constitution.md` |
 | Command frontmatter (description, argument-hint) | each command's own frontmatter block |
+| Rules artifact tier definition | `framework/constitution.md` §rules |
+| Rule file format and ID conventions | `specs/008-security-rules/data-model.md` |
 
 When adding a new kind of fact that may be referenced from multiple documents, name its canonical source explicitly here.
 
