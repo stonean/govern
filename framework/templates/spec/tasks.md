@@ -1,3 +1,7 @@
+---
+title: "{NNN-feature-name} — tasks"
+---
+
 # {NNN} — {Feature Name} Tasks
 
 Tasks derived from the [plan](plan.md). Complete in order.

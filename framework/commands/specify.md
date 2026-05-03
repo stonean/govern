@@ -47,6 +47,7 @@ If the constitution has not been loaded in this session (e.g., `/{project}:targe
    - **Lightweight track**: copy `specs/templates/spec-and-plan.md` into the directory as `spec-and-plan.md`
 
 7. Fill in the spec following `constitution.md` rules (§spec-requirements, §text-first-artifacts):
+   - Replace the frontmatter `title` placeholder with the resolved value: `"{NNN-feature-name} — spec"` for the standard track or `"{NNN-feature-name} — spec+plan"` for the lightweight track (e.g., `"005-authentication — spec"`). The title gives PKM tools (Obsidian graph, Quartz) a unique node label per artifact, since every feature directory contains a `spec.md`/`plan.md`/`tasks.md`.
    - Update the frontmatter `tags` field with the values collected in step 4 (or leave as `[]` if skipped).
    - Leave frontmatter `dependencies` as `[]`; add entries as the author identifies them or as `/clarify` resolves them.
    - Describe behavior and contracts, not implementation.

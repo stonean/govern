@@ -26,7 +26,7 @@ If `--all` is not present, use the feature identifier if provided, otherwise fal
 ## Scope Boundaries
 
 - By default, this is a read-only command. Do NOT modify any files.
-- In fix mode (`--fix`), modify only checkbox state (`- [ ]` → `- [x]`) in spec and task files where the fix is mechanically safe (see Fix Mode section below). Do not modify any other content.
+- In fix mode (`--fix`), modify checkbox state (`- [ ]` → `- [x]`) in spec and task files where the fix is mechanically safe, and write the `title:` frontmatter field on templated artifacts where it is missing, still a literal placeholder, or does not match the canonical `"{folder-name} — {artifact-suffix}"` value (see Fix Mode section below). Do not modify any other content.
 - Read only files within the target feature's directory, the cross-spec files needed for reference checks (`specs/system.md`, `specs/events.md`, `specs/errors.md`, dependency spec files), and the project's installed command-source frontmatter for the project-level consistency section below (`.claude/commands/gov/*.md` frontmatter only, plus `help.md` body for the table comparison). Do NOT read source code or test files.
 - Reference: §spec-requirements, §plan-phase, §tasks-phase, §readiness-check, §scenarios, §cross-spec-impact, §text-first-artifacts, §markdown-standards, §drift-prevention (constitution loaded by `/gov:target` — do not re-read).
 
@@ -63,6 +63,28 @@ Reference: the schema is canonically declared in `framework/constitution.md` §t
 ### Frontmatter schema (informational)
 
 - [ ] Unknown fields beyond the declared schema are permitted and reported as informational findings (no action required).
+
+### PKM title field (advisory)
+
+The `title:` frontmatter field gives PKM tools (Obsidian graph, Quartz, Logseq) a unique node label per artifact, since every feature directory contains files with the same basename (`spec.md`, `plan.md`, `tasks.md`). Without it, PKM graphs collapse all artifacts of the same kind into indistinguishable nodes.
+
+For each templated artifact in the feature directory — `spec.md`, `spec-and-plan.md`, `plan.md`, `tasks.md`, `data-model.md`, `research.md`, and any file under `scenarios/` — check that:
+
+- [ ] A `title:` field is present in the frontmatter
+- [ ] The value is not the literal placeholder `"{NNN-feature-name} — ..."` — a literal placeholder indicates the substitution was forgotten when the template was scaffolded
+- [ ] The value matches `"{folder-name} — {artifact-suffix}"`, where `{folder-name}` is the feature directory's basename and `{artifact-suffix}` is derived from the filename:
+
+  | File | Expected suffix |
+  | --- | --- |
+  | `spec.md` | `spec` |
+  | `spec-and-plan.md` | `spec+plan` |
+  | `plan.md` | `plan` |
+  | `tasks.md` | `tasks` |
+  | `data-model.md` | `data-model` |
+  | `research.md` | `research` |
+  | `scenarios/{slug}.md` | `scenario: {slug}` |
+
+Files outside this set (e.g., `code-locations.md`, custom artifacts) are not checked. The check is fixable in `--fix` mode (see Fix Mode below).
 
 ### Spec integrity (blocking)
 
@@ -187,6 +209,7 @@ When `$ARGUMENTS` contains `--fix`, after running all checks, automatically corr
 - Acceptance criteria checkboxes (`- [ ]` → `- [x]`) in specs with status `done`
 - Task checkboxes (`- [ ]` → `- [x]`) in `tasks.md` where all sub-item checkboxes are already `- [x]`
 - Scenario-linked task checkboxes (`- [ ]` → `- [x]`) where the spec status is `done`
+- **PKM `title:` frontmatter field** — when missing, still set to the literal `"{NNN-feature-name} — ..."` placeholder, or value does not match `"{folder-name} — {artifact-suffix}"`, write the canonical value derived from the folder name and filename (mapping in the PKM title field section above). If the file has no frontmatter block at all, prepend one containing only the `title` field.
 
 ### Not fixable (report only)
 

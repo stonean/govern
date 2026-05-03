@@ -49,9 +49,10 @@ Ask the user to describe the bug, edge case, or behavior they want to capture. T
 ### Create the scenario file
 
 1. Create `specs/{feature}/scenarios/{slug}.md` using the `specs/templates/scenario.md` template.
-2. Fill in the spec-ref with the feature name and the relevant section.
-3. Fill in Context and Behavior based on the user's description.
-4. Include Edge Cases if the user mentioned any; otherwise remove that section.
+2. Replace the frontmatter `title` placeholder with `"{NNN-feature-name} — scenario: {slug}"` (e.g., `"005-authentication — scenario: race-condition"`). The title gives PKM tools (Obsidian graph, Quartz) a unique node label per scenario, since scenario filenames repeat across features.
+3. Fill in the spec-ref with the feature name and the relevant section.
+4. Fill in Context and Behavior based on the user's description.
+5. Include Edge Cases if the user mentioned any; otherwise remove that section.
 
 ### Append task to tasks.md
 

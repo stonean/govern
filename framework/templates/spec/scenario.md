@@ -1,4 +1,5 @@
 ---
+title: "{NNN-feature-name} — scenario: {slug}"
 spec-ref: "{NNN-feature-name} — {Section name}"
 tags: []
 ---

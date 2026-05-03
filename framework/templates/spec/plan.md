@@ -1,3 +1,7 @@
+---
+title: "{NNN-feature-name} — plan"
+---
+
 # {NNN} — {Feature Name} Plan
 
 Implements [{NNN} — {Feature Name}](spec.md).

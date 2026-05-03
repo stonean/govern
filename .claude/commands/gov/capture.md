@@ -40,6 +40,7 @@ If the constitution has not been loaded in this session (e.g., `/gov:target` has
 6. Copy `specs/templates/spec.md` into the directory as `spec.md`.
 
 7. Fill in the spec from the user's description:
+   - Replace the frontmatter `title` placeholder with `"{NNN-feature-name} — spec"` (e.g., `"005-authentication — spec"`). The title gives PKM tools (Obsidian graph, Quartz) a unique node label per artifact, since every feature directory contains a `spec.md`/`plan.md`/`tasks.md`.
    - The frontmatter `status` field starts as `draft` (template default).
    - Leave frontmatter `dependencies` as `[]`; add entries to the list if dependencies on other specs are apparent.
    - Leave frontmatter `tags` as `[]`; brownfield capture is intentionally sparse, and tags can be backfilled organically as the spec gains precision through `/gov:clarify`.

@@ -64,6 +64,7 @@ If the spec file is `spec-and-plan.md` (lightweight track), the plan section is 
 
 1. **If the user picked "keep" in the existing-artifact prompt above**, skip the template copy — `plan.md` is already on disk and is the working artifact. Otherwise (no prior artifacts, or "replace"), copy `specs/templates/plan.md` into the feature directory as `plan.md`.
 2. Fill in (or, on the keep path, edit/extend the existing content):
+   - **Frontmatter title**: replace the `title` placeholder with `"{NNN-feature-name} — plan"` (e.g., `"005-authentication — plan"`). When `data-model.md` is created, replace its `title` placeholder with `"{NNN-feature-name} — data-model"` likewise. The title gives PKM tools (Obsidian graph, Quartz) a unique node label per artifact, since every feature directory contains a `spec.md`/`plan.md`/`tasks.md`.
    - **Technical Decisions**: each decision with rationale. Code snippets, function signatures, and package paths belong here.
    - **Affected Files**: every file that will be created or modified.
    - **Data Model**: data structure definitions. Create `data-model.md` if the feature introduces or modifies domain entities or data structures.
@@ -75,7 +76,7 @@ If the spec file is `spec-and-plan.md` (lightweight track), the plan section is 
 
 ### Create the task breakdown
 
-1. **If the user picked "keep" in the existing-artifact prompt above**, skip the template copy — `tasks.md` is already on disk and is the working artifact. Otherwise (no prior artifacts, or "replace"), copy `specs/templates/tasks.md` into the feature directory as `tasks.md`.
+1. **If the user picked "keep" in the existing-artifact prompt above**, skip the template copy — `tasks.md` is already on disk and is the working artifact. Otherwise (no prior artifacts, or "replace"), copy `specs/templates/tasks.md` into the feature directory as `tasks.md`. Replace the frontmatter `title` placeholder with `"{NNN-feature-name} — tasks"` (e.g., `"005-authentication — tasks"`).
 2. Break the plan into discrete, ordered work items:
    - Each task is small enough to complete and verify in a single session.
    - Each task has a clear "done when" condition.

@@ -1,4 +1,5 @@
 ---
+title: "{NNN-feature-name} — spec+plan"
 status: draft
 dependencies: []
 tags: []
