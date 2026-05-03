@@ -50,6 +50,6 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 8. Lint and validate end-to-end [simple]
 
-- [ ] Run `npx markdownlint-cli2` against all modified files (constitution, validate.md, groom.md, spec template, 008 spec, 016 plan/tasks).
-- [ ] Run `/gov:validate --all` against the govern repo. Confirm no new findings introduced by the spec/template/validate changes themselves (specifically: no new "unknown rule reference" findings on existing specs; no template-rule-alignment findings against the new "Applicable Rules" section).
-- [ ] **Done when:** markdownlint reports zero errors across all modified files and `/gov:validate --all` passes (or its findings are pre-existing and unrelated to 016).
+- [x] Run `npx markdownlint-cli2` against all modified files (constitution, validate.md, groom.md, spec template, 008 spec, 016 plan/tasks).
+- [x] Run `/gov:validate --all` against the govern repo. Confirm no new findings introduced by the spec/template/validate changes themselves (specifically: no new "unknown rule reference" findings on existing specs; no template-rule-alignment findings against the new "Applicable Rules" section).
+- [x] **Done when:** markdownlint reports zero errors across all modified files and `/gov:validate --all` passes (or its findings are pre-existing and unrelated to 016).
