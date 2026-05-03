@@ -191,15 +191,42 @@ The user reviews the result via `git diff` and commits or aborts via `git restor
 
 ## File Fetching
 
-Fetch each file from the governance repo and copy it to the destination path. The source URL pattern is:
+Files from the governance repo are sourced from a single archive download, extracted into a temp directory, and resolved as local paths for the rest of the run. Per-language `.gitignore` patterns from `github.com/github/gitignore` are **not** part of this archive — they remain separate `curl` calls (see the **.gitignore** subsection of **Shared Files** below).
+
+### Archive fetch and extract
+
+Issue exactly one `curl` against GitHub's repo-archive endpoint:
 
 ```text
-https://raw.githubusercontent.com/stonean/govern/main/{source-path}
+https://github.com/stonean/govern/archive/refs/heads/main.tar.gz
 ```
 
-If a fetch fails, report the failure and continue with remaining files. Do not abort on a single fetch error.
+`curl -fsSL` follows the 302 redirect to `codeload.github.com`. The archive's top-level directory is `govern-main/`; the framework files live at `govern-main/framework/...` after extraction.
 
-For `update` strategy files, compare fetched content against the existing file. Only overwrite and report as "updated" if the content differs. If the content is identical, report as "unchanged" (or omit from the summary).
+After fetching:
+
+1. Create a temp directory: `mktemp -d -t govern-XXXXXX`. On macOS/Linux this lands under `$TMPDIR` or `/tmp`.
+2. Extract the archive into the temp directory: `tar -xzf {archive} -C {tempdir}`.
+3. Compute the framework root: `{tempdir}/govern-main/`. Treat this as the local mirror of the governance repo for the rest of the run.
+
+If the fetch or extraction fails — non-zero exit from `curl` or `tar`, or a missing `govern-main/` directory after extract — abort the run with this error and do not continue scaffolding:
+
+> Failed to fetch or extract the governance archive ({reason}). Re-run after checking network connectivity, or report this if it persists.
+
+A missing archive means **every** manifest entry would be missing, so partial scaffolding is impossible — the abort is the correct behavior.
+
+### Per-file resolution
+
+For each manifest entry below (in **Shared Files**, **Per-Agent Scaffolding**, and the workflow-recommendation flow):
+
+1. Compute the local source path: `{tempdir}/govern-main/{source-path}`.
+2. If the local source path does not exist — the file was renamed, removed upstream, or the manifest is out of sync — warn `Source not found in archive: {source-path}; skipping.` and continue with the remaining entries. This preserves the "do not abort on a single fetch error" guarantee at the per-entry level, even though the archive itself is fetched once.
+3. Apply the entry's strategy (`update`, `create`, `skip`, `merge`, `pinned`) using the local file as the new content. For `update` strategy, compare the local file against the existing destination file; only overwrite and report as "updated" if the content differs. If the content is identical, report as "unchanged" (or omit from the summary). Same semantics as before — no network round-trip per file.
+4. Apply placeholder substitution after reading the local source, before writing to the destination. Same rules as documented in **Placeholder Substitution** below, including the `govern.md` self-install exception that keeps `{project}` and `{cli-config-dir}` literal.
+
+### Cleanup
+
+`/govern` does not delete the temp directory. The path is logged in the post-scaffolding summary (and, on abort, in the error message) so the user can inspect it if needed. Both macOS (`/var/folders/.../T/`) and Linux (`/tmp` on systemd-tmpfiles distros) sweep their temp directories automatically; a few hundred KB of extracted files waiting for the next sweep is acceptable in exchange for not granting an `rm -rf` permission to the bootstrap.
 
 ## Shared Files
 

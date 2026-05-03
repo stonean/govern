@@ -11,12 +11,12 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 2. Replace the File Fetching section in govern.md
 
-- [ ] In `framework/bootstrap/govern.md`, replace the entire **File Fetching** section (lines ~192–202 in the current source) with the archive-fetch + extract + per-file resolution flow described in the spec's **Source**, **Extract**, **Per-file resolution**, and **Cleanup** subsections.
-- [ ] The replacement must keep the same section heading (`## File Fetching`) so anchor links from the rest of govern.md (and any external references) continue to resolve.
-- [ ] State the abort message verbatim from the spec, including the `{reason}` placeholder convention.
-- [ ] State the per-entry warning verbatim: `Source not found in archive: {source-path}; skipping.`
-- [ ] Note that per-language gitignore fetches against `github.com/github/gitignore` are unchanged and remain separate `curl` calls (the `.gitignore` subsection of **Shared Files** describes them; cross-reference is sufficient).
-- [ ] Done when: the section is rewritten, the manifest tables in **Shared Files** and **Per-Agent Scaffolding** are unchanged, and a re-read of govern.md from the top still flows naturally into the new section.
+- [x] In `framework/bootstrap/govern.md`, replace the entire **File Fetching** section (lines ~192–202 in the current source) with the archive-fetch + extract + per-file resolution flow described in the spec's **Source**, **Extract**, **Per-file resolution**, and **Cleanup** subsections.
+- [x] The replacement must keep the same section heading (`## File Fetching`) so anchor links from the rest of govern.md (and any external references) continue to resolve.
+- [x] State the abort message verbatim from the spec, including the `{reason}` placeholder convention.
+- [x] State the per-entry warning verbatim: `Source not found in archive: {source-path}; skipping.`
+- [x] Note that per-language gitignore fetches against `github.com/github/gitignore` are unchanged and remain separate `curl` calls (the `.gitignore` subsection of **Shared Files** describes them; cross-reference is sufficient).
+- [x] Done when: the section is rewritten, the manifest tables in **Shared Files** and **Per-Agent Scaffolding** are unchanged, and a re-read of govern.md from the top still flows naturally into the new section.
 
 ## 3. Update the Post-Write Integrity Check wording [simple]
 
