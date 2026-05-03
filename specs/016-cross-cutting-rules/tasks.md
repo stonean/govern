@@ -31,10 +31,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 5. Update groom.md decision-tree walk to include rule promotion
 
-- [ ] Edit `framework/commands/groom.md`. In the **Groom each item** section, insert a new Step 1 before the existing "Does a spec exist for this behavior?" check.
-- [ ] New Step 1 text: apply the four-indicator promotion checklist (per `framework/constitution.md` §rules); if the item qualifies as a cross-cutting concern with no covering rule, recommend promoting to a rule. If a rule file covers the domain, the user amends it; if no rule file covers the domain, note that creating a new rule file is its own spec (out of groom's scope) and capture that signal back into the inbox item.
-- [ ] Renumber existing Steps 1–3 to Steps 2–4. Update the section reference list at the top of the command (`Reference: §bug-handling, §scenarios, §brownfield-inbox`) to include `§rules`.
-- [ ] **Done when:** the groom decision-tree walk is a four-step sequence with rule-promotion first and `npx markdownlint-cli2` passes.
+- [x] Edit `framework/commands/groom.md`. In the **Groom each item** section, insert a new Step 1 before the existing "Does a spec exist for this behavior?" check.
+- [x] New Step 1 text: apply the four-indicator promotion checklist (per `framework/constitution.md` §rules); if the item qualifies as a cross-cutting concern with no covering rule, recommend promoting to a rule. If a rule file covers the domain, the user amends it; if no rule file covers the domain, note that creating a new rule file is its own spec (out of groom's scope) and capture that signal back into the inbox item.
+- [x] Renumber existing Steps 1–3 to Steps 2–4. Update the section reference list at the top of the command (`Reference: §bug-handling, §scenarios, §brownfield-inbox`) to include `§rules`.
+- [x] **Done when:** the groom decision-tree walk is a four-step sequence with rule-promotion first and `npx markdownlint-cli2` passes.
 
 ## 6. Add signpost to 008-security-rules/spec.md [simple]
 

@@ -18,7 +18,7 @@ Use the session target from `{cli-config-dir}/{project}-session.json` if set, bu
 
 - This command grooms inbox items — it creates scenario files and appends tasks but does NOT implement fixes. Do NOT read or modify source code or test files.
 - For each item, read only the spec file of the matching feature (for decision tree evaluation) and its `tasks.md` (for appending). Do NOT read plans, data models, or source code.
-- Reference: §bug-handling, §scenarios, §brownfield-inbox (constitution loaded by `/{project}:target` — do not re-read).
+- Reference: §bug-handling, §rules, §scenarios, §brownfield-inbox (constitution loaded by `/{project}:target` — do not re-read).
 
 ## Instructions
 
@@ -38,14 +38,20 @@ For each item in the inbox list:
 1. Display the item number, total remaining count, and item description.
 2. Walk the bug decision tree:
 
-   **Step 1: Does a spec exist for this behavior?**
+   **Step 1: Is this a cross-cutting concern with no covering rule?**
+   - Apply the four-indicator promotion checklist (§rules in `constitution.md`): cross-cutting, citable, governance-recognized category, generalizable wording. If the item qualifies, recommend promoting it to a rule.
+   - If a loaded rule file already covers the domain (e.g., `specs/security-backend.md` for an authentication concern), recommend the user amend the relevant rule file directly — note that local edits to rule files are overwritten by `/govern` unless the file is pinned in `.govern.toml`, so amendments belong upstream in the framework rather than in adopting projects.
+   - If no rule file covers the domain, creating a new rule file is its own feature spec (out of `/{project}:groom`'s scope). Leave the inbox item in place and prefix it with `[promote-to-rule]` so the next groom pass surfaces it for spec creation. Ask the user whether to skip and continue.
+   - If the item is feature-specific rather than cross-cutting, fall through to Step 2.
+
+   **Step 2: Does a spec exist for this behavior?**
    - Search `specs/` for a feature directory that covers this area.
    - If no spec exists — recommend creating one via `/{project}:capture`. Ask the user whether to create the spec now or skip this item.
 
-   **Step 2: Is the spec ambiguous or incomplete?**
+   **Step 3: Is the spec ambiguous or incomplete?**
    - If the existing spec does not cover the reported behavior clearly — recommend updating the spec directly. Offer to help update the spec section.
 
-   **Step 3: Is the spec clear but needs a scenario?**
+   **Step 4: Is the spec clear but needs a scenario?**
    - If the spec covers the area but the specific behavior needs lower-level elaboration — create a scenario inline under the matching spec's `scenarios/` directory using the `specs/templates/scenario.md` template, then append a task to the spec's `tasks.md` referencing the new scenario. (`/{project}:groom` keeps the inbox flow moving; for a deeper interactive walk through a single scenario, run `/{project}:elaborate` separately.)
 
 3. After migrating or resolving the item, remove it from `specs/inbox.md`.
