@@ -95,7 +95,7 @@ draft ──/clarify──▶ clarified ──/plan──▶ planned ──/impl
 
 Forward edges only — `/clarify` raises status to `clarified`, `/plan` to `planned`, `/implement` to `in-progress` and then to `done`. Two back-edges exist:
 
-- **Backward via new questions** — `planned` or `in-progress` → `clarified` when `/ask` records a new open question. The next `/clarify` resolves it and the spec advances forward again.
+- **Backward via new questions** — `clarified` / `planned` / `in-progress` → `draft` when `/ask` records a new open question; the next `/clarify` resolves the question and the spec advances forward again. `draft` is the only status that tolerates open questions, so it is the destination; `/ask` performs the status mutation in the same write that records the question.
 - **Backward via new scenario** — `done` → `in-progress` when `/elaborate` adds a scenario. The scenario's task is implemented and the spec returns to `done`.
 
 This avoids spec proliferation; scenarios evolve the existing spec rather than spawning a new one.

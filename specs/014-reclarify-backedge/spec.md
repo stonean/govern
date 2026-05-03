@@ -1,5 +1,5 @@
 ---
-status: clarified
+status: done
 dependencies: [000-slash-commands, 009-scenario-targeting, 013-text-first-artifacts]
 tags: [pipeline, commands]
 ---
@@ -109,44 +109,44 @@ Both back-edges then read as command-owned, status-mutating actions triggered by
 
 ### `/ask` back-edge
 
-- [ ] `framework/commands/ask.md` reverts spec status to `draft` after appending an open question to a spec at `clarified`, `planned`, or `in-progress`
-- [ ] On a `draft` spec, `/ask` records the question without status mutation (existing behavior preserved)
-- [ ] On a `done` spec, `/ask` refuses and reports: "Spec is `done`. Run `/{project}:elaborate` to capture this as a scenario instead." No question is recorded; no status mutation occurs
-- [ ] When `/ask` mutates status, it displays the prior status, plan artifacts that exist (with last-modified timestamps), and scenario files — so the user can see what may need re-review
-- [ ] `/ask` does not prompt for separate yes/no confirmation before mutating status — the user's acceptance of the refined question is the consent
-- [ ] When `/ask` targets a scenario (per spec 009), it appends to the scenario's `## Open Questions` and does not mutate any spec or scenario status (scenarios have no status field)
-- [ ] `/ask`'s post-question hint is "Question recorded. Run `/{project}:clarify` to resolve it." in every case where a question is recorded
+- [x] `framework/commands/ask.md` reverts spec status to `draft` after appending an open question to a spec at `clarified`, `planned`, or `in-progress`
+- [x] On a `draft` spec, `/ask` records the question without status mutation (existing behavior preserved)
+- [x] On a `done` spec, `/ask` refuses and reports: "Spec is `done`. Run `/{project}:elaborate` to capture this as a scenario instead." No question is recorded; no status mutation occurs
+- [x] When `/ask` mutates status, it displays the prior status, plan artifacts that exist (with last-modified timestamps), and scenario files — so the user can see what may need re-review
+- [x] `/ask` does not prompt for separate yes/no confirmation before mutating status — the user's acceptance of the refined question is the consent
+- [x] When `/ask` targets a scenario (per spec 009), it appends to the scenario's `## Open Questions` and does not mutate any spec or scenario status (scenarios have no status field)
+- [x] `/ask`'s post-question hint is "Question recorded. Run `/{project}:clarify` to resolve it." in every case where a question is recorded
 
 ### `/clarify` gate
 
-- [ ] `framework/commands/clarify.md` Gate branches on the spec's open-question count, not on a flag
-- [ ] On a `draft` spec (with or without open questions), the existing behavior is preserved — walk questions if present, verify ACs, advance to `clarified`
-- [ ] On a `clarified` / `planned` / `in-progress` spec with no open questions, the command stops with the existing "Spec is already `{status}`" message (lightly tightened to mention the next pipeline command)
-- [ ] On a `done` spec (any open-question count), the command stops with "Spec is `done`. Run `/{project}:elaborate` to capture this as a scenario instead." and exits without mutation
-- [ ] No downstream artifacts (`plan.md`, `tasks.md`, `data-model.md`, scenario files) are deleted or rewritten by `/clarify`
+- [x] `framework/commands/clarify.md` Gate branches on the spec's open-question count, not on a flag
+- [x] On a `draft` spec (with or without open questions), the existing behavior is preserved — walk questions if present, verify ACs, advance to `clarified`
+- [x] On a `clarified` / `planned` / `in-progress` spec with no open questions, the command stops with the existing "Spec is already `{status}`" message (lightly tightened to mention the next pipeline command)
+- [x] On a `done` spec (any open-question count), the command stops with "Spec is `done`. Run `/{project}:elaborate` to capture this as a scenario instead." and exits without mutation
+- [x] No downstream artifacts (`plan.md`, `tasks.md`, `data-model.md`, scenario files) are deleted or rewritten by `/clarify`
 
 ### `/clarify` recovery path
 
-- [ ] On a `clarified` / `planned` / `in-progress` spec with one or more open questions (an inconsistent state usually arising from manual frontmatter edit), the command displays the current status, open-question titles, plan-artifact list with timestamps, and scenario-file list, then prompts: "Spec is `{status}` but has {N} unresolved open questions — revert status to `draft` and walk the questions?"
-- [ ] On confirm, the spec's frontmatter `status` field is updated to `draft` before the standard clarify walk proceeds
-- [ ] On decline, no files are modified — the spec retains its inconsistent state and open questions remain in `## Open Questions`
-- [ ] Previously-resolved questions in `## Resolved Questions` are never re-walked — `/clarify` only processes items in `## Open Questions`
+- [x] On a `clarified` / `planned` / `in-progress` spec with one or more open questions (an inconsistent state usually arising from manual frontmatter edit), the command displays the current status, open-question titles, plan-artifact list with timestamps, and scenario-file list, then prompts: "Spec is `{status}` but has {N} unresolved open questions — revert status to `draft` and walk the questions?"
+- [x] On confirm, the spec's frontmatter `status` field is updated to `draft` before the standard clarify walk proceeds
+- [x] On decline, no files are modified — the spec retains its inconsistent state and open questions remain in `## Open Questions`
+- [x] Previously-resolved questions in `## Resolved Questions` are never re-walked — `/clarify` only processes items in `## Open Questions`
 
 ### `/plan` re-run safety
 
-- [ ] `framework/commands/plan.md` detects whether `plan.md`, `tasks.md`, or `data-model.md` already exist in the feature directory before generating
-- [ ] If any plan artifact exists, `/plan` lists the existing files with their last-modified timestamps and prompts the user to keep or replace
-- [ ] On "keep" (default), `/plan` skips template copy, runs the existing readiness check on the kept artifacts, and advances status to `planned` only if all checks pass
-- [ ] On "replace", `/plan` copies fresh templates over the existing files, then proceeds with the standard plan flow
-- [ ] If no plan artifacts exist, `/plan` behavior is unchanged
-- [ ] The protection applies to every `/plan` run, not only those triggered after a back-edge cycle
+- [x] `framework/commands/plan.md` detects whether `plan.md`, `tasks.md`, or `data-model.md` already exist in the feature directory before generating
+- [x] If any plan artifact exists, `/plan` lists the existing files with their last-modified timestamps and prompts the user to keep or replace
+- [x] On "keep" (default), `/plan` skips template copy, runs the existing readiness check on the kept artifacts, and advances status to `planned` only if all checks pass
+- [x] On "replace", `/plan` copies fresh templates over the existing files, then proceeds with the standard plan flow
+- [x] If no plan artifacts exist, `/plan` behavior is unchanged
+- [x] The protection applies to every `/plan` run, not only those triggered after a back-edge cycle
 
 ### Cross-spec deliverables
 
-- [ ] `framework/constitution.md` §spec-lifecycle back-edge bullet for `/ask` is rewritten per the **Constitution Updates** section above (named `/ask` as the entry point, `draft` as the destination)
-- [ ] `specs/000-slash-commands/spec.md` gains a signpost noting that `/ask` becomes the back-edge owner in 014 (mutating status to `draft` on non-`draft` specs), `/clarify` gains the open-questions-on-non-`draft`-spec recovery path in 014, and `/plan` gains overwrite-protection on existing artifacts in 014
-- [ ] `.claude/commands/gov/ask.md`, `.claude/commands/gov/clarify.md`, and `.claude/commands/gov/plan.md` are regenerated via `scripts/gen-claude-commands.sh`
-- [ ] All modified `.md` files pass `npx markdownlint-cli2`
+- [x] `framework/constitution.md` §spec-lifecycle back-edge bullet for `/ask` is rewritten per the **Constitution Updates** section above (named `/ask` as the entry point, `draft` as the destination)
+- [x] `specs/000-slash-commands/spec.md` gains a signpost noting that `/ask` becomes the back-edge owner in 014 (mutating status to `draft` on non-`draft` specs), `/clarify` gains the open-questions-on-non-`draft`-spec recovery path in 014, and `/plan` gains overwrite-protection on existing artifacts in 014
+- [x] `.claude/commands/gov/ask.md`, `.claude/commands/gov/clarify.md`, and `.claude/commands/gov/plan.md` are regenerated via `scripts/gen-claude-commands.sh`
+- [x] All modified `.md` files pass `npx markdownlint-cli2`
 
 ## Edge Cases
 
