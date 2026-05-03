@@ -40,7 +40,7 @@
 /{project}:specify ──▶ draft ──/{project}:clarify──▶ clarified ──/{project}:plan──▶ planned ──/{project}:implement──▶ in-progress ──▶ done
 ```
 
-Each command enforces its pipeline gate — you cannot plan without a clarified spec, and you cannot implement without a plan. A `done` spec re-enters the pipeline at `in-progress` when a new scenario is added — the scenario captures the change, the spec evolves with it.
+Each command enforces its pipeline gate — you cannot plan without a clarified spec, and you cannot implement without a plan. Two back-edges exist: `/{project}:ask` reverts a `clarified`, `planned`, or `in-progress` spec to `draft` when a new open question surfaces (the only state that tolerates open questions), and `/{project}:elaborate` reverts a `done` spec to `in-progress` when a new scenario is added. The next pipeline command resumes from there — the spec evolves rather than spawning a new one.
 
 Three cycles are supported:
 

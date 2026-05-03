@@ -6,7 +6,7 @@ tags: [pipeline, commands]
 
 # 014 — Re-clarify Back-Edge
 
-Wire up the `planned/in-progress → clarified` back-edge that the constitution describes but no command implements. When a question surfaces on a `planned` or `in-progress` spec, `/ask` records the question and reverts status to `draft` — the only state that tolerates open questions per the constitution. The next `/clarify` resolves the question and the spec advances forward again. No flag, no manual frontmatter editing, no inconsistent intermediate state.
+Wire up `/ask` to own the `clarified` / `planned` / `in-progress` → `draft` back-edge so questions surfacing mid-pipeline are captured and the spec's lifecycle invariant is maintained automatically. When a question surfaces on a `clarified`, `planned`, or `in-progress` spec, `/ask` records the question and reverts status to `draft` — the only state that tolerates open questions per the constitution. The next `/clarify` resolves the question and the spec advances forward again. No flag, no manual frontmatter editing, no inconsistent intermediate state.
 
 ## Problem
 

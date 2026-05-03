@@ -54,14 +54,18 @@ See [constitution.md](constitution.md) — guiding principles, development pipel
 ## Skills
 
 <!-- Optional. List skill files (Anthropic/Claude Code "skills" — context-loaded
-     instruction packs) that augment AGENTS.md for specific task types. Leave
+     instruction packs) that augment AGENTS.md for specific task types. This is
+     distinct from this repo's `framework/workflows/` — workflows are governance-
+     scaffolded slash commands for routine ops (lint, test, format), while skills
+     are an agent-platform feature for richer in-context instruction packs. Leave
      empty if you don't decompose into skills.
 
-     Example:
+     Example (file paths are illustrative — adopters place skill files wherever
+     their agent platform expects them):
      | Skill | Activates on |
      | --- | --- |
-     | `skills/security-review.md` | Code review on auth or session paths |
-     | `skills/db-migration.md` | Editing migration files |
+     | `code-review` skill | Code review on auth or session paths |
+     | `db-migration` skill | Editing migration files |
 
      Per-platform mapping (Claude Code skills, Cursor rules, etc.) is the
      adopter's call — governance defines the index pattern, not the location.

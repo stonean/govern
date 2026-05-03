@@ -8,6 +8,8 @@ tags: [templates, bootstrap]
 
 Templates for the project-level files that every governance-adopting project needs beyond the constitution, AGENTS.md, and spec templates.
 
+> **Note:** path references below (`templates/project-readme.md`, `templates/gitignore`, `templates/claude-md.md`) reflect the original layout. The repository was later reorganized so project-scaffolding templates live in `framework/templates/project/` (and spec templates in `framework/templates/spec/`). Adopting projects' destination paths did not change.
+
 ## Problem
 
 Bootstrapping a new project requires creating several files that follow governance conventions but are not currently provided as templates: a project README with a feature status table, a `.gitignore` that excludes claude settings but preserves commands, a `CLAUDE.md` with import directives, and a session state file. Projects like anvil created all of these independently.

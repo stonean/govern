@@ -9,6 +9,8 @@ tags: [bootstrap, commands]
 > **Note:** This spec was renamed from `007-adopt-workflow` to `007-govern-workflow` by [011-brownfield-process](../011-brownfield-process/spec.md). The govern command also gains a triage → inbox migration step and `/capture` in the command manifest via 011.
 >
 > **Superseded in part by [012-multi-agent-govern](../012-multi-agent-govern/spec.md).** The two-file distribution model described below (`govern/govern.md` for Claude Code, `govern/govern-auggie.md` for Auggie) is replaced by a single unified `govern/govern.md` with an agent registry. The `{cli-config-dir}` placeholder approach and the file-fetching workflow remain correct — only the file count and the runtime agent-selection mechanism change. 007's status stays `done` because its work shipped; 012 carries forward the new design.
+>
+> **Note:** path references below (`govern/govern.md`, `templates/system.md`, `templates/spec.md`, etc.) reflect the original layout. The govern installer now lives at `framework/bootstrap/govern.md`, spec templates at `framework/templates/spec/`, and project-scaffolding templates at `framework/templates/project/`. Adopting projects' destination paths did not change.
 
 A self-contained slash command file that bootstraps governance in existing (brownfield) projects. Users fetch a single `.md` file into their CLI's command directory and run it — no clone of the governance repo required. The command instructs the AI agent to fetch templates from GitHub, write them into the correct locations, perform placeholder substitution, handle conflicts with existing files, and display brownfield-specific next steps.
 

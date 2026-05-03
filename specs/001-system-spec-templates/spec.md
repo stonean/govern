@@ -8,6 +8,8 @@ tags: [templates, pipeline]
 
 Templates for the cross-cutting system specs that the constitution references but does not provide: `system.md`, `errors.md`, and `events.md`.
 
+> **Note:** path references below (`templates/system.md`, etc.) reflect the original layout. The repository was later reorganized so project-scaffolding templates live in `framework/templates/project/`. Adopting projects still copy these templates into their own `specs/` directory; the source paths in this governance repo changed, the destinations did not.
+
 ## Problem
 
 The constitution's spec phase defines a directory structure that includes `system.md`, `errors.md`, and `events.md` under `specs/`. The README tells adopters to "write `specs/system.md` describing your architecture" but provides no template or guidance on what sections to include. Projects like anvil have built these from scratch, establishing patterns that should be reusable.

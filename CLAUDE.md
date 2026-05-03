@@ -9,6 +9,7 @@ The framework is the everything-that-ships portion of this repo. It is laid out 
 - `framework/templates/spec/` — templates consumed by an agent during the pipeline (spec, plan, tasks, data-model, research, scenario, spec-and-plan)
 - `framework/templates/project/` — templates consumed once at adoption (agents, claude-md, system, errors, events, project-readme, gitignore, inbox, initialize)
 - `framework/commands/` — operational slash command sources only
+- `framework/workflows/` — tech-stack-specific workflow files (lint, test, format) plus `registry.json` mapping stack selections to workflows
 - `framework/bootstrap/` — the `govern.md` installer plus per-agent permission files at `bootstrap/configure/{key}.md`
 
 When adding files, place them by purpose, not by extension.

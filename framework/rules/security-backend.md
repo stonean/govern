@@ -360,7 +360,9 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 > All HTTP responses MUST include a documented set of security headers covering: HSTS, content-type options, frame protection, referrer policy, content security policy (for HTML responses), and cache control for sensitive responses.
 
-The minimum required headers and their values:
+**Rationale:** Each header converts the browser into a layered defense. HSTS prevents downgrade attacks; `X-Content-Type-Options` prevents MIME sniffing; frame-ancestors prevents clickjacking; `Referrer-Policy` controls Referer leakage; CSP defends against XSS and mixed content; `Cache-Control: no-store` keeps sensitive responses out of shared caches and the back-button cache.
+
+**Verification:** Any spec or plan that introduces an HTTP response (especially HTML) MUST commit to setting these headers, ideally at the framework or reverse-proxy layer for uniform coverage. Validate flags response specs that omit any of the headers above, and specifically flags HTML-serving specs without a CSP commitment. The minimum required headers and their values:
 
 | Header | Value | Applies to |
 | --- | --- | --- |
@@ -371,10 +373,6 @@ The minimum required headers and their values:
 | `Content-Security-Policy` | Project-defined CSP (see frontend rules for guidance) | HTML responses |
 | `Cache-Control` | `no-store` | Authenticated and sensitive-data responses |
 | `Content-Type` | Explicit type with charset (e.g., `text/html; charset=UTF-8`) | All responses |
-
-**Rationale:** Each header converts the browser into a layered defense. HSTS prevents downgrade attacks; `X-Content-Type-Options` prevents MIME sniffing; frame-ancestors prevents clickjacking; `Referrer-Policy` controls Referer leakage; CSP defends against XSS and mixed content; `Cache-Control: no-store` keeps sensitive responses out of shared caches and the back-button cache.
-
-**Verification:** Any spec or plan that introduces an HTTP response (especially HTML) MUST commit to setting these headers, ideally at the framework or reverse-proxy layer for uniform coverage. Validate flags response specs that omit any of the headers above, and specifically flags HTML-serving specs without a CSP commitment.
 
 **Source:** OWASP HTTP Headers Cheat Sheet, MDN Web Docs
 

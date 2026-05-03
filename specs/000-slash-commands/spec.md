@@ -11,6 +11,8 @@ Generic, project-agnostic slash command templates that operationalize the govern
 > **Note:** subsequent specs renamed several commands and removed one. References below to `about`, `setup`, and `next` reflect the original design; the current names are `help` (about), `configure` (setup, renamed by [012-multi-agent-govern](../012-multi-agent-govern/spec.md)), and the auto-advance `next` command was retired in favor of explicit pipeline gates surfaced by `/{project}:status` and `/{project}:target`.
 >
 > **Note:** [014-reclarify-backedge](../014-reclarify-backedge/spec.md) made `/{project}:ask` the owner of the `clarified` / `planned` / `in-progress` → `draft` back-edge (the command mutates spec status when recording a question on a non-`draft` spec), added a recovery path to `/{project}:clarify` for hand-edited inconsistent state (a non-`draft` spec with open questions in the body), and added overwrite-protection to `/{project}:plan` (existing `plan.md` / `tasks.md` / `data-model.md` are surfaced with a keep/replace prompt before any template copy). Gate-enforcement language below predates these changes; the current behavior of the three commands is documented in their command sources under `framework/commands/`.
+>
+> **Note:** path references below (`commands/`, `templates/`) reflect the original layout. The repository was later reorganized so command sources live in `framework/commands/` and templates in `framework/templates/{spec,project}/`. Adopting projects still copy spec templates into their own `specs/templates/` directory; the source paths in this governance repo changed, the destinations did not.
 
 ## Problem
 

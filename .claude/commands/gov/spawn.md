@@ -70,7 +70,7 @@ Copy the entire `specs/` directory (including all feature specs, templates, syst
 
 Copy all implementation directories and files that exist in the source project. Skip any that do not exist — a spec-only project will have none of these.
 
-Copy any directories and files at the project root that are clearly part of the application. Do **not** copy `.git/`, `.claude/`, or IDE-specific settings. The initialize command (if present) may list specific directories and files to copy — follow its guidance.
+Copy any directories and files at the project root that are clearly part of the application. Do **not** copy `.git/`, the agent's `.claude/` (e.g. `.claude/`, `.augment/`), or IDE-specific settings. The initialize command (if present) may list specific directories and files to copy — follow its guidance.
 
 ### 5. Copy slash commands
 
@@ -86,7 +86,7 @@ Create `.claude/{slug}-session.json` with empty content `{}`.
 
 ### 8. Create settings
 
-Create `.claude/settings.local.json` with default content `{"permissions":{"allow":[],"deny":[]}}`. Do **not** copy from the source project — it contains absolute paths specific to the source.
+Create `.claude/settings.local.json` with default content matching the agent's settings format (e.g., `{"permissions":{"allow":[],"deny":[]}}` for Claude Code, `{"toolPermissions":[]}` for Auggie). Do **not** copy from the source project — it contains absolute paths specific to the source.
 
 ### 9. Rename project references
 

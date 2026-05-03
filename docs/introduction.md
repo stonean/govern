@@ -21,7 +21,7 @@ Every feature moves through `spec → plan → tasks → implement`. No code is 
 draft ──/clarify──▶ clarified ──/plan──▶ planned ──/implement──▶ in-progress ──/implement──▶ done
 ```
 
-The status on each spec — `draft`, `clarified`, `planned`, `in-progress`, `done` — tracks where it is in the pipeline. Two back-edges exist: `/ask` reverts a `planned` or `in-progress` spec to `clarified` when a new question surfaces, and `/elaborate` reverts a `done` spec to `in-progress` when a new scenario is added. The constitution defines what each transition requires.
+The status on each spec — `draft`, `clarified`, `planned`, `in-progress`, `done` — tracks where it is in the pipeline. Two back-edges exist: `/ask` reverts a `clarified`, `planned`, or `in-progress` spec to `draft` when a new open question surfaces (the only state that tolerates open questions), and `/elaborate` reverts a `done` spec to `in-progress` when a new scenario is added. The constitution defines what each transition requires.
 
 ## The three cycles
 

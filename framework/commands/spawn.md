@@ -27,7 +27,7 @@ Collect from `$ARGUMENTS` or prompt the user interactively. When using AskUserQu
 3. **Git remote URL** — the remote repository URL. Used to set `git remote add origin` and passed to the initialize command if present. Example options: `https://github.com/stonean/{slug}`.
 4. **Project path** — where to create the project directory. Defaults to a sibling of the current project (i.e., `../{slug}` relative to the current project root). Example options: the computed default path, `~/src/{slug}`.
 
-If an initialize command exists at `.claude/commands/{source}/initialize.md`, read it before collecting inputs — it may define additional inputs to collect.
+If an initialize command exists at `{cli-config-dir}/commands/{source}/initialize.md`, read it before collecting inputs — it may define additional inputs to collect.
 
 Validate the project slug: must be lowercase, alphanumeric, and hyphens only. If invalid, reject with: "Project slug must be lowercase, alphanumeric, and hyphens only."
 
@@ -70,23 +70,23 @@ Copy the entire `specs/` directory (including all feature specs, templates, syst
 
 Copy all implementation directories and files that exist in the source project. Skip any that do not exist — a spec-only project will have none of these.
 
-Copy any directories and files at the project root that are clearly part of the application. Do **not** copy `.git/`, `.claude/`, or IDE-specific settings. The initialize command (if present) may list specific directories and files to copy — follow its guidance.
+Copy any directories and files at the project root that are clearly part of the application. Do **not** copy `.git/`, the agent's `{cli-config-dir}/` (e.g. `.claude/`, `.augment/`), or IDE-specific settings. The initialize command (if present) may list specific directories and files to copy — follow its guidance.
 
 ### 5. Copy slash commands
 
-Create `.claude/commands/{slug}/` and copy every `.md` file from `.claude/commands/{source}/` in the current project into `.claude/commands/{slug}/`.
+Create `{cli-config-dir}/commands/{slug}/` and copy every `.md` file from `{cli-config-dir}/commands/{source}/` in the current project into `{cli-config-dir}/commands/{slug}/`.
 
 ### 6. Copy govern command
 
-If `.claude/commands/govern.md` exists in the current project, copy it to `.claude/commands/govern.md` in the new project.
+If `{cli-config-dir}/commands/govern.md` exists in the current project, copy it to `{cli-config-dir}/commands/govern.md` in the new project.
 
 ### 7. Create session file
 
-Create `.claude/{slug}-session.json` with empty content `{}`.
+Create `{cli-config-dir}/{slug}-session.json` with empty content `{}`.
 
 ### 8. Create settings
 
-Create `.claude/settings.local.json` with default content `{"permissions":{"allow":[],"deny":[]}}`. Do **not** copy from the source project — it contains absolute paths specific to the source.
+Create `{cli-config-dir}/settings.local.json` with default content matching the agent's settings format (e.g., `{"permissions":{"allow":[],"deny":[]}}` for Claude Code, `{"toolPermissions":[]}` for Auggie). Do **not** copy from the source project — it contains absolute paths specific to the source.
 
 ### 9. Rename project references
 
@@ -107,7 +107,7 @@ Additionally, replace the source project's display name (found in `AGENTS.md` he
 - `AGENTS.md`
 - `README.md`
 - `CLAUDE.md`
-- All files in `.claude/commands/{slug}/`
+- All files in `{cli-config-dir}/commands/{slug}/`
 - All `.md` files under `specs/` (including `specs/templates/`)
 
 Do **not** replace inside:
@@ -118,7 +118,7 @@ Do **not** replace inside:
 
 ### 10. Run initialize command (if present)
 
-If `.claude/commands/{slug}/initialize.md` exists in the new project directory (copied in step 5), read it and execute its instructions. The initialize command receives all collected inputs (slug, display name, git remote URL, path, and any additional inputs it defined).
+If `{cli-config-dir}/commands/{slug}/initialize.md` exists in the new project directory (copied in step 5), read it and execute its instructions. The initialize command receives all collected inputs (slug, display name, git remote URL, path, and any additional inputs it defined).
 
 The initialize command handles all language-specific and project-specific post-copy work, such as:
 
