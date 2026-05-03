@@ -14,10 +14,12 @@
 
 ## AC: `framework/commands/validate.md`'s "Security rules" section is renamed to "Rules." The loading logic discovers any rule file shipped under the manifest, not only `security-backend.md` and `security-frontend.md`. Existing per-rule verification, reference-checking, and severity behavior is unchanged
 
+- `.claude/commands/gov/validate.md`
 - `framework/commands/validate.md`
 
 ## AC: `framework/commands/groom.md` includes "promote to rule" as a routing option in its decision-tree walk, alongside the existing spec/scenario routes
 
+- `.claude/commands/gov/groom.md`
 - `framework/commands/groom.md`
 
 ## AC: `specs/008-security-rules/spec.md` carries a top-of-file signpost noting it is the security instance of the general rules tier defined in 016

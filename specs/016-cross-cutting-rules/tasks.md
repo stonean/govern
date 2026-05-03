@@ -44,9 +44,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 7. Regenerate Claude command mirrors [simple]
 
-- [ ] Run `./scripts/gen-claude-commands.sh` from the repo root.
-- [ ] Verify `.claude/commands/gov/validate.md` and `.claude/commands/gov/groom.md` reflect the source edits (renamed sections, new decision-tree step, parameterized loading prose).
-- [ ] **Done when:** the generator runs without errors and the two generated files are in sync with their `framework/commands/` sources.
+- [x] Run `./scripts/gen-claude-commands.sh` from the repo root.
+- [x] Verify `.claude/commands/gov/validate.md` and `.claude/commands/gov/groom.md` reflect the source edits (renamed sections, new decision-tree step, parameterized loading prose).
+- [x] **Done when:** the generator runs without errors and the two generated files are in sync with their `framework/commands/` sources.
 
 ## 8. Lint and validate end-to-end [simple]
 

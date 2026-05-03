@@ -107,25 +107,30 @@ Reference: the schema is canonically declared in `framework/constitution.md` §t
 - [ ] Error codes follow the convention from `specs/errors.md`
 - [ ] Data model definitions do not conflict with other specs' data-model.md files
 
-### Security rules (blocking and advisory)
+### Rules (blocking and advisory)
 
-Load `specs/security-backend.md` and `specs/security-frontend.md` if either is present in the project. Each file is independently optional — only the files that exist are loaded. The rule-file schema is canonically declared in `specs/008-security-rules/data-model.md`.
+Rules are the cross-cutting tier of the framework's three-tier requirement model (see §rules in `constitution.md`). Load each rule file in the project's rule-file list. The list currently consists of:
+
+- `specs/security-backend.md`
+- `specs/security-frontend.md`
+
+Each file is independently optional — only the files that exist in the project are loaded. New rule files are introduced via their own feature spec; when a new rule file ships, the rule-file list above is updated in the same change. The schema each rule file follows is canonically declared in its introducing spec's data-model (currently `specs/008-security-rules/data-model.md` for the security files).
 
 **Rule file integrity** — for each present rule file:
 
 - [ ] Every rule heading is level-3 and contains only the rule ID (no surrounding text)
 - [ ] Every rule has the three required fields: a block-quoted Statement, `**Rationale:**` paragraph, and `**Verification:**` paragraph
-- [ ] Every rule's ID matches the format `{BE|FE}-{CATEGORY}-{NNN}` (zero-padded) with `CATEGORY` drawn from the data-model's per-surface set
+- [ ] Every rule's ID matches the format declared in the rule file's introducing-spec data-model (currently `{BE|FE}-{CATEGORY}-{NNN}` for security files, with `CATEGORY` drawn from the data-model's per-surface set)
 - [ ] No two rules in the same file share an ID
 
 If any check above fails, the affected rule file is treated as unloadable for the remainder of this validate pass — no rules from that file are applied to the per-rule check below. Emit one of:
 
-- `Malformed security rule file {path} at {location}: {reason}` — for missing required fields, ID-format violations, or malformed headings (**blocking**)
+- `Malformed rule file {path} at {location}: {reason}` — for missing required fields, ID-format violations, or malformed headings (**blocking**)
 - `Duplicate rule ID {ID} in {file}; refusing to load` — when two rules in the same file share an ID (**blocking**)
 
 **No rule files present**:
 
-- [ ] If neither `specs/security-backend.md` nor `specs/security-frontend.md` is present, emit `No security rule files found, skipping security checks` (**advisory**) and skip the per-rule and reference checks below
+- [ ] If no rule file in the rule-file list is present in the project, emit `No rule files found, skipping rule checks` (**advisory**) and skip the per-rule and reference checks below
 
 **Per-rule check** — when at least one rule file is loaded and well-formed, iterate every loaded rule and execute its **Verification** instruction against the project's `spec.md`, `spec-and-plan.md`, `plan.md`, `scenarios/*.md`, and `specs/system.md` content:
 
