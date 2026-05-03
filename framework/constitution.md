@@ -379,6 +379,60 @@ Published as guidance, not enforcement. Adopters and future specs MAY introduce 
 | `scenarios` | Specs about scenario semantics, scenario targeting, or scenario tooling |
 | `brownfield` | Specs about brownfield adoption, capture, inbox grooming, or incremental spec growth |
 
+<!-- §drift-prevention -->
+
+## Drift Prevention
+
+These principles keep facts consistent as the framework evolves. They apply both to governance itself and to projects that adopt it. Drift is a class of bug; preventing it is part of the framework's design, not an afterthought.
+
+### Canonical sources
+
+For every kind of fact described in multiple places, one location is authoritative. Other documents that describe the fact MUST reference the canonical source rather than restate it.
+
+| Fact | Canonical source |
+| --- | --- |
+| Spec lifecycle states and back-edges | `framework/constitution.md` §spec-lifecycle |
+| Pipeline command behavior | each command's source under `framework/commands/*.md` (or `framework/bootstrap/configure/{key}.md`) |
+| Frontmatter schema for specs and scenarios | `framework/constitution.md` §text-first-artifacts |
+| Validation severity tiers | `framework/constitution.md` §text-first-artifacts (Validation Severity subsection) |
+| Workflow registry | `framework/workflows/registry.json` |
+| Per-agent permission set | `framework/bootstrap/configure/{key}.md` |
+| Constitution section anchors | `<!-- §<anchor> -->` markers in `framework/constitution.md` |
+| Command frontmatter (description, argument-hint) | each command's own frontmatter block |
+
+When adding a new kind of fact that may be referenced from multiple documents, name its canonical source explicitly here.
+
+### Cross-document references
+
+When document B describes content authored in document A, B includes a back-link to A — relative markdown link, anchor reference (`§anchor`), or section name. Two consequences follow:
+
+- Changing A includes auditing every back-link to A. The audit is structured wherever it can be machine-checked (anchor resolution, help-table descriptions, registry-frontmatter equivalence), and a manual sweep otherwise.
+- Adding a fact that conceptually belongs in A but landing it in B is drift. Either move the fact to A and back-link, or extend A's scope explicitly.
+
+### Template-rule alignment
+
+Every blocking check in `/{project}:validate` has a corresponding scaffolding element in the template that produces a passing artifact by default. The contract runs in both directions:
+
+- Adding a new blocking check requires a template update so a freshly-copied artifact passes the check without manual editing.
+- Adding template structure requires a corresponding rule (validate check, constitution rule, or both). Sections that don't trace back to a rule are dead weight.
+
+Templates and validate evolve together. A diff that touches one without the other is incomplete.
+
+### Manifest discipline
+
+When multiple commands distribute or reference the same set of files (e.g., `/govern` and `/{project}:init` both scaffold a project; `/{project}:configure` and the bootstrap install both apply permission sets), the file list lives in one place:
+
+- Either as a shared section the commands include by reference, or
+- As a registry both commands read.
+
+Two commands that copy-paste the same manifest into their own bodies are guaranteed to drift over time. Consolidate or accept that drift is the rule, not the exception.
+
+### Done specs are frozen archaeology
+
+`done` specs reflect the world at merge time. The framework will continue to evolve; done specs will not be rewritten to match. Drift between a done spec's body and the current framework is expected — handle it with **signposts at the top of the spec**, not by rewriting the body. Plan and tasks files in done-spec directories follow the same rule.
+
+A signpost names what changed and points readers at the current source of truth. It does not edit history.
+
 <!-- §pipeline-boundaries -->
 
 ## Pipeline Boundaries

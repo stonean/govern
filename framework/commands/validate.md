@@ -27,8 +27,8 @@ If `--all` is not present, use the feature identifier if provided, otherwise fal
 
 - By default, this is a read-only command. Do NOT modify any files.
 - In fix mode (`--fix`), modify only checkbox state (`- [ ]` → `- [x]`) in spec and task files where the fix is mechanically safe (see Fix Mode section below). Do not modify any other content.
-- Read only files within the target feature's directory and the cross-spec files needed for reference checks (`specs/system.md`, `specs/events.md`, `specs/errors.md`, dependency spec files). Do NOT read source code or test files.
-- Reference: §spec-requirements, §plan-phase, §tasks-phase, §readiness-check, §scenarios, §cross-spec-impact, §text-first-artifacts, §markdown-standards (constitution loaded by `/{project}:target` — do not re-read).
+- Read only files within the target feature's directory, the cross-spec files needed for reference checks (`specs/system.md`, `specs/events.md`, `specs/errors.md`, dependency spec files), and the project's installed command-source frontmatter for the project-level consistency section below (`{cli-config-dir}/commands/{project}/*.md` frontmatter only, plus `help.md` body for the table comparison). Do NOT read source code or test files.
+- Reference: §spec-requirements, §plan-phase, §tasks-phase, §readiness-check, §scenarios, §cross-spec-impact, §text-first-artifacts, §markdown-standards, §drift-prevention (constitution loaded by `/{project}:target` — do not re-read).
 
 ## Instructions
 
@@ -143,6 +143,24 @@ Findings produced by this section are surfaced under validate's existing severit
 ### Markdown lint (advisory)
 
 - [ ] All `.md` files in the feature directory pass `npx markdownlint-cli2`
+
+### Project-level consistency (advisory)
+
+These checks span the project's installed command set and constitution rather than the target feature. They catch drift in the framework files governance ships, surfaced per the Drift Prevention principles in `constitution.md` §drift-prevention. Run once per `/{project}:validate` invocation regardless of which feature is targeted; with `--all`, run once before per-feature output.
+
+Read inputs:
+
+- `constitution.md` (already loaded by `/{project}:target`)
+- `{cli-config-dir}/commands/{project}/help.md`
+- The full set of `.md` files in `{cli-config-dir}/commands/{project}/` (frontmatter only — do not read bodies for these checks)
+
+Checks:
+
+- [ ] **Help equivalence** — for each command listed in any table in `help.md`, the command's `description:` frontmatter exists and matches (modulo trailing punctuation) the one-line description in the help table. Mismatches indicate `help.md` was edited without updating the command source, or vice versa.
+- [ ] **Anchor resolution** — every `§<anchor>` reference in any installed command file (typically in "Reference: §X, §Y" Scope-Boundaries lines) resolves to a corresponding `<!-- §<anchor> -->` marker in `constitution.md`. A broken reference indicates the constitution was renamed or restructured without updating callers. Report each broken reference with the source command and the unresolved anchor.
+- [ ] **Command frontmatter completeness** — every `.md` file in the installed commands directory has a `description:` frontmatter field. Files whose body documents an `$ARGUMENTS` parameter additionally have `argument-hint:`. Report missing fields; do not check value content.
+
+These are advisory, not blocking — they signal framework drift that the project should resolve at its convenience. They do not prevent pipeline advancement on the target feature.
 
 ### Report
 
