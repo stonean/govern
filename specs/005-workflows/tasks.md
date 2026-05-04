@@ -1,3 +1,7 @@
+---
+title: "005-workflows — tasks"
+---
+
 # 005 — Workflows Tasks
 
 Tasks derived from the [plan](plan.md). Complete in order.

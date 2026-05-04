@@ -1,3 +1,7 @@
+---
+title: "009-scenario-targeting — tasks"
+---
+
 # 009 — Scenario Targeting Tasks
 
 Tasks derived from the [plan](plan.md). Complete in order.

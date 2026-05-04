@@ -1,3 +1,7 @@
+---
+title: "015-tarball-fetch — tasks"
+---
+
 # 015 — Tarball Fetch Tasks
 
 Tasks derived from the [plan](plan.md). Complete in order.

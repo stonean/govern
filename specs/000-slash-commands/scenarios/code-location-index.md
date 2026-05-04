@@ -1,4 +1,5 @@
 ---
+title: "000-slash-commands — scenario: code-location-index"
 spec-ref: "000-slash-commands — Command Set / implement"
 tags: []
 ---

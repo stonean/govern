@@ -1,4 +1,5 @@
 ---
+title: "000-slash-commands — scenario: validation-gates"
 spec-ref: "000-slash-commands — Command Set"
 tags: []
 ---

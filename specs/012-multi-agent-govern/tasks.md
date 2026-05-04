@@ -1,3 +1,7 @@
+---
+title: "012-multi-agent-govern — tasks"
+---
+
 # 012 — Multi-Agent Govern Tasks
 
 Tasks derived from the [plan](plan.md). Complete in order.

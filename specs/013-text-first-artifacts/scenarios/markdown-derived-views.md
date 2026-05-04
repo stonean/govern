@@ -1,4 +1,5 @@
 ---
+title: "013-text-first-artifacts — scenario: markdown-derived-views"
 spec-ref: "013-text-first-artifacts — Principles"
 tags: []
 ---

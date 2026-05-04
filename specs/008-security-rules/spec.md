@@ -1,4 +1,5 @@
 ---
+title: "008-security-rules — spec"
 status: done
 dependencies: [007-govern-workflow]
 tags: [security, format]

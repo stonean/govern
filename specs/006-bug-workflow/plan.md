@@ -1,3 +1,7 @@
+---
+title: "006-bug-workflow — plan"
+---
+
 # 006 — Bug Workflow Plan
 
 ## Overview

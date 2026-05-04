@@ -1,3 +1,7 @@
+---
+title: "012-multi-agent-govern — data-model"
+---
+
 # 012 — Multi-Agent Govern Data Model
 
 The agent registry is a structured, in-file data model carried by `govern/govern.md`. It is a table of supported agents that the unified govern command iterates over during scaffolding. There is no database, no language-level type — the "data" is markdown rows the prompt reads at run time.

@@ -1,4 +1,5 @@
 ---
+title: "000-slash-commands — scenario: command-autocomplete-summary"
 spec-ref: "000-slash-commands — Command Set"
 tags: [commands, ux]
 ---

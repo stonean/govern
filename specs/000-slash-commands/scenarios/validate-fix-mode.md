@@ -1,4 +1,5 @@
 ---
+title: "000-slash-commands — scenario: validate-fix-mode"
 spec-ref: "000-slash-commands — Command Set / validate"
 tags: []
 ---

@@ -1,4 +1,5 @@
 ---
+title: "000-slash-commands — scenario: target-argument-parsing"
 spec-ref: "000-slash-commands — Command Set / target"
 tags: []
 ---

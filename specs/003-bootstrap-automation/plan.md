@@ -1,3 +1,7 @@
+---
+title: "003-bootstrap-automation — plan"
+---
+
 # 003 — Bootstrap Automation Plan
 
 ## Overview

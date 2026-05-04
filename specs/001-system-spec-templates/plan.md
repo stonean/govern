@@ -1,3 +1,7 @@
+---
+title: "001-system-spec-templates — plan"
+---
+
 # 001 — System Spec Templates Plan
 
 ## Overview

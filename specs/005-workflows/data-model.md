@@ -1,3 +1,7 @@
+---
+title: "005-workflows — data-model"
+---
+
 # 005 — Workflows Data Model
 
 ## Registry file

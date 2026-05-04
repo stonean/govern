@@ -1,3 +1,7 @@
+---
+title: "000-slash-commands — plan"
+---
+
 # 000 — Slash Command Templates Plan
 
 > **Note:** this plan was written against the original layout. Command sources now live in `framework/commands/`; several command names were later renamed (`about → help`, `setup → configure`, `next` retired). See `spec.md` for the full rename history.

@@ -1,3 +1,7 @@
+---
+title: "013-text-first-artifacts — plan"
+---
+
 # 013 — Text-First Artifacts Plan
 
 ## Overview

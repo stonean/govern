@@ -1,3 +1,7 @@
+---
+title: "008-security-rules — data-model"
+---
+
 # 008 — Security Rules Data Model
 
 ## Rule file structure

@@ -1,4 +1,5 @@
 ---
+title: "009-scenario-targeting — spec"
 status: done
 dependencies: [006-bug-workflow]
 tags: [scenarios, pipeline]

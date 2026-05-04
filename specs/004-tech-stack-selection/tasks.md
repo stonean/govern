@@ -1,3 +1,7 @@
+---
+title: "004-tech-stack-selection — tasks"
+---
+
 # 004 — Tech Stack Selection Tasks
 
 Tasks derived from the [plan](plan.md). Complete in order.

@@ -1,3 +1,7 @@
+---
+title: "007-govern-workflow — tasks"
+---
+
 # 007 — Govern Command Tasks
 
 Tasks derived from the [plan](plan.md). Complete in order.

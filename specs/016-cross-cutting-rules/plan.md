@@ -1,3 +1,7 @@
+---
+title: "016-cross-cutting-rules — plan"
+---
+
 # 016 — Cross-Cutting Rules Plan
 
 Implements [016 — Cross-Cutting Rules](spec.md).

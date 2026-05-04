@@ -1,3 +1,7 @@
+---
+title: "002-project-scaffolding — plan"
+---
+
 # 002 — Project Scaffolding Templates Plan
 
 ## Overview

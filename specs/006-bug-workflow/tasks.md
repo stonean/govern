@@ -1,3 +1,7 @@
+---
+title: "006-bug-workflow — tasks"
+---
+
 # 006 — Bug Workflow Tasks
 
 Tasks derived from the [plan](plan.md). Complete in order.

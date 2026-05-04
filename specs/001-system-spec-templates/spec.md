@@ -1,4 +1,5 @@
 ---
+title: "001-system-spec-templates — spec"
 status: done
 dependencies: []
 tags: [templates, pipeline]

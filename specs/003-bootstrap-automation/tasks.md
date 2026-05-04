@@ -1,3 +1,7 @@
+---
+title: "003-bootstrap-automation — tasks"
+---
+
 # 003 — Bootstrap Automation Tasks
 
 Tasks derived from the [plan](plan.md). Complete in order.

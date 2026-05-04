@@ -1,3 +1,7 @@
+---
+title: "016-cross-cutting-rules — tasks"
+---
+
 # 016 — Cross-Cutting Rules Tasks
 
 Tasks derived from the [plan](plan.md). Complete in order.

@@ -1,3 +1,7 @@
+---
+title: "000-slash-commands — tasks"
+---
+
 # 000 — Slash Command Templates Tasks
 
 Tasks derived from the [plan](plan.md). Complete in order.

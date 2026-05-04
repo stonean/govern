@@ -1,3 +1,7 @@
+---
+title: "013-text-first-artifacts — data-model"
+---
+
 # 013 — Text-First Artifacts Data Model
 
 The data structure introduced by this feature is the **YAML frontmatter schema** for spec and scenario files. The schema is the canonical metadata format consumers parse; this document declares the structure once so the constitution, templates, and slash commands stay aligned.

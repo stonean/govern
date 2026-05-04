@@ -1,4 +1,5 @@
 ---
+title: "000-slash-commands — scenario: clarify-one-at-a-time"
 spec-ref: "000-slash-commands — Command Set / clarify"
 tags: []
 ---

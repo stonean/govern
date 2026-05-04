@@ -1,4 +1,5 @@
 ---
+title: "010-agent-autonomy — spec"
 status: done
 dependencies: [000-slash-commands]
 tags: [agent, process]

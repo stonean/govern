@@ -1,3 +1,7 @@
+---
+title: "001-system-spec-templates — tasks"
+---
+
 # 001 — System Spec Templates Tasks
 
 Tasks derived from the [plan](plan.md). Complete in order.

@@ -1,3 +1,7 @@
+---
+title: "012-multi-agent-govern — plan"
+---
+
 # 012 — Multi-Agent Govern Plan
 
 ## Overview

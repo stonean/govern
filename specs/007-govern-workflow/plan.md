@@ -1,3 +1,7 @@
+---
+title: "007-govern-workflow — plan"
+---
+
 # 007 — Govern Command Plan
 
 > **Note:** this plan was written against the original layout and the two-file distribution model. The govern installer now lives at a single `framework/bootstrap/govern.md` (the two-file model was superseded by [012-multi-agent-govern](../012-multi-agent-govern/spec.md)); command sources moved to `framework/commands/`; project-scaffolding templates to `framework/templates/project/`. Several command names were later renamed (`about → help`, `setup → configure`, `scenario → elaborate`, `triage → groom`, `next` retired). See `spec.md` for the full history.

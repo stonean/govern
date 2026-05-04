@@ -1,4 +1,5 @@
 ---
+title: "005-workflows — spec"
 status: done
 dependencies: [004-tech-stack-selection]
 tags: [bootstrap, templates]

@@ -1,3 +1,7 @@
+---
+title: "008-security-rules — research"
+---
+
 # 008 — Security Rules Research
 
 ## Sources

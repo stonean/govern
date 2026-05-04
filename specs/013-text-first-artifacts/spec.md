@@ -1,4 +1,5 @@
 ---
+title: "013-text-first-artifacts — spec"
 status: done
 dependencies: [000-slash-commands, 007-govern-workflow, 012-multi-agent-govern]
 tags: [format, migration, pipeline]

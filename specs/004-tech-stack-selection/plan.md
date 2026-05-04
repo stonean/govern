@@ -1,3 +1,7 @@
+---
+title: "004-tech-stack-selection — plan"
+---
+
 # 004 — Tech Stack Selection Plan
 
 ## Overview

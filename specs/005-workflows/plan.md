@@ -1,3 +1,7 @@
+---
+title: "005-workflows — plan"
+---
+
 # 005 — Workflows Plan
 
 ## Overview

@@ -1,4 +1,5 @@
 ---
+title: "007-govern-workflow — scenario: govern-self-update-precheck"
 spec-ref: "007-govern-workflow — Distribution Model"
 tags: []
 ---

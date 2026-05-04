@@ -1,3 +1,7 @@
+---
+title: "010-agent-autonomy — plan"
+---
+
 # 010 — Agent Autonomy Plan
 
 ## Overview

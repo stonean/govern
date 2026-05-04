@@ -1,3 +1,7 @@
+---
+title: "008-security-rules — plan"
+---
+
 # 008 — Security Rules Plan
 
 ## Overview

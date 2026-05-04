@@ -1,3 +1,7 @@
+---
+title: "015-tarball-fetch — plan"
+---
+
 # 015 — Tarball Fetch Plan
 
 Implements [015 — Tarball Fetch](spec.md).
