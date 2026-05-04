@@ -91,6 +91,72 @@ For each selected agent, before fetching any files:
 
 This prevents repeated permission prompts during the fetch and scaffolding phases. The full permission set is applied later by `/{project}:configure`.
 
+## govern.md Self-Update Check
+
+Before any other fetching, scaffolding, or migration, verify the running session's `govern.md` instructions are current. The check is its own phase — ahead of pre-run migrations and the full archive fetch — so a stale-detected abort does not leave any other write on disk and does not pay the cost of fetching the multi-hundred-KB archive on a run that is going to abort anyway.
+
+### Small fetch
+
+Create a fresh temp directory used by both this check and the later archive fetch:
+
+```text
+mktemp -d -t govern-XXXXXX
+```
+
+On macOS/Linux this lands under `$TMPDIR` or `/tmp`. Never reuse a directory from a prior run — a fresh fetch is the only way `/govern` picks up upstream changes.
+
+Issue exactly one `curl` against `raw.githubusercontent.com` for the upstream bootstrap file:
+
+```text
+curl -fsSL https://raw.githubusercontent.com/stonean/govern/main/framework/bootstrap/govern.md \
+  -o {tempdir}/govern.md.upstream
+```
+
+If the fetch fails — non-zero `curl` exit, network error, or a 404 — abort the run with this error and do not continue:
+
+> Failed to fetch the govern.md self-update check ({reason}). Re-run after checking network connectivity, or report this if it persists.
+
+### Per-agent comparison
+
+For each selected agent, byte-compare `{tempdir}/govern.md.upstream` against the installed `{config_dir}/commands/govern.md` and assign one status:
+
+- **`no installed copy`** — the installed file does not exist (first run for this agent). Continue.
+- **`current`** — the two files are byte-identical, **or** the installed file is byte-identical to upstream and listed in `.govern.toml` `pinned.files` (the pin had nothing to suppress this run). Continue.
+- **`stale`** — the two files differ and the installed file is **not** pinned. The running session is using older instructions than what is current upstream.
+- **`pinned-divergent`** — the two files differ and the installed file **is** listed in `.govern.toml` `pinned.files`. The pin intentionally suppresses the update; continue, and emit a single advisory line in the post-scaffolding output.
+
+The check is scoped to **selected agents only** — agents whose `config_dir` exists in the project but are not in this run's selection are not diffed. An unselected stale agent will trip the check on its very next `/govern` run targeting it.
+
+### Stale → write and abort
+
+If any selected agent is recorded as `stale`:
+
+1. For **each stale agent**, copy `{tempdir}/govern.md.upstream` to `{config_dir}/commands/govern.md` (overwrite). The freshly fetched bootstrap lands on disk for every stale agent so the next session in any of them loads the up-to-date instructions. Do not substitute placeholders in this file — `{project}` and `{cli-config-dir}` stay literal, per the existing `govern.md` self-install rule.
+2. Run the **Post-Write Integrity Check** (see below) on each freshly written `govern.md`.
+3. Do not write `govern.md` for non-stale agents — their installed copies already match upstream.
+4. Do not write `govern.md` for `pinned-divergent` agents — the pin opts them out of automatic updates.
+5. Abort the run before any further work. Print:
+
+> **The govern command itself has updated.** Your installed copy was behind upstream and the running session is using the older instructions. The freshly fetched copy has been written to disk for stale agents.
+>
+> Stale agents updated: {comma-separated names}.
+>
+> Start a new session and re-run `/govern` to pick up the latest version.
+
+Everything past this point — **Pre-run Migrations**, **Project Configuration**, the **Archive fetch and extract**, **Frontmatter Migration**, **Shared Files**, **Per-Agent Scaffolding**, **Security Audit**, and **Post-Scaffolding Output** — is skipped. The only writes this run performed are the additive **Permission Setup** entries and the per-stale-agent `govern.md` overwrite.
+
+The next `/govern` run in a new session loads the fresh `govern.md`, the self-update check sees `current` (or `no installed copy`) for every agent, and the run proceeds normally without abort.
+
+### Pinned-divergent → continue with advisory
+
+If a selected agent is recorded as `pinned-divergent`, the run continues normally. After scaffolding, the **Post-Scaffolding Output** includes one advisory line per divergent agent (see **Post-Scaffolding Output → Pinned govern.md advisory**). The advisory is silent on runs where every pinned agent is `current` (the pinned version happens to match upstream this run).
+
+Pinning is an opt-out from automatic updates, not an opt-out from knowing the pin is currently active. When the pinned version actually drifts from upstream, the user usually wants to either review the upstream changes and unpin, or consciously confirm they are staying on the old version. Adopters who are deliberately and indefinitely on an old version see no recurring nag because the advisory only fires when divergence is real.
+
+### Current / no installed copy → continue
+
+When all selected agents are `current` or `no installed copy`, the run proceeds. The temp directory created here is reused by the **Archive fetch and extract** step below — no second `mktemp`, no leaked extra temp directory.
+
 ## Pre-run Migrations
 
 These one-shot renames carry adopters who scaffolded under the prior `governance` naming forward without manual cleanup. Each is a no-op when the legacy artifact is absent.
@@ -121,60 +187,31 @@ Any file listed in `pinned.files` that would normally use `update` strategy is t
 
 ## File Fetching
 
-Files from the `govern` repo are sourced from a single archive download, extracted into a temp directory, and resolved as local paths for the rest of the run. Per-language `.gitignore` patterns from `github.com/github/gitignore` are **not** part of this archive — they remain separate `curl` calls (see the **.gitignore** subsection of **Shared Files** below).
+Files from the `govern` repo are sourced from a single archive download, extracted into the temp directory established by **govern.md Self-Update Check**, and resolved as local paths for the rest of the run. Per-language `.gitignore` patterns from `github.com/github/gitignore` are **not** part of this archive — they remain separate `curl` calls (see the **.gitignore** subsection of **Shared Files** below).
+
+This section runs only after the **govern.md Self-Update Check** passes (no stale agents). On a stale-abort, the archive is never fetched.
 
 ### Archive fetch and extract
 
-Issue exactly one `curl` against GitHub's repo-archive endpoint:
+Issue exactly one `curl` against GitHub's repo-archive endpoint, downloading into the temp directory established by the self-update check:
 
 ```text
-https://github.com/stonean/govern/archive/refs/heads/main.tar.gz
+curl -fsSL https://github.com/stonean/govern/archive/refs/heads/main.tar.gz \
+  -o {tempdir}/main.tar.gz
 ```
 
 `curl -fsSL` follows the 302 redirect to `codeload.github.com`. The archive's top-level directory is `govern-main/`; the framework files live at `govern-main/framework/...` after extraction.
 
 After fetching:
 
-1. Create a **new** temp directory on every run: `mktemp -d -t govern-XXXXXX`. On macOS/Linux this lands under `$TMPDIR` or `/tmp`. Never reuse a directory from a prior run, even if one is still on disk — a fresh fetch is the only way `/govern` picks up upstream changes, so the archive must be re-downloaded each invocation.
-2. Extract the archive into the temp directory: `tar -xzf {archive} -C {tempdir}`.
-3. Compute the framework root: `{tempdir}/govern-main/`. Treat this as the local mirror of the `govern` repo for the rest of the run.
+1. Extract the archive into the existing temp directory: `tar -xzf {tempdir}/main.tar.gz -C {tempdir}`.
+2. Compute the framework root: `{tempdir}/govern-main/`. Treat this as the local mirror of the `govern` repo for the rest of the run.
 
 If the fetch or extraction fails — non-zero exit from `curl` or `tar`, or a missing `govern-main/` directory after extract — abort the run with this error and do not continue scaffolding:
 
 > Failed to fetch or extract the `govern` archive ({reason}). Re-run after checking network connectivity, or report this if it persists.
 
-A missing archive means **every** manifest entry would be missing, so partial scaffolding is impossible — the abort is the correct behavior.
-
-### Self-update pre-check
-
-After **Archive fetch and extract** completes and **before any other manifest pass** (no shared files written, no per-agent scaffolding, no security audit, no frontmatter migration), compare the freshly extracted bootstrap against each selected agent's installed copy. The reordering matters: if the pre-check aborts, the working tree must be genuinely untouched.
-
-For each selected agent, byte-compare `{tempdir}/govern-main/framework/bootstrap/govern.md` against the installed `{config_dir}/commands/govern.md` and assign one status:
-
-- **`no installed copy`** — the installed file does not exist (first run for this agent). Nothing to diverge from; continue.
-- **`current`** — the two files are byte-identical, **or** the installed file is byte-identical to upstream and listed in `.govern.toml` `pinned.files` (the pin had nothing to suppress this run). Continue.
-- **`stale`** — the two files differ and the installed file is **not** pinned. The running session is using older instructions than what the manifest pass would write.
-- **`pinned-divergent`** — the two files differ and the installed file **is** listed in `.govern.toml` `pinned.files`. The pin intentionally suppresses the update; the run continues, but the user is told once in the post-scaffolding output.
-
-The check is scoped to **selected agents only** — agents whose `config_dir` exists in the project but are not in this run's selection are not diffed. An unselected stale agent will trip the check on its very next `/govern` run targeting it; drift is still detected, just lazily.
-
-#### Stale → abort
-
-If any selected agent is recorded as `stale`, abort the run before any further work. Print:
-
-> **The govern command itself has updated.** Your installed copy is behind upstream and the running session is using the older instructions. Start a new session and re-run `/govern` to pick up the latest version.
->
-> Stale agents: {comma-separated names}.
->
-> No files were modified by this run.
-
-The abort happens after **Permission Setup** (already applied, additive, harmless) and after **Archive fetch and extract** (the work needed to detect the divergence). Everything past that point — Frontmatter Migration, the Shared Files manifest, Per-Agent Scaffolding, Security Audit, and Post-Scaffolding Output — is skipped.
-
-#### Pinned-divergent → continue with advisory
-
-If a selected agent is recorded as `pinned-divergent`, the run continues normally. After scaffolding, the **Post-Scaffolding Output** includes one advisory line per divergent agent (see **Post-Scaffolding Output → Pinned govern.md advisory**). The advisory is silent on runs where every pinned agent is `current` (the pinned version happens to match upstream this run).
-
-Pinning is an opt-out from automatic updates, not an opt-out from knowing the pin is currently active. When the pinned version actually drifts from upstream, the user usually wants to either review the upstream changes and unpin, or consciously confirm they are staying on the old version. Adopters who are deliberately and indefinitely on an old version see no recurring nag because the advisory only fires when divergence is real.
+A missing archive means **every** manifest entry would be missing, so partial scaffolding is impossible — the abort is the correct behavior. The self-update check has already completed by this point, so a stale `govern.md` would have already been written and the run would have aborted earlier.
 
 ### Per-file resolution
 
@@ -197,7 +234,7 @@ If `specs/` does not exist (first run), skip this section — there is nothing t
 
 Bring existing spec and scenario files into the YAML frontmatter format declared in `framework/constitution.md` §text-first-artifacts. Migration is idempotent: re-running on an already-migrated project produces no further metadata changes.
 
-This section runs **after File Fetching** (including the **Self-update pre-check**) so that a stale-govern abort cannot leave migration changes from old rules on the working tree. The new govern's migration logic — which may differ — is the only logic that ever writes migration changes.
+This section runs **after the govern.md Self-Update Check** so that a stale-govern abort cannot leave migration changes from old rules on the working tree. The new govern's migration logic — which may differ — is the only logic that ever writes migration changes.
 
 ### Precheck
 
@@ -516,7 +553,7 @@ In every copied file (except `{config_dir}/commands/govern.md` for each selected
 
 ## Post-Write Integrity Check
 
-After writing `{config_dir}/commands/govern.md` for each selected agent, verify the file starts with `# govern`. If it does not, the write was corrupted — report the error and re-read the file from the extracted archive. Apply the check independently per agent.
+After writing `{config_dir}/commands/govern.md` for any selected agent — whether via the **govern.md Self-Update Check** (stale-write path) or the **`govern` self-installation** manifest step — verify the file starts with `# govern`. If it does not, the write was corrupted — report the error and re-read the source: `{tempdir}/govern.md.upstream` for the self-update path, or `{tempdir}/govern-main/framework/bootstrap/govern.md` for the manifest path. Apply the check independently per agent.
 
 ## Re-Run Behavior
 
@@ -542,9 +579,10 @@ After writing `{config_dir}/commands/govern.md` for each selected agent, verify 
 - **All supported agents already adopted with `--add-agent`** — show the prompt with all agents pre-selected; if the user confirms with no additions, treat it as a routine update and continue silently.
 - **`settings.local.json` already has entries beyond the bootstrap** — only add the curl/ls bootstrap entries if missing. Do not overwrite, deduplicate, or reorder entries added by `/{project}:configure` or by the user.
 - **`govern.md` content already matches the version on disk** — when the manifest's `update` strategy compares fetched content to the installed file, identical content reports as "unchanged" and avoids a redundant write. Same rule applies to per-project `configure.md` and other update-strategy files.
-- **Pinned `govern.md` in `.govern.toml`** — the manifest's `update` strategy still skips the file (no overwrite). The **Self-update pre-check** byte-compares anyway: matching upstream → recorded as `current`, no output; divergent from upstream → recorded as `pinned-divergent`, the run continues, and a single advisory line is printed in the post-scaffolding output. A pinned `govern.md` will not pick up upstream changes until the pin is removed, but the user is told once when the pin is currently suppressing real divergence.
-- **Self-update pre-check sees a stale `govern` in an unselected adopted agent** — the check is scoped to selected agents only. The unselected agent's stale copy is not diffed and does not trigger the abort; it will be detected the next time the user runs `/govern` against it.
-- **Archive fetch or extract fails** — clean abort with the error message defined in **File Fetching → Archive fetch and extract**. No partial scaffolding: a missing archive means every manifest entry would be missing, and the user re-runs after the transient failure clears.
+- **Pinned `govern.md` in `.govern.toml`** — the manifest's `update` strategy still skips the file (no overwrite), and the **govern.md Self-Update Check** never writes pinned files even on the stale-detect path. The check byte-compares anyway: matching upstream → recorded as `current`, no output; divergent from upstream → recorded as `pinned-divergent`, the run continues, and a single advisory line is printed in the post-scaffolding output. A pinned `govern.md` will not pick up upstream changes until the pin is removed, but the user is told once when the pin is currently suppressing real divergence.
+- **Self-update check sees a stale `govern` in an unselected adopted agent** — the check is scoped to selected agents only. The unselected agent's stale copy is not diffed, not written, and does not trigger the abort; it will be detected the next time the user runs `/govern` against it.
+- **Self-update small fetch fails** — clean abort with the error message defined in **govern.md Self-Update Check → Small fetch**. No `govern.md` writes occur, and the archive fetch is skipped. The user re-runs after the transient failure clears.
+- **Archive fetch or extract fails** — clean abort with the error message defined in **File Fetching → Archive fetch and extract**. The self-update check has already passed by this point, so no additional `govern.md` writes are pending; the user re-runs after the transient failure clears.
 - **A required source file is absent from the extracted archive** — warn `Source not found in archive: {source-path}; skipping.` and continue with the remaining manifest entries. Preserves the per-entry "do not abort on a single fetch error" guarantee at the entry level even though the archive itself is fetched once.
 - **First-run prompt with no detected dirs and only one supported agent** — the prompt still appears (the agent must be explicitly chosen), but the single agent is pre-selected. Confirming is one keystroke.
 - **Running `govern.md` cannot infer its own install path** — fall back to no pre-selection in the first-run prompt. The user picks explicitly.
@@ -562,11 +600,11 @@ After scaffolding, display:
 
 ### Pinned `govern.md` advisory
 
-If the **Self-update pre-check** recorded any selected agent as `pinned-divergent` (the installed `{config_dir}/commands/govern.md` is listed in `.govern.toml` `pinned.files` and differs from upstream), append one advisory line per divergent agent after the file summary and before next steps:
+If the **govern.md Self-Update Check** recorded any selected agent as `pinned-divergent` (the installed `{config_dir}/commands/govern.md` is listed in `.govern.toml` `pinned.files` and differs from upstream), append one advisory line per divergent agent after the file summary and before next steps:
 
 > {agent}: govern.md pinned, upstream has changed.
 
-The advisory is omitted when no agent is `pinned-divergent` — adopters whose pinned version still matches upstream see nothing; adopters with no pin see nothing. The pre-check `stale` path aborts before this output is ever produced, so the advisory is only ever about pinned files.
+The advisory is omitted when no agent is `pinned-divergent` — adopters whose pinned version still matches upstream see nothing; adopters with no pin see nothing. The check's `stale` path aborts before this output is ever produced, so the advisory is only ever about pinned files.
 
 ### Security audit summary
 

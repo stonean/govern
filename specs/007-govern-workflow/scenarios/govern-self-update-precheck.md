@@ -6,6 +6,8 @@ tags: []
 
 # Govern Self-Update Pre-Check
 
+> **Signpost:** the abort path described in the Behavior section below was incomplete — it explicitly stated "No files were modified by this run", which meant the freshly fetched upstream `govern.md` never landed on disk. Adopters who hit the abort were stuck in a loop: the next session loaded the same stale installed copy, detected stale again, and aborted again, with no path forward except a manual `curl`. The pre-check has since been redesigned: it (a) moved earlier in the flow, ahead of the archive fetch and pre-run migrations; (b) does a small `curl` for `framework/bootstrap/govern.md` only (not the full repo archive); (c) **writes the freshly fetched copy to `{config_dir}/commands/govern.md` for every stale agent before aborting**, so the next session loads the up-to-date instructions and the run completes on the first retry. The full archive is fetched only after the self-update check passes (no stale agents). See `framework/bootstrap/govern.md` → `## govern.md Self-Update Check` for the current behavior. The body below is preserved as the original (pre-fix) design per the constitution's frozen-archaeology rule.
+
 ## Context
 
 `/govern`'s instructions are loaded into the running session at invocation time. When the upstream `framework/bootstrap/govern.md` has changed since the installed copy was written, the running command is following stale logic — its manifest, audit, migration, and scaffolding rules are whatever shipped with the installed file, not what's on `main`.
