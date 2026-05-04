@@ -11,7 +11,8 @@ Standards and conventions for spec-driven software development. This project def
     - [security-frontend.md](framework/rules/security-frontend.md) — Enforceable frontend security rules (RFC 2119)
   - [framework/templates/](framework/templates/) — Starter files customized per project, split by consumer
     - `templates/spec/` — Templates consumed during the pipeline (spec, plan, tasks, data-model, research, scenario, spec-and-plan)
-    - `templates/project/` — Templates consumed during adoption (agents.md, claude-md.md, system.md, errors.md, events.md, project-readme.md, gitignore, inbox.md, initialize.md)
+    - `templates/project/` — Project document templates consumed during adoption (agents.md, claude-md.md, system.md, errors.md, events.md, project-readme.md, gitignore, inbox.md)
+    - `templates/commands/` — Slash command stubs scaffolded once at adoption (initialize.md)
   - [framework/commands/](framework/commands/) — Slash command sources for the operational commands
   - [framework/workflows/](framework/workflows/) — Tech-stack-specific workflow files (lint, test, format, migrate) plus `registry.json` mapping stack selections to workflows
   - [framework/bootstrap/](framework/bootstrap/) — The `govern.md` installer plus per-agent permission files (`configure/{agent}.md`)
@@ -225,7 +226,7 @@ Project-scaffolding templates (consumed once at adoption):
 | [events.md](framework/templates/project/events.md) | `specs/events.md` — global event catalog |
 | [inbox.md](framework/templates/project/inbox.md) | `specs/inbox.md` — temporary inbox for known issues during brownfield adoption |
 | [gitignore](framework/templates/project/gitignore) | `govern`-related patterns merged into `.gitignore` |
-| [initialize.md](framework/templates/project/initialize.md) | Hook for `/spawn` to do tech-stack-specific post-copy work |
+| [initialize.md](framework/templates/commands/initialize.md) | Hook for `/spawn` to do tech-stack-specific post-copy work |
 
 ## Bug Workflow
 

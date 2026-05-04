@@ -126,7 +126,7 @@ Create `.claude/commands/{slug}/` and copy every `.md` file from the `govern` re
 
 Additionally, copy `framework/bootstrap/configure/claude.md` into `.claude/commands/{slug}/configure.md` (renaming it), substituting placeholders the same way.
 
-Additionally, copy `framework/templates/project/initialize.md` from the `govern` repo into `.claude/commands/{slug}/initialize.md`. Replace `{project}` with the user-provided project name. This provides a stub initialize command that the project fills in with language-specific post-copy steps for use by the spawn command.
+Additionally, copy `framework/templates/commands/initialize.md` from the `govern` repo into `.claude/commands/{slug}/initialize.md`. Replace `{project}` with the user-provided project name. This provides a stub initialize command that the project fills in with language-specific post-copy steps for use by the spawn command.
 
 ### 8. Recommend and scaffold workflows
 

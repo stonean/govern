@@ -27,7 +27,7 @@ If `--all` is not present, use the feature identifier if provided, otherwise fal
 
 - By default, this is a read-only command. Do NOT modify any files.
 - In fix mode (`--fix`), modify checkbox state (`- [ ]` → `- [x]`) in spec and task files where the fix is mechanically safe, and write the `title:` frontmatter field on templated artifacts where it is missing, still a literal placeholder, or does not match the canonical `"{folder-name} — {artifact-suffix}"` value (see Fix Mode section below). Do not modify any other content.
-- Read only files within the target feature's directory, the cross-spec files needed for reference checks (`specs/system.md`, `specs/events.md`, `specs/errors.md`, dependency spec files), and the project's installed command-source frontmatter for the project-level consistency section below (`.claude/commands/gov/*.md` frontmatter only, plus `help.md` body for the table comparison). Do NOT read source code or test files.
+- Read only files within the target feature's directory, the cross-spec files needed for reference checks (`specs/system.md`, `specs/events.md`, `specs/errors.md`, dependency spec files), and the project's installed command-source frontmatter for the project-level consistency section below (`.claude/commands/gov/*.md` frontmatter only, plus `.claude/commands/govern.md` frontmatter for the bootstrap installer **if that file exists**, plus `help.md` body for the table comparison). Do NOT read source code or test files.
 - Reference: §spec-requirements, §plan-phase, §tasks-phase, §readiness-check, §scenarios, §cross-spec-impact, §text-first-artifacts, §markdown-standards, §drift-prevention (constitution loaded by `/gov:target` — do not re-read).
 
 ## Instructions
@@ -180,12 +180,15 @@ Read inputs:
 - `constitution.md` (already loaded by `/gov:target`)
 - `.claude/commands/gov/help.md`
 - The full set of `.md` files in `.claude/commands/gov/` (frontmatter only — do not read bodies for these checks)
+- `.claude/commands/govern.md` if it exists (frontmatter only — the bootstrap installer lives outside the project namespace)
+
+Checks that reference `.claude/commands/govern.md` are skipped (silently, no finding) when that file does not exist. This covers the `govern` framework repo's own case — the bootstrap installer source lives at `framework/bootstrap/govern.md` but is not installed on the framework repo itself, so `/govern`-row equivalence and frontmatter checks would have nothing to compare against.
 
 Checks:
 
-- [ ] **Help equivalence** — for each command listed in any table in `help.md`, the command's `description:` frontmatter exists and matches (modulo trailing punctuation) the one-line description in the help table. Mismatches indicate `help.md` was edited without updating the command source, or vice versa.
+- [ ] **Help equivalence** — for each command listed in any table in `help.md`, the command's `description:` frontmatter exists and matches (modulo trailing punctuation) the one-line description in the help table. Resolve a `/gov:foo` row to `.claude/commands/gov/foo.md`, and the `/govern` row to `.claude/commands/govern.md`. Mismatches indicate `help.md` was edited without updating the command source, or vice versa. Per the skip rule above, the `/govern` row check is skipped when `.claude/commands/govern.md` is absent.
 - [ ] **Anchor resolution** — every `§<anchor>` reference in any installed command file (typically in "Reference: §X, §Y" Scope-Boundaries lines) resolves to a corresponding `<!-- §<anchor> -->` marker in `constitution.md`. A broken reference indicates the constitution was renamed or restructured without updating callers. Report each broken reference with the source command and the unresolved anchor.
-- [ ] **Command frontmatter completeness** — every `.md` file in the installed commands directory has a `description:` frontmatter field. Files whose body documents an `$ARGUMENTS` parameter additionally have `argument-hint:`. Report missing fields; do not check value content.
+- [ ] **Command frontmatter completeness** — every `.md` file in the installed commands directory has a `description:` frontmatter field; the same check applies to `.claude/commands/govern.md` when that file exists. Files whose body documents an `$ARGUMENTS` parameter additionally have `argument-hint:`. Report missing fields; do not check value content.
 
 These are advisory, not blocking — they signal framework drift that the project should resolve at its convenience. They do not prevent pipeline advancement on the target feature.
 

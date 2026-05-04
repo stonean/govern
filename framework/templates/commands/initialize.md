@@ -1,3 +1,7 @@
+---
+description: Post-copy setup hook invoked by /{project}:spawn.
+---
+
 # Initialize
 
 Post-copy setup for projects spawned from this one via `/{project}:spawn`. This command is called automatically by the spawn command after generic scaffolding is complete — it is not intended to be run directly.

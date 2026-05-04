@@ -1,3 +1,8 @@
+---
+description: Adopt or update govern in an existing project.
+argument-hint: "[project] [--agents=key1,key2,...] [--add-agent]"
+---
+
 # govern
 
 Bootstrap `govern` in an existing project. This command fetches templates from the `govern` repo, scaffolds `govern` files for one or more AI coding CLIs, resolves placeholders, and displays next steps.
@@ -379,13 +384,13 @@ Track the count of newly appended findings (post-deduplication). The total is re
 
 For each selected agent (in registry row order), run these steps with `{config_dir}` resolved to the agent's value and `{key}` to the agent's key.
 
-### Project-specific files (strategy: create)
+### Command stubs (strategy: create)
 
-Created on first run, skipped on re-run.
+Slash command stubs the adopter fills in. Created on first run, skipped on re-run.
 
 | Source Path | Destination Path |
 | --- | --- |
-| `framework/templates/project/initialize.md` | `{config_dir}/commands/{project}/initialize.md` |
+| `framework/templates/commands/initialize.md` | `{config_dir}/commands/{project}/initialize.md` |
 
 ### Slash commands (strategy: update)
 
@@ -420,9 +425,21 @@ After processing the slash command manifest above, list all `.md` files in `{con
 
 Files listed in `pinned.files` are never deleted — report them as "pinned (kept)" instead.
 
+### Legacy `skills/` directory cleanup
+
+Before the workflow recommendation flow runs, remove any legacy `{config_dir}/commands/{project}/skills/` directory left behind by `/govern` runs prior to the `skills/` → `workflows/` rename (introduced by spec 010 and delivered alongside spec 005's reopen). The rename moved every workflow file into the new `workflows/` directory, so the old `skills/` tree is unreferenced and safe to remove.
+
+Behavior:
+
+- If `{config_dir}/commands/{project}/skills/` does not exist, skip silently.
+- If it exists and is **not** listed in `.govern.toml` `pinned.files` (path comparison after placeholder resolution), recursively delete the directory and report `removed (legacy skills/ directory): {config_dir}/commands/{project}/skills/` in the post-scaffolding summary.
+- If it exists and **is** pinned, leave it alone and report `pinned (kept): {config_dir}/commands/{project}/skills/`.
+
+The cleanup is unconditional once the directory is detected — the new `workflows/` directory has already replaced it on every `/govern` run since the rename, so any remaining `skills/` tree is necessarily stale.
+
 ### Workflow recommendation (strategy: create per accepted workflow)
 
-After the slash command cleanup, offer any newly registered workflows that match the project's tech stack and have not yet been scaffolded for this agent.
+After the legacy `skills/` cleanup and the slash command cleanup, offer any newly registered workflows that match the project's tech stack and have not yet been scaffolded for this agent.
 
 1. **Legacy workflow cleanup.** Before reading the registry, remove any workflow files left behind by `/govern` runs prior to the post-005 filename rename (which simplified `{category}-{language}-{tool}.md` to `{tool}.md`). In `{config_dir}/commands/{project}/workflows/`, delete any file whose name appears in this exact set:
 
@@ -474,7 +491,7 @@ After the slash command cleanup, offer any newly registered workflows that match
 
 10. **Discovery note for Auggie.** Auggie's official docs document subdirectory namespacing for one level (`.augment/commands/foo/bar.md` → `/foo:bar`). Multi-level paths like `.augment/commands/{project}/workflows/lint.md` should resolve to `/{project}:workflows:lint` by the same colon-namespace convention, but a user adopting Auggie may want to confirm autocomplete the first time. Claude Code's two-level path is documented and works as expected.
 
-11. **Adopter migration note.** Adopters who already ran `/{project}:govern` before the original `skills/` → `workflows/` rename will have a `skills/` directory in their project. After re-running govern, they should manually delete the legacy `skills/` directory — workflow files have been re-created under `workflows/`, and the old directory is no longer referenced. (The post-005 filename rename — `{category}-{language}-{tool}.md` → `{tool}.md` — does not need a manual step; the **Legacy workflow cleanup** in step 1 handles it automatically.)
+11. **Legacy directory note.** The `skills/` → `workflows/` rename (introduced by spec 010) and the post-005 filename rename (`{category}-{language}-{tool}.md` → `{tool}.md`) are both handled automatically. The legacy `skills/` directory is removed by the **Legacy `skills/` directory cleanup** step that runs before this section, and legacy workflow filenames are removed by the **Legacy workflow cleanup** in step 1. No manual cleanup is required.
 
 ### Session state (strategy: create)
 

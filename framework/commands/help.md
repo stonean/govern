@@ -35,42 +35,42 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 
 | Command | Pipeline Gate | Description |
 | --- | --- | --- |
-| `/{project}:specify` | → draft | Create a new feature spec. Pass a short description, e.g. `/{project}:specify webhook delivery`. |
-| `/{project}:clarify` | draft → clarified | Resolve open questions in the spec. Works on the session target or pass a feature identifier. Has a recovery path for hand-edited specs that arrive non-`draft` with open questions in the body. |
-| `/{project}:plan` | clarified → planned | Generate `plan.md` and `tasks.md` with implementation details. |
-| `/{project}:implement` | planned → in-progress → done | Execute the tasks for the targeted feature. |
-| `/{project}:validate` | — | Audit artifacts for consistency, completeness, and cross-spec alignment. |
+| `/{project}:specify` | → draft | Create a new feature spec. |
+| `/{project}:clarify` | draft → clarified | Resolve open questions and advance a spec from draft to clarified. |
+| `/{project}:plan` | clarified → planned | Create a technical plan and task breakdown for a clarified spec. |
+| `/{project}:implement` | planned → in-progress → done | Execute implementation tasks for the targeted feature. |
+| `/{project}:validate` | — | Check a feature's artifacts for consistency and cross-spec alignment. |
 
 #### Elaborate (add precision)
 
 | Command | Description |
 | --- | --- |
-| `/{project}:ask` | Append an open question to the targeted spec or scenario for resolution during clarify. On a `clarified`, `planned`, or `in-progress` spec, also reverts status to `draft` (the back-edge); refuses on `done` specs and points at `/{project}:elaborate` instead. |
-| `/{project}:elaborate` | Create a scenario file for the targeted feature. Walks the bug decision tree, creates the file in `scenarios/`, and appends a task to `tasks.md`. |
+| `/{project}:ask` | Append an open question to the targeted spec or scenario. |
+| `/{project}:elaborate` | Add a scenario to elaborate a section of the targeted feature. |
 
 #### Brownfield (absorb existing reality)
 
 | Command | Description |
 | --- | --- |
-| `/{project}:capture` | Initialize a skeleton spec from a freeform description of an existing feature. |
-| `/{project}:log` | Record a raw item to `specs/inbox.md` for later grooming. |
-| `/{project}:groom` | Walk `specs/inbox.md` and route each item to its proper spec or scenario via the bug decision tree. |
+| `/{project}:capture` | Create a skeleton spec for an existing feature in a brownfield project. |
+| `/{project}:log` | Record a raw item to the inbox. |
+| `/{project}:groom` | Walk the inbox and route each item to its proper home. |
 
 #### Orient
 
 | Command | Description |
 | --- | --- |
-| `/{project}:target` | Set the working feature (or feature/scenario) for the session. Pass a number (`001`), partial name (`api-versioning`), or full directory name. |
-| `/{project}:status` | Dashboard showing every feature's progress, dependencies, artifacts, and blockers. |
-| `/{project}:help` | This overview. |
+| `/{project}:target` | Set the working feature (and optionally scenario) for this session. |
+| `/{project}:status` | Display the pipeline dashboard for all feature specs. |
+| `/{project}:help` | Display an overview of the pipeline and its slash commands. |
 
 #### Bootstrap (one-time per project)
 
 | Command | Description |
 | --- | --- |
-| `/govern` | Adopt or update `govern` in an existing project. Installed in your agent's command directory; no project namespace. |
-| `/{project}:configure` | Configure `{cli-config-dir}/settings.local.json` so commands run without manual approval prompts. |
-| `/{project}:spawn` | Spawn a new project from this one — copies specs, commands, and configuration. |
+| `/govern` | Adopt or update govern in an existing project. |
+| `/{project}:configure` | Configure settings.local.json with permissions for slash commands. |
+| `/{project}:spawn` | Spawn a new project from this one, copying specs, commands, and config. |
 
 ### Typical Session
 

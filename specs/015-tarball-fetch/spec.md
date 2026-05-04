@@ -6,6 +6,8 @@ tags: [bootstrap, performance]
 
 # 015 — Tarball Fetch
 
+> **Note:** the `framework/templates/project/initialize.md` reference below reflects the layout at the time. The repository was later reorganized so slash command stubs scaffolded at adoption live in `framework/templates/commands/` (currently just `initialize.md`); project document templates remain in `framework/templates/project/`. Adopting projects' destination paths did not change, and the manifest count is unaffected.
+
 Collapse `/govern`'s ~35–50 individual `curl` fetches into a single archive download, extracted once into a temp directory and resolved as local paths. The manifest, strategies (`update`/`create`/`skip`/`merge`/`pinned`), and per-agent scaffolding flow are unchanged — only the **File Fetching** section's transport is replaced.
 
 ## Problem
