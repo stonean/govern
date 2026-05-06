@@ -143,19 +143,13 @@ These tasks may proceed in parallel within a session. Each command file is touch
 ### 19. Migrate existing governance specs to frontmatter
 
 - [x] For each spec under `specs/000-*` through `specs/012-*`: open `spec.md`, insert a frontmatter block with the existing `status` and `dependencies` values, and remove the bold-prefix lines from the body. Tags remain empty (`tags: []`) — backfill is organic per Q2's resolution. (All 13 specs use `spec.md`; no `spec-and-plan.md` files exist in this repo.)
-- [x] Migrate `specs/000-slash-commands/scenarios/code-location-index.md`: insert frontmatter block with `spec-ref` value, remove the bold-prefix line.
 - [x] Migrate `specs/013-text-first-artifacts/spec.md` last so the migration process operates on the spec that motivated it. (Tags populated as `[format, migration, pipeline]` reflecting the spec's actual concerns.)
 - [x] Discovered and corrected a pre-existing README/spec-file mismatch for 012: spec file said `done`, README said `clarified`. README updated to match the spec file (source of truth).
-- [x] **Done when:** every existing governance spec and the one scenario file uses frontmatter format.
-
-### 20. Add 013 cross-reference note to the code-location-index scenario
-
-- [x] In `specs/000-slash-commands/scenarios/code-location-index.md`, added a `## Note` section near the top (between the heading and Context) pointing at 013 as the resolving framework: explains that location and maintenance are auto-resolved by 013's "structured derived view" framing, the consumer question becomes a gate on building anything, and granularity remains the one open design question.
-- [x] **Done when:** the note is present and the scenario lints clean.
+- [x] **Done when:** every existing governance spec uses frontmatter format.
 
 ## Phase 5: Documentation
 
-### 21. Add "Viewing artifacts" section to README.md
+### 20. Add "Viewing artifacts" section to README.md
 
 - [x] Added a new "Viewing artifacts" section to the root `README.md`, positioned just before the "Markdown" section.
 - [x] Documents `npx quartz build --input specs/ --serve` as the recommended viewer; references `framework/constitution.md` §text-first-artifacts.
@@ -164,28 +158,21 @@ These tasks may proceed in parallel within a session. Each command file is touch
 
 ## Phase 6: Verification
 
-### 22. Lint and validate
+### 21. Lint and validate
 
 - [x] Ran `npx markdownlint-cli2 "**/*.md" "!CLAUDE.md"` across the repo: 100 files, 0 errors.
-- [x] Walked through the validate prose against representative migrated specs (013, 000, code-location-index scenario) — hard-fail checks pass for all, advisory triggers correctly on empty `tags` for migrated specs, and informational unknown-field rule does not raise spurious findings. The strict/advisory split functions as designed in `framework/commands/validate.md`.
+- [x] Walked through the validate prose against representative migrated specs (013, 000) — hard-fail checks pass for all, advisory triggers correctly on empty `tags` for migrated specs, and informational unknown-field rule does not raise spurious findings. The strict/advisory split functions as designed in `framework/commands/validate.md`.
 - [x] **Done when:** lint clean across the repo, validate behaves per the strict/advisory split, all specs report as valid.
 
-### 23. Final acceptance-criteria sweep
+### 22. Final acceptance-criteria sweep
 
 - [x] Walked the spec's Acceptance Criteria list and verified each item against the implementation.
-- [x] Marked each acceptance criterion `[x]` as it is verified — all 17 criteria are satisfied.
+- [x] Marked each acceptance criterion `[x]` as it is verified — all criteria are satisfied.
 - [x] **Done when:** every acceptance criterion in `spec.md` is checked off and verified.
 
 ## Phase 7: Post-done refinements
 
-### 24. Implement scenario: markdown-derived-views
-
-- [x] Implement the behavior described in `scenarios/markdown-derived-views.md`.
-- [x] Edit `framework/constitution.md` §text-first-artifacts to draw the markdown-vs-non-markdown distinction in the structured-derived-view rule. Markdown derived views may be committed when their diffs are valuable to humans; non-markdown derived views (SQLite, JSON, binary, generated graph data) remain gitignored.
-
-Done when: the scenario's described behavior is correctly implemented in `framework/constitution.md` and the file lints clean.
-
-### 25. Tag-curation pass across all specs
+### 23. Tag-curation pass across all specs
 
 - [x] Walked every `specs/*/spec.md` and reviewed the `tags:` frontmatter. 10 specs (000, 001, 002, 003, 004, 006, 007, 009, 011, 012) had empty `tags: []`; populated each. 4 specs (005, 008, 010, 013) had pre-existing tags; reviewed and kept as-is.
 - [x] Used a coherent taxonomy drawn from values already in use (`bootstrap`, `templates`, `format`, `migration`, `pipeline`, `agent`, `process`, `security`) plus three new shared values (`commands`, `scenarios`, `brownfield`) where existing tags would have been misleading.

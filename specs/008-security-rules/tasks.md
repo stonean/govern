@@ -133,7 +133,7 @@ Append the rule-files reference to the "Secure" guiding principle in `framework/
 
 Run all structural and lint checks; verify each acceptance criterion is satisfied by the produced artifacts.
 
-- [x] `npx markdownlint-cli2` passes on all created/modified files: `framework/rules/security-backend.md`, `framework/rules/security-frontend.md`, `framework/bootstrap/govern.md`, `framework/commands/validate.md`, `framework/constitution.md`, and the feature directory (`spec.md`, `plan.md`, `tasks.md`, `data-model.md`, `code-locations.md`)
+- [x] `npx markdownlint-cli2` passes on all created/modified files: `framework/rules/security-backend.md`, `framework/rules/security-frontend.md`, `framework/bootstrap/govern.md`, `framework/commands/validate.md`, `framework/constitution.md`, and the feature directory (`spec.md`, `plan.md`, `tasks.md`, `data-model.md`)
 - [x] Every rule ID in both files matches the `{surface}-{category}-{NNN}` format
 - [x] No duplicate rule IDs within either file (check via `grep '^### ' framework/rules/security-*.md | sort | uniq -d`)
 - [x] Every rule has Statement, Rationale, and Verification fields present

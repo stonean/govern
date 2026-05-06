@@ -91,7 +91,7 @@ Driven by [010-agent-autonomy](../010-agent-autonomy/spec.md). 010's "skills" ca
 - [x] `framework/bootstrap/govern.md` manifest, recommendation step, and prose updated to use "workflows" / `workflows/` paths
 - [x] `.claude/commands/gov/init.md` recommendation step paths and prose updated (hand-maintained, generator skips)
 - [x] `framework/bootstrap/configure/claude.md` "Bash commands used by skills" comment label updated to "workflows"
-- [x] 005's own artifacts (`spec.md`, `plan.md`, `tasks.md`, `data-model.md`, `code-locations.md`) updated for terminology and renamed paths
+- [x] 005's own artifacts (`spec.md`, `plan.md`, `tasks.md`, `data-model.md`) updated for terminology and renamed paths
 - [x] `specs/013-text-first-artifacts/plan.md` one-row migration entry updated to the new spec dir path
 - [x] `README.md` references to 005's "skills" feature updated to "workflows"
 - [x] `.claude/commands/gov/configure.md` regenerated from updated source via `./scripts/gen-claude-commands.sh`

@@ -84,7 +84,7 @@ For each templated artifact in the feature directory — `spec.md`, `spec-and-pl
   | `research.md` | `research` |
   | `scenarios/{slug}.md` | `scenario: {slug}` |
 
-Files outside this set (e.g., `code-locations.md`, custom artifacts) are not checked. The check is fixable in `--fix` mode (see Fix Mode below).
+Files outside this set (custom artifacts) are not checked. The check is fixable in `--fix` mode (see Fix Mode below).
 
 ### Spec integrity (blocking)
 

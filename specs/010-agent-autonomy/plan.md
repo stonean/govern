@@ -143,7 +143,6 @@ Scope of the rename:
   - `specs/005-workflows/plan.md` (title, body, affected files table, trade-offs)
   - `specs/005-workflows/tasks.md` (title, body)
   - `specs/005-workflows/data-model.md` (terminology in schema description)
-  - `specs/005-workflows/code-locations.md` (terminology and updated paths)
   - `framework/bootstrap/govern.md` (manifest row, recommendation step, all prose)
   - `.claude/commands/gov/init.md` (recommendation step, all prose — hand-maintained, generator skips)
   - `framework/bootstrap/configure/claude.md` ("Bash commands used by skills" comment label)
@@ -194,7 +193,6 @@ Explicit non-goals to keep the scope tight:
 | `specs/005-workflows/plan.md` | Modify | Update title, prose, affected-files table, trade-offs |
 | `specs/005-workflows/tasks.md` | Modify | Update title, prose; add new task for the cross-spec rename |
 | `specs/005-workflows/data-model.md` | Modify | Update terminology in schema description |
-| `specs/005-workflows/code-locations.md` | Modify | Update terminology and renamed paths |
 | `specs/013-text-first-artifacts/plan.md` | Modify | Update one-row migration entry that references the old spec directory |
 | `README.md` | Modify | Update references to "skills" feature where they refer to 005's concept |
 | `.claude/commands/gov/plan.md` | Regenerate | Output of `gen-claude-commands.sh` after editing source |

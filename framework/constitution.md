@@ -376,8 +376,7 @@ When a `/groom` pass encounters an item that does not map to any existing spec, 
 - Structured metadata lives in YAML frontmatter at the top of each markdown file; the document body remains markdown prose.
 - Cross-artifact references use standard relative markdown links (`[label](../path.md)`), not wiki-links — this keeps PRs reviewable on GitHub and viewers like Quartz/Obsidian still resolve them.
 - Source-of-truth artifacts are markdown. Structured derived views are regenerated from canonical sources and never become the canonical record.
-- **Non-markdown derived views** (SQLite caches, JSON indexes, generated graph data, binary artifacts) MUST be gitignored and regenerated on demand by their consumers.
-- **Markdown derived views** (e.g., a per-spec `code-locations.md`) MAY be committed when their diffs are valuable to humans — for PR review, onboarding, refactoring impact analysis, or session-resumption context for the agent. Adopters MAY gitignore a particular markdown derived view if they prefer; commit is permitted, not required.
+- Structured derived views (SQLite caches, JSON indexes, generated graph data, binary artifacts) MUST be gitignored and regenerated on demand by their consumers.
 - Exceptions to text-first source-of-truth require an explicit constitutional amendment with stated rationale.
 
 ### Frontmatter Schema

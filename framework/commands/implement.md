@@ -86,53 +86,11 @@ For each task in order:
    - Write code, tests, and migrations as needed.
    - Follow conventions in `AGENTS.md` and `specs/system.md` (§implement-phase, §constants, §env-vars as applicable).
    - Respect the contracts defined in the spec.
-   - As you write or modify each file, mentally tag the edit with the acceptance criterion (or criteria) the task serves. Maintain a running map from each AC to the set of files edited in service of it. See **Code-location index** below for the mapping rules and output format.
    - If you need to modify files outside the plan's affected files list, notify the user, explain why, and add the file to the plan's **Affected Files** section with a comment explaining why it was added.
 5. Verify the "done when" condition is met.
 6. Mark the task as complete in `tasks.md` — update each checkbox from `- [ ]` to `- [x]`, including nested sub-item checkboxes, before proceeding.
-7. Regenerate `specs/{feature}/code-locations.md` from the running map per the **Code-location index** section. Run `npx markdownlint-cli2` on the file.
-8. Prompt the user to commit and push changes. With `--auto` set, skip the prompt: commit on your own, do not push.
-9. Before starting the next task, assess whether sufficient context remains to complete it. If context is low, inform the user and suggest starting a new session with `/{project}:implement` to continue from the next incomplete task. If context is sufficient, proceed.
-
-### Code-location index
-
-`/{project}:implement` produces and maintains a per-spec `code-locations.md` artifact at `specs/{feature}/code-locations.md`. The artifact is a structured derived view: it ties each acceptance criterion in the spec to the source files that satisfy it. Reference: §text-first-artifacts (markdown derived views may be committed when their diffs are valuable to humans).
-
-#### Building the map
-
-As you walk tasks and edit files, maintain an in-memory `Map<AC, Set<file>>` for the feature:
-
-- When you start a task, identify which acceptance criterion (or criteria) it serves. Tasks usually map to one or two ACs; if a task covers more, list them all.
-- When you create or modify a file in service of the task, add the file to each associated AC's set in the map.
-- When resuming a feature in a subsequent `/{project}:implement` session, read the existing `code-locations.md` (if any) and seed the in-memory map from it before continuing.
-
-#### Output format
-
-The artifact format is:
-
-```markdown
-# {NNN} — {Feature Name} Code Locations
-
-## AC: {first acceptance criterion text}
-
-- `path/to/file.ext`
-- `path/to/another.ext`
-
-## AC: {second acceptance criterion text}
-
-- `path/to/file.ext`
-```
-
-Rules:
-
-- AC headings appear in the order they appear in the spec's Acceptance Criteria section (deterministic ordering ensures stable diffs).
-- File paths within each AC are alphabetical.
-- Path format is repository-relative (e.g., `framework/commands/implement.md`, not absolute or workspace-relative).
-- ACs with no associated files are omitted (no empty heading, no placeholder bullet).
-- The same file may appear under multiple ACs if it serves more than one.
-- The file is committed to git so its diff is reviewable in PRs and so subsequent `/{project}:implement` sessions can read prior state when resuming.
-
-Idempotent — regenerating with the same map produces an identical file with no diff.
+7. Prompt the user to commit and push changes. With `--auto` set, skip the prompt: commit on your own, do not push.
+8. Before starting the next task, assess whether sufficient context remains to complete it. If context is low, inform the user and suggest starting a new session with `/{project}:implement` to continue from the next incomplete task. If context is sufficient, proceed.
 
 ### Completion
 

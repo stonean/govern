@@ -148,7 +148,7 @@ Replace the "skills" term in the configure source.
 
 **Done when:** configure source no longer uses "skills" for 005's concept.
 
-## 13. Update 005's spec, plan, tasks, data-model, and code-locations prose
+## 13. Update 005's spec, plan, tasks, and data-model prose
 
 Update prose and titles in 005's artifacts to reflect the new terminology and renamed paths.
 
@@ -156,11 +156,10 @@ Update prose and titles in 005's artifacts to reflect the new terminology and re
 - [x] `specs/005-workflows/plan.md`: title rename; prose updates; affected-files table updated to use `framework/workflows/` (flattened) paths; trade-off section terminology updated
 - [x] `specs/005-workflows/tasks.md`: title rename; prose updates; checkbox state preserved; the task added in task 8 is preserved
 - [x] `specs/005-workflows/data-model.md`: terminology updated in schema description (entry name fields, examples)
-- [x] `specs/005-workflows/code-locations.md`: terminology and any path entries updated to `framework/workflows/` (flattened)
 - [x] `specs/013-text-first-artifacts/plan.md`: update the one-row migration entry that references `specs/005-skills-and-plugins/spec.md` to the new path
-- [x] All six files pass `npx markdownlint-cli2`
+- [x] All five files pass `npx markdownlint-cli2`
 
-**Done when:** 005's artifacts use "workflow" / "workflows" consistently for 005's concept, with renamed paths reflected in tables and code-locations entries; 013 references the new spec dir; markdownlint passes.
+**Done when:** 005's artifacts use "workflow" / "workflows" consistently for 005's concept, with renamed paths reflected in tables; 013 references the new spec dir; markdownlint passes.
 
 ## 14. Update `README.md` references
 

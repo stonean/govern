@@ -67,7 +67,7 @@ Idempotency falls out of the `---`-check on re-run. The clean-tree precheck make
 
 ### Self-migration of governance's own specs
 
-Governance has no `/govern`. The work is a manual implementation task: convert each `specs/NNN-*/spec.md` and `specs/000-slash-commands/scenarios/code-location-index.md` to frontmatter format. The conversion is mechanical, the agent does it once per file, lint passes confirm correctness.
+Governance has no `/govern`. The work is a manual implementation task: convert each `specs/NNN-*/spec.md` and each scenario file under `specs/*/scenarios/` to frontmatter format. The conversion is mechanical, the agent does it once per file, lint passes confirm correctness.
 
 ### Tag prompt UX in `/gov:specify`
 
@@ -124,7 +124,6 @@ Phases 2 and 3 can run in parallel within the same session; everything else is s
 | `framework/bootstrap/govern.md` | Modify | Add migration step (git precheck, walk, convert); add `npx quartz specs/` to post-run tip output |
 | `.claude/commands/gov/*.md` | Regenerate | Run `scripts/gen-claude-commands.sh` after framework command sources are updated |
 | `specs/000-slash-commands/spec.md` | Migrate | Self-migration to frontmatter |
-| `specs/000-slash-commands/scenarios/code-location-index.md` | Migrate + Modify | Migrate `spec-ref` to frontmatter; add a Note section pointing at 013 as the resolving framework for the scenario's open questions |
 | `specs/001-system-spec-templates/spec.md` | Migrate | Self-migration |
 | `specs/002-project-scaffolding/spec.md` | Migrate | Self-migration |
 | `specs/003-bootstrap-automation/spec.md` | Migrate | Self-migration |
