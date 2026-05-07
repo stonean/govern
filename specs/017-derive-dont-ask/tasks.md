@@ -12,9 +12,9 @@ The work is grouped into seven phases. Each phase ends with a natural commit bou
 
 ### 1. Create `framework/rules/configuration.md`
 
-- [ ] Author the file with the seven initial rules from `data-model.md` (`CFG-CONST-001..003`, `CFG-ENV-001..004`)
-- [ ] Each rule has Statement (RFC 2119), Rationale, Verification, optional Source
-- [ ] Lint passes
+- [x] Author the file with the seven initial rules from `data-model.md` (`CFG-CONST-001..003`, `CFG-ENV-001..004`)
+- [x] Each rule has Statement (RFC 2119), Rationale, Verification, optional Source
+- [x] Lint passes
 
 Done when: `framework/rules/configuration.md` exists, `npx markdownlint-cli2` passes, and the rule format matches `data-model.md`.
 

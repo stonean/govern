@@ -1,6 +1,6 @@
 ---
 title: "017-derive-dont-ask — spec"
-status: planned
+status: in-progress
 dependencies: []
 tags: [process, format, templates, commands, pipeline]
 ---

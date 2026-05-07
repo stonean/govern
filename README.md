@@ -44,7 +44,7 @@ See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred 
 | [013-text-first-artifacts](specs/013-text-first-artifacts/spec.md) | done | 000, 007, 012 | Declare text-first artifacts principle, adopt YAML frontmatter for spec metadata, migrate adopted projects on next /govern |
 | [014-reclarify-backedge](specs/014-reclarify-backedge/spec.md) | done | 000, 009, 013 | Wire up `/ask` to own the documented `clarified/planned/in-progress → draft` back-edge so questions surfacing mid-pipeline are captured and the spec's lifecycle invariant is maintained automatically |
 | [016-cross-cutting-rules](specs/016-cross-cutting-rules/spec.md) | done | 006, 008 | Promote rules to a first-class artifact tier alongside specs and scenarios so cross-cutting concerns (perf, concurrency, observability, security, …) have a single home |
-| [017-derive-dont-ask](specs/017-derive-dont-ask/spec.md) | planned | none | Apply the new design principle by eliminating every framework input that depends on author discipline — derive what can be derived, delete what can't, no inbox deferral |
+| [017-derive-dont-ask](specs/017-derive-dont-ask/spec.md) | in-progress | none | Apply the new design principle by eliminating every framework input that depends on author discipline — derive what can be derived, delete what can't, no inbox deferral |
 
 ## Adopting in an Existing Project
 
