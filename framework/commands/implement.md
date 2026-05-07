@@ -21,14 +21,14 @@ Use the session target from `{cli-config-dir}/{project}-session.json`. If `$ARGU
 
 When `--auto` is set:
 
-- Skip the per-task "prompt the user to commit and push changes" confirmation in **Walk through tasks** step 8. Commit on your own and proceed to the next task.
+- Skip the per-task "prompt the user to commit and push changes" confirmation in **Walk through tasks** step 7. Commit on your own and proceed to the next task.
 - **Commit, do not push.** Push is hard-to-reverse and externally visible; it stays gated even with `--auto`. Adopters who want auto-publish can wrap `/{project}:implement --auto` in a script that pushes after each session.
 
 The following gates **still fire and pause** even with `--auto` on:
 
 - Pipeline gates (`planned`→`in-progress`, `in-progress`→`done`) — confirmation required per §pipeline-boundaries.
-- Stuck-detection events (see Setup step 7) — auto mode does not power through cycles.
-- Out-of-bounds file writes (see **Walk through tasks** step 4) — modifying a file not in the plan's affected files list still requires user notification.
+- Stuck-detection events (see Setup step 8) — auto mode does not power through cycles.
+- Out-of-bounds file writes (see **Walk through tasks** step 4) — modifying a file outside the runtime boundary still requires user notification.
 - Spec edits, plan edits, or new tasks discovered mid-implement.
 - Risky actions per the agent's safety rules (destructive ops, secrets, force pushes, etc.).
 
@@ -49,10 +49,10 @@ Read the spec's `status` field from the YAML frontmatter at the top of the file.
 
 ## Scope Boundaries
 
-- Use the plan's **Affected Files** section as the expected write boundary. If you need to modify an unlisted file, notify the user and explain why before proceeding.
+- The runtime write boundary is derived at Setup from `git diff` against the spec dir's first commit (see Setup step 7). The plan's **Affected Files** section is a planning aid — informational, not authoritative.
 - Do NOT read or modify files belonging to other features' spec directories.
 - Do NOT read source code speculatively — only read files relevant to the current task.
-- Reference: §implement-phase, §constants, §env-vars, §pipeline-boundaries, §text-first-artifacts (constitution loaded by `/{project}:target` — do not re-read).
+- Reference: §implement-phase, §pipeline-boundaries, §text-first-artifacts, plus `framework/rules/configuration.md` for constants and env-vars (constitution loaded by `/{project}:target` — do not re-read).
 
 ## Instructions
 
@@ -63,9 +63,10 @@ Read the spec's `status` field from the YAML frontmatter at the top of the file.
 3. Read `specs/{feature}/plan.md` (or the plan section of `spec-and-plan.md`) for technical decisions and affected files.
 4. Read the spec file for acceptance criteria and contracts.
 5. If a scenario is targeted, read the scenario file for scenario-specific context, behavior, and edge cases. The scenario scopes which part of the feature is the primary focus for this implementation session.
-6. Note the plan's **Affected Files** list — this is the expected write boundary for implementation.
-7. **Stuck-detection check.** If the spec's status is already `in-progress`, run `git log --oneline -- specs/{feature}/tasks.md` and count commits since the spec entered `in-progress`. Identify the first incomplete task (first `- [ ]` checkbox group) in `tasks.md`. If `git log` shows **≥ 3 commits** on `tasks.md` AND the same task is still the first incomplete one (no checkbox flipped to `- [x]` between those commits for that task), surface the cycle to the user with this message: `Task {N} ({title}) has been touched in {count} prior implement runs without completing. Consider decomposing it into smaller subtasks before continuing.` Pause and wait for user direction; do not auto-decompose. The threshold of 3 is fixed (not configurable in v1) — smallest count that distinguishes routine multi-session work from a cycle. Stuck-detection events fire even when `--auto` is set (auto mode does not power through cycles).
-8. If the spec's frontmatter `status` is `planned`, ask the user to approve the transition to `in-progress` before updating the status. On confirmation, update the frontmatter `status` field to `in-progress`.
+6. **Recompute dependencies (safety net).** Run `scripts/gen-spec-deps.sh --dry-run` against the target spec. If it reports a diff, run it for real to sync `dependencies:` from body inline links. The pre-commit hook normally keeps this in sync; this step catches uncommitted body edits.
+7. **Derive the runtime write boundary.** Compute `first_commit=$(git log --reverse --format=%H -- specs/{feature}/ | head -1)` and `boundary=$(git diff --name-only "$first_commit"..HEAD)`, filtered to files outside `specs/{feature}/`. This is the set of files this feature has touched so far. New writes that fall outside `boundary` ∪ the plan's Affected Files surface to the user (see **Walk through tasks** step 4). Note the boundary; do not read its contents speculatively.
+8. **Stuck-detection check.** If the spec's status is already `in-progress`, run `git log --oneline -- specs/{feature}/tasks.md` and count commits since the spec entered `in-progress`. Identify the first incomplete task (first `- [ ]` checkbox group) in `tasks.md`. If `git log` shows **≥ 3 commits** on `tasks.md` AND the same task is still the first incomplete one (no checkbox flipped to `- [x]` between those commits for that task), surface the cycle to the user with this message: `Task {N} ({title}) has been touched in {count} prior implement runs without completing. Consider decomposing it into smaller subtasks before continuing.` Pause and wait for user direction; do not auto-decompose. The threshold of 3 is fixed (not configurable in v1) — smallest count that distinguishes routine multi-session work from a cycle. Stuck-detection events fire even when `--auto` is set (auto mode does not power through cycles).
+9. If the spec's frontmatter `status` is `planned`, ask the user to approve the transition to `in-progress` before updating the status. On confirmation, update the frontmatter `status` field to `in-progress`.
 
 ### Progressive context loading
 
@@ -84,9 +85,9 @@ For each task in order:
 3. Read only the existing code files relevant to this task from the plan's affected files.
 4. Implement the task:
    - Write code, tests, and migrations as needed.
-   - Follow conventions in `AGENTS.md` and `specs/system.md` (§implement-phase, §constants, §env-vars as applicable).
+   - Follow conventions in `AGENTS.md` and `specs/system.md` (§implement-phase, plus `framework/rules/configuration.md` `CFG-CONST-NNN` / `CFG-ENV-NNN` rules as applicable).
    - Respect the contracts defined in the spec.
-   - If you need to modify files outside the plan's affected files list, notify the user, explain why, and add the file to the plan's **Affected Files** section with a comment explaining why it was added.
+   - If a write would land outside the runtime boundary (`boundary` ∪ the plan's Affected Files, computed at Setup step 7), notify the user, explain why, and wait for confirmation before proceeding. Once accepted, the file is part of the boundary for the rest of the session — there is no plan backfill (the plan's Affected Files section is a planning aid, not the source of truth).
 5. Verify the "done when" condition is met.
 6. Mark the task as complete in `tasks.md` — update each checkbox from `- [ ]` to `- [x]`, including nested sub-item checkboxes, before proceeding.
 7. Prompt the user to commit and push changes. With `--auto` set, skip the prompt: commit on your own, do not push.
@@ -96,12 +97,14 @@ For each task in order:
 
 After all tasks are done:
 
-1. Walk through each acceptance criterion from the spec and verify it is met. Mark each passing criterion `- [x]` in the spec file at the time of verification. If a criterion fails, leave it as `- [ ]` and report the failure. Do not batch-mark — verify each individually.
-2. Run the validation gate before proposing the status transition:
+1. **Cross-spec impact check.** Run `git diff --stat "$first_commit"..HEAD -- specs/` (using the first-commit value from Setup step 7), filtered to paths outside `specs/{feature}/`. If any sibling spec dir shows changes, surface the list to the user and ask: "These specs were modified during the implementation window. Were the changes intentional cross-spec updates per §cross-spec-impact, or accidental?" Informational; does not block.
+
+2. Walk through each acceptance criterion from the spec and verify it is met. Mark each passing criterion `- [x]` in the spec file at the time of verification. If a criterion fails, leave it as `- [ ]` and report the failure. Do not batch-mark — verify each individually.
+3. Run the validation gate before proposing the status transition:
    - All tasks in `tasks.md` are marked `- [x]`
    - All acceptance criteria in the spec are marked `- [x]`
    - All scenario-linked tasks are complete
    - All `.md` files in the feature directory pass `npx markdownlint-cli2`
-3. If any validation check fails, report the specific failures and do not propose the transition. The user fixes the issues and re-runs the command.
-4. If all checks pass, present a summary and ask the user to approve the transition to `done`. Do not update the status until the user confirms.
-5. On confirmation, update the spec's frontmatter `status` field from `in-progress` to `done`.
+4. If any validation check fails, report the specific failures and do not propose the transition. The user fixes the issues and re-runs the command.
+5. If all checks pass, present a summary and ask the user to approve the transition to `done`. Do not update the status until the user confirms.
+6. On confirmation, update the spec's frontmatter `status` field from `in-progress` to `done`.

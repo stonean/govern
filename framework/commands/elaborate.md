@@ -26,7 +26,8 @@ Use the session target from `{cli-config-dir}/{project}-session.json`. If no ses
 
 1. Read `{cli-config-dir}/{project}-session.json` to get the session target's feature.
 2. Read the feature's spec file (`spec.md` or `spec-and-plan.md`).
-3. Display the feature name and status, and ask the user to confirm this is the correct target.
+3. **Recompute dependencies (safety net).** Run `scripts/gen-spec-deps.sh --dry-run` against the target spec. If it reports a diff, run it for real to sync `dependencies:` from body inline links. The pre-commit hook normally keeps this in sync; this step catches uncommitted body edits.
+4. Display the feature name and status, and ask the user to confirm this is the correct target.
 
 ### Walk the decision tree
 
@@ -49,10 +50,9 @@ Ask the user to describe the bug, edge case, or behavior they want to capture. T
 ### Create the scenario file
 
 1. Create `specs/{feature}/scenarios/{slug}.md` using the `specs/templates/scenario.md` template.
-2. Replace the frontmatter `title` placeholder with `"{NNN-feature-name} — scenario: {slug}"` (e.g., `"005-authentication — scenario: race-condition"`). The title gives PKM tools (Obsidian graph, Quartz) a unique node label per scenario, since scenario filenames repeat across features.
-3. Fill in the spec-ref with the feature name and the relevant section.
-4. Fill in Context and Behavior based on the user's description.
-5. Include Edge Cases if the user mentioned any; otherwise remove that section.
+2. Fill in the frontmatter `section:` field with the parent spec section name only (e.g., `"Authentication flow"`). The parent feature is implicit in the file path.
+3. Fill in Context and Behavior based on the user's description.
+4. Include Edge Cases if the user mentioned any; otherwise remove that section.
 
 ### Append task to tasks.md
 

@@ -1,6 +1,6 @@
 ---
 description: Check a feature's artifacts for consistency and cross-spec alignment.
-argument-hint: "[--fix] [--all] [feature]"
+argument-hint: "[--all] [feature]"
 ---
 
 # Validate
@@ -9,25 +9,21 @@ Check a feature's artifacts for consistency and cross-spec alignment.
 
 ## Purpose
 
-Audit a feature's spec, plan, tasks, and data model for consistency. By default, reports issues without modifying files. With `--fix`, automatically corrects fixable checkbox state mismatches. Use this to catch problems before the next pipeline gate fires.
+Audit a feature's spec, plan, tasks, and data model for consistency. Read-only; reports issues without modifying files. Use this to catch problems before the next pipeline gate fires.
 
 ## Context
 
 Parse `$ARGUMENTS` for flags and an optional feature identifier:
 
 - **Feature identifier** — a feature number, partial name, or full directory name. Overrides the session target.
-- **`--fix`** — enable fix mode (see Fix Mode section below).
 - **`--all`** — scan all feature directories under `specs/` instead of a single target. Report results grouped by feature.
-
-Flags can be combined (e.g., `--all --fix`, `001 --fix`).
 
 If `--all` is not present, use the feature identifier if provided, otherwise fall back to the session target from `{cli-config-dir}/{project}-session.json`. If no target can be resolved, stop and tell the user to run `/{project}:target` first or use `--all`.
 
 ## Scope Boundaries
 
-- By default, this is a read-only command. Do NOT modify any files.
-- In fix mode (`--fix`), modify checkbox state (`- [ ]` → `- [x]`) in spec and task files where the fix is mechanically safe, and write the `title:` frontmatter field on templated artifacts where it is missing, still a literal placeholder, or does not match the canonical `"{folder-name} — {artifact-suffix}"` value (see Fix Mode section below). Do not modify any other content.
-- Read only files within the target feature's directory, the cross-spec files needed for reference checks (`specs/system.md`, `specs/events.md`, `specs/errors.md`, dependency spec files), and the project's installed command-source frontmatter for the project-level consistency section below (`{cli-config-dir}/commands/{project}/*.md` frontmatter only, plus `{cli-config-dir}/commands/govern.md` frontmatter for the bootstrap installer **if that file exists**, plus `help.md` body for the table comparison). Do NOT read source code or test files.
+- This is a read-only command. Do NOT modify any files.
+- Read only files within the target feature's directory, the cross-spec files needed for reference checks (`specs/system.md`, `specs/events.md`, `specs/errors.md`, dependency spec files), and the project's installed command-source frontmatter for the project-level consistency section below (`{cli-config-dir}/commands/{project}/*.md` frontmatter only, plus `{cli-config-dir}/commands/govern.md` frontmatter for the bootstrap installer **if that file exists**). May invoke `scripts/gen-readme-table.sh --dry-run`, `scripts/gen-help-tables.sh --dry-run`, and `scripts/gen-spec-deps.sh --dry-run` to surface generator drift. Do NOT read source code or test files.
 - Reference: §spec-requirements, §plan-phase, §tasks-phase, §readiness-check, §scenarios, §cross-spec-impact, §text-first-artifacts, §markdown-standards, §drift-prevention (constitution loaded by `/{project}:target` — do not re-read).
 
 ## Instructions
@@ -52,39 +48,23 @@ For each scenario file (`scenarios/{slug}.md`):
 
 - [ ] A YAML frontmatter block exists at the top of the file.
 - [ ] The frontmatter parses as valid YAML.
-- [ ] The `spec-ref` field is present and non-empty.
+- [ ] The `section` field is present and non-empty.
 
 Reference: the schema is canonically declared in `framework/constitution.md` §text-first-artifacts.
 
-### Frontmatter schema (advisory)
-
-- [ ] Spec files have a non-empty `tags` field. Empty or missing `tags` is reported as an advisory finding ("Tags help cross-cutting graph views; consider adding some.") but does not block.
-
 ### Frontmatter schema (informational)
 
-- [ ] Unknown fields beyond the declared schema are permitted and reported as informational findings (no action required).
+- [ ] Unknown fields beyond the declared schema are permitted and reported as informational findings (no action required). This includes stale fields in done specs (`title`, `tags`, `spec-ref`, `track`) per the open-schema rule.
 
-### PKM title field (advisory)
+### Generator drift (advisory)
 
-The `title:` frontmatter field gives PKM tools (Obsidian graph, Quartz, Logseq) a unique node label per artifact, since every feature directory contains files with the same basename (`spec.md`, `plan.md`, `tasks.md`). Without it, PKM graphs collapse all artifacts of the same kind into indistinguishable nodes.
+Generated content blocks should reflect their sources. Run each generator in `--dry-run` mode and report any diff:
 
-For each templated artifact in the feature directory — `spec.md`, `spec-and-plan.md`, `plan.md`, `tasks.md`, `data-model.md`, `research.md`, and any file under `scenarios/` — check that:
+- [ ] `scripts/gen-spec-deps.sh --dry-run` against the target spec — surface as `Body inline links and frontmatter dependencies are out of sync; the next commit will resolve.`
+- [ ] `scripts/gen-readme-table.sh --dry-run` (project-level, see Project-level consistency below)
+- [ ] `scripts/gen-help-tables.sh --dry-run` (project-level)
 
-- [ ] A `title:` field is present in the frontmatter
-- [ ] The value is not the literal placeholder `"{NNN-feature-name} — ..."` — a literal placeholder indicates the substitution was forgotten when the template was scaffolded
-- [ ] The value matches `"{folder-name} — {artifact-suffix}"`, where `{folder-name}` is the feature directory's basename and `{artifact-suffix}` is derived from the filename:
-
-  | File | Expected suffix |
-  | --- | --- |
-  | `spec.md` | `spec` |
-  | `spec-and-plan.md` | `spec+plan` |
-  | `plan.md` | `plan` |
-  | `tasks.md` | `tasks` |
-  | `data-model.md` | `data-model` |
-  | `research.md` | `research` |
-  | `scenarios/{slug}.md` | `scenario: {slug}` |
-
-Files outside this set (custom artifacts) are not checked. The check is fixable in `--fix` mode (see Fix Mode below).
+These drifts are advisory because the pre-commit hook resolves them on the next commit. They surface only when running validate against an uncommitted state.
 
 ### Spec integrity (blocking)
 
@@ -135,14 +115,15 @@ Rules are the cross-cutting tier of the framework's three-tier requirement model
 
 - `specs/security-backend.md`
 - `specs/security-frontend.md`
+- `specs/configuration.md`
 
-Each file is independently optional — only the files that exist in the project are loaded. New rule files are introduced via their own feature spec; when a new rule file ships, the rule-file list above is updated in the same change. The schema each rule file follows is canonically declared in its introducing spec's data-model (currently `specs/008-security-rules/data-model.md` for the security files).
+Each file is independently optional — only the files that exist in the project are loaded. New rule files are introduced via their own feature spec; when a new rule file ships, the rule-file list above is updated in the same change. The schema each rule file follows is canonically declared in its introducing spec's data-model (`specs/008-security-rules/data-model.md` for the security files; `specs/017-derive-dont-ask/data-model.md` for the configuration file).
 
 **Rule file integrity** — for each present rule file:
 
 - [ ] Every rule heading is level-3 and contains only the rule ID (no surrounding text)
 - [ ] Every rule has the three required fields: a block-quoted Statement, `**Rationale:**` paragraph, and `**Verification:**` paragraph
-- [ ] Every rule's ID matches the format declared in the rule file's introducing-spec data-model (currently `{BE|FE}-{CATEGORY}-{NNN}` for security files, with `CATEGORY` drawn from the data-model's per-surface set)
+- [ ] Every rule's ID matches the format declared in the rule file's introducing-spec data-model (`{BE|FE}-{CATEGORY}-{NNN}` for security files; `CFG-{CONST|ENV}-{NNN}` for configuration)
 - [ ] No two rules in the same file share an ID
 
 If any check above fails, the affected rule file is treated as unloadable for the remainder of this validate pass — no rules from that file are applied to the per-rule check below. Emit one of:
@@ -186,7 +167,7 @@ Checks that reference `{cli-config-dir}/commands/govern.md` are skipped (silentl
 
 Checks:
 
-- [ ] **Help equivalence** — for each command listed in any table in `help.md`, the command's `description:` frontmatter exists and matches (modulo trailing punctuation) the one-line description in the help table. Resolve a `/{project}:foo` row to `{cli-config-dir}/commands/{project}/foo.md`, and the `/govern` row to `{cli-config-dir}/commands/govern.md`. Mismatches indicate `help.md` was edited without updating the command source, or vice versa. Per the skip rule above, the `/govern` row check is skipped when `{cli-config-dir}/commands/govern.md` is absent.
+- [ ] **Generator drift** — run `scripts/gen-readme-table.sh --dry-run` and `scripts/gen-help-tables.sh --dry-run` (when the scripts exist in the project). Non-empty diff means the README Feature Specs table or the help.md command tables are out of sync with their sources. Report each as `Generator out of sync: {script}; the next commit will resolve.` This replaces the per-row help-equivalence check — the table is generated, so structural sync is the only meaningful check.
 - [ ] **Anchor resolution** — every `§<anchor>` reference in any installed command file (typically in "Reference: §X, §Y" Scope-Boundaries lines) resolves to a corresponding `<!-- §<anchor> -->` marker in `constitution.md`. A broken reference indicates the constitution was renamed or restructured without updating callers. Report each broken reference with the source command and the unresolved anchor.
 - [ ] **Command frontmatter completeness** — every `.md` file in the installed commands directory has a `description:` frontmatter field; the same check applies to `{cli-config-dir}/commands/govern.md` when that file exists. Files whose body documents an `$ARGUMENTS` parameter additionally have `argument-hint:`. Report missing fields; do not check value content.
 
@@ -202,30 +183,3 @@ Separate results into sections by severity:
 4. **Informational** — observations (e.g., unknown frontmatter fields) that may warrant attention but are neither errors nor warnings.
 
 For each FAIL, include: what failed, what was expected, what was found, and a suggested fix.
-
-## Fix Mode
-
-When `$ARGUMENTS` contains `--fix`, after running all checks, automatically correct fixable checkbox mismatches:
-
-### Fixable (auto-correct)
-
-- Acceptance criteria checkboxes (`- [ ]` → `- [x]`) in specs with status `done`
-- Task checkboxes (`- [ ]` → `- [x]`) in `tasks.md` where all sub-item checkboxes are already `- [x]`
-- Scenario-linked task checkboxes (`- [ ]` → `- [x]`) where the spec status is `done`
-- **PKM `title:` frontmatter field** — when missing, still set to the literal `"{NNN-feature-name} — ..."` placeholder, or value does not match `"{folder-name} — {artifact-suffix}"`, write the canonical value derived from the folder name and filename (mapping in the PKM title field section above). If the file has no frontmatter block at all, prepend one containing only the `title` field.
-
-### Not fixable (report only)
-
-- Checkboxes in specs with status `in-progress` — cannot determine which criteria are truly met without verification
-- Missing artifacts (no plan, no tasks) — structural issues require human decisions
-- Lint failures — require manual correction
-- Any non-checkbox issue
-
-### Fix mode behavior
-
-1. Run all checks as normal.
-2. For each fixable issue, display the file, the checkbox line, and the correction being made.
-3. Apply the corrections to the files.
-4. Run `npx markdownlint-cli2` on modified files.
-5. Report a summary: number of fixes applied, number of remaining issues (non-fixable).
-6. If no fixable issues are found, report "No fixes needed."
