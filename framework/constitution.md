@@ -388,7 +388,7 @@ Additional fields beyond those listed above are permitted and ignored by uninter
 
 `/gov:validate` checks frontmatter against this schema with the following severity:
 
-- **Hard fail** — frontmatter block missing on a spec or scenario file; frontmatter YAML malformed; `status` missing or not in the allowed set; `dependencies` missing or not a list; `section` missing on a scenario.
+- **Hard fail** — frontmatter block missing on a spec or scenario file; frontmatter YAML malformed; `status` missing or not in the allowed set; `dependencies` missing or not a list; both `section` and the legacy `spec-ref` missing on a scenario.
 - **Advisory** — cross-reference checks; body inline links to sibling specs that are not yet in the generator-managed `dependencies` (informational — the next commit's `gen-spec-deps.sh` run will resolve).
 - **Informational** — unknown fields present.
 
