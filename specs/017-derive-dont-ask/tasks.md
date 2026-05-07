@@ -44,9 +44,9 @@ Done when: root `constitution.md` no longer exists; all references resolve to `f
 
 ### 4. Update root `AGENTS.md`
 
-- [ ] Remove the "mirror constitutions" Workflow bullet (the two-line bullet about mirroring root and framework constitutions)
-- [ ] Remove the "After editing any file under `framework/commands/`… run `./scripts/gen-claude-commands.sh`" bullet (the hook will handle this automatically)
-- [ ] Lint passes
+- [x] Remove the "mirror constitutions" Workflow bullet (the two-line bullet about mirroring root and framework constitutions)
+- [x] Remove the "After editing any file under `framework/commands/`… run `./scripts/gen-claude-commands.sh`" bullet (the hook will handle this automatically)
+- [x] Lint passes
 
 Done when: AGENTS.md Workflow section no longer references either discipline-required step.
 

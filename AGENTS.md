@@ -25,13 +25,7 @@ When adding files under `framework/`, place them by purpose, not by extension.
 
 ## Workflow
 
-- `constitution.md` (root, what govern lives by) and `framework/constitution.md` (what ships to adopted projects) are intentionally separate but start identical. After editing either, mirror to the other:
-  - Update to `framework/constitution.md` → also update root `constitution.md` (unless the change is template-only).
-  - Update to root `constitution.md` → also update `framework/constitution.md` (unless the change is govern-internal).
-
-  Note deliberate divergence in the commit message.
-- Read `framework/commands/{name}.md` before recommending, describing, or disambiguating a slash command — don't guess from the name. Source files are authoritative; the generated `.claude/commands/gov/*.md` copies are not.
-- After editing any file under `framework/commands/` or `framework/bootstrap/configure/claude.md`, run `./scripts/gen-claude-commands.sh` to regenerate `.claude/commands/gov/*.md`.
+- Read `framework/commands/{name}.md` before recommending, describing, or disambiguating a slash command — don't guess from the name. Source files are authoritative; the generated `.claude/commands/gov/*.md` copies are produced by the pre-commit hook.
 
 ## Gotchas
 
