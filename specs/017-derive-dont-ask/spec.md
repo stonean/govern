@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: []
 ---
 
@@ -110,30 +110,30 @@ Both repos run all generators in dry-run mode in CI; non-empty diff fails the bu
 
 ## Acceptance Criteria
 
-- [ ] AC1: All six template files (spec, spec-and-plan, plan, tasks, data-model, research, scenario) have no `title:` field in frontmatter
-- [ ] AC2: `framework/templates/spec/spec-and-plan.md` has no `track:` field and no comment about it
-- [ ] AC3: Scenario template uses `section:` (not `spec-ref:`) and parent feature is no longer encoded in the field
-- [ ] AC4: No template, command, or constitution section references `tags` as a frontmatter field; the "Starter Tag Vocabulary" table is removed from the constitution
-- [ ] AC5: No template, command, or constitution section references the `[simple]` task marker; the §cost-levers reference is updated to remove the bullet
-- [ ] AC6: `framework/commands/groom.md` no longer instructs the agent to prefix items with `[promote-to-rule]`; groom always re-walks every item it didn't migrate on the next pass
-- [ ] AC7: `framework/templates/spec/plan.md` does not contain an "Open Questions Resolved" section
-- [ ] AC8: `AGENTS.md` does not contain the "mirror constitutions" or "run gen-claude-commands.sh" instructions
-- [ ] AC9: `/specify`, `/capture`, `/plan`, and `/elaborate` each write the canonical filename-derived metadata (formerly `title:`) at scaffold time without prompting the author
-- [ ] AC10: The README's "Feature Specs" table is bounded by marker comments and produced by `scripts/gen-readme-table.sh`; running the script on a fresh checkout produces no diff
-- [ ] AC11: `framework/commands/help.md` command tables are bounded by marker comments and produced by `scripts/gen-help-tables.sh`; running the script on a fresh checkout produces no diff
-- [ ] AC12: A pre-commit hook at `.githooks/pre-commit` runs all four generators (claude-commands, readme-table, help-tables, spec-deps) and stages outputs; `scripts/install-hooks.sh` configures `core.hooksPath`. (No `root-constitution` generator — Q2 collapsed the twin constitutions to a single canonical file, removing the need.)
-- [ ] AC13: `/clarify` and `/plan` scan the target spec body for sibling-spec links and propose missing `dependencies` entries; the author confirms or removes
-- [ ] AC14: `/implement` derives the write-boundary check from `git diff` against the spec dir's first commit, not from a manually maintained Affected Files list; the plan's Affected Files section is documented as a planning aid only
-- [ ] AC15: `/validate` no longer offers `--fix` for checkbox state; the Fix Mode section is removed and the checkbox-related entries in the Fixable list are gone
-- [ ] AC16: Root `constitution.md` is deleted; `framework/constitution.md` is the sole canonical file; root `CLAUDE.md` imports it via `@import framework/constitution.md`; no root-constitution generator exists
-- [ ] AC17: `/clarify`, `/plan`, and `/implement` each include a cross-spec scan step that surfaces sibling slugs cited in the body but not in `dependencies`; `/implement` completion additionally surfaces files outside the target spec dir touched during the implementation window
-- [ ] AC18: A new rule file `framework/rules/configuration.md` exists with rules covering shared constants, module-local constants, configurable values backed by env vars, env-var defaults, env-var validation, and unit-suffixed time variables; each rule has a Verification step `/validate` runs; constitution §constants and §env-vars shrink to one-line pointers
-- [ ] AC19: `/validate` runs cleanly on every existing spec (000–016) plus this spec after migration — no new findings introduced by schema changes; stale fields in done specs are silently ignored per the open-schema rule
-- [ ] AC20: This spec's own frontmatter has `title:` and `tags:` removed by the final task
-- [ ] AC21: `framework/bootstrap/hooks/pre-commit` and `framework/bootstrap/hooks/install.sh` ship with the framework; the shipped hook calls only adopter-relevant generators (initially `gen-spec-deps.sh`)
-- [ ] AC22: `/govern` installs the adopter hook on first run when no existing hook system is detected; updates on subsequent runs; warns and skips with a manual integration snippet when an existing hook system is detected (`.githooks/pre-commit` not from `/govern`, husky, lefthook, pre-commit-py, or `core.hooksPath` pointing elsewhere); respects `.govern.toml` pinning
-- [ ] AC23: `scripts/gen-spec-deps.sh` ships to adopter projects with `create` strategy on first `/govern` run; the shipped pre-commit hook references it via the project-relative path
-- [ ] AC24: A CI workflow runs all generators in dry-run mode and fails the build on non-empty diff, in both this repo and (as a shipped example) adopter projects; protects against contributors or adopters whose hook was skipped or never installed
+- [x] AC1: All six template files (spec, spec-and-plan, plan, tasks, data-model, research, scenario) have no `title:` field in frontmatter
+- [x] AC2: `framework/templates/spec/spec-and-plan.md` has no `track:` field and no comment about it
+- [x] AC3: Scenario template uses `section:` (not `spec-ref:`) and parent feature is no longer encoded in the field
+- [x] AC4: No template, command, or constitution section references `tags` as a frontmatter field; the "Starter Tag Vocabulary" table is removed from the constitution
+- [x] AC5: No template, command, or constitution section references the `[simple]` task marker; the §cost-levers reference is updated to remove the bullet
+- [x] AC6: `framework/commands/groom.md` no longer instructs the agent to prefix items with `[promote-to-rule]`; groom always re-walks every item it didn't migrate on the next pass
+- [x] AC7: `framework/templates/spec/plan.md` does not contain an "Open Questions Resolved" section
+- [x] AC8: `AGENTS.md` does not contain the "mirror constitutions" or "run gen-claude-commands.sh" instructions
+- [x] AC9: `/specify`, `/capture`, `/plan`, and `/elaborate` each write the canonical filename-derived metadata (formerly `title:`) at scaffold time without prompting the author
+- [x] AC10: The README's "Feature Specs" table is bounded by marker comments and produced by `scripts/gen-readme-table.sh`; running the script on a fresh checkout produces no diff
+- [x] AC11: `framework/commands/help.md` command tables are bounded by marker comments and produced by `scripts/gen-help-tables.sh`; running the script on a fresh checkout produces no diff
+- [x] AC12: A pre-commit hook at `.githooks/pre-commit` runs all four generators (claude-commands, readme-table, help-tables, spec-deps) and stages outputs; `scripts/install-hooks.sh` configures `core.hooksPath`. (No `root-constitution` generator — Q2 collapsed the twin constitutions to a single canonical file, removing the need.)
+- [x] AC13: `/clarify` and `/plan` scan the target spec body for sibling-spec links and propose missing `dependencies` entries; the author confirms or removes
+- [x] AC14: `/implement` derives the write-boundary check from `git diff` against the spec dir's first commit, not from a manually maintained Affected Files list; the plan's Affected Files section is documented as a planning aid only
+- [x] AC15: `/validate` no longer offers `--fix` for checkbox state; the Fix Mode section is removed and the checkbox-related entries in the Fixable list are gone
+- [x] AC16: Root `constitution.md` is deleted; `framework/constitution.md` is the sole canonical file; root `CLAUDE.md` imports it via `@import framework/constitution.md`; no root-constitution generator exists
+- [x] AC17: `/clarify`, `/plan`, and `/implement` each include a cross-spec scan step that surfaces sibling slugs cited in the body but not in `dependencies`; `/implement` completion additionally surfaces files outside the target spec dir touched during the implementation window
+- [x] AC18: A new rule file `framework/rules/configuration.md` exists with rules covering shared constants, module-local constants, configurable values backed by env vars, env-var defaults, env-var validation, and unit-suffixed time variables; each rule has a Verification step `/validate` runs; constitution §constants and §env-vars shrink to one-line pointers
+- [x] AC19: `/validate` runs cleanly on every existing spec (000–016) plus this spec after migration — no new findings introduced by schema changes; stale fields in done specs are silently ignored per the open-schema rule
+- [x] AC20: This spec's own frontmatter has `title:` and `tags:` removed by the final task
+- [x] AC21: `framework/bootstrap/hooks/pre-commit` and `framework/bootstrap/hooks/install.sh` ship with the framework; the shipped hook calls only adopter-relevant generators (initially `gen-spec-deps.sh`)
+- [x] AC22: `/govern` installs the adopter hook on first run when no existing hook system is detected; updates on subsequent runs; warns and skips with a manual integration snippet when an existing hook system is detected (`.githooks/pre-commit` not from `/govern`, husky, lefthook, pre-commit-py, or `core.hooksPath` pointing elsewhere); respects `.govern.toml` pinning
+- [x] AC23: `scripts/gen-spec-deps.sh` ships to adopter projects with `create` strategy on first `/govern` run; the shipped pre-commit hook references it via the project-relative path
+- [x] AC24: A CI workflow runs all generators in dry-run mode and fails the build on non-empty diff, in both this repo and (as a shipped example) adopter projects; protects against contributors or adopters whose hook was skipped or never installed
 
 ## Open Questions
 

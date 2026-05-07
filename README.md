@@ -47,7 +47,7 @@ See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred 
 | [014-reclarify-backedge](specs/014-reclarify-backedge/spec.md) | done | 000, 009, 013 | Wire up `/ask` to own the `clarified` / `planned` / `in-progress` → `draft` back-edge so questions surfacing mid-pipeline are captured and the spec's lifecycle invariant is maintained automatically. |
 | [015-tarball-fetch](specs/015-tarball-fetch/spec.md) | done | 007, 012 | Collapse `/govern`'s ~35–50 individual `curl` fetches into a single archive download, extracted once into a temp directory and resolved as local paths. |
 | [016-cross-cutting-rules](specs/016-cross-cutting-rules/spec.md) | done | 006, 008 | Promote rules to a first-class artifact tier alongside specs and scenarios. |
-| [017-derive-dont-ask](specs/017-derive-dont-ask/spec.md) | in-progress | none | Apply the **Design Principles** rule added to `AGENTS.md` on 2026-05-06 ("Never design framework features that depend on human diligence or discipline") to every existing framework input that violates it. |
+| [017-derive-dont-ask](specs/017-derive-dont-ask/spec.md) | done | none | Apply the **Design Principles** rule added to `AGENTS.md` on 2026-05-06 ("Never design framework features that depend on human diligence or discipline") to every existing framework input that violates it. |
 
 <!-- generated:feature-specs:end -->
 
