@@ -140,3 +140,9 @@ When `clarify` is run with only a feature targeted (no scenario):
 - **Feature-level clarify and scenario questions:** Stay silent. Spec-level and scenario-level open questions are independent concerns; the user must target the scenario to resolve those.
 - **Target with no arguments:** Display the current target (including scenario) and inform the user how to change focus.
 - **Scenario command target switch confirmation:** Just do it — no confirmation prompt. The user explicitly asked to create the scenario, so switching is the obvious next step.
+
+## References
+
+Declared dependencies for this spec, surfaced here so the dependency-derivation generator (`scripts/gen-spec-deps.sh`) sees them in the body.
+
+- [006-bug-workflow](../006-bug-workflow/spec.md)

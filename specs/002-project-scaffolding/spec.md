@@ -64,3 +64,10 @@ A minimal file with `@import` directives:
 - **README and setup command** — the README template must include a "Getting Started" section referencing `/{project}:setup` and `/{project}:status` as the onramp for new contributors.
 - **Gitignore and language patterns** — the template stays minimal (secrets, claude settings, IDE, OS). Language-specific patterns are fetched from github.com/github/gitignore during bootstrap (spec 003) based on the project's tech stack.
 - **Settings.local.json template** — no static template. The `setup` slash command handles creation and configuration of `.claude/settings.local.json` as the single source of truth for permissions.
+
+## References
+
+Declared dependencies for this spec, surfaced here so the dependency-derivation generator (`scripts/gen-spec-deps.sh`) sees them in the body.
+
+- [000-slash-commands](../000-slash-commands/spec.md)
+- [001-system-spec-templates](../001-system-spec-templates/spec.md)

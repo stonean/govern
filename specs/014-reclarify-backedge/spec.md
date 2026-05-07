@@ -186,3 +186,11 @@ Both back-edges then read as command-owned, status-mutating actions triggered by
 - **Should `/ask` mutate status, or should `/clarify` own the mutation?** `/ask` mutates. Same logic: a `clarified+` spec with an open question is internally inconsistent. The command that *creates* the inconsistency is the natural place to fix it — same way `/elaborate` reverts `done → in-progress` immediately on adding a scenario. Putting the mutation in `/clarify` instead would let the inconsistent state persist between the two commands and would require either a flag or pre-revert prompt, both of which the user critique correctly identified as redundant. `/clarify`'s gate keeps a recovery branch for the rare hand-edit case but not for the normal flow.
 - **`/ask` post-question hint posture.** Active suggestion in soft language. `/ask` is invoked because the user already cares about the question; naming the next obvious step (`/clarify`) is helpful, not pushy. Soft framing — "Question recorded. Run `/{project}:clarify` to resolve it." — is a recommendation, not a directive.
 - **Should `/ask` confirm before mutating status?** No. The user's acceptance of the refined question (the existing refinement loop) is the consent. `/elaborate` doesn't confirm before reverting `done → in-progress`; `/ask` shouldn't either. The impact display surfaces what's about to happen; the actual mutation follows the user's commitment to the refined question.
+
+## References
+
+Declared dependencies for this spec, surfaced here so the dependency-derivation generator (`scripts/gen-spec-deps.sh`) sees them in the body.
+
+- [000-slash-commands](../000-slash-commands/spec.md)
+- [009-scenario-targeting](../009-scenario-targeting/spec.md)
+- [013-text-first-artifacts](../013-text-first-artifacts/spec.md)

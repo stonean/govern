@@ -1,7 +1,7 @@
 ---
 title: "005-workflows — spec"
 status: done
-dependencies: [004-tech-stack-selection]
+dependencies: [004-tech-stack-selection, 010-agent-autonomy]
 tags: [bootstrap, templates]
 ---
 
@@ -98,3 +98,9 @@ If the user's tech stack selections match no registry entries (e.g., all categor
 4. **Workflow categories** — fixed set: Testing, Linting, Formatting, Migrations, Code Review, Deployment. Adding a new category requires a governance update. This ensures consistent grouping in the UI.
 5. **Update mechanism** — `/{project}:govern` updates the registry file and offers new workflow recommendations. This integrates naturally with the existing govern flow. A standalone `/{project}:workflows` command is not needed for v1 since govern covers the use case.
 6. **File granularity** — one file per tool (e.g., `eslint.md`). Explicit, easy to maintain. Minimal duplication since each workflow file is small.
+
+## References
+
+Declared dependencies for this spec, surfaced here so the dependency-derivation generator (`scripts/gen-spec-deps.sh`) sees them in the body.
+
+- [004-tech-stack-selection](../004-tech-stack-selection/spec.md)

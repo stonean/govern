@@ -161,3 +161,9 @@ For this spec specifically: 006-bug-workflow gets a signpost noting that `triage
 - **Pipeline fit:** `/capture` creates the spec and stops. The normal pipeline applies from that point. No prescribed next step — depends on why the user captured it.
 - **Interaction with inbox:** `/inbox` tells the user to run `/capture` when an item has no matching spec. Commands stay decoupled.
 - **Scenario creation during capture:** No. `/capture` creates the spec only. The user runs `/scenario` separately.
+
+## References
+
+Declared dependencies for this spec, surfaced here so the dependency-derivation generator (`scripts/gen-spec-deps.sh`) sees them in the body.
+
+- [007-govern-workflow](../007-govern-workflow/spec.md)

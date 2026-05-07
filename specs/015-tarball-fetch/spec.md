@@ -139,3 +139,10 @@ The self-update notice (shown when the installed `govern.md` differs from the fe
 - **Fallback to per-file fetch on archive failure** — no fallback. `codeload.github.com` and `raw.githubusercontent.com` are both GitHub-fronted CDNs with correlated availability, so partial outages affecting only one are rare. Maintaining two transport code paths is a permanent tax for a transient failure mode; `/govern` is idempotent and a re-run after the outage clears is the same recovery path used for any transient `curl` failure today. The clean abort already tells the user what happened.
 - **`rm` permission scope** — drop the `rm` permission entirely; let the OS sweep the temp directory. macOS (`/var/folders/.../T/`) and Linux (`/tmp` via systemd-tmpfiles) both auto-purge their temp roots, so a few hundred KB of extracted files waiting for the next sweep is acceptable. Granting `rm -rf` — even scoped — is a sharper allow than the rest of govern's bootstrap permissions (`curl`, `ls`, `tar`, `mktemp` are all read-or-create) and adopters with custom `$TMPDIR` would have to edit settings to keep cleanup working. Skipping `rm` removes that friction.
 - **Auggie permission regex** — moot. Without an `rm` permission to express, there is no Auggie-regex problem to solve.
+
+## References
+
+Declared dependencies for this spec, surfaced here so the dependency-derivation generator (`scripts/gen-spec-deps.sh`) sees them in the body.
+
+- [007-govern-workflow](../007-govern-workflow/spec.md)
+- [012-multi-agent-govern](../012-multi-agent-govern/spec.md)

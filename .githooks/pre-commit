@@ -13,6 +13,7 @@
 # Installation: scripts/install-hooks.sh sets `git config core.hooksPath .githooks`.
 
 set -euo pipefail
+shopt -s nullglob
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
@@ -26,5 +27,5 @@ git add .claude/commands/gov/ 2>/dev/null || true
 git add README.md
 git add framework/commands/help.md
 for f in specs/[0-9][0-9][0-9]-*/spec.md specs/[0-9][0-9][0-9]-*/spec-and-plan.md; do
-  [ -f "$f" ] && git add "$f"
+  git add "$f"
 done

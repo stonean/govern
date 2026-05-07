@@ -1,7 +1,7 @@
 ---
 title: "008-security-rules — spec"
 status: done
-dependencies: [007-govern-workflow]
+dependencies: [007-govern-workflow, 016-cross-cutting-rules]
 tags: [security, format]
 ---
 
@@ -251,3 +251,9 @@ None — all resolved during clarification.
 3. **Per-category opt-out** — No category-level opt-out for v1. Whole-file pinning (via `.governance.toml`) handles the case where an entire surface does not apply (e.g., backend-only projects pin `security-frontend.md`). Within a surface, rules apply *contextually* — a rule that no spec or plan content exercises is silently inert, so a project with no database naturally produces no data-at-rest findings without needing to opt out. Adding category-level opt-outs would require a declaration syntax, validate logic to honor it, and a migration story when the project's stack evolves — substantial surface area for a use case that does not yet exist. Trade-off accepted: if validate produces a false-positive finding because contextual matching catches something the project doesn't actually do, there is no opt-out — fix the matching, not the policy.
 
 4. **Runtime/infrastructure rules** — No special handling. Runtime rules (e.g., "TLS must be enabled") are verified the same way every other rule is — validate checks that the project's spec, plan, or `system.md` documents how the rule is addressed. Validate does not probe running infrastructure or parse deployment configs; it confirms the project has *thought about* the rule and recorded its approach. Such rules should phrase their **Verification** field as a documentation commitment (e.g., "system.md MUST describe how TLS is terminated"). Trade-off accepted: a spec that says TLS is enabled but where production is misconfigured will pass validate — runtime enforcement is the job of deployment tooling, infra-as-code review, and observability, not of a text-based pipeline gate.
+
+## References
+
+Declared dependencies for this spec, surfaced here so the dependency-derivation generator (`scripts/gen-spec-deps.sh`) sees them in the body.
+
+- [007-govern-workflow](../007-govern-workflow/spec.md)

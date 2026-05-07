@@ -34,6 +34,10 @@ Read the spec's `status` field from the YAML frontmatter at the top of the file.
 
 ## Instructions
 
+### Recompute dependencies (safety net)
+
+Run `scripts/gen-spec-deps.sh --dry-run` against the target spec. If it reports a diff, run it for real to sync `dependencies:` from body inline links before evaluating cross-spec context. The pre-commit hook normally keeps this in sync; this step catches uncommitted body edits.
+
 ### Detect existing artifacts
 
 Before generating any artifacts, check the feature directory for existing plan files. This protects work the user may have already invested — including plans that survived a `/gov:ask` back-edge cycle (clarified+ → draft → clarified again) and any other re-run.
@@ -64,9 +68,8 @@ If the spec file is `spec-and-plan.md` (lightweight track), the plan section is 
 
 1. **If the user picked "keep" in the existing-artifact prompt above**, skip the template copy — `plan.md` is already on disk and is the working artifact. Otherwise (no prior artifacts, or "replace"), copy `specs/templates/plan.md` into the feature directory as `plan.md`.
 2. Fill in (or, on the keep path, edit/extend the existing content):
-   - **Frontmatter title**: replace the `title` placeholder with `"{NNN-feature-name} — plan"` (e.g., `"005-authentication — plan"`). When `data-model.md` is created, replace its `title` placeholder with `"{NNN-feature-name} — data-model"` likewise. The title gives PKM tools (Obsidian graph, Quartz) a unique node label per artifact, since every feature directory contains a `spec.md`/`plan.md`/`tasks.md`.
    - **Technical Decisions**: each decision with rationale. Code snippets, function signatures, and package paths belong here.
-   - **Affected Files**: every file that will be created or modified.
+   - **Affected Files**: a *planning aid* — list the files you expect to create or modify so reviewers can sanity-check scope. The runtime write boundary used by `/gov:implement` is derived from `git diff` against the spec dir's first commit; this list is not authoritative and does not need to be exhaustive. Implement-time additions surface naturally.
    - **Data Model**: data structure definitions. Create `data-model.md` if the feature introduces or modifies domain entities or data structures.
    - **Trade-offs**: what was considered and rejected, known limitations.
 3. Cross-validate against the files loaded in the checklist above:
@@ -76,13 +79,12 @@ If the spec file is `spec-and-plan.md` (lightweight track), the plan section is 
 
 ### Create the task breakdown
 
-1. **If the user picked "keep" in the existing-artifact prompt above**, skip the template copy — `tasks.md` is already on disk and is the working artifact. Otherwise (no prior artifacts, or "replace"), copy `specs/templates/tasks.md` into the feature directory as `tasks.md`. Replace the frontmatter `title` placeholder with `"{NNN-feature-name} — tasks"` (e.g., `"005-authentication — tasks"`).
+1. **If the user picked "keep" in the existing-artifact prompt above**, skip the template copy — `tasks.md` is already on disk and is the working artifact. Otherwise (no prior artifacts, or "replace"), copy `specs/templates/tasks.md` into the feature directory as `tasks.md`.
 2. Break the plan into discrete, ordered work items:
    - Each task is small enough to complete and verify in a single session.
    - Each task has a clear "done when" condition.
    - Tasks respect dependency order.
    - Tasks are derived from the plan, not invented independently.
-3. Propose `[simple]` tier markers on trivial tasks. After the task list is written, scan each task and append `[simple]` to the header (e.g., `## 4. Update README link [simple]`) when the task is genuinely trivial — single small file edit, no logic, no schema change, no new behavior. When in doubt, leave the marker off; default tier is the right call for any task that touches more than one file or carries non-obvious decisions. The marker convention is documented in the tasks template (`specs/templates/tasks.md`); see that file for the full rule.
 
 ### Validation gate
 
@@ -99,8 +101,12 @@ Before proposing the status transition, run the readiness check. All checks must
 
 If any check fails, report the specific failures and do not propose the transition. The user fixes the issues and re-runs the command.
 
+### Cross-spec impact check
+
+After the plan is written and before finalizing, list every sibling spec referenced by inline markdown link in the spec or plan body. Ask: "Do any of these referenced specs need an update because of decisions made here?" If yes, the §cross-spec-impact rule applies — record the change in the affected spec as a new acceptance criterion or scenario, with a back-link to this spec. Informational; does not block.
+
 ### Finalize
 
-1. Present a summary of the plan, task breakdown, and validation gate results. List which tasks (if any) were proposed `[simple]` so the user can add, remove, or accept markers before approving. Ask the user to approve the transition to `planned`. Do not update the status until the user confirms.
+1. Present a summary of the plan, task breakdown, and validation gate results. Ask the user to approve the transition to `planned`. Do not update the status until the user confirms.
 2. On confirmation, update the spec's frontmatter `status` field from `clarified` to `planned`.
 3. Display the next step: "Run `/gov:implement` to begin implementation."

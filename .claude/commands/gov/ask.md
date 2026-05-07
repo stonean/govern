@@ -34,8 +34,9 @@ Read `.claude/gov-session.json`. If the session includes a `scenario` and `scena
 
 1. Read `.claude/gov-session.json` to get the session target's feature and optional scenario.
 2. Read the target artifact (scenario file if targeted, otherwise spec file).
-3. If the target is a spec, read its frontmatter `status` field now — the value is needed for the gate, the impact display, and the post-record mutation.
-4. Display the feature name, scenario name (if targeted), status, and a brief summary of what the artifact covers.
+3. **Recompute dependencies (safety net).** If the target is a spec, run `scripts/gen-spec-deps.sh --dry-run` against it. If it reports a diff, run it for real to sync `dependencies:` from body inline links. The pre-commit hook normally keeps this in sync; this step catches uncommitted body edits. (Skip on scenario targets — scenarios have no `dependencies` field.)
+4. If the target is a spec, read its frontmatter `status` field now — the value is needed for the gate, the impact display, and the post-record mutation.
+5. Display the feature name, scenario name (if targeted), status, and a brief summary of what the artifact covers.
 
 ### Gate: refuse on `done` spec
 

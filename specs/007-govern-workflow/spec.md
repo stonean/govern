@@ -1,7 +1,7 @@
 ---
 title: "007-govern-workflow — spec"
 status: done
-dependencies: [003-bootstrap-automation]
+dependencies: [003-bootstrap-automation, 011-brownfield-process, 012-multi-agent-govern]
 tags: [bootstrap, commands]
 ---
 
@@ -184,3 +184,9 @@ None — all resolved.
 - ~~How should the file manifest be maintained?~~ Hardcoded in each govern variant. Updated when governance templates change.
 - ~~CLI-specific command variants or path variable?~~ Path variable (`{cli-config-dir}`) resolved at govern time. One set of command templates, N govern variants do the substitution.
 - ~~How should `/gov:setup` work for Auggie?~~ Skipped for now — Auggie permissions are global. Deferred to future considerations in `specs/spec.md`.
+
+## References
+
+Declared dependencies for this spec, surfaced here so the dependency-derivation generator (`scripts/gen-spec-deps.sh`) sees them in the body.
+
+- [003-bootstrap-automation](../003-bootstrap-automation/spec.md)

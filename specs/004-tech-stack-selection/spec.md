@@ -59,3 +59,9 @@ Language-specific `.gitignore` patterns are fetched based on the language(s) sel
 ## Open Questions
 
 None — all resolved during clarification.
+
+## References
+
+Declared dependencies for this spec, surfaced here so the dependency-derivation generator (`scripts/gen-spec-deps.sh`) sees them in the body.
+
+- [003-bootstrap-automation](../003-bootstrap-automation/spec.md)

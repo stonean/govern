@@ -80,3 +80,10 @@ The artifact tier and validate plumbing already exist. This spec generalizes the
 - **Required vs optional "Applicable Rules" slot in the spec template** — optional, surfaced as a comment-prompt section in the template (matching the existing convention used for the scenarios hint and the `## {Section}` placeholder). An optional section traces back to validate's existing unknown-rule-reference check (`validate.md:136-139`); making it required would imply a stronger validate consistency check that Q4 explicitly defers. Specs that don't touch a ruled area stay clean.
 - **Validate alignment** — defer the stronger check (validate comparing triggered rules against listed Applicable Rules) out of 016's scope. The existing per-rule verification check (`validate.md:130-134`) already catches rules whose triggers fire against an unaddressing spec, so 016 ships with the optional template section + existing reference check. The deferred work is captured in `specs/inbox.md` so it surfaces in a future `/gov:groom` pass — keeps 016 focused without losing the follow-up signal.
 - **Promotion threshold** — promotion checklist (mirrors §scenario-promotion's structure). The constitution's §rules section enumerates indicators rather than a numeric bar: (1) the concern applies to multiple existing or anticipated features (cross-cutting test), (2) verification can be expressed as a step a reviewer or validate can check (citable test), (3) the concern belongs to a governance-recognized category (security, performance, concurrency, observability, accessibility, audit/compliance, data handling) rather than a single feature's domain, (4) the same wording would make sense in any spec touching the area. Pure principle is too thin; numeric thresholds are arbitrary and game-able. The checklist still requires judgment, which matches the framework's stance everywhere else.
+
+## References
+
+Declared dependencies for this spec, surfaced here so the dependency-derivation generator (`scripts/gen-spec-deps.sh`) sees them in the body.
+
+- [006-bug-workflow](../006-bug-workflow/spec.md)
+- [008-security-rules](../008-security-rules/spec.md)

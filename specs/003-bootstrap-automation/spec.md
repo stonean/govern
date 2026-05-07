@@ -1,7 +1,7 @@
 ---
 title: "003-bootstrap-automation — spec"
 status: done
-dependencies: [000-slash-commands, 001-system-spec-templates, 002-project-scaffolding]
+dependencies: [000-slash-commands, 001-system-spec-templates, 002-project-scaffolding, 012-multi-agent-govern]
 tags: [bootstrap, commands]
 ---
 
@@ -108,3 +108,11 @@ Before scaffolding, verify the target directory does not already exist. If it do
 - **Existing directory** — verify it doesn't exist and stop if it does. Running in an existing directory risks overwriting files. The manual bootstrap steps in the README cover adding governance to existing projects.
 - **Command location** — `.claude/commands/gov/init.md`, invoked as `/gov:init`. Consistent with the slash command pattern from spec 000.
 - **Language-specific gitignore** — init asks for primary language(s) and fetches patterns from github.com/github/gitignore to append to the minimal .gitignore template.
+
+## References
+
+Declared dependencies for this spec, surfaced here so the dependency-derivation generator (`scripts/gen-spec-deps.sh`) sees them in the body.
+
+- [000-slash-commands](../000-slash-commands/spec.md)
+- [001-system-spec-templates](../001-system-spec-templates/spec.md)
+- [002-project-scaffolding](../002-project-scaffolding/spec.md)

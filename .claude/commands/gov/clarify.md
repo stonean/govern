@@ -52,6 +52,8 @@ The "already `{status}`" branch and the `done` branch never modify any file.
 
 Perform the clarify gate defined in `constitution.md` (§spec-requirements, §spec-lifecycle):
 
+0. **Recompute dependencies (safety net).** Run `scripts/gen-spec-deps.sh --dry-run` against the target spec. If it reports a diff, run it for real to sync `dependencies:` from body inline links before evaluating dependency readiness. The pre-commit hook normally keeps this in sync; this step catches uncommitted body edits made between commits.
+
 1. **Resolve open questions one at a time** — process each open question individually in sequence:
    1. Display the question with its full context.
    2. Propose an answer with rationale, or ask the user to decide.
@@ -66,6 +68,8 @@ Perform the clarify gate defined in `constitution.md` (§spec-requirements, §sp
 4. **Verify acceptance criteria** — check each is concrete, testable, and unambiguous. Rewrite vague ones. Flag missing criteria.
 5. **Check dependency readiness** — for each entry in this spec's frontmatter `dependencies` list, read that spec's frontmatter `status` field. Confirm each dependency is at `clarified` or later. Flag blockers.
 
+6. **Cross-spec impact check** — list every sibling spec referenced by inline markdown link in the body (the union the dependency scan already computed). Ask: "Do any of these referenced specs need an update because of decisions made here?" If yes, the §cross-spec-impact rule applies — the change goes in the affected spec as a new acceptance criterion or scenario, with a back-link to this spec. This step is informational; it does not block the transition.
+
 After the review:
 
 - Update the spec body with resolved questions and any new edge cases or acceptance criteria.
@@ -75,9 +79,8 @@ After the review:
   - Acceptance criteria are concrete and testable — no empty placeholders
   - Dependencies are at `clarified` or later
   - The modified spec file passes `npx markdownlint-cli2`
-  - **Advisory** — frontmatter `tags` is non-empty. If empty, surface as a finding ("Tags are empty. Adding tags helps cross-cutting graph views.") but do NOT block the transition.
-- If any non-advisory check fails, report the specific failures and do not propose the transition. The user fixes the issues and re-runs the command.
-- If all non-advisory checks pass (advisories may remain unresolved), present a summary of changes and ask the user to approve the transition to `clarified`. Do not update the status until the user confirms.
+- If any check fails, report the specific failures and do not propose the transition. The user fixes the issues and re-runs the command.
+- If all checks pass, present a summary of changes and ask the user to approve the transition to `clarified`. Do not update the status until the user confirms.
 - On confirmation, update the frontmatter `status` field from `draft` to `clarified`.
 - Display the next step: "Run `/gov:plan` to create the technical plan."
 
