@@ -86,13 +86,14 @@ Done when: scenario template uses `section:` only; no `title:`, `tags:`, or `spe
 
 ### 8. Implement `scripts/gen-spec-deps.sh`
 
-- [ ] Walk every file matching `specs/*/spec.md` and `specs/*/spec-and-plan.md`
-- [ ] Parse markdown body, ignoring fenced code blocks
-- [ ] Find inline links matching sibling-spec patterns (`../NNN-feature/...` or `(specs/NNN-feature/...)`)
-- [ ] Compute the union of slugs and rewrite the frontmatter `dependencies` list (sorted; empty list rendered as `[]`)
-- [ ] Idempotent: running twice produces the same output
-- [ ] Bash-portable (no GNU-isms in macOS BSD utilities)
-- [ ] Exit non-zero with a clear error if any spec file's frontmatter is malformed
+- [x] Walk every file matching `specs/NNN-*/spec.md` and `specs/NNN-*/spec-and-plan.md` (excludes `specs/templates/` and other non-feature dirs by design)
+- [x] Parse markdown body, ignoring fenced code blocks
+- [x] Find inline links matching sibling-spec patterns (`../NNN-feature/...` or `(specs/NNN-feature/...)`)
+- [x] Compute the union of slugs and rewrite the frontmatter `dependencies` list (sorted; empty list rendered as `[]`)
+- [x] Idempotent: running twice produces the same output
+- [x] Bash-portable (awk-based parsing; works with macOS BSD utilities)
+- [x] `--dry-run` flag exits 1 if any spec needs updating; useful for CI and validate
+- [x] `--help` prints usage
 
 Done when: running `./scripts/gen-spec-deps.sh` against the current repo produces a valid result; second run produces no diff; the script is executable.
 
