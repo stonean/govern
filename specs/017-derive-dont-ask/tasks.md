@@ -22,14 +22,14 @@ Done when: `framework/rules/configuration.md` exists, `npx markdownlint-cli2` pa
 
 ### 2. Update `framework/constitution.md`
 
-- [ ] Remove `tags` row from the Spec files frontmatter table
-- [ ] Remove `tags` row from the Scenario files frontmatter table
-- [ ] Remove the entire "Starter Tag Vocabulary" subsection
-- [ ] Remove the `[simple]` marker bullet from §cost-levers
-- [ ] Replace the §constants section body with a one-line pointer: "See `framework/rules/configuration.md` (CFG-CONST-NNN rules)."
-- [ ] Replace the §env-vars section body with a one-line pointer: "See `framework/rules/configuration.md` (CFG-ENV-NNN rules)."
-- [ ] Update §text-first-artifacts to declare `section` as the scenario hard-fail field (replacing `spec-ref`); add the canonical-source row for configuration rules to the §drift-prevention table; do not list `tags` as advisory anymore
-- [ ] Lint passes
+- [x] Remove `tags` row from the Spec files frontmatter table
+- [x] Remove `tags` row from the Scenario files frontmatter table
+- [x] Remove the entire "Starter Tag Vocabulary" subsection
+- [x] Remove the `[simple]` marker bullet from §cost-levers
+- [x] Replace the §constants section body with a one-line pointer: "See `framework/rules/configuration.md` (CFG-CONST-NNN rules)."
+- [x] Replace the §env-vars section body with a one-line pointer: "See `framework/rules/configuration.md` (CFG-ENV-NNN rules)."
+- [x] Update §text-first-artifacts to declare `section` as the scenario hard-fail field (replacing `spec-ref`); add the canonical-source row for configuration rules to the §drift-prevention table; do not list `tags` as advisory anymore
+- [x] Lint passes
 
 Done when: constitution body reflects the schema and rule changes; no references to `tags` (as a frontmatter field), `[simple]`, or `spec-ref` remain; `npx markdownlint-cli2` passes.
 

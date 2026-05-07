@@ -35,7 +35,7 @@ These are evaluation criteria, not implementation instructions. Use them to iden
 
 ### Cost levers
 
-Per-task token tracking and budget ceilings require a runtime `govern` does not have — that work belongs to the AI platform. `govern` contributes by offering cost-aware patterns the user can opt into. The current levers: the [Lightweight Track](#lightweight-track) skips the plan phase for small features; the optional `[simple]` marker on tasks signals to the agent (and the user) that a trivial task should be routed to a cheaper model per the adopter's platform mapping; the stuck-detection step in `/{project}:implement` catches runaway loops before they compound spend; default-off autonomy keeps the human in the loop unless `--auto` is explicitly passed. For runtime cost controls, point the adopter at the platform's tooling — Claude Code's `/cost`, the Anthropic usage dashboard, Cursor's request limits, and equivalents.
+Per-task token tracking and budget ceilings require a runtime `govern` does not have — that work belongs to the AI platform. `govern` contributes by offering cost-aware patterns the user can opt into. The current levers: the [Lightweight Track](#lightweight-track) skips the plan phase for small features; the stuck-detection step in `/{project}:implement` catches runaway loops before they compound spend; default-off autonomy keeps the human in the loop unless `--auto` is explicitly passed. For runtime cost controls, point the adopter at the platform's tooling — Claude Code's `/cost`, the Anthropic usage dashboard, Cursor's request limits, and equivalents.
 
 <!-- §pipeline -->
 
@@ -169,29 +169,13 @@ Write code, tests, and migrations. Implementation follows the tasks list.
 
 #### Constants and configuration
 
-Values that an operator or deployer might need to tune — such as timeouts, retry counts, batch sizes, thresholds, and rate limits — must never appear as bare literals in the code.
-
-- **Configurable values** — any value that determines system behavior (expiry times, retry counts, batch sizes, thresholds, rate limits, etc.) must be backed by an environment variable, following the rules in the section below.
-- **Configurable ranges** — when a configurable value has meaningful bounds (e.g., minimum retries and maximum retries), expose each bound as its own environment variable so operators can tune them without code changes.
-- **Fixed constants** — values that are fixed by design and never change across deployments (protocol versions, well-known header names, media types, format strings) must be named constants, not bare literals repeated across the codebase.
-
-Ordinary literals used for local logic — loop indices, string formatting within a function, intermediate calculations — do not need to be extracted.
-
-Organize constants into two tiers:
-
-- **Shared constants** — values used across multiple modules live in a centralized location (e.g., `shared/constants/`). This makes cross-cutting defaults easy to find and audit.
-- **Module-local constants** — values used only within a single module live in that module's own constants file. This keeps the module self-contained and avoids coupling unrelated modules through a shared import.
+See `framework/rules/configuration.md` (`CFG-CONST-NNN` rules) for the enforceable rules covering centralized shared constants, module-local constants, and the no-bare-literals requirement for operator-tunable values. `/{project}:validate` enforces these rules.
 
 <!-- §env-vars -->
 
 #### Environment variables
 
-When a feature introduces environment variables, follow these rules:
-
-- **`.env.example`** — add every new variable with a descriptive comment and a safe placeholder value. This file is the single source of truth for what the application expects.
-- **Defaults** — every environment variable must have a default fallback defined as a named constant. Never scatter bare literals across the codebase. Read the variable once at startup and fall back to the constant when unset.
-- **Validation** — validate that every required environment variable resolves to a usable value (either from the environment or its default) at startup. Fail fast with a clear error message naming any variable that cannot be resolved.
-- **Time values** — include the unit in the variable name (`_MS`, `_SECONDS`, `_MINUTES`). The corresponding constant must also make the unit explicit (e.g., `DEFAULT_SHUTDOWN_TIMEOUT_SECONDS = 30`).
+See `framework/rules/configuration.md` (`CFG-ENV-NNN` rules) for the enforceable rules covering env-var defaults backed by named constants, `.env.example` completeness, fail-fast startup validation, and unit suffixes for time-valued variables. `/{project}:validate` enforces these rules.
 
 <!-- §lightweight-track -->
 
@@ -233,7 +217,7 @@ A scenario is a spec at a lower level of abstraction — same format, same disci
 
 Each scenario file contains:
 
-- **spec-ref** — a reference to the parent spec and section the scenario elaborates
+- **section** (frontmatter) — the parent spec section the scenario elaborates; the parent feature is implicit in the scenario's file path
 - **Context** — the specific situation or precondition
 - **Behavior** — what the system does in that situation
 - **Edge Cases** — boundary conditions and exceptions (optional)
@@ -388,50 +372,29 @@ The frontmatter schema applies to **spec files** (`spec.md`, `spec-and-plan.md`)
 | Field | Required | Type | Allowed values | Description |
 | --- | --- | --- | --- | --- |
 | `status` | yes | string | `draft`, `clarified`, `planned`, `in-progress`, `done` | Spec lifecycle state |
-| `dependencies` | yes | list of strings | spec slugs (e.g., `002-events`); empty list permitted | Specs this feature depends on |
-| `tags` | no | list of strings | free-form; see starter vocabulary below | Cross-cutting categories used by graph-view consumers |
+| `dependencies` | yes | list of strings | spec slugs (e.g., `002-events`); empty list permitted | **Generated** by `scripts/gen-spec-deps.sh` from inline markdown links to sibling specs in the body. Not hand-authored. |
 
 #### Scenario files
 
 | Field | Required | Type | Allowed values | Description |
 | --- | --- | --- | --- | --- |
-| `spec-ref` | yes | string | parent spec ref, conventionally `"{NNN-feature-name} — {Section}"` (quoted because the value commonly contains an em-dash and slash) | Identifies the parent spec and section the scenario elaborates |
-| `tags` | no | list of strings | free-form | Scenario-level cross-cutting tags |
+| `section` | yes | string | parent spec section name (e.g., `"Authentication flow"`) | The section of the parent spec the scenario elaborates. The parent feature is implicit in the file path. |
 
 #### Open-schema rule
 
-Additional fields beyond those listed above are permitted and ignored by uninterested consumers. Examples adopters or future `govern` work might add: `owner`, `target_release`, `created_at`, `description`, `aliases`. The `spec-and-plan.md` template uses the open-schema rule to carry `track: lightweight` — a human-readable marker, not a pipeline-consumed field. Consumers MUST NOT error on the presence of unknown fields. `/gov:validate` reports unknown fields as informational findings (not errors).
+Additional fields beyond those listed above are permitted and ignored by uninterested consumers. Examples adopters or future `govern` work might add: `owner`, `target_release`, `created_at`, `description`, `aliases`. Consumers MUST NOT error on the presence of unknown fields. `/gov:validate` reports unknown fields as informational findings (not errors). Stale fields in done specs (e.g., `title`, `tags`, `spec-ref`, `track`) remain valid under this rule and produce no findings.
 
 ### Validation Severity
 
 `/gov:validate` checks frontmatter against this schema with the following severity:
 
-- **Hard fail** — frontmatter block missing on a spec or scenario file; frontmatter YAML malformed; `status` missing or not in the allowed set; `dependencies` missing or not a list; `spec-ref` missing on a scenario.
-- **Advisory** — `tags` missing or empty; existing checkbox/cross-reference checks.
+- **Hard fail** — frontmatter block missing on a spec or scenario file; frontmatter YAML malformed; `status` missing or not in the allowed set; `dependencies` missing or not a list; `section` missing on a scenario.
+- **Advisory** — cross-reference checks; body inline links to sibling specs that are not yet in the generator-managed `dependencies` (informational — the next commit's `gen-spec-deps.sh` run will resolve).
 - **Informational** — unknown fields present.
 
 Hard fails block the validation pass. Advisory and informational findings are reported but do not block.
 
 For non-frontmatter checks (spec integrity, artifact completeness, plan/task consistency, dependencies, security rules), `/gov:validate` adds a fourth tier — **Blocking** — between Hard fail and Advisory. Blocking findings are structural or content issues that must be fixed before the next pipeline gate fires (e.g., missing `plan.md` on a `planned` spec, an unknown rule ID referenced in a spec). Hard fail and Blocking both prevent pipeline advancement; the distinction is that Hard fail says "the spec file itself is malformed," while Blocking says "the artifact set is incomplete or inconsistent." See `framework/commands/validate.md` for the full per-check severity assignment.
-
-### Starter Tag Vocabulary
-
-Published as guidance, not enforcement. Adopters and future specs MAY introduce new tags as needed; `/gov:specify` surfaces existing tags from sibling specs as autocomplete to drive convergence by reuse rather than ceremony.
-
-| Tag | Suggested use |
-| --- | --- |
-| `cli` | Specs about slash commands or command-line interactions |
-| `commands` | Specs that introduce, rename, or significantly change slash commands |
-| `bootstrap` | Specs about adopting `govern`, project scaffolding, or initialization |
-| `process` | Specs about workflow, lifecycle, or pipeline behavior |
-| `templates` | Specs about template files (spec, plan, scenario, project-readme, etc.) |
-| `security` | Specs about security rules, authentication, authorization |
-| `agent` | Specs about AI-agent behavior, capabilities, or coordination |
-| `format` | Specs about artifact formats, schemas, or serialization conventions |
-| `pipeline` | Specs about the spec → plan → tasks → implement flow |
-| `migration` | Specs that convert existing artifacts to a new format or convention |
-| `scenarios` | Specs about scenario semantics, scenario targeting, or scenario tooling |
-| `brownfield` | Specs about brownfield adoption, capture, inbox grooming, or incremental spec growth |
 
 <!-- §drift-prevention -->
 
@@ -454,7 +417,8 @@ For every kind of fact described in multiple places, one location is authoritati
 | Constitution section anchors | `<!-- §<anchor> -->` markers in `framework/constitution.md` |
 | Command frontmatter (description, argument-hint) | each command's own frontmatter block |
 | Rules artifact tier definition | `framework/constitution.md` §rules |
-| Rule file format and ID conventions | `specs/008-security-rules/data-model.md` |
+| Security rule file format and ID conventions (`BE-`/`FE-`) | `specs/008-security-rules/data-model.md` |
+| Configuration rule file format and ID conventions (`CFG-`) | `specs/017-derive-dont-ask/data-model.md` |
 
 When adding a new kind of fact that may be referenced from multiple documents, name its canonical source explicitly here.
 
