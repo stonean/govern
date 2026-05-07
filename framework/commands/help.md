@@ -33,6 +33,8 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 
 #### Pipeline (advance state)
 
+<!-- generated:commands-pipeline:start -->
+
 | Command | Pipeline Gate | Description |
 | --- | --- | --- |
 | `/{project}:specify` | → draft | Create a new feature spec. |
@@ -41,14 +43,22 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 | `/{project}:implement` | planned → in-progress → done | Execute implementation tasks for the targeted feature. |
 | `/{project}:validate` | — | Check a feature's artifacts for consistency and cross-spec alignment. |
 
+<!-- generated:commands-pipeline:end -->
+
 #### Elaborate (add precision)
+
+<!-- generated:commands-elaborate:start -->
 
 | Command | Description |
 | --- | --- |
 | `/{project}:ask` | Append an open question to the targeted spec or scenario. |
 | `/{project}:elaborate` | Add a scenario to elaborate a section of the targeted feature. |
 
+<!-- generated:commands-elaborate:end -->
+
 #### Brownfield (absorb existing reality)
+
+<!-- generated:commands-brownfield:start -->
 
 | Command | Description |
 | --- | --- |
@@ -56,7 +66,11 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 | `/{project}:log` | Record a raw item to the inbox. |
 | `/{project}:groom` | Walk the inbox and route each item to its proper home. |
 
+<!-- generated:commands-brownfield:end -->
+
 #### Orient
+
+<!-- generated:commands-orient:start -->
 
 | Command | Description |
 | --- | --- |
@@ -64,13 +78,19 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 | `/{project}:status` | Display the pipeline dashboard for all feature specs. |
 | `/{project}:help` | Display an overview of the pipeline and its slash commands. |
 
+<!-- generated:commands-orient:end -->
+
 #### Bootstrap (one-time per project)
+
+<!-- generated:commands-bootstrap:start -->
 
 | Command | Description |
 | --- | --- |
 | `/govern` | Adopt or update govern in an existing project. |
 | `/{project}:configure` | Configure settings.local.json with permissions for slash commands. |
 | `/{project}:spawn` | Spawn a new project from this one, copying specs, commands, and config. |
+
+<!-- generated:commands-bootstrap:end -->
 
 ### Typical Session
 

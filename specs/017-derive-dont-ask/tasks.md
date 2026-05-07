@@ -99,32 +99,36 @@ Done when: running `./scripts/gen-spec-deps.sh` against the current repo produce
 
 ### 9. Implement `scripts/gen-readme-table.sh`
 
-- [ ] Find marker comments in `README.md`: `<!-- generated:feature-specs:start -->` and `<!-- generated:feature-specs:end -->`
-- [ ] For each `specs/*/spec*.md`, parse frontmatter (`status`, `dependencies`) and the first body paragraph (description)
-- [ ] Emit a markdown table sorted by feature number between the markers
-- [ ] Exit non-zero if markers are absent
-- [ ] Idempotent
+- [x] Find marker comments in `README.md`: `<!-- generated:feature-specs:start -->` and `<!-- generated:feature-specs:end -->`
+- [x] For each `specs/NNN-*/spec*.md`, parse frontmatter (`status`, `dependencies`) and the first body paragraph (description)
+- [x] Skip leading blockquote signposts/notes; truncate description to first sentence
+- [x] Reduce dependencies to the NNN prefix only (matches original compact README style)
+- [x] Emit a markdown table sorted by feature number between the markers
+- [x] Exit 3 if markers are absent
+- [x] Idempotent; supports `--dry-run` (exit 1 on diff)
 
-Done when: running the script populates the README table from spec frontmatter; second run produces no diff.
+Done when: running the script populates the README table from spec frontmatter; second run produces no diff. ✓
 
 ### 10. Implement `scripts/gen-help-tables.sh`
 
-- [ ] Find marker comments in `framework/commands/help.md` for each of the five command groups (`commands-pipeline`, `commands-elaborate`, `commands-brownfield`, `commands-orient`, `commands-bootstrap`)
-- [ ] For each group, list the commands belonging to that group (hardcoded grouping in the generator) and read each command file's frontmatter `description:`
-- [ ] Emit a markdown table per group between its markers
-- [ ] Exit non-zero if any expected marker pair is absent or any referenced command file is missing
-- [ ] Idempotent
+- [x] Find marker comments in `framework/commands/help.md` for each of the five command groups (`commands-pipeline`, `commands-elaborate`, `commands-brownfield`, `commands-orient`, `commands-bootstrap`)
+- [x] For each group, list the commands belonging to that group (hardcoded grouping in the generator) and read each command file's frontmatter `description:`
+- [x] Pipeline group includes the extra "Pipeline Gate" column (gate values hardcoded — they are static pipeline facts)
+- [x] Bootstrap group sources `/govern` from `framework/bootstrap/govern.md` and `/configure` from `framework/bootstrap/configure/claude.md`
+- [x] Emit a markdown table per group between its markers
+- [x] Exit 5 if any expected marker pair is absent; exit 4 if any referenced command file is missing
+- [x] Idempotent; supports `--dry-run`
 
-Done when: running the script populates all five tables in `help.md` from command frontmatter; second run produces no diff.
+Done when: running the script populates all five tables in `help.md` from command frontmatter; second run produces no diff. ✓
 
 ### 11. Add marker comments to `README.md` and `framework/commands/help.md`
 
-- [ ] Insert `<!-- generated:feature-specs:start -->` and `<!-- generated:feature-specs:end -->` around the existing Feature Specs table in `README.md`
-- [ ] Insert the five marker pairs in `help.md` around the corresponding tables (see `data-model.md` § Marker comment names)
-- [ ] Run the new generators to confirm they recognize the markers and produce correct output
-- [ ] Lint passes (HTML comments are allowed per project markdownlint config)
+- [x] Insert `<!-- generated:feature-specs:start -->` and `<!-- generated:feature-specs:end -->` around the existing Feature Specs table in `README.md`
+- [x] Insert the five marker pairs in `help.md` around the corresponding tables
+- [x] Run the new generators to confirm they recognize the markers and produce correct output
+- [x] Lint passes (HTML comments are allowed per project markdownlint config)
 
-Done when: both files have valid marker pairs; running the generators produces no diff.
+Done when: both files have valid marker pairs; running the generators produces no diff. ✓
 
 ### 12. Implement `.githooks/pre-commit` and `scripts/install-hooks.sh`
 
