@@ -1,7 +1,3 @@
----
-title: "017-derive-dont-ask — data-model"
----
-
 # 017 — Derive, Don't Ask Data Model
 
 Defines the structures introduced or modified by this spec: the configuration rule file format, the updated spec/scenario frontmatter schema, and the marker-comment convention for generated content blocks.

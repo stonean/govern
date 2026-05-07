@@ -1,7 +1,3 @@
----
-title: "017-derive-dont-ask — plan"
----
-
 # 017 — Derive, Don't Ask Plan
 
 Implements [017 — Derive, Don't Ask](spec.md).
