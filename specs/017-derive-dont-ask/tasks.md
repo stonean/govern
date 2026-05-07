@@ -35,10 +35,10 @@ Done when: constitution body reflects the schema and rule changes; no references
 
 ### 3. Delete root `constitution.md` and update root pointers
 
-- [ ] Delete root `constitution.md` (the file is now byte-identical to `framework/constitution.md`; collapse per spec Q2)
-- [ ] Update root `CLAUDE.md`: change `@import constitution.md` to `@import framework/constitution.md`
-- [ ] Update root `README.md`: change every link to `constitution.md` to `framework/constitution.md`
-- [ ] Lint passes on README.md and CLAUDE.md
+- [x] Delete root `constitution.md` (collapse per spec Q2)
+- [x] Update root `CLAUDE.md`: change `@import constitution.md` to `@import framework/constitution.md`
+- [x] Update root `README.md`: every link to `constitution.md` already targets `framework/constitution.md`; no change needed (bare references in lines 141/162/187/258/276 are adopter-context documentation where the file lives at the adopter's root)
+- [x] Lint passes on README.md and CLAUDE.md
 
 Done when: root `constitution.md` no longer exists; all references resolve to `framework/constitution.md`.
 
