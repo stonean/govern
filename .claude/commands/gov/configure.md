@@ -56,12 +56,23 @@ Configure `.claude/settings.local.json` with the permissions needed for slash co
    - `Bash(curl *)`
    - `Bash(gh api *)`
    - `Bash(mkdir -p *)`
+   - `Bash(chmod +x *)`
 
    **Build / lint:**
    - `Bash(make *)`
    - `Bash(markdownlint *)`
    - `Bash(markdownlint-cli2 *)`
    - `Bash(npx markdownlint-cli2 *)`
+
+   **Hooks and generators (govern's pre-commit pipeline):**
+   - `Bash(git config core.hooksPath *)`
+   - `Bash(git config --get core.hooksPath)`
+   - `Bash(git config --unset core.hooksPath)`
+   - `Bash(./.githooks/pre-commit)`
+   - `Bash(scripts/gen-*.sh)`
+   - `Bash(./scripts/gen-*.sh)`
+   - `Bash(scripts/install-hooks.sh)`
+   - `Bash(./scripts/install-hooks.sh)`
 
 3. Ensure the `permissions.deny` array contains **all** of the following entries. Add any that are missing:
 

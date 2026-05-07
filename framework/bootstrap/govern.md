@@ -328,6 +328,8 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 | `framework/constitution.md` | `constitution.md` |
 | `framework/rules/security-backend.md` | `specs/security-backend.md` |
 | `framework/rules/security-frontend.md` | `specs/security-frontend.md` |
+| `framework/rules/configuration.md` | `specs/configuration.md` |
+| `framework/bootstrap/hooks/pre-commit` | `.githooks/pre-commit` |
 | `.markdownlint-cli2.jsonc` | `.markdownlint-cli2.jsonc` |
 | `framework/templates/spec/spec.md` | `specs/templates/spec.md` |
 | `framework/templates/spec/plan.md` | `specs/templates/plan.md` |
@@ -346,6 +348,7 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 | `framework/templates/project/errors.md` | `specs/errors.md` |
 | `framework/templates/project/events.md` | `specs/events.md` |
 | `framework/templates/project/inbox.md` | `specs/inbox.md` |
+| `scripts/gen-spec-deps.sh` | `scripts/gen-spec-deps.sh` |
 
 ### Shared files with conflict handling
 
@@ -542,6 +545,40 @@ In this file (and only this file), keep `{project}` and `{cli-config-dir}` as li
 
 After writing, run the **Post-Write Integrity Check** below.
 
+## Hook Installation
+
+After **Per-Agent Scaffolding** completes, manage the project's git pre-commit hook so generated artifacts (currently spec `dependencies:` frontmatter, future generators if added) stay in sync on every commit.
+
+The shipped hook lives at `.githooks/pre-commit` (placed by the **Shared Files** manifest above with `update` strategy). This section's job is to wire git up to actually run it (`git config core.hooksPath .githooks`) without clobbering whatever hook system the project already uses.
+
+Detection runs in this order — first match wins:
+
+1. **`core.hooksPath` already points at `.githooks`** — nothing to do. Already wired up. Continue silently.
+2. **`core.hooksPath` points at any other path** — the project uses a custom hooks dir. Skip wiring; report a warning with manual integration instructions (see below).
+3. **`.husky/` directory exists** — husky is in use. Skip wiring; report a warning.
+4. **`.pre-commit-config.yaml` exists** — pre-commit (Python) is in use. Skip wiring; report a warning.
+5. **`lefthook.yml` or `lefthook-local.yml` exists** — lefthook is in use. Skip wiring; report a warning.
+6. **Existing `.githooks/pre-commit` from a prior `/govern` run** — detected by the `# managed-by: govern` sentinel comment on line 2 of the file. Already managed; the manifest's `update` strategy already overwrote the file with the latest version. Run `git config core.hooksPath .githooks` to ensure it stays wired (idempotent), then continue.
+7. **No conflicts** (no `core.hooksPath`, no third-party hook system, no pre-existing `.githooks/pre-commit`) — run `git config core.hooksPath .githooks` and report installed.
+
+`scripts/gen-spec-deps.sh` ships in the **Shared Files** manifest with `create` strategy. First run installs it; subsequent runs leave it alone (so adopters can edit the script without `/govern` clobbering).
+
+### Manual integration snippet (for skip cases)
+
+When detection skips installation (cases 2–5 above), report this message to the user:
+
+> The `govern` pre-commit hook was not wired up because your project already uses an existing hook system. To get automatic spec-deps regeneration on every commit, add this line to your existing pre-commit chain:
+>
+> ```bash
+> ./.githooks/pre-commit
+> ```
+>
+> The shipped hook script is idempotent and safe to call from another hook runner.
+
+### Pinning
+
+`.githooks/pre-commit` and `scripts/gen-spec-deps.sh` are subject to `.govern.toml` `pinned.files` like any other shipped file. A pinned hook file uses `skip` strategy instead of `update` — `/govern` does not overwrite it. The Hook Installation section above still runs and may set `core.hooksPath` if appropriate.
+
 ## Placeholder Substitution
 
 In every copied file (except `{config_dir}/commands/govern.md` for each selected agent — those keep `{project}` and `{cli-config-dir}` as literal placeholders), replace:
@@ -593,6 +630,7 @@ After scaffolding, display:
 
 - Summary of files created, updated, unchanged, skipped, pinned, merged, and removed — grouped by agent for per-agent files, with shared files in their own group
 - For each scaffolded agent, the agent's `rules_file_note` from the registry
+- Hook installation status — one line: `pre-commit hook installed`, `pre-commit hook already wired up`, or `pre-commit hook skipped — existing {husky|lefthook|pre-commit-py|core.hooksPath} detected; see manual integration snippet above`
 - Any fetch failures encountered
 - Pinned `govern.md` advisory (if applicable — see below)
 - Security audit summary (if applicable — see below)

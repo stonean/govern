@@ -265,30 +265,26 @@ Done when: the template exists and documents adopter usage. ✓
 
 ### 27. Update `framework/bootstrap/govern.md` for adopter hook installation
 
-- [ ] Add a new top-level section "Hook Installation" between "Per-Agent Scaffolding" and "Post-Scaffolding Output"
-- [ ] Document the four detection states and actions (per plan's "Adopter hook surface" table)
-- [ ] Sentinel-based detection: if `.githooks/pre-commit` exists, check for `# managed-by: govern` to distinguish managed from hand-rolled
-- [ ] Husky detection: presence of `.husky/` directory
-- [ ] Lefthook detection: presence of `lefthook.yml` or `lefthook-local.yml`
-- [ ] Pre-commit-py detection: presence of `.pre-commit-config.yaml`
-- [ ] Add `framework/rules/configuration.md` → `specs/configuration.md` to the "govern-owned shared files (strategy: update)" manifest
-- [ ] Add `framework/bootstrap/hooks/pre-commit` → `.githooks/pre-commit` to the manifest with `update` strategy (subject to sentinel detection)
-- [ ] Add `framework/bootstrap/hooks/install.sh` → `.githooks/install.sh` with `create` strategy
-- [ ] Add `scripts/gen-spec-deps.sh` → `scripts/gen-spec-deps.sh` with `create` strategy
-- [ ] Update Post-Scaffolding Output to report hook install/update/skip status per agent (or per-project once for shared files)
-- [ ] Update the "What This Command Does NOT Do" section if behavior changed
-- [ ] Lint passes
+- [x] Add new top-level section "Hook Installation" before "Placeholder Substitution"
+- [x] Document seven detection states + actions (already-wired, custom hooksPath, husky, pre-commit-py, lefthook, govern-managed, none)
+- [x] Sentinel-based detection of govern-managed hooks via `# managed-by: govern` comment
+- [x] Add `framework/rules/configuration.md` → `specs/configuration.md` to update-strategy manifest
+- [x] Add `framework/bootstrap/hooks/pre-commit` → `.githooks/pre-commit` to update-strategy manifest (subject to detection)
+- [x] Add `scripts/gen-spec-deps.sh` → `scripts/gen-spec-deps.sh` to create-strategy manifest
+- [x] Document manual integration snippet for adopters with existing hook systems
+- [x] Document `.govern.toml` pinning for the hook file
+- [x] Update Post-Scaffolding Output to include hook installation status line
+- [x] Lint passes
 
-Done when: `/govern` ships the new files and manages the adopter hook with the documented detection logic.
+Done when: `/govern` ships the new files and manages the adopter hook with the documented detection logic. ✓
 
 ### 28. Update permission files
 
-- [ ] `framework/bootstrap/configure/claude.md` — add `Bash(git config *)`, `Bash(.githooks/*)`, `Bash(scripts/gen-*)` to the permission set
-- [ ] `framework/bootstrap/configure/auggie.md` — same permissions in Auggie's format
-- [ ] Run `./scripts/gen-claude-commands.sh` to regenerate `.claude/commands/gov/configure.md` (the generator handles the substitution)
-- [ ] Lint passes
+- [x] `framework/bootstrap/configure/claude.md` — added `chmod +x`, `git config core.hooksPath` (set/get/unset), `./.githooks/pre-commit`, `scripts/gen-*.sh`, `scripts/install-hooks.sh` permissions
+- [x] `framework/bootstrap/configure/auggie.md` — same permissions in Auggie's regex format
+- [x] Lint passes
 
-Done when: adopters scaffolding via `/govern` get the necessary Bash permissions for hook operations without prompts.
+Done when: adopters scaffolding via `/govern` get the necessary Bash permissions for hook operations without prompts. ✓
 
 ## Phase 7 — Migration, regeneration, and self-cleanup
 

@@ -45,11 +45,19 @@ Configure `{cli-config-dir}/settings.local.json` with the tool permissions neede
    - `{ "toolName": "launch-process", "shellInputRegex": "^curl ", "permission": { "type": "allow" } }`
    - `{ "toolName": "launch-process", "shellInputRegex": "^gh api ", "permission": { "type": "allow" } }`
    - `{ "toolName": "launch-process", "shellInputRegex": "^mkdir -p ", "permission": { "type": "allow" } }`
+   - `{ "toolName": "launch-process", "shellInputRegex": "^chmod \\+x ", "permission": { "type": "allow" } }`
 
    **Shell commands — build / lint:**
    - `{ "toolName": "launch-process", "shellInputRegex": "^make", "permission": { "type": "allow" } }`
    - `{ "toolName": "launch-process", "shellInputRegex": "^markdownlint", "permission": { "type": "allow" } }`
    - `{ "toolName": "launch-process", "shellInputRegex": "^npx markdownlint-cli2", "permission": { "type": "allow" } }`
+
+   **Shell commands — hooks and generators:**
+   - `{ "toolName": "launch-process", "shellInputRegex": "^git config core\\.hooksPath", "permission": { "type": "allow" } }`
+   - `{ "toolName": "launch-process", "shellInputRegex": "^git config --(get|unset) core\\.hooksPath", "permission": { "type": "allow" } }`
+   - `{ "toolName": "launch-process", "shellInputRegex": "^\\./.githooks/pre-commit", "permission": { "type": "allow" } }`
+   - `{ "toolName": "launch-process", "shellInputRegex": "^\\./?scripts/gen-.*\\.sh", "permission": { "type": "allow" } }`
+   - `{ "toolName": "launch-process", "shellInputRegex": "^\\./?scripts/install-hooks\\.sh", "permission": { "type": "allow" } }`
 
    **Shell commands — denied (destructive):**
    - `{ "toolName": "launch-process", "shellInputRegex": "rm -rf ", "permission": { "type": "deny" } }`
