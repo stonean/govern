@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# managed-by: govern
+#
+# Adopter pre-commit hook installed by /govern.
+#
+# Runs adopter-relevant generators on every commit and stages their outputs.
+# Currently runs:
+#   1. scripts/gen-spec-deps.sh  — frontmatter dependencies from body inline links
+#
+# This file is overwritten by /govern unless listed in .govern.toml `pinned.files`.
+# The `# managed-by: govern` sentinel above is how /govern detects that the file
+# is one it owns.
+
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+scripts/gen-spec-deps.sh
+
+# Stage any generator-produced changes.
+for f in specs/[0-9][0-9][0-9]-*/spec.md specs/[0-9][0-9][0-9]-*/spec-and-plan.md; do
+  [ -f "$f" ] && git add "$f"
+done

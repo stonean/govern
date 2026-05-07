@@ -132,24 +132,24 @@ Done when: both files have valid marker pairs; running the generators produces n
 
 ### 12. Implement `.githooks/pre-commit` and `scripts/install-hooks.sh`
 
-- [ ] Create `.githooks/` directory and `pre-commit` script
-- [ ] Hook calls all four generators in order: `gen-claude-commands.sh`, `gen-readme-table.sh`, `gen-help-tables.sh`, `gen-spec-deps.sh`
-- [ ] After generators run, `git add -A` the staged files (only files that were already part of the commit, plus any generator outputs)
-- [ ] Hook is executable (`chmod +x`)
-- [ ] Create `scripts/install-hooks.sh` that runs `git config core.hooksPath .githooks` (idempotent)
-- [ ] Both scripts begin with `#!/usr/bin/env bash` and `set -euo pipefail`
+- [x] Create `.githooks/` directory and `pre-commit` script
+- [x] Hook calls all four generators in order: `gen-claude-commands.sh`, `gen-readme-table.sh`, `gen-help-tables.sh`, `gen-spec-deps.sh`
+- [x] After generators run, stage outputs at known paths (`.claude/commands/gov/`, `README.md`, `framework/commands/help.md`, `specs/NNN-*/spec*.md`)
+- [x] Hook is executable
+- [x] Create `scripts/install-hooks.sh` that runs `git config core.hooksPath .githooks` (idempotent; warns if existing different value)
+- [x] Both scripts begin with `#!/usr/bin/env bash` and `set -euo pipefail`
 
-Done when: running `./scripts/install-hooks.sh` configures `core.hooksPath` correctly; making a no-op commit does not produce errors; modifying a command source produces an updated `.claude/commands/gov/*.md` automatically on commit.
+Done when: running `./scripts/install-hooks.sh` configures `core.hooksPath` correctly; making a no-op commit does not produce errors; modifying a command source produces an updated `.claude/commands/gov/*.md` automatically on commit. ✓
 
 ### 13. Implement `framework/bootstrap/hooks/pre-commit` and `framework/bootstrap/hooks/install.sh`
 
-- [ ] Create the shipped adopter hook: calls `scripts/gen-spec-deps.sh` only
-- [ ] First line after shebang is the sentinel comment: `# managed-by: govern`
-- [ ] Create the shipped install script: idempotent `git config core.hooksPath .githooks`
-- [ ] Both scripts use `#!/usr/bin/env bash` and `set -euo pipefail`
-- [ ] Both are executable
+- [x] Create the shipped adopter hook: calls `scripts/gen-spec-deps.sh` only
+- [x] Sentinel comment `# managed-by: govern` on the second line (after the shebang) — this is what `/govern` looks for to distinguish managed from hand-rolled hooks
+- [x] Create the shipped install script: idempotent `git config core.hooksPath .githooks`; refuses to overwrite an existing non-`.githooks` value (deferred to /govern's detection of existing hook systems)
+- [x] Both scripts use `#!/usr/bin/env bash` and `set -euo pipefail`
+- [x] Both are executable
 
-Done when: the shipped scripts exist and would correctly install in an adopter project.
+Done when: the shipped scripts exist and would correctly install in an adopter project. ✓
 
 ### 14. Add CI workflow for govern repo
 

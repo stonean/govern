@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# govern repo pre-commit hook.
+#
+# Runs all four generators unconditionally and stages their outputs so the
+# committed tree always has up-to-date generated artifacts.
+#
+# Generators run in a fixed order:
+#   1. gen-claude-commands.sh  — .claude/commands/gov/*.md from framework/commands/
+#   2. gen-readme-table.sh     — Feature Specs table in README.md
+#   3. gen-help-tables.sh      — five command tables in framework/commands/help.md
+#   4. gen-spec-deps.sh        — frontmatter dependencies from body inline links
+#
+# Installation: scripts/install-hooks.sh sets `git config core.hooksPath .githooks`.
+
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+scripts/gen-claude-commands.sh > /dev/null
+scripts/gen-readme-table.sh
+scripts/gen-help-tables.sh
+scripts/gen-spec-deps.sh
+
+# Stage any generator-produced changes to their known output paths.
+git add .claude/commands/gov/ 2>/dev/null || true
+git add README.md
+git add framework/commands/help.md
+for f in specs/[0-9][0-9][0-9]-*/spec.md specs/[0-9][0-9][0-9]-*/spec-and-plan.md; do
+  [ -f "$f" ] && git add "$f"
+done
