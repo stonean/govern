@@ -43,3 +43,7 @@ When adding files under `framework/`, place them by purpose, not by extension.
 ## Boundaries
 
 - Never edit `.claude/commands/gov/*.md` directly — your changes will be overwritten the next time the generator runs. Edit the source under `framework/commands/` (or `framework/bootstrap/configure/claude.md` for the `configure` command).
+
+## Design Principles
+
+- **Never design framework features that depend on human diligence or discipline.** Any artifact section, frontmatter field, command behavior, or workflow step that requires an author to *remember* to fill it in, set a flag, update a doc alongside code, or otherwise be careful will fail in practice — silently and asymmetrically (the cases where it gets skipped are exactly the cases where it mattered most). When proposing a new input, ask "what happens when an author forgets?" If the answer is "the feature degrades silently," redesign the input as **derived** (extracted from existing artifacts, frontmatter, git history, code analysis) or don't ship it. Reason: surfaced 2026-05-06 when evaluating an optional `## Upgrade Impact` spec section as a way to capture cross-version migration notes; rejected on this principle and the topic was tabled to inbox until a derivable design is found. How to apply: this is a hard filter on framework proposals, not a tiebreaker — if the only viable design relies on author discipline, the right answer is to defer the feature, not to ship the disciplined version "for now."
