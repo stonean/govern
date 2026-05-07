@@ -2,6 +2,12 @@
 
 Standards and conventions for spec-driven software development. This project defines how we run projects — the workflow, spec structure, principles, and quality rules that apply regardless of tech stack.
 
+## TL;DR
+
+`govern` adds a spec-driven pipeline that your AI agent walks for you. You describe a feature in plain English; the agent produces the spec, plan, and tasks in a consistent shape. The surface area you learn is small — a handful of verb-named slash commands (`/specify`, `/clarify`, `/plan`, `/implement`, `/validate`) that map to things you already do: write a ticket, surface unknowns, sketch an approach, build it, check your work.
+
+The payoff is that ambiguity gets caught upstream of code, and every feature lands with a written record of *why* it's built the way it is.
+
 ## Contents
 
 - [framework/](framework/) — Everything that ships to adopting projects
