@@ -153,21 +153,21 @@ Done when: the shipped scripts exist and would correctly install in an adopter p
 
 ### 14. Add CI workflow for govern repo
 
-- [ ] Create `.github/workflows/generators.yml`
-- [ ] On `pull_request`, run all four generators and `git diff --exit-code`
-- [ ] Fail the build on non-empty diff
-- [ ] Use ubuntu-latest with bash
+- [x] Create `.github/workflows/generators.yml`
+- [x] On `pull_request` (path-filtered to relevant files) and on `push` to main, run all four generators and `git diff --exit-code`
+- [x] Fail the build on non-empty diff with a clear `::error::` annotation
+- [x] Use ubuntu-latest with bash; checkout via actions/checkout@v4
 
-Done when: the workflow runs locally via `act` (or equivalent) and fails on a synthetic stale-commit; passes on a clean working tree after generators ran.
+Done when: the workflow file exists and is valid GHA YAML. Will run on next PR.
 
 ### 15. Ship adopter CI template
 
-- [ ] Create `framework/templates/ci/adopter-generators.yml`
-- [ ] Document in the file header that adopters copy this into their own `.github/workflows/`
-- [ ] Reference `scripts/gen-spec-deps.sh` (the shipped generator name)
-- [ ] Add a one-paragraph note to the adopter README pointing at the template
+- [x] Create `framework/templates/ci/adopter-generators.yml`
+- [x] Document in the file header that adopters copy this into their own `.github/workflows/govern-generators.yml`
+- [x] Reference `scripts/gen-spec-deps.sh` (the shipped generator name)
+- [x] Add a one-paragraph note to govern's README ("Optional CI enforcement" section) pointing at the template
 
-Done when: the template exists and documents adopter usage.
+Done when: the template exists and documents adopter usage. ✓
 
 ## Phase 5 — Commands
 

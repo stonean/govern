@@ -1,0 +1,44 @@
+name: generators
+
+on:
+  pull_request:
+    paths:
+      - 'framework/**'
+      - 'specs/**'
+      - 'scripts/gen-*.sh'
+      - 'README.md'
+      - 'AGENTS.md'
+      - '.githooks/**'
+      - '.github/workflows/generators.yml'
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Generators are in sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run gen-claude-commands
+        run: ./scripts/gen-claude-commands.sh
+
+      - name: Run gen-readme-table
+        run: ./scripts/gen-readme-table.sh
+
+      - name: Run gen-help-tables
+        run: ./scripts/gen-help-tables.sh
+
+      - name: Run gen-spec-deps
+        run: ./scripts/gen-spec-deps.sh
+
+      - name: Fail if any generator produced a diff
+        run: |
+          if ! git diff --exit-code; then
+            echo "::error::Generator outputs are out of date. Run scripts/install-hooks.sh and re-commit."
+            exit 1
+          fi

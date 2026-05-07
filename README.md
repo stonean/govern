@@ -254,6 +254,10 @@ A scenario is a spec at a lower level of abstraction. Scenarios live in `specs/N
 
 For brownfield projects, `specs/inbox.md` is a temporary inbox. Items are recorded with `/log` and groomed into specs or scenarios with `/groom`. The goal is for the inbox to eventually be empty.
 
+## Optional CI enforcement
+
+`/govern` installs a local pre-commit hook (`.githooks/pre-commit`) that keeps generated artifacts (currently the spec `dependencies:` frontmatter) in sync on every commit. For contributors who never installed the hook locally, govern ships a GitHub Actions template at [framework/templates/ci/adopter-generators.yml](framework/templates/ci/adopter-generators.yml). Copy it into your project at `.github/workflows/govern-generators.yml` to fail PRs when generators are out of sync. The template is not auto-installed because that would require detecting which CI platform you use (GHA vs. GitLab vs. Buildkite), which is beyond `/govern`'s scope.
+
 ## Updating an Adopted Project
 
 Projects that were bootstrapped with `/govern` or adopted `govern` manually can pull the latest `govern` files by running `/govern` again. It uses three strategies to decide how each file is handled:
