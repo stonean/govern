@@ -2,6 +2,8 @@
 
 {One-line project description.}
 
+> **Agents:** this file is the committed home for project rules — append durable learnings to the matching section (Gotchas, Workflow, Boundaries, Code Style, Testing). Add a new section only when none fits.
+
 ## Constitution
 
 See [constitution.md](constitution.md) — guiding principles, development pipeline, spec lifecycle, and quality standards that govern this project.
@@ -31,7 +33,7 @@ See [constitution.md](constitution.md) — guiding principles, development pipel
 ## Project Structure
 
 - `constitution.md` -- Principles, pipeline, quality standards
-- `AGENTS.md` -- Agent rules: tech stack, conventions, boundaries
+- `AGENTS.md` -- Agent rules: tech stack, conventions, workflow, gotchas, boundaries
 - `CLAUDE.md` -- `@AGENTS.md` + Claude Code-specific configuration
 - `specs/`
   - `system.md` -- Architecture, shared conventions
@@ -79,6 +81,19 @@ See [constitution.md](constitution.md) — guiding principles, development pipel
 
 <!-- Define testing conventions, test types, and file placement. -->
 
+## Workflow
+
+<!-- Process rules — pre-action checks, required ordering, lookup steps. "Always do X
+     before Y" style. Distinct from Boundaries (hard "never" limits) and Gotchas
+     (technical/framework quirks).
+     Example:
+
+- Before working on any spec beyond its spec.md, verify all dependency specs have status `done`. If any dependency is not done, work on the earliest incomplete dependency instead.
+- Read `framework/commands/{name}.md` before recommending or describing a slash command — don't guess from the name.
+- Run `make lint` after edits in `pkg/` before marking a task complete.
+
+-->
+
 ## Gotchas
 
 <!-- Document things agents consistently get wrong — framework quirks, version-specific behavior,
@@ -94,7 +109,6 @@ See [constitution.md](constitution.md) — guiding principles, development pipel
 
 ## Boundaries
 
-- Before working on any spec beyond its spec.md, verify all dependency specs have status `done`. If any dependency is not done, work on the earliest incomplete dependency instead.
 - Follow tasks.md literally — do not skip ahead to later pipeline phases. When tasks say to set status to `planned`, stop there. The user advances to the next phase explicitly.
 
 <!-- Define additional project-specific boundaries. Common patterns:
