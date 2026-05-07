@@ -54,32 +54,33 @@ Done when: AGENTS.md Workflow section no longer references either discipline-req
 
 ### 5. Strip `title:` from all spec-pipeline templates
 
-- [ ] `framework/templates/spec/spec.md` — remove `title:` line from frontmatter
-- [ ] `framework/templates/spec/plan.md` — remove `title:` line; remove the entire "Open Questions Resolved" section
-- [ ] `framework/templates/spec/tasks.md` — remove `title:` line; remove the `[simple]` marker documentation comment block
-- [ ] `framework/templates/spec/data-model.md` — remove `title:` line
-- [ ] `framework/templates/spec/research.md` — remove `title:` line
-- [ ] Lint passes on all five files
+- [x] `framework/templates/spec/spec.md` — remove `title:` and `tags:` lines from frontmatter; update body comment that mentioned tags; reframe dependencies as generated
+- [x] `framework/templates/spec/plan.md` — remove entire frontmatter (only had `title`); remove "Open Questions Resolved" section; reframe Affected Files as planning aid in the comment
+- [x] `framework/templates/spec/tasks.md` — remove entire frontmatter; remove `[simple]` marker documentation comment block; remove `[simple]` from the example
+- [x] `framework/templates/spec/data-model.md` — remove entire frontmatter
+- [x] `framework/templates/spec/research.md` — remove entire frontmatter
+- [x] Lint passes on all five files
 
 Done when: none of the five templates have a `title:` field in frontmatter; tasks.md has no `[simple]` documentation; plan.md has no "Open Questions Resolved" section.
 
 ### 6. Update `framework/templates/spec/spec-and-plan.md`
 
-- [ ] Remove `title:` line from frontmatter
-- [ ] Remove `track: lightweight` line from frontmatter
-- [ ] Remove the explanatory comment about the `track` field
-- [ ] Lint passes
+- [x] Remove `title:` line from frontmatter
+- [x] Remove `tags:` line from frontmatter
+- [x] Remove `track: lightweight` line from frontmatter
+- [x] Remove the explanatory comment about the `track` field
+- [x] Lint passes
 
 Done when: the template has neither `title:` nor `track:` and no comment about either.
 
 ### 7. Update `framework/templates/spec/scenario.md`
 
-- [ ] Remove `title:` line from frontmatter
-- [ ] Replace `spec-ref:` line with `section:` (the parent feature is implicit in the file path)
-- [ ] Update the explanatory comment to reflect the rename
-- [ ] Lint passes
+- [x] Remove `title:` line from frontmatter
+- [x] Replace `spec-ref:` line with `section:` (the parent feature is implicit in the file path)
+- [x] Remove `tags:` line from frontmatter
+- [x] Lint passes
 
-Done when: scenario template uses `section:` only; no `title:` or `spec-ref:` remain.
+Done when: scenario template uses `section:` only; no `title:`, `tags:`, or `spec-ref:` remain.
 
 ## Phase 4 — Generators, hooks, and CI scaffolding
 

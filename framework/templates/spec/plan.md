@@ -1,7 +1,3 @@
----
-title: "{NNN-feature-name} — plan"
----
-
 # {NNN} — {Feature Name} Plan
 
 Implements [{NNN} — {Feature Name}](spec.md).
@@ -23,20 +19,15 @@ Alternative considered: Valkey-only — rejected because sessions would be lost 
 
 ## Affected Files
 
-<!-- List files that will be created or modified. Example:
+<!-- Planning aid only — `/{project}:implement` derives the runtime write boundary
+     from `git diff` against the spec dir's first commit. List files you expect
+     to create or modify so reviewers can sanity-check scope. The list does not
+     need to be exhaustive; implement-time additions surface naturally. Example:
 
 | File | Action | Purpose |
 | --- | --- | --- |
 | `src/auth/session` | Create | Session management logic |
 | `src/middleware/auth` | Create | Auth middleware |
 | `migrations/20250228_create_sessions` | Create | Sessions table |
-
--->
-
-## Open Questions Resolved
-
-<!-- Reference open questions from the spec and record their resolution. Example:
-
-- **Rate limit scope**: Per-tenant, using Valkey sliding window counters.
 
 -->

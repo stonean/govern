@@ -1,7 +1,3 @@
----
-title: "{NNN-feature-name} — data-model"
----
-
 # {NNN} — {Feature Name} Data Model
 
 <!-- Optional. Generated during the plan phase when the feature introduces or

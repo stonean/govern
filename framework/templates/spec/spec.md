@@ -1,8 +1,6 @@
 ---
-title: "{NNN-feature-name} — spec"
 status: draft
 dependencies: []
-tags: []
 ---
 
 # {NNN} — {Feature Name}
@@ -15,9 +13,11 @@ tags: []
      Use headings that make sense for this feature — there is no fixed set of required sections
      beyond Acceptance Criteria and Open Questions.
 
-     Metadata (status, dependencies, tags) lives in the YAML frontmatter block above —
+     Metadata (status, dependencies) lives in the YAML frontmatter block above —
      not in the body. Run /{project}:clarify, /{project}:plan, and /{project}:implement
-     to advance status; the commands update the frontmatter for you.
+     to advance status; the commands update the frontmatter for you. The
+     `dependencies` list is generated from inline markdown links to sibling specs
+     in the body — do not edit it by hand.
 
      Scenarios: when a spec section needs lower-level elaboration (edge cases, bug fixes,
      detailed behavior), run /{project}:elaborate to create a scenario file under

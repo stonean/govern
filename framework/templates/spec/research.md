@@ -1,7 +1,3 @@
----
-title: "{NNN-feature-name} — research"
----
-
 # {NNN} — {Feature Name} Research
 
 <!-- Optional. Use this file to capture background research, prior art, and context
