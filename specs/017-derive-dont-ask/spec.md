@@ -1,9 +1,18 @@
 ---
 status: done
-dependencies: []
+dependencies: [018-adopter-owned-pre-commit]
 ---
 
 # 017 — Derive, Don't Ask
+
+> **Signpost (post-018):** The adopter pre-commit hook design described in
+> this spec was superseded by [018-adopter-owned-pre-commit](../018-adopter-owned-pre-commit/spec.md).
+> The shipped file at `framework/bootstrap/hooks/pre-commit` is now an
+> adopter-owned outer stub written via `create` strategy, not a govern-owned
+> hook updated via `update` strategy. The govern-owned generator orchestration
+> moved to `framework/bootstrap/hooks/govern-pre-commit`. `install.sh` is
+> deleted; install actions inline in `govern.md` §Hook Installation. AC21–AC23
+> reflect the pre-018 design.
 
 Apply the **Design Principles** rule added to `AGENTS.md` on 2026-05-06 ("Never design framework features that depend on human diligence or discipline") to every existing framework input that violates it. For each violation, land on a derivable design or an explicit deletion. No item is deferred to inbox — the principle's own escape hatch is exercised in this spec.
 

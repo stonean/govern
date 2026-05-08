@@ -329,7 +329,7 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 | `framework/rules/security-backend.md` | `specs/security-backend.md` |
 | `framework/rules/security-frontend.md` | `specs/security-frontend.md` |
 | `framework/rules/configuration.md` | `specs/configuration.md` |
-| `framework/bootstrap/hooks/pre-commit` | `.githooks/pre-commit` |
+| `framework/bootstrap/hooks/govern-pre-commit` | `.githooks/govern-pre-commit` |
 | `.markdownlint-cli2.jsonc` | `.markdownlint-cli2.jsonc` |
 | `framework/templates/spec/spec.md` | `specs/templates/spec.md` |
 | `framework/templates/spec/plan.md` | `specs/templates/plan.md` |
@@ -349,6 +349,7 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 | `framework/templates/project/events.md` | `specs/events.md` |
 | `framework/templates/project/inbox.md` | `specs/inbox.md` |
 | `scripts/gen-spec-deps.sh` | `scripts/gen-spec-deps.sh` |
+| `framework/bootstrap/hooks/pre-commit` | `.githooks/pre-commit` |
 
 ### Shared files with conflict handling
 
@@ -549,35 +550,68 @@ After writing, run the **Post-Write Integrity Check** below.
 
 After **Per-Agent Scaffolding** completes, manage the project's git pre-commit hook so generated artifacts (currently spec `dependencies:` frontmatter, future generators if added) stay in sync on every commit.
 
-The shipped hook lives at `.githooks/pre-commit` (placed by the **Shared Files** manifest above with `update` strategy). This section's job is to wire git up to actually run it (`git config core.hooksPath .githooks`) without clobbering whatever hook system the project already uses.
+Two files participate, with different ownership models:
+
+- **`.githooks/govern-pre-commit`** is govern-owned. Placed by the **Shared Files** manifest with `update` strategy; carries the `# managed-by: govern` sentinel on line 2; rewritten on every `/govern` run unless pinned in `.govern.toml`. Holds the generator orchestration (currently `scripts/gen-spec-deps.sh` plus output staging).
+- **`.githooks/pre-commit`** is adopter-owned. Placed by the manifest with `create` strategy on first install; never overwritten thereafter. Initial content invokes `./.githooks/govern-pre-commit`; adopters add their own pre-commit checks above or below that invocation.
+
+This section's job is to wire git up to actually run the outer hook (`git config core.hooksPath .githooks`) without clobbering whatever hook system the project already uses.
 
 Detection runs in this order — first match wins:
 
-1. **`core.hooksPath` already points at `.githooks`** — nothing to do. Already wired up. Continue silently.
-2. **`core.hooksPath` points at any other path** — the project uses a custom hooks dir. Skip wiring; report a warning with manual integration instructions (see below).
-3. **`.husky/` directory exists** — husky is in use. Skip wiring; report a warning.
-4. **`.pre-commit-config.yaml` exists** — pre-commit (Python) is in use. Skip wiring; report a warning.
-5. **`lefthook.yml` or `lefthook-local.yml` exists** — lefthook is in use. Skip wiring; report a warning.
-6. **Existing `.githooks/pre-commit` from a prior `/govern` run** — detected by the `# managed-by: govern` sentinel comment on line 2 of the file. Already managed; the manifest's `update` strategy already overwrote the file with the latest version. Run `git config core.hooksPath .githooks` to ensure it stays wired (idempotent), then continue.
-7. **No conflicts** (no `core.hooksPath`, no third-party hook system, no pre-existing `.githooks/pre-commit`) — run `git config core.hooksPath .githooks` and report installed.
+1. **`core.hooksPath` already points at `.githooks`** — already wired up. The manifest passes have already written `.githooks/govern-pre-commit` (`update`) and, on first run, `.githooks/pre-commit` (`create`). Run `chmod +x .githooks/pre-commit .githooks/govern-pre-commit` to ensure both files are executable. Report `pre-commit hook already wired up`.
+2. **`core.hooksPath` points at any other path** — the project uses a custom hooks dir. Skip wiring; report a warning with the manual integration snippet below.
+3. **A third-party hook system is detected** — any of `.husky/`, `.pre-commit-config.yaml`, `lefthook.yml`, or `lefthook-local.yml` exists. Skip wiring; report a warning with the manual integration snippet below.
+4. **No conflicts** — run `git config core.hooksPath .githooks` and `chmod +x .githooks/pre-commit .githooks/govern-pre-commit`. Report `pre-commit hook installed`.
+
+The detection ladder no longer treats `.githooks/pre-commit` itself as a govern-managed file — under the new model the outer file is adopter-owned, so its presence is not a signal that govern installed it. Migration of pre-existing govern-installed hooks (from spec-017 adopters) is handled by the **Migration from spec-017 hook** subsection below, which runs before the detection ladder.
 
 `scripts/gen-spec-deps.sh` ships in the **Shared Files** manifest with `create` strategy. First run installs it; subsequent runs leave it alone (so adopters can edit the script without `/govern` clobbering).
 
+### Migration from spec-017 hook
+
+Adopters who installed the pre-commit hook under spec 017 have a single govern-managed file at `.githooks/pre-commit` carrying the `# managed-by: govern` sentinel on line 2. The new layout splits that file into a govern-owned inner script and an adopter-owned outer stub at the same path. Migration runs **before** the detection ladder above and **before** the manifest passes for the two hook files, so the manifest's `update`/`create` strategies see the post-rename layout.
+
+Trigger:
+
+- `.githooks/pre-commit` exists, AND
+- the file's line 2 is exactly `# managed-by: govern`, AND
+- `.githooks/govern-pre-commit` does **not** exist.
+
+When all three hold, perform the rename:
+
+1. Determine whether the file is tracked: `git ls-files --error-unmatch .githooks/pre-commit` (exit code 0 = tracked).
+2. If tracked: `git mv .githooks/pre-commit .githooks/govern-pre-commit`. If untracked: `mv .githooks/pre-commit .githooks/govern-pre-commit`.
+3. Continue with the detection ladder and the manifest passes. The renamed inner file is byte-identical to upstream for unmodified adopters, so the `update` strategy on `.githooks/govern-pre-commit` is a no-op; the `create` strategy on `.githooks/pre-commit` writes the new outer stub since the path is now empty.
+4. Append to the post-scaffolding summary: `migrated pre-commit hook: .githooks/pre-commit → .githooks/govern-pre-commit; created adopter-owned .githooks/pre-commit stub`.
+
+Recovery branches:
+
+- **Pre-existing `.githooks/govern-pre-commit` blocks the rename.** If the inner-file destination already exists when the trigger fires, abort the rename without renaming anything. Report `migration skipped: .githooks/govern-pre-commit already exists; resolve manually` and continue with the detection ladder and manifest passes. The `update` strategy overwrites the pre-existing inner with the shipped contents; the existing `.githooks/pre-commit` (still carrying the sentinel) is left in place but is no longer detected as govern-managed by the new ladder, so it is treated as adopter-owned going forward. The adopter resolves the duplicate manually.
+- **`git mv` fails (permissions, repo locked, file in use).** Report `migration failed: could not rename .githooks/pre-commit; resolve manually` and continue with the detection ladder and manifest passes. The `update` strategy installs `.githooks/govern-pre-commit` from scratch (destination doesn't exist); the `create` strategy sees `.githooks/pre-commit` still in place and skips. The adopter ends up with both files (legacy sentinel'd outer still functional, new govern-owned inner idle) and completes the migration manually by editing the outer to call `./.githooks/govern-pre-commit`.
+
+If any of the trigger conditions does not hold, skip the migration silently — the detection ladder handles the case.
+
 ### Manual integration snippet (for skip cases)
 
-When detection skips installation (cases 2–5 above), report this message to the user:
+When detection skips installation (cases 2 and 3 above), report this message to the user:
 
 > The `govern` pre-commit hook was not wired up because your project already uses an existing hook system. To get automatic spec-deps regeneration on every commit, add this line to your existing pre-commit chain:
 >
 > ```bash
-> ./.githooks/pre-commit
+> ./.githooks/govern-pre-commit
 > ```
 >
 > The shipped hook script is idempotent and safe to call from another hook runner.
 
 ### Pinning
 
-`.githooks/pre-commit` and `scripts/gen-spec-deps.sh` are subject to `.govern.toml` `pinned.files` like any other shipped file. A pinned hook file uses `skip` strategy instead of `update` — `/govern` does not overwrite it. The Hook Installation section above still runs and may set `core.hooksPath` if appropriate.
+Both hook files are subject to `.govern.toml` `pinned.files`, but the meaning differs by ownership:
+
+- **`.githooks/govern-pre-commit`** is the only file pinning is meaningful for. A pinned inner file uses `skip` strategy instead of `update` — `/govern` does not overwrite it across releases. Useful when an adopter has customized govern's generator orchestration and does not want it reset.
+- **`.githooks/pre-commit`** is `create`-strategy and never overwritten after first run regardless of pinning. Listing it in `pinned.files` is harmless but has no effect.
+
+The Hook Installation section above still runs and may set `core.hooksPath` regardless of pinning.
 
 ## Placeholder Substitution
 
@@ -630,7 +664,7 @@ After scaffolding, display:
 
 - Summary of files created, updated, unchanged, skipped, pinned, merged, and removed — grouped by agent for per-agent files, with shared files in their own group
 - For each scaffolded agent, the agent's `rules_file_note` from the registry
-- Hook installation status — one line: `pre-commit hook installed`, `pre-commit hook already wired up`, or `pre-commit hook skipped — existing {husky|lefthook|pre-commit-py|core.hooksPath} detected; see manual integration snippet above`
+- Hook installation status — one line: `pre-commit hook installed`, `pre-commit hook already wired up`, or `pre-commit hook skipped — existing {husky|lefthook|pre-commit-py|core.hooksPath} detected; see manual integration snippet above`. When the spec-017 → spec-018 migration ran, append the migration summary line described in §Hook Installation > Migration from spec-017 hook (or the relevant recovery-branch warning if the rename was skipped or failed).
 - Any fetch failures encountered
 - Pinned `govern.md` advisory (if applicable — see below)
 - Security audit summary (if applicable — see below)
