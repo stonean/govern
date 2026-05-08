@@ -80,7 +80,20 @@ Note: Tasks 5 and 6 were completed in a single rewrite of §Hook Installation si
 Done when: signpost block sits between the H1 and the lead paragraph; the rest of 017 is byte-identical to its pre-task state.
 Maps to: AC10.
 
-## 8. End-to-end manual verification (sandbox adopter)
+## 8. Fix signpost-link pollution of predecessor's `dependencies:`
+
+Discovered during the post-Task-7 commit: the pre-commit hook's `gen-spec-deps.sh` ran and added `018-adopter-owned-pre-commit` to 017's `dependencies:` because the signpost block contains an inline markdown link to 018. Semantically wrong (017 predates 018) and a latent bug in the spec-017 signpost mechanism that the spec-018 signpost is the first to expose.
+
+Empirical investigation: a naive blockquote-skip rule (`^[[:space:]]*>`) initially looked too aggressive, but spot-checking the six other specs whose deps shrank (000, 003, 006, 007, 008, 011) revealed they were all polluted by the same pattern — retroactively-added `> **Note:** ... [NNN-later-spec](...)` signpost-style blockquotes. None of those forward-pointers represent implement-time dependencies. The blockquote-skip is the correct fix; its broader effect cleans up six existing pollution cases.
+
+- [x] In `scripts/gen-spec-deps.sh`, add a clause to the link-extraction `awk` block that skips lines matching `^[[:space:]]*>`. Place it after the existing fenced-code-block exclusion and before the `match()` loop. Update the file's header comment to note the new exclusion
+- [x] Run `scripts/gen-spec-deps.sh`. Verify 017's `dependencies` returns to `[]`. Verify the six other specs (000, 003, 006, 007, 008, 011) shed their forward-pointer deps as expected — every removed dep is the target of a `>`-prefixed line in the source spec
+- [x] Confirm running the generator a second time on the cleaned-up tree is a no-op
+
+Done when: the generator excludes blockquote-prefixed lines; 017's `dependencies` is `[]`; the six known pollution cases are cleaned up; second pass produces no diff.
+Maps to: AC13.
+
+## 9. End-to-end manual verification (sandbox adopter)
 
 - [ ] Create a temp git repository: `mktemp -d`, `git init`, configure user
 - [ ] Run `/govern` against the temp dir from a Claude Code session that has the local govern checkout as a source — fresh-install path
@@ -94,7 +107,7 @@ Maps to: AC10.
 Done when: both verification runs produce the expected file layouts; the post-scaffolding summary lines match.
 Maps to: AC8, AC9, AC11.
 
-## 9. Run all generators and lint the spec dir
+## 10. Run all generators and lint the spec dir
 
 - [ ] `scripts/gen-spec-deps.sh` — should be no-op (deps already in sync)
 - [ ] `scripts/gen-claude-commands.sh` — only changes if `framework/commands/**` or `framework/bootstrap/configure/claude.md` changed; this spec doesn't touch those, so no-op expected
@@ -104,9 +117,9 @@ Maps to: AC8, AC9, AC11.
 
 Done when: all generators run cleanly; the only diffs in the working tree are the intended file changes plus README's feature-table update.
 
-## 10. Mark all spec ACs done and update status
+## 11. Mark all spec ACs done and update status
 
 - [ ] Flip every AC checkbox in `specs/018-adopter-owned-pre-commit/spec.md` to `[x]` after each task above completes its corresponding ACs
-- [ ] After AC1–AC12 are checked, update spec frontmatter `status` from `planned` → `in-progress` → `done` per the standard pipeline
+- [ ] After AC1–AC13 are checked, update spec frontmatter `status` from `in-progress` → `done` per the standard pipeline
 
 Done when: spec frontmatter is `done`, all ACs checked, README table includes the 018 row, all working-tree diffs are intentional.

@@ -4,10 +4,12 @@
 #
 # Walks specs/NNN-*/spec.md and specs/NNN-*/spec-and-plan.md, finds inline
 # markdown links matching ](../NNN-slug/...) or ](specs/NNN-slug/...) that
-# are outside fenced code blocks, computes the union of unique sibling
-# slugs (excluding self), and rewrites the YAML frontmatter `dependencies:`
-# field as a sorted YAML list. If a spec body has no such links the field
-# becomes `[]`.
+# are outside fenced code blocks and outside blockquote-prefixed lines
+# (signposts on done specs use blockquotes; their forward-pointer links
+# are not implement-time dependencies), computes the union of unique
+# sibling slugs (excluding self), and rewrites the YAML frontmatter
+# `dependencies:` field as a sorted YAML list. If a spec body has no
+# such links the field becomes `[]`.
 #
 # Body inline links are authoritative; the frontmatter is a derived index.
 
@@ -46,6 +48,7 @@ for spec in "$ROOT"/specs/[0-9][0-9][0-9]-*/spec.md "$ROOT"/specs/[0-9][0-9][0-9
     in_fm { next }
     /^[[:space:]]*```/ { in_fence = !in_fence; next }
     in_fence { next }
+    /^[[:space:]]*>/ { next }
     {
       line = $0
       while (match(line, /\]\((\.\.\/|specs\/)[0-9][0-9][0-9]-[a-z0-9-]+/)) {

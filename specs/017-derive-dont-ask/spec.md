@@ -1,6 +1,6 @@
 ---
 status: done
-dependencies: [018-adopter-owned-pre-commit]
+dependencies: []
 ---
 
 # 017 — Derive, Don't Ask

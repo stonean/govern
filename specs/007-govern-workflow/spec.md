@@ -1,7 +1,7 @@
 ---
 title: "007-govern-workflow — spec"
 status: done
-dependencies: [003-bootstrap-automation, 011-brownfield-process, 012-multi-agent-govern]
+dependencies: [003-bootstrap-automation]
 tags: [bootstrap, commands]
 ---
 

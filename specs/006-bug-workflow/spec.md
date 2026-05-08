@@ -1,7 +1,7 @@
 ---
 title: "006-bug-workflow — spec"
 status: done
-dependencies: [011-brownfield-process]
+dependencies: []
 tags: [process, scenarios, brownfield]
 ---
 

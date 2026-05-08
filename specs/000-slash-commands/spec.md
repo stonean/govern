@@ -1,7 +1,7 @@
 ---
 title: "000-slash-commands — spec"
 status: done
-dependencies: [012-multi-agent-govern, 014-reclarify-backedge]
+dependencies: []
 tags: [commands, pipeline, templates]
 ---
 

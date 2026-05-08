@@ -1,7 +1,7 @@
 ---
 title: "011-brownfield-process — spec"
 status: done
-dependencies: [006-bug-workflow, 007-govern-workflow]
+dependencies: [007-govern-workflow]
 tags: [brownfield, process]
 ---
 

@@ -36,18 +36,18 @@ See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred 
 
 | Spec | Status | Dependencies | Description |
 | --- | --- | --- | --- |
-| [000-slash-commands](specs/000-slash-commands/spec.md) | done | 012, 014 | Generic, project-agnostic slash command templates that operationalize the governance development pipeline. |
+| [000-slash-commands](specs/000-slash-commands/spec.md) | done | none | Generic, project-agnostic slash command templates that operationalize the governance development pipeline. |
 | [001-system-spec-templates](specs/001-system-spec-templates/spec.md) | done | none | Templates for the cross-cutting system specs that the constitution references but does not provide: `system.md`, `errors.md`, and `events.md`. |
 | [002-project-scaffolding](specs/002-project-scaffolding/spec.md) | done | 000, 001 | Templates for the project-level files that every governance-adopting project needs beyond the constitution, AGENTS.md, and spec templates. |
-| [003-bootstrap-automation](specs/003-bootstrap-automation/spec.md) | done | 000, 001, 002, 012 | Governance slash commands that dogfood the same pipeline commands adopting projects use (`/gov:about`, `/gov:target`, `/gov:status`, `/gov:setup`, `/gov:specify`, `/gov:clarify`, `/gov:plan`, `/gov:implement`, `/gov:validate`, `/gov:next`), plus a governance-specific `/gov:init` that scaffolds new projects from templates. |
+| [003-bootstrap-automation](specs/003-bootstrap-automation/spec.md) | done | 000, 001, 002 | Governance slash commands that dogfood the same pipeline commands adopting projects use (`/gov:about`, `/gov:target`, `/gov:status`, `/gov:setup`, `/gov:specify`, `/gov:clarify`, `/gov:plan`, `/gov:implement`, `/gov:validate`, `/gov:next`), plus a governance-specific `/gov:init` that scaffolds new projects from templates. |
 | [004-tech-stack-selection](specs/004-tech-stack-selection/spec.md) | done | 003 | Interactive tech stack selection during `/gov:init` that collects richer project metadata beyond primary language(s). |
 | [005-workflows](specs/005-workflows/spec.md) | done | 004, 010 | Based on project tech stack, recommend and scaffold relevant development workflow files during bootstrap. |
-| [006-bug-workflow](specs/006-bug-workflow/spec.md) | done | 011 | Bugs are unwritten scenarios. |
-| [007-govern-workflow](specs/007-govern-workflow/spec.md) | done | 003, 011, 012 | A self-contained slash command file that bootstraps governance in existing (brownfield) projects. |
-| [008-security-rules](specs/008-security-rules/spec.md) | done | 007, 016 | Comprehensive, enforceable security rules for backend and frontend development. |
+| [006-bug-workflow](specs/006-bug-workflow/spec.md) | done | none | Bugs are unwritten scenarios. |
+| [007-govern-workflow](specs/007-govern-workflow/spec.md) | done | 003 | A self-contained slash command file that bootstraps governance in existing (brownfield) projects. |
+| [008-security-rules](specs/008-security-rules/spec.md) | done | 007 | Comprehensive, enforceable security rules for backend and frontend development. |
 | [009-scenario-targeting](specs/009-scenario-targeting/spec.md) | done | 006 | Promote scenarios to first-class targets in the governance pipeline. |
 | [010-agent-autonomy](specs/010-agent-autonomy/spec.md) | done | 000 | Evaluate capabilities found in autonomous agent orchestration tools (e.g., GSD-2) and determine which can be adopted within governance's constraints: zero dependencies, markdown-only artifacts, platform-agnostic, and human-in-the-loop pipeline gates. |
-| [011-brownfield-process](specs/011-brownfield-process/spec.md) | done | 006, 007 | A formalized process for initializing and incrementally building out specs in brownfield projects. |
+| [011-brownfield-process](specs/011-brownfield-process/spec.md) | done | 007 | A formalized process for initializing and incrementally building out specs in brownfield projects. |
 | [012-multi-agent-govern](specs/012-multi-agent-govern/spec.md) | done | 007 | A single `govern.md` command that supports adopting governance for multiple AI coding CLIs in the same project, with the target agent(s) selected at run time rather than baked into the file. |
 | [013-text-first-artifacts](specs/013-text-first-artifacts/spec.md) | done | 000, 007, 012 | Declare governance's implicit "all artifacts are markdown" principle in the constitution, formalize spec metadata as YAML frontmatter, and migrate adopted projects to the new format on the next `/govern` run. |
 | [014-reclarify-backedge](specs/014-reclarify-backedge/spec.md) | done | 000, 009, 013 | Wire up `/ask` to own the `clarified` / `planned` / `in-progress` → `draft` back-edge so questions surfacing mid-pipeline are captured and the spec's lifecycle invariant is maintained automatically. |
