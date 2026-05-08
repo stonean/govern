@@ -95,31 +95,31 @@ Maps to: AC13.
 
 ## 9. End-to-end manual verification (sandbox adopter)
 
-- [ ] Create a temp git repository: `mktemp -d`, `git init`, configure user
-- [ ] Run `/govern` against the temp dir from a Claude Code session that has the local govern checkout as a source — fresh-install path
-- [ ] Verify: both `.githooks/pre-commit` and `.githooks/govern-pre-commit` exist, both are executable, only the inner has the sentinel on line 2, `core.hooksPath` is set to `.githooks`
-- [ ] Add a comment line to the outer file (`# adopter test edit`); commit something trivial
-- [ ] Re-run `/govern`; verify the comment line in the outer file survives
-- [ ] In a second temp dir, simulate the spec-017 install: create `.githooks/pre-commit` with the legacy contents (sentinel on line 2), set `core.hooksPath .githooks`
-- [ ] Run `/govern` against the second temp dir — migration path
-- [ ] Verify: `.githooks/pre-commit` now contains the new outer stub (no sentinel), `.githooks/govern-pre-commit` contains the legacy contents (sentinel on line 2), the post-scaffolding summary includes the migration line
+- [x] Create a temp git repository: `mktemp -d`, `git init`, configure user
+- [x] Run `/govern` against the temp dir from a Claude Code session that has the local govern checkout as a source — fresh-install path
+- [x] Verify: both `.githooks/pre-commit` and `.githooks/govern-pre-commit` exist, both are executable, only the inner has the sentinel on line 2, `core.hooksPath` is set to `.githooks`
+- [x] Add a comment line to the outer file (`# adopter test edit`); commit something trivial
+- [x] Re-run `/govern`; verify the comment line in the outer file survives
+- [x] In a second temp dir, simulate the spec-017 install: create `.githooks/pre-commit` with the legacy contents (sentinel on line 2), set `core.hooksPath .githooks`
+- [x] Run `/govern` against the second temp dir — migration path
+- [x] Verify: `.githooks/pre-commit` now contains the new outer stub (no sentinel), `.githooks/govern-pre-commit` contains the legacy contents (sentinel on line 2), the post-scaffolding summary includes the migration line
 
 Done when: both verification runs produce the expected file layouts; the post-scaffolding summary lines match.
 Maps to: AC8, AC9, AC11.
 
 ## 10. Run all generators and lint the spec dir
 
-- [ ] `scripts/gen-spec-deps.sh` — should be no-op (deps already in sync)
-- [ ] `scripts/gen-claude-commands.sh` — only changes if `framework/commands/**` or `framework/bootstrap/configure/claude.md` changed; this spec doesn't touch those, so no-op expected
-- [ ] `scripts/gen-readme-table.sh` — adds an 018 row to the README Feature Specs table once status hits `done`; with status at `in-progress` the row is also present, so this updates README
-- [ ] `scripts/gen-help-tables.sh` — no command files changed; no-op
-- [ ] `npx markdownlint-cli2 specs/018-adopter-owned-pre-commit/*.md`
+- [x] `scripts/gen-spec-deps.sh` — should be no-op (deps already in sync)
+- [x] `scripts/gen-claude-commands.sh` — only changes if `framework/commands/**` or `framework/bootstrap/configure/claude.md` changed; this spec doesn't touch those, so no-op expected
+- [x] `scripts/gen-readme-table.sh` — adds an 018 row to the README Feature Specs table once status hits `done`; with status at `in-progress` the row is also present, so this updates README
+- [x] `scripts/gen-help-tables.sh` — no command files changed; no-op
+- [x] `npx markdownlint-cli2 specs/018-adopter-owned-pre-commit/*.md`
 
 Done when: all generators run cleanly; the only diffs in the working tree are the intended file changes plus README's feature-table update.
 
 ## 11. Mark all spec ACs done and update status
 
-- [ ] Flip every AC checkbox in `specs/018-adopter-owned-pre-commit/spec.md` to `[x]` after each task above completes its corresponding ACs
-- [ ] After AC1–AC13 are checked, update spec frontmatter `status` from `in-progress` → `done` per the standard pipeline
+- [x] Flip every AC checkbox in `specs/018-adopter-owned-pre-commit/spec.md` to `[x]` after each task above completes its corresponding ACs
+- [x] After AC1–AC13 are checked, update spec frontmatter `status` from `in-progress` → `done` per the standard pipeline
 
 Done when: spec frontmatter is `done`, all ACs checked, README table includes the 018 row, all working-tree diffs are intentional.
