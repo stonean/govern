@@ -439,14 +439,6 @@ Track the count of newly appended findings (post-deduplication). The total is re
 
 For each selected agent (in registry row order), run these steps with `{config_dir}` resolved to the agent's value and `{key}` to the agent's key.
 
-### Command stubs (strategy: create)
-
-Slash command stubs the adopter fills in. Created on first run, skipped on re-run.
-
-| Source Path | Destination Path |
-| --- | --- |
-| `framework/templates/commands/initialize.md` | `{config_dir}/commands/{project}/initialize.md` |
-
 ### Slash commands (strategy: update)
 
 Fetch each command template and copy it into `{config_dir}/commands/{project}/`. In each copied file, replace `{project}` with the user-provided project name and `{cli-config-dir}` with `{config_dir}`.
@@ -462,7 +454,6 @@ Fetch each command template and copy it into `{config_dir}/commands/{project}/`.
 | `framework/commands/implement.md` | `{config_dir}/commands/{project}/implement.md` |
 | `framework/commands/log.md` | `{config_dir}/commands/{project}/log.md` |
 | `framework/commands/plan.md` | `{config_dir}/commands/{project}/plan.md` |
-| `framework/commands/spawn.md` | `{config_dir}/commands/{project}/spawn.md` |
 | `framework/commands/specify.md` | `{config_dir}/commands/{project}/specify.md` |
 | `framework/commands/status.md` | `{config_dir}/commands/{project}/status.md` |
 | `framework/commands/target.md` | `{config_dir}/commands/{project}/target.md` |
@@ -473,7 +464,7 @@ The configure row uses the agent-specific source `framework/bootstrap/configure/
 
 ### Slash command cleanup
 
-After processing the slash command manifest above, list all `.md` files in `{config_dir}/commands/{project}/`. For each file that is **not** in the slash command manifest above, **not** the `initialize.md` file, and **not** listed in `.govern.toml` `pinned.files`:
+After processing the slash command manifest above, list all `.md` files in `{config_dir}/commands/{project}/`. For each file that is **not** in the slash command manifest above and **not** listed in `.govern.toml` `pinned.files`:
 
 - Delete the file.
 - Report it as "removed" in the post-scaffolding summary.

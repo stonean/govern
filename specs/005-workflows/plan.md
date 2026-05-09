@@ -83,7 +83,7 @@ Workflow files are fetched on demand from upstream at scaffold time using the sa
 
 The current `.claude/commands/gov/init.md` has 12 ordered steps. The workflow recommendation step needs the full set of tech stack selections and must run before AGENTS.md is finalized so any future "workflows installed" annotation can be added if desired. The natural slot is immediately after step 4. Existing steps 5–12 shift down by one.
 
-The "Display next steps" final step already enumerates configure/AGENTS/system/initialize/specify follow-ups. No additional next-step item is required for workflows — they are scaffolded inside the new step itself.
+The "Display next steps" final step already enumerates configure/AGENTS/system/specify follow-ups. No additional next-step item is required for workflows — they are scaffolded inside the new step itself.
 
 ### Govern's recommendation step is inserted after manifest processing and before post-scaffolding output
 

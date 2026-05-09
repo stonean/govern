@@ -126,8 +126,6 @@ Create `.claude/commands/{slug}/` and copy every `.md` file from the `govern` re
 
 Additionally, copy `framework/bootstrap/configure/claude.md` into `.claude/commands/{slug}/configure.md` (renaming it), substituting placeholders the same way.
 
-Additionally, copy `framework/templates/commands/initialize.md` from the `govern` repo into `.claude/commands/{slug}/initialize.md`. Replace `{project}` with the user-provided project name. This provides a stub initialize command that the project fills in with language-specific post-copy steps for use by the spawn command.
-
 ### 8. Recommend and scaffold workflows
 
 Match the user's tech stack selections from input step 4 against the workflow registry and offer matching workflows, grouped by category.
@@ -199,8 +197,7 @@ Next steps:
 2. Run `/{slug}:configure` to apply the full permission set
 3. Fill in `AGENTS.md` — project structure, code style, testing conventions, and gotchas (Tech Stack table was populated from your selections)
 4. Fill in `specs/system.md` — architecture, request lifecycle, shared infrastructure
-5. Fill in `.claude/commands/{slug}/initialize.md` — language-specific post-copy steps for `/{slug}:spawn`
-6. Create your first feature spec: `/{slug}:specify {feature description}`
+5. Create your first feature spec: `/{slug}:specify {feature description}`
 
 ---
 

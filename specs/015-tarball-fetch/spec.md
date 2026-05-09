@@ -7,8 +7,6 @@ tags: [bootstrap, performance]
 
 # 015 — Tarball Fetch
 
-> **Note:** the `framework/templates/project/initialize.md` reference below reflects the layout at the time. The repository was later reorganized so slash command stubs scaffolded at adoption live in `framework/templates/commands/` (currently just `initialize.md`); project document templates remain in `framework/templates/project/`. Adopting projects' destination paths did not change, and the manifest count is unaffected.
-
 Collapse `/govern`'s ~35–50 individual `curl` fetches into a single archive download, extracted once into a temp directory and resolved as local paths. The manifest, strategies (`update`/`create`/`skip`/`merge`/`pinned`), and per-agent scaffolding flow are unchanged — only the **File Fetching** section's transport is replaced.
 
 ## Problem
@@ -19,8 +17,7 @@ Today `framework/bootstrap/govern.md` issues one `curl` per file in the manifest
 - ~4 project-specific shared files (system, errors, events, inbox)
 - 2–3 conditional shared files (AGENTS.md, CLAUDE.md, gitignore template)
 - 1–N per-language gitignore patterns from `github.com/github/gitignore`
-- ~16 slash command sources (15 in `framework/commands/` + 1 agent-specific configure)
-- 1 `framework/templates/project/initialize.md`
+- ~14 slash command sources (13 in `framework/commands/` + 1 agent-specific configure)
 - 1 `framework/bootstrap/govern.md` (self-install)
 - 0–N workflow templates (only those the user accepts)
 

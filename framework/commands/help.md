@@ -88,7 +88,6 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 | --- | --- |
 | `/govern` | Adopt or update govern in an existing project. |
 | `/{project}:configure` | Configure settings.local.json with permissions for slash commands. |
-| `/{project}:spawn` | Spawn a new project from this one, copying specs, commands, and config. |
 
 <!-- generated:commands-bootstrap:end -->
 

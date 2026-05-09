@@ -116,7 +116,6 @@ orient_table="$(build_two_col_table \
 bootstrap_table="$(build_two_col_table \
   '/govern'              "$BOOTSTRAP_DIR/govern.md" \
   '/{project}:configure' "$BOOTSTRAP_DIR/configure/claude.md" \
-  '/{project}:spawn'     "$CMD_DIR/spawn.md" \
 )"
 
 # Splice each table between its markers. Fail if any marker is missing.

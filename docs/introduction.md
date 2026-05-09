@@ -65,7 +65,7 @@ The framework is operationalized through slash commands installed during adoptio
 | Elaborate (add precision) | `/ask`, `/elaborate` |
 | Brownfield (absorb existing reality) | `/capture`, `/log`, `/groom` |
 | Orient | `/target`, `/status`, `/help` |
-| Bootstrap | `/govern`, `/configure`, `/spawn` |
+| Bootstrap | `/govern`, `/configure` |
 
 For full descriptions of each command and the rules each enforces, see `framework/constitution.md` and the command sources in `framework/commands/` and `framework/bootstrap/`.
 

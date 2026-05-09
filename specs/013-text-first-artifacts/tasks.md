@@ -96,21 +96,15 @@ These tasks may proceed in parallel within a session. Each command file is touch
 - [x] Updated scope boundaries to declare that `status` is read from YAML frontmatter; references §text-first-artifacts.
 - [x] **Done when:** audit complete; any required updates lint clean.
 
-### 14. Audit and update `/gov:spawn`
-
-- [x] Read `framework/commands/spawn.md` and check whether it copies or transforms spec metadata when spawning a new project.
-- [x] Audit conclusion: spawn copies the entire `specs/` directory and performs string replacement on project-name references only. It does not parse, read, or write spec/scenario metadata fields. Frontmatter is preserved in the copy by virtue of full-directory copy. No edit needed.
-- [x] **Done when:** audit complete; any required updates lint clean.
-
-### 15. Regenerate Claude command instances
+### 14. Regenerate Claude command instances
 
 - [x] Run `./scripts/gen-claude-commands.sh` to regenerate `.claude/commands/gov/*.md` from the updated `framework/commands/` and `framework/bootstrap/configure/claude.md` sources.
-- [x] Spot-checked the regenerated files: 16 files regenerated, all lint clean.
+- [x] Spot-checked the regenerated files: 15 files regenerated, all lint clean.
 - [x] **Done when:** generation completes without error; spot-check passes.
 
 ## Phase 3: Migration logic in `/govern`
 
-### 16. Add migration step to `framework/bootstrap/govern.md`
+### 15. Add migration step to `framework/bootstrap/govern.md`
 
 - [x] Add a new section to `framework/bootstrap/govern.md`, positioned between Project Configuration (which reads `.governance.toml`) and File Fetching, titled "Frontmatter Migration."
 - [x] Step 1: run `git status --porcelain -- specs/` (project-relative). If the output is non-empty, refuse with a clear message ("Migration requires a clean working tree under `specs/`. Commit or stash your changes, then re-run.") and exit before any modifications.
@@ -122,13 +116,13 @@ These tasks may proceed in parallel within a session. Each command file is touch
 - [x] Added an Edge Cases subsection covering partially-migrated files, malformed metadata, and custom open-schema fields.
 - [x] **Done when:** the migration section is present, idempotent, scoped, and respects pinning; file lints clean.
 
-### 17. Add Quartz tip to govern.md post-run output
+### 16. Add Quartz tip to govern.md post-run output
 
 - [x] Added a one-line tip to both the First-run and Update-mode output blocks: `Tip: \`npx quartz specs/\` renders your specs as a navigable graph view in the browser. Other PKM tools (Obsidian, Logseq, MkDocs) work unchanged.`
 - [x] Positioned at the end of each block (after the existing next-steps content) so it's discoverable but not load-bearing.
 - [x] **Done when:** the tip appears in the post-run output; file lints clean.
 
-### 18. Verify migration on a test fixture
+### 17. Verify migration on a test fixture
 
 - [x] Created `/tmp/govern-013-fixture/` with: `specs/000-foo/spec.md` (typical bold-prefix), `specs/000-foo/scenarios/edge-case.md` (bold-prefix `spec-ref`), `specs/001-bar/spec.md` (pinned via `.governance.toml`), `specs/002-already-migrated/spec.md` (already in frontmatter), plus a `.governance.toml` pinning `001-bar`.
 - [x] Confirmed clean-tree precheck behavior: clean → empty `git status --porcelain -- specs/` → migration proceeds; dirty → non-empty output → migration refuses.
@@ -140,7 +134,7 @@ These tasks may proceed in parallel within a session. Each command file is touch
 
 ## Phase 4: Self-migration of governance's own specs
 
-### 19. Migrate existing governance specs to frontmatter
+### 18. Migrate existing governance specs to frontmatter
 
 - [x] For each spec under `specs/000-*` through `specs/012-*`: open `spec.md`, insert a frontmatter block with the existing `status` and `dependencies` values, and remove the bold-prefix lines from the body. Tags remain empty (`tags: []`) — backfill is organic per Q2's resolution. (All 13 specs use `spec.md`; no `spec-and-plan.md` files exist in this repo.)
 - [x] Migrate `specs/013-text-first-artifacts/spec.md` last so the migration process operates on the spec that motivated it. (Tags populated as `[format, migration, pipeline]` reflecting the spec's actual concerns.)
@@ -149,7 +143,7 @@ These tasks may proceed in parallel within a session. Each command file is touch
 
 ## Phase 5: Documentation
 
-### 20. Add "Viewing artifacts" section to README.md
+### 19. Add "Viewing artifacts" section to README.md
 
 - [x] Added a new "Viewing artifacts" section to the root `README.md`, positioned just before the "Markdown" section.
 - [x] Documents `npx quartz build --input specs/ --serve` as the recommended viewer; references `framework/constitution.md` §text-first-artifacts.
@@ -158,13 +152,13 @@ These tasks may proceed in parallel within a session. Each command file is touch
 
 ## Phase 6: Verification
 
-### 21. Lint and validate
+### 20. Lint and validate
 
 - [x] Ran `npx markdownlint-cli2 "**/*.md" "!CLAUDE.md"` across the repo: 100 files, 0 errors.
 - [x] Walked through the validate prose against representative migrated specs (013, 000) — hard-fail checks pass for all, advisory triggers correctly on empty `tags` for migrated specs, and informational unknown-field rule does not raise spurious findings. The strict/advisory split functions as designed in `framework/commands/validate.md`.
 - [x] **Done when:** lint clean across the repo, validate behaves per the strict/advisory split, all specs report as valid.
 
-### 22. Final acceptance-criteria sweep
+### 21. Final acceptance-criteria sweep
 
 - [x] Walked the spec's Acceptance Criteria list and verified each item against the implementation.
 - [x] Marked each acceptance criterion `[x]` as it is verified — all criteria are satisfied.
@@ -172,7 +166,7 @@ These tasks may proceed in parallel within a session. Each command file is touch
 
 ## Phase 7: Post-done refinements
 
-### 23. Tag-curation pass across all specs
+### 22. Tag-curation pass across all specs
 
 - [x] Walked every `specs/*/spec.md` and reviewed the `tags:` frontmatter. 10 specs (000, 001, 002, 003, 004, 006, 007, 009, 011, 012) had empty `tags: []`; populated each. 4 specs (005, 008, 010, 013) had pre-existing tags; reviewed and kept as-is.
 - [x] Used a coherent taxonomy drawn from values already in use (`bootstrap`, `templates`, `format`, `migration`, `pipeline`, `agent`, `process`, `security`) plus three new shared values (`commands`, `scenarios`, `brownfield`) where existing tags would have been misleading.

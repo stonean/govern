@@ -16,7 +16,6 @@ The `framework/` directory is govern's source — everything that ships to adopt
 - `framework/rules/` — domain rule sets adopted projects can reference (security-backend, security-frontend, …)
 - `framework/templates/spec/` — templates consumed by an agent during the pipeline (spec, plan, tasks, data-model, research, scenario, spec-and-plan)
 - `framework/templates/project/` — project document templates consumed once at adoption (agents, claude-md, system, errors, events, project-readme, gitignore, inbox)
-- `framework/templates/commands/` — slash command stubs scaffolded once at adoption (initialize)
 - `framework/commands/` — operational slash command sources only
 - `framework/workflows/` — tech-stack-specific workflow files (lint, test, format) plus `registry.json` mapping stack selections to workflows
 - `framework/bootstrap/` — the `govern.md` installer plus per-agent permission files at `bootstrap/configure/{key}.md`

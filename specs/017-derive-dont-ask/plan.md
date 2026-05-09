@@ -151,7 +151,6 @@ A second workflow file (`.github/workflows/adopter-generators.yml`) ships as a t
 | `framework/commands/target.md` | Modify | Remove `tags` from frontmatter parse; add deps recompute on entry |
 | `framework/commands/help.md` | Modify | Add HTML marker comments around the five command tables; tables become generator output |
 | `framework/commands/log.md` | No change | — |
-| `framework/commands/spawn.md` | No change | — |
 | `framework/commands/status.md` | No change | — |
 
 ### Constitution
