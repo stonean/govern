@@ -53,35 +53,35 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is a docume
 
 ## 6. Create `data-model.md`
 
-- [ ] Already drafted as part of `/gov:plan`; verify it lints, references 005, and covers `[pinned]` (existing), `[workflows]` (new), category list, case-insensitive matching, unrecognized entries, empty cases, future-section guidance, and backwards compatibility.
-- [ ] **Done when**: `npx markdownlint-cli2 specs/019-config-decisions/data-model.md` passes; the schema declaration matches the runbook prose word-for-word on category names and key names.
+- [x] Already drafted as part of `/gov:plan`; verify it lints, references 005, and covers `[pinned]` (existing), `[workflows]` (new), category list, case-insensitive matching, unrecognized entries, empty cases, future-section guidance, and backwards compatibility.
+- [x] **Done when**: `npx markdownlint-cli2 specs/019-config-decisions/data-model.md` passes; the schema declaration matches the runbook prose word-for-word on category names and key names.
 
 ## 7. Update README's `.govern.toml` section
 
-- [ ] Edit `README.md` lines ~282–296. Rename **"Pinning files with .govern.toml"** to **"Configuring `.govern.toml`"**.
-- [ ] Keep the existing `[pinned]` example.
-- [ ] Add a `[workflows]` example showing `declined_categories = ["Linting"]` with one or two sentences explaining the prompt origin and how to undo (delete the entry, or the section, or the file).
-- [ ] Cross-link to `specs/019-config-decisions/spec.md` and `specs/019-config-decisions/data-model.md` for full schema rationale.
-- [ ] **Done when**: the renamed section documents both sections with minimal examples and links to the canonical sources; lints pass; section anchors that may be referenced elsewhere in the README remain resolvable (or are updated).
+- [x] Edit `README.md` lines ~282–296. Rename **"Pinning files with .govern.toml"** to **"Configuring `.govern.toml`"**.
+- [x] Keep the existing `[pinned]` example.
+- [x] Add a `[workflows]` example showing `declined_categories = ["Linting"]` with one or two sentences explaining the prompt origin and how to undo (delete the entry, or the section, or the file).
+- [x] Cross-link to `specs/019-config-decisions/spec.md` and `specs/019-config-decisions/data-model.md` for full schema rationale.
+- [x] **Done when**: the renamed section documents both sections with minimal examples and links to the canonical sources; lints pass; section anchors that may be referenced elsewhere in the README remain resolvable (or are updated).
 
 ## 8. Add a signpost to spec 005
 
-- [ ] Spec `005-workflows` is `done`. Per `done specs are frozen archaeology`, do not edit the body. Instead, add a top-of-spec signpost (between the frontmatter and the `# 005 — Workflows` heading area, sitting alongside the existing post-completion Note about the filename rename) that:
+- [x] Spec `005-workflows` is `done`. Per `done specs are frozen archaeology`, do not edit the body. Instead, add a top-of-spec signpost (between the frontmatter and the `# 005 — Workflows` heading area, sitting alongside the existing post-completion Note about the filename rename) that:
   - States: the per-category prompt now has three options instead of two, with a third `Skip and don't ask again` option that records the decline in `.govern.toml`.
   - Back-links to `specs/019-config-decisions/spec.md` for the current behavior.
   - Preserves the existing post-completion Note about the `{tool}.md` filename rename.
-- [ ] **Done when**: 005's `spec.md` body is otherwise untouched; the signpost is at the top of the body and back-links to 019; lints pass.
+- [x] **Done when**: 005's `spec.md` body is otherwise untouched; the signpost is at the top of the body and back-links to 019; lints pass.
 
 ## 9. Walk-through verification
 
-- [ ] Bench-test the runbook against three synthetic `.govern.toml` shapes by reading the prose end-to-end:
+- [x] Bench-test the runbook against three synthetic `.govern.toml` shapes by reading the prose end-to-end:
   - **Shape A**: file does not exist; user picks `Skip and don't ask again` for `Linting`. Verify the runbook prose unambiguously walks the agent to: prompt with three options, write a new `.govern.toml` with `[workflows] declined_categories = ["Linting"]`, emit both summary lines (`created .govern.toml...` and the suppressed line on the *next* hypothetical run).
   - **Shape B**: file has `[pinned] files = [...]` and `[workflows] declined_categories = ["Formatting"]`. Verify the agent suppresses the `Formatting` prompt (with summary line), prompts for the rest with three options, and preserves `[pinned]` if the user adds a new decline.
   - **Shape C**: file has `[workflows] declined_categories = ["Linitng"]` (typo). Verify the agent prompts for `Linting` normally and emits exactly one `unrecognized workflow decline: "Linitng"` summary line.
-- [ ] **Done when**: all three walks confirm the runbook prose is unambiguous. If any shape exposes ambiguity, refine the prose in tasks 1–5 and re-walk.
+- [x] **Done when**: all three walks confirm the runbook prose is unambiguous. If any shape exposes ambiguity, refine the prose in tasks 1–5 and re-walk.
 
 ## 10. Lint and finalize
 
-- [ ] Run `npx markdownlint-cli2` against the entire feature directory and any modified files (`framework/bootstrap/govern.md`, `README.md`, `specs/005-workflows/spec.md`).
-- [ ] Verify `scripts/gen-spec-deps.sh --dry-run` reports no changes (the dependency on 005 was already added during clarify).
-- [ ] **Done when**: all lints pass; the dependencies frontmatter is in sync; spec status is ready to advance to `done`.
+- [x] Run `npx markdownlint-cli2` against the entire feature directory and any modified files (`framework/bootstrap/govern.md`, `README.md`, `specs/005-workflows/spec.md`).
+- [x] Verify `scripts/gen-spec-deps.sh --dry-run` reports no changes (the dependency on 005 was already added during clarify).
+- [x] **Done when**: all lints pass; the dependencies frontmatter is in sync; spec status is ready to advance to `done`.

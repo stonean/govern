@@ -63,7 +63,7 @@ See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred 
 
 For brownfield projects, install the `govern` command and run it — no clone required. Once adopted, use `/capture` to initialize skeleton specs for existing features and let them gain precision incrementally through bug fixes, enhancements, and clarification.
 
-`govern` operates a **live-on-main** model — the snippets below fetch the latest from `main`. Tagged releases (`v0.1.0`, etc.) mark milestones for changelogs and release notes, not pinning targets. Adopters who want to lock individual files they've customized use `.govern.toml` (see [Pinning files with .govern.toml](#pinning-files-with-governtoml) below).
+`govern` operates a **live-on-main** model — the snippets below fetch the latest from `main`. Tagged releases (`v0.1.0`, etc.) mark milestones for changelogs and release notes, not pinning targets. Adopters who want to lock individual files they've customized use `.govern.toml` (see [Configuring `.govern.toml`](#configuring-governtoml) below).
 
 ### Claude Code
 
@@ -280,9 +280,13 @@ The `.gitignore` uses a `merge` strategy — `govern` patterns are appended belo
 
 Re-running `/govern` always pulls from `main` — the project does not pin to a specific tag. To track a tag instead, edit the `https://raw.githubusercontent.com/.../main/` URL inside your installed `govern.md` to point at the tag (e.g., `v0.1.0`). Most adopters won't need to — the per-file pinning below is finer-grained and usually the right tool.
 
-### Pinning files with .govern.toml
+### Configuring `.govern.toml`
 
-If your project has customized a file that `govern` normally overwrites (`update` strategy), you can pin it to prevent `/govern` from overwriting your changes. Create a `.govern.toml` file in your project root:
+`.govern.toml` is the project's optional configuration and persisted-decisions file. Create it at your project root only if you need one of the behaviors below — `/govern` runs without it just fine.
+
+#### `[pinned]` — keep `/govern` from overwriting customized files
+
+If your project has customized a file that `govern` normally overwrites (`update` strategy), pin it:
 
 ```toml
 [pinned]
@@ -295,6 +299,19 @@ files = [
 ```
 
 Any file listed in `pinned.files` is treated as `skip` instead of `update` when `/govern` runs. Pinned files are reported in the post-scaffolding summary.
+
+#### `[workflows]` — stop being asked about declined workflow categories
+
+When `/govern` offers a workflow category (Linting, Formatting, Testing, Migrations, Code Review, Deployment), the prompt has three options: `Yes, scaffold all in this category`, `Skip this run`, or `Skip and don't ask again`. Picking the third option records the decline here:
+
+```toml
+[workflows]
+declined_categories = ["Linting"]
+```
+
+Categories listed are matched case-insensitively against the canonical category list. `/govern` won't prompt for them on subsequent runs and reports `suppressed (workflow): {Category} (declined in .govern.toml)` in the summary. To re-enable the prompt for a category, remove it from the array (or delete the `[workflows]` section, or delete the file).
+
+For the full schema — allowed values, unrecognized-entry handling, and future sections — see [`specs/019-config-decisions/data-model.md`](specs/019-config-decisions/data-model.md).
 
 ### Manual updates
 
