@@ -34,6 +34,14 @@ Rule IDs follow the format `CFG-{CATEGORY}-{NNN}` and are permanent — once ass
 
 **Verification:** Any spec or plan that introduces operator-tunable behavior MUST commit to a named constant or env var for each value. Validate flags plan affected-files snippets that show numeric or string literals of operator-tunable shape (durations, counts, thresholds, rate limits) without a constant or env var lookup. Ordinary literals used for local logic — loop indices, intermediate calculations, string formatting within a function — are out of scope.
 
+### CFG-CONST-004
+
+> When an operator-tunable value has a valid range, the bounds (minimum and/or maximum) MUST be expressed as named constants alongside the default constant.
+
+**Rationale:** Bare-literal bounds in validation code are invisible to operators looking for the safe range, drift between the defining spec and the implementation, and produce inconsistent enforcement when the same value is checked in more than one place. Naming the bounds makes the safe range discoverable and enforceable from one place.
+
+**Verification:** Any spec or plan that introduces a value with a documented valid range MUST commit to named constants for each bound (e.g., `MinHTTPReadTimeoutSeconds = 1`, `MaxHTTPReadTimeoutSeconds = 300`) alongside the default constant. Validate flags plans that propose range checks using bare literals.
+
 ## CFG-ENV — Environment variables
 
 ### CFG-ENV-001
@@ -66,10 +74,25 @@ Rule IDs follow the format `CFG-{CATEGORY}-{NNN}` and are permanent — once ass
 
 ### CFG-ENV-004
 
-> Environment variables holding time values MUST include the unit in the variable name (`_MS`, `_SECONDS`, `_MINUTES`, `_HOURS`). The corresponding default constant MUST also make the unit explicit (e.g., `DEFAULT_SHUTDOWN_TIMEOUT_SECONDS = 30`).
+> Environment variables holding time values MUST express their unit unambiguously. Two patterns are acceptable:
+>
+> - **Unit-in-value (preferred):** the env var value is parsed as a duration string (e.g., `30s`, `5m`, `100ms`); the parser MUST reject values without an explicit unit so a bare `30` is a parse error rather than an ambiguous quantity.
+> - **Unit-in-name:** the env var name carries a unit suffix (`_MS`, `_SECONDS`, `_MINUTES`, `_HOURS`) and the value is an integer in that unit.
+>
+> The corresponding default constant MUST also make the unit explicit — either by being a `time.Duration` value (e.g., `5 * time.Second`) or by carrying a matching unit suffix when the constant is an integer (e.g., `DEFAULT_SHUTDOWN_TIMEOUT_SECONDS = 30`).
 
-**Rationale:** Unit-less time variables produce off-by-1000x bugs — treating milliseconds as seconds, or vice versa. Naming the unit at the source of truth makes the unit unmissable to readers, operators, and future maintainers.
+**Rationale:** Unit-less time variables produce off-by-1000x bugs — treating milliseconds as seconds, or vice versa. The unit-in-value pattern eliminates the ambiguity at the source: the operator MUST type a unit, and the parser rejects them if they don't. The unit-in-name pattern remains valid for cases where an integer is preferable (e.g., scripting environments that struggle with the duration-string format), but it shifts the safety burden to operator discipline rather than the parser.
 
-**Verification:** Any spec or plan that introduces a time-valued env var MUST use a unit suffix in both the variable name and the default constant name. Validate flags plans that propose `*_TIMEOUT`, `*_INTERVAL`, `*_DELAY`, `*_TTL`, etc. without a unit suffix.
+**Verification:** Any spec or plan that introduces a time-valued env var MUST commit to one of the two patterns. For unit-in-value, the loader MUST use a duration parser that rejects bare numbers; for unit-in-name, both the env var name and the default constant name MUST carry the unit suffix. Validate flags plans that propose `*_TIMEOUT`, `*_INTERVAL`, `*_DELAY`, `*_TTL`, etc. without committing to one of the two patterns.
 
-**Source:** IEC 60027 (units of measurement)
+**Source:** IEC 60027 (units of measurement); "Make Illegal States Unrepresentable"
+
+### CFG-ENV-005
+
+> Environment variables whose Config field has a documented valid range MUST be validated against that range at startup. Out-of-range values MUST cause fail-fast with an error message naming the variable, the offending value, and the violated bound.
+
+**Rationale:** A misconfigured timeout, retry count, pool size, or threshold can produce silent degraded behavior at runtime — requests timing out under load, exhausting connections, retrying forever — long after deployment. Catching out-of-range values at startup turns a confusing production incident into an obvious deployment-time failure.
+
+**Verification:** Any spec or plan that introduces an env var with a documented valid range MUST include a startup-validation step that names the failing variable, the offending value, and the violated bound in the error message. Validate flags plans that introduce ranged env vars without a startup-range-check step.
+
+**Source:** "Fail Fast" pattern; defense in depth
