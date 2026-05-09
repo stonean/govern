@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: [005-workflows]
 ---
 
@@ -53,16 +53,16 @@ Future decision domains (agent selection, optional cleanup steps, etc.) are out 
 
 ## Acceptance Criteria
 
-- [ ] `framework/bootstrap/govern.md` documents `[workflows] declined_categories` as a sibling top-level section to `[pinned]`, with the schema example and the case-insensitive matching rule.
-- [ ] Before the workflow recommendation flow's per-category prompts fire, `/govern` reads `.govern.toml` (if present) and collects entries in `[workflows] declined_categories`. For each candidate category in this run, if the category matches an entry case-insensitively, no `AskUserQuestion` fires and no workflows in that category are scaffolded.
-- [ ] The per-category workflow prompt has three options: `Yes, scaffold all in this category`, `Skip this run`, `Skip and don't ask again`. Picking the third option appends the category to `[workflows] declined_categories` in `.govern.toml`. Picking the first or second writes nothing to `.govern.toml`.
-- [ ] When the third option fires and `.govern.toml` does not exist, `/govern` creates it. When `.govern.toml` exists without a `[workflows]` section or `declined_categories` key, `/govern` adds them. Repeated declines of the same category do not produce duplicate entries.
-- [ ] The post-scaffolding summary emits `suppressed (workflow): {Category} (declined in .govern.toml)` once per category that was suppressed by a recorded decline this run (i.e., a candidate category that matched an entry). The summary also emits `created .govern.toml to record decline` when the file was created during this run.
-- [ ] Entries in `[workflows] declined_categories` that do not match any registry-derived category name (case-insensitive) are reported once each in the summary as `unrecognized workflow decline: "{value}" (in .govern.toml)`. Unrecognized entries do not abort the run and do not affect prompts.
-- [ ] Removing a category from `[workflows] declined_categories` (or deleting the section entirely) causes the next `/govern` run to prompt for that category again. There is no separate "unforget" command.
-- [ ] An adopter project with no `.govern.toml`, or one that has only `[pinned]` and no `[workflows]` section, runs through the workflow recommendation flow exactly as it does today — every category gets prompted, with the new three-option set instead of the prior two-option set.
-- [ ] If `.govern.toml` is malformed (TOML parse error), `/govern` aborts with a clear error message — same fail-loud posture as today.
-- [ ] The README's "Pinning files with .govern.toml" section is renamed (e.g., to "Configuring `.govern.toml`") and expanded to document `[workflows] declined_categories` alongside the existing `[pinned]` example, including how to remove an entry to re-enable prompting.
+- [x] `framework/bootstrap/govern.md` documents `[workflows] declined_categories` as a sibling top-level section to `[pinned]`, with the schema example and the case-insensitive matching rule.
+- [x] Before the workflow recommendation flow's per-category prompts fire, `/govern` reads `.govern.toml` (if present) and collects entries in `[workflows] declined_categories`. For each candidate category in this run, if the category matches an entry case-insensitively, no `AskUserQuestion` fires and no workflows in that category are scaffolded.
+- [x] The per-category workflow prompt has three options: `Yes, scaffold all in this category`, `Skip this run`, `Skip and don't ask again`. Picking the third option appends the category to `[workflows] declined_categories` in `.govern.toml`. Picking the first or second writes nothing to `.govern.toml`.
+- [x] When the third option fires and `.govern.toml` does not exist, `/govern` creates it. When `.govern.toml` exists without a `[workflows]` section or `declined_categories` key, `/govern` adds them. Repeated declines of the same category do not produce duplicate entries.
+- [x] The post-scaffolding summary emits `suppressed (workflow): {Category} (declined in .govern.toml)` once per category that was suppressed by a recorded decline this run (i.e., a candidate category that matched an entry). The summary also emits `created .govern.toml to record decline` when the file was created during this run.
+- [x] Entries in `[workflows] declined_categories` that do not match any registry-derived category name (case-insensitive) are reported once each in the summary as `unrecognized workflow decline: "{value}" (in .govern.toml)`. Unrecognized entries do not abort the run and do not affect prompts.
+- [x] Removing a category from `[workflows] declined_categories` (or deleting the section entirely) causes the next `/govern` run to prompt for that category again. There is no separate "unforget" command.
+- [x] An adopter project with no `.govern.toml`, or one that has only `[pinned]` and no `[workflows]` section, runs through the workflow recommendation flow exactly as it does today — every category gets prompted, with the new three-option set instead of the prior two-option set.
+- [x] If `.govern.toml` is malformed (TOML parse error), `/govern` aborts with a clear error message — same fail-loud posture as today.
+- [x] The README's "Pinning files with .govern.toml" section is renamed (e.g., to "Configuring `.govern.toml`") and expanded to document `[workflows] declined_categories` alongside the existing `[pinned]` example, including how to remove an entry to re-enable prompting.
 
 ## Open Questions
 
