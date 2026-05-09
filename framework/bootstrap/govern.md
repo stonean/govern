@@ -171,7 +171,9 @@ If the project's `.gitignore` contains a `# Governance` line (the marker placed 
 
 ## Project Configuration
 
-If `.govern.toml` exists, read it before processing the file manifest. This file is optional — if it does not exist, use default behavior for all files.
+`.govern.toml` is the project's configuration and persisted-decisions store. If the file exists, read it before processing the file manifest. The file is optional — if it does not exist, use default behavior for every key. If the file exists but is malformed (TOML parse error), abort the run with a clear error rather than silently proceeding.
+
+The file is a flat collection of top-level sections. There is no umbrella namespace; each section is keyed to the thing it governs. The two sections `/govern` reads today:
 
 ```toml
 [pinned]
@@ -181,9 +183,21 @@ files = [
   ".claude/commands/myapp/implement.md",
   "constitution.md",
 ]
+
+[workflows]
+# Workflow categories the user has chosen to permanently decline at the
+# per-category recommendation prompt. Match is case-insensitive against the
+# registry-derived category list (Linting, Formatting, Testing, Migrations,
+# Code Review, Deployment). Created lazily by /govern when the user picks
+# "Skip and don't ask again" at the prompt.
+declined_categories = ["Linting", "Formatting"]
 ```
 
-Any file listed in `pinned.files` that would normally use `update` strategy is treated as `skip` instead. Report pinned files in the post-scaffolding summary.
+`pinned.files` — any file listed that would normally use `update` strategy is treated as `skip` instead. Report pinned files in the post-scaffolding summary.
+
+`workflows.declined_categories` — categories listed here suppress the per-category workflow recommendation prompt entirely (see the **Workflow recommendation** flow below). Entries that don't match any canonical category name are reported once each in the post-scaffolding summary as `unrecognized workflow decline: "{value}" (in .govern.toml)` but do not abort the run.
+
+The full schema (allowed values, case-insensitive matching, empty-section behavior, future-section guidance) is declared in [`specs/019-config-decisions/data-model.md`](../../specs/019-config-decisions/data-model.md).
 
 ## File Fetching
 
