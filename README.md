@@ -55,6 +55,7 @@ See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred 
 | [016-cross-cutting-rules](specs/016-cross-cutting-rules/spec.md) | done | 006, 008 | Promote rules to a first-class artifact tier alongside specs and scenarios. |
 | [017-derive-dont-ask](specs/017-derive-dont-ask/spec.md) | done | none | Apply the **Design Principles** rule added to `AGENTS.md` on 2026-05-06 ("Never design framework features that depend on human diligence or discipline") to every existing framework input that violates it. |
 | [018-adopter-owned-pre-commit](specs/018-adopter-owned-pre-commit/spec.md) | done | 017 | Split the adopter pre-commit hook into two files so `/govern` can keep its generators in sync without ever overwriting code the adopter added to their own pre-commit hook. |
+| [019-config-decisions](specs/019-config-decisions/spec.md) | in-progress | 005 | `.govern.toml` is currently a single-purpose pin file: `[pinned] files = [...]` keeps `/govern` from overwriting customized files. |
 
 <!-- generated:feature-specs:end -->
 
