@@ -527,26 +527,67 @@ After the legacy `skills/` cleanup and the slash command cleanup, offer any newl
 
    If `AGENTS.md` is missing, has no Tech Stack table, or the table is empty (still the comment placeholder), skip the rest of this section silently — there is nothing to match against.
 
-4. **Match registry entries** against the project's tech stack. For each entry, look up the project's value for `entry.trigger.field` and compare case-insensitively against `entry.trigger.value`. Collect every matching entry.
+4. **Load recorded declines.** Read `.govern.toml` if it exists and collect entries from `[workflows] declined_categories` into a normalized lowercase set. This set is consulted at the per-category prompt step to suppress prompts for categories the user has previously chosen to permanently decline. Behavior:
 
-5. **Filter out already-scaffolded workflows.** For each match, check whether `{config_dir}/commands/{project}/workflows/{entry.template}` already exists. If it does, the workflow was previously scaffolded (for this agent) — drop it from the candidate list. Already-scaffolded workflow files are never overwritten, regardless of content changes upstream.
+   - If `.govern.toml` does not exist: the decline set is empty. Skip silently.
+   - If `.govern.toml` exists without a `[workflows]` section: the decline set is empty. Skip silently.
+   - If `[workflows]` exists without a `declined_categories` key, or the key is an empty array: the decline set is empty. Skip silently.
+   - If the file is malformed (TOML parse error): the surrounding **Project Configuration** load already aborted the run; this step never executes on a malformed file.
 
-6. **Silent skip when there is nothing new to offer.** If no candidates remain, do not prompt the user and proceed to **Session state**.
+   While building the set, validate each entry case-insensitively against the canonical category list (`Linting`, `Formatting`, `Testing`, `Migrations`, `Code Review`, `Deployment`). Entries that don't match any canonical name are still loaded into the set (they cannot suppress anything because no category will hash to them) and recorded for the post-scaffolding summary as one line each: `unrecognized workflow decline: "{value}" (in .govern.toml)`. Unrecognized entries do not abort the run and do not affect prompts for valid categories.
 
-7. **Group remaining candidates by category** in the order: `Linting`, `Formatting`, `Testing`, `Migrations`, `Code Review`, `Deployment`. Within each category, list each match's `name` and `description`.
+5. **Match registry entries** against the project's tech stack. For each entry, look up the project's value for `entry.trigger.field` and compare case-insensitively against `entry.trigger.value`. Collect every matching entry.
 
-8. **Present per-category accept/skip prompts** via `AskUserQuestion`: "Scaffold these {category} workflows for {agent name}?" with the matched entries listed. Options: `Yes, scaffold all in this category`, `No, skip this category`. The user must explicitly accept — no workflows are scaffolded without consent.
+6. **Filter out already-scaffolded workflows.** For each match, check whether `{config_dir}/commands/{project}/workflows/{entry.template}` already exists. If it does, the workflow was previously scaffolded (for this agent) — drop it from the candidate list. Already-scaffolded workflow files are never overwritten, regardless of content changes upstream.
 
-9. **Fetch and write accepted workflows.** For each accepted entry:
+7. **Silent skip when there is nothing new to offer.** If no candidates remain, do not prompt the user and proceed to **Session state**.
 
-   - Fetch `framework/workflows/{entry.template}` from the `govern` repo using the same URL pattern as the rest of `govern`'s fetches. (Note: the workflows directory is flat — no inner `templates/` subdirectory.)
-   - If the fetch fails or the file is missing, warn `Workflow file {entry.template} not found, skipping` and continue with the next accepted entry. Do not abort the surrounding scaffolding.
-   - Replace every `{project}` with the user-provided project name and every `{cli-config-dir}` with the agent's `config_dir`.
-   - Write the substituted content to `{config_dir}/commands/{project}/workflows/{entry.template}` (creating the `workflows/` directory if needed). Report the file as "scaffolded" in the post-scaffolding summary.
+8. **Group remaining candidates by category** in the order: `Linting`, `Formatting`, `Testing`, `Migrations`, `Code Review`, `Deployment`. Within each category, list each match's `name` and `description`.
 
-10. **Discovery note for Auggie.** Auggie's official docs document subdirectory namespacing for one level (`.augment/commands/foo/bar.md` → `/foo:bar`). Multi-level paths like `.augment/commands/{project}/workflows/lint.md` should resolve to `/{project}:workflows:lint` by the same colon-namespace convention, but a user adopting Auggie may want to confirm autocomplete the first time. Claude Code's two-level path is documented and works as expected.
+9. **Per-category prompt or suppress.** Walk the grouped categories in order. For each category:
 
-11. **Legacy directory note.** The `skills/` → `workflows/` rename (introduced by spec 010) and the post-005 filename rename (`{category}-{language}-{tool}.md` → `{tool}.md`) are both handled automatically. The legacy `skills/` directory is removed by the **Legacy `skills/` directory cleanup** step that runs before this section, and legacy workflow filenames are removed by the **Legacy workflow cleanup** in step 1. No manual cleanup is required.
+   - **Suppress branch.** If the category (lowercased) is in the decline set loaded at step 4, do not invoke `AskUserQuestion`. Skip scaffolding for this category's workflows entirely. Report `suppressed (workflow): {Category} (declined in .govern.toml)` in the post-scaffolding summary, using the category's title-case display name. Continue with the next category.
+   - **Prompt branch.** Otherwise, present `AskUserQuestion`: "Scaffold these {category} workflows for {agent name}?" with the matched entries listed. Options, in order, exactly as labeled:
+
+     1. `Yes, scaffold all in this category`
+     2. `Skip this run`
+     3. `Skip and don't ask again`
+
+     The user must explicitly accept — no workflows are scaffolded without consent. Route the answer:
+
+     - `Yes, scaffold all in this category` — proceed to step 11 with this category's matched entries marked as accepted.
+     - `Skip this run` — skip scaffolding for this category's workflows. Write nothing to `.govern.toml`. The user will be asked again on the next run.
+     - `Skip and don't ask again` — skip scaffolding for this category's workflows AND mark the category for persistence (consumed at step 10).
+
+10. **Record persisted declines.** For every category whose answer at step 9 was `Skip and don't ask again`, append the category name (in title case) to `[workflows] declined_categories` in `.govern.toml`. Behavior:
+
+    - **`.govern.toml` does not exist** — create it with exactly:
+
+      ```toml
+      [workflows]
+      declined_categories = ["{Category}"]
+      ```
+
+      Report `created .govern.toml to record decline` in the post-scaffolding summary (one line, regardless of how many categories were declined this run).
+
+    - **`.govern.toml` exists without a `[workflows]` section** — append the section at the end of the file (preceded by a blank line). Use the same shape as the create case.
+
+    - **`[workflows]` section exists without a `declined_categories` key** — add the key inside the existing section.
+
+    - **`declined_categories` key exists** — append the new category name to the array, deduplicating case-insensitively (do not write a duplicate if `Linting` is added when `linting` is already present).
+
+    Preserve all existing TOML content: other sections (`[pinned]`, future sections), comments, ordering, and surrounding whitespace. Read the file, modify the `[workflows]` section in place, and write the result back. Report each newly persisted category once in the summary as `recorded decline (workflow): {Category} (in .govern.toml)`.
+
+11. **Fetch and write accepted workflows.** For each accepted entry (categories whose step-9 answer was `Yes, scaffold all in this category`):
+
+    - Fetch `framework/workflows/{entry.template}` from the `govern` repo using the same URL pattern as the rest of `govern`'s fetches. (Note: the workflows directory is flat — no inner `templates/` subdirectory.)
+    - If the fetch fails or the file is missing, warn `Workflow file {entry.template} not found, skipping` and continue with the next accepted entry. Do not abort the surrounding scaffolding.
+    - Replace every `{project}` with the user-provided project name and every `{cli-config-dir}` with the agent's `config_dir`.
+    - Write the substituted content to `{config_dir}/commands/{project}/workflows/{entry.template}` (creating the `workflows/` directory if needed). Report the file as "scaffolded" in the post-scaffolding summary.
+
+12. **Discovery note for Auggie.** Auggie's official docs document subdirectory namespacing for one level (`.augment/commands/foo/bar.md` → `/foo:bar`). Multi-level paths like `.augment/commands/{project}/workflows/lint.md` should resolve to `/{project}:workflows:lint` by the same colon-namespace convention, but a user adopting Auggie may want to confirm autocomplete the first time. Claude Code's two-level path is documented and works as expected.
+
+13. **Legacy directory note.** The `skills/` → `workflows/` rename (introduced by spec 010) and the post-005 filename rename (`{category}-{language}-{tool}.md` → `{tool}.md`) are both handled automatically. The legacy `skills/` directory is removed by the **Legacy `skills/` directory cleanup** step that runs before this section, and legacy workflow filenames are removed by the **Legacy workflow cleanup** in step 1. No manual cleanup is required.
 
 ### Session state (strategy: create)
 
