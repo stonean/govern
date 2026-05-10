@@ -34,9 +34,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 6. Create `scripts/lint-frontmatter.sh`
 
-- [ ] Bash script that finds all `specs/**/spec.md`, `specs/**/spec-and-plan.md`, and `specs/**/scenarios/*.md` files, then for each: confirms a `---` delimited frontmatter block exists at the top; verifies `status:` value is one of `draft`, `clarified`, `planned`, `in-progress`, `done` (when the field is present); verifies `dependencies:` parses as either an inline bracketed list (`dependencies: [a, b]`) or an empty list (`dependencies: []`).
-- [ ] On failure, print `path: <reason>`. Exit 1 if any file fails; 0 if all pass.
-- [ ] `chmod +x` and verify it passes against the current repo.
+- [x] Bash script that finds all `specs/**/spec.md`, `specs/**/spec-and-plan.md`, and `specs/**/scenarios/*.md` files, then for each: confirms a `---` delimited frontmatter block exists at the top; verifies `status:` value is one of `draft`, `clarified`, `planned`, `in-progress`, `done` (when the field is present); verifies `dependencies:` parses as either an inline bracketed list (`dependencies: [a, b]`) or an empty list (`dependencies: []`).
+- [x] On failure, print `path: <reason>`. Exit 1 if any file fails; 0 if all pass.
+- [x] `chmod +x` and verify it passes against the current repo.
 - **Done when**: `bash scripts/lint-frontmatter.sh` exits 0 against every existing spec and scenario file.
 
 ## 7. Create `.github/workflows/markdown-only-pipeline.yml`
