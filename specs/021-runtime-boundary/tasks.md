@@ -27,9 +27,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 5. Create `scripts/lint-runtime-fallback.sh`
 
-- [ ] Bash script that reads `framework/runtime-tools.txt` (skipping blank lines and `#` comments), iterates over `framework/commands/*.md`, finds each match of each tool name, and for each match scans forward 20 lines for any case-insensitive occurrence of: `Otherwise`, `Fallback`, `If unavailable`, `markdown-only path`.
-- [ ] On match-without-fallback, print `path:line: missing fallback for tool '<name>'`. Exit 1 if any error; exit 0 if all references have a fallback OR the manifest is empty.
-- [ ] `chmod +x` and verify it runs with the empty manifest (passing trivially).
+- [x] Bash script that reads `framework/runtime-tools.txt` (skipping blank lines and `#` comments), iterates over `framework/commands/*.md`, finds each match of each tool name, and for each match scans forward 20 lines for any case-insensitive occurrence of: `Otherwise`, `Fallback`, `If unavailable`, `markdown-only path`.
+- [x] On match-without-fallback, print `path:line: missing fallback for tool '<name>'`. Exit 1 if any error; exit 0 if all references have a fallback OR the manifest is empty.
+- [x] `chmod +x` and verify it runs with the empty manifest (passing trivially).
 - **Done when**: `bash scripts/lint-runtime-fallback.sh` exits 0 against the current repo; a manual test with a temporary tool name in the manifest and a contrived violation in a command file exits 1 with a clear error.
 
 ## 6. Create `scripts/lint-frontmatter.sh`
