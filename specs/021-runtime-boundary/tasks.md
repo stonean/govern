@@ -10,9 +10,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 2. Add the §runtime-boundary subsection to `framework/constitution.md`
 
-- [ ] Add the `<!-- §runtime-boundary -->` anchor marker on a line of its own, followed by the `### Runtime Boundary` heading. Place after the existing "Validation Severity" subsection and before §drift-prevention.
-- [ ] Write the subsection body with: five principles (each MUST or MUST NOT, RFC 2119 register), three eligibility criteria (Deterministic, Currently mechanical, Degradation-not-failure), opt-in invariant (CI MUST exercise the cycle with the runtime binary absent), versioning rule (lockstep), non-scope statement (MUST NOT for each of: spec authoring tool, workflow orchestrator, long-running service, storage layer; closes with "Lifting any of these exclusions requires a constitutional amendment").
-- [ ] Add the one-line forward pointer: *"Specific capabilities are introduced through their own feature specs, beginning with spec 022 (runtime v0)."*
+- [x] Add the `<!-- §runtime-boundary -->` anchor marker on a line of its own, followed by the `### Runtime Boundary` heading. Place after the existing "Validation Severity" subsection and before §drift-prevention.
+- [x] Write the subsection body with: five principles (each MUST or MUST NOT, RFC 2119 register), three eligibility criteria (Deterministic, Currently mechanical, Degradation-not-failure), opt-in invariant (CI MUST exercise the cycle with the runtime binary absent), versioning rule (lockstep), non-scope statement (MUST NOT for each of: spec authoring tool, workflow orchestrator, long-running service, storage layer; closes with "Lifting any of these exclusions requires a constitutional amendment").
+- [x] Add the one-line forward pointer: *"Specific capabilities are introduced through their own feature specs, beginning with spec 022 (runtime v0)."*
 - **Done when**: `grep -c '<!-- §runtime-boundary -->' framework/constitution.md` returns 1; the subsection contains the literal strings "MUST NOT" appearing in both the principles and the non-scope list; the forward-pointer sentence is present.
 
 ## 3. Add the §drift-prevention canonical sources row

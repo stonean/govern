@@ -397,6 +397,44 @@ Hard fails block the validation pass. Advisory and informational findings are re
 
 For non-frontmatter checks (spec integrity, artifact completeness, plan/task consistency, dependencies, security rules), `/gov:validate` adds a fourth tier — **Blocking** — between Hard fail and Advisory. Blocking findings are structural or content issues that must be fixed before the next pipeline gate fires (e.g., missing `plan.md` on a `planned` spec, an unknown rule ID referenced in a spec). Hard fail and Blocking both prevent pipeline advancement; the distinction is that Hard fail says "the spec file itself is malformed," while Blocking says "the artifact set is incomplete or inconsistent." See `framework/commands/validate.md` for the full per-check severity assignment.
 
+<!-- §runtime-boundary -->
+
+### Runtime Boundary
+
+`govern` MAY ship an optional runtime binary alongside the markdown framework. The runtime exists to execute the deterministic portions of pipeline commands without an LLM. This subsection defines what the runtime can and cannot do; deviations require their own constitutional amendment.
+
+#### Five principles
+
+1. **Markdown is source of truth** — the runtime MUST NOT own state the markdown cannot reconstruct. Runtime-owned data (caches, indexes, parsed graphs) is derived and gitignored, per the existing rule on structured derived views.
+2. **Determinism only** — the runtime MUST NOT call an LLM. Work requiring semantic judgment (content quality, `/clarify` resolution, `/capture` sketching, per-rule Verification reads, `/groom` routing) stays in slash commands.
+3. **Opt-in for adopters** — the runtime MUST NOT be a prerequisite for any pipeline gate. A markdown-only adopter — agent + `Edit`, no binary on `PATH` — must complete every cycle (greenfield, brownfield, reopen) and reach `done` on every spec.
+4. **Schema follows the constitution** — the runtime reads frontmatter and artifact structure according to the schemas declared in this document. Schema changes ship through the constitution; the runtime updates to match. The constitution does not import runtime types.
+5. **MCP is the seam** — the runtime exposes its capabilities as MCP tools. Slash commands call those tools when they want determinism, keeping the runtime accessible to any agent host and preventing `govern`-specific coupling.
+
+#### Eligibility criteria
+
+A capability is runtime-eligible only when **all three** hold:
+
+1. **Deterministic** — no semantic judgment required; the same inputs always produce the same outputs.
+2. **Currently mechanical** — already either (a) executed by an LLM following procedural instructions in a slash command body, or (b) implemented as a bash script invoked by `govern` workflows.
+3. **Degradation, not failure, when removed** — without the runtime, the work still completes correctly via the markdown-only path; only speed, cost, or reliability degrades.
+
+A capability that fails any criterion stays out of the runtime. Anything that requires reading prose for intent is permanently LLM-owned regardless of how mechanical its surface looks.
+
+#### Opt-in invariant
+
+The repository's CI MUST include a job that exercises a representative pipeline cycle end-to-end with the runtime binary absent from `PATH`. A change that causes this job to fail — i.e., a slash command that silently requires the runtime — is a constitution violation, not a feature.
+
+#### Versioning
+
+The runtime ships in lockstep with the framework. A `govern` release includes the binary built against the schemas in that release; an adopter's `govern` version pins their compatible runtime version, eliminating schema/runtime drift as a failure mode.
+
+#### What the runtime is not
+
+To prevent scope creep, the runtime MUST NOT be a spec authoring tool, MUST NOT be a workflow orchestrator, MUST NOT be a long-running service, and MUST NOT be a storage layer. Lifting any of these exclusions requires a constitutional amendment.
+
+Specific capabilities are introduced through their own feature specs, beginning with spec 022 (runtime v0).
+
 <!-- §drift-prevention -->
 
 ## Drift Prevention
