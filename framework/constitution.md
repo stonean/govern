@@ -456,6 +456,7 @@ For every kind of fact described in multiple places, one location is authoritati
 | Constitution section anchors | `<!-- §<anchor> -->` markers in `framework/constitution.md` |
 | Command frontmatter (description, argument-hint) | each command's own frontmatter block |
 | Rules artifact tier definition | `framework/constitution.md` §rules |
+| Runtime contract / boundary | `framework/constitution.md` §runtime-boundary |
 | Security rule file format and ID conventions (`BE-`/`FE-`) | `specs/008-security-rules/data-model.md` |
 | Configuration rule file format and ID conventions (`CFG-`) | `specs/017-derive-dont-ask/data-model.md` |
 

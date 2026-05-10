@@ -17,7 +17,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 3. Add the §drift-prevention canonical sources row
 
-- [ ] In `framework/constitution.md` §drift-prevention canonical sources table, add a row whose Fact column reads "Runtime contract / boundary" and whose Canonical-source column points at `framework/constitution.md` §runtime-boundary, placed in alphabetical-by-fact position (after "Rules artifact tier definition," before "Security rule file format and ID conventions").
+- [x] In `framework/constitution.md` §drift-prevention canonical sources table, add a row whose Fact column reads "Runtime contract / boundary" and whose Canonical-source column points at `framework/constitution.md` §runtime-boundary, placed in alphabetical-by-fact position (after "Rules artifact tier definition," before "Security rule file format and ID conventions").
 - **Done when**: the row exists in the table; `grep -c '§runtime-boundary' framework/constitution.md` returns at least 2 (the anchor and the table entry).
 
 ## 4. Create `framework/runtime-tools.txt`
