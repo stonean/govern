@@ -22,7 +22,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 4. Create `framework/runtime-tools.txt`
 
-- [ ] Create the file with a comment header explaining its purpose and linking to §runtime-boundary in `framework/constitution.md`. No tool entries — spec 022 populates this.
+- [x] Create the file with a comment header explaining its purpose and linking to §runtime-boundary in `framework/constitution.md`. No tool entries — spec 022 populates this.
 - **Done when**: the file exists with only comment lines (each starting `#`) and is referenced from the fallback lint script.
 
 ## 5. Create `scripts/lint-runtime-fallback.sh`
