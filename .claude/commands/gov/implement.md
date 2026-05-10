@@ -106,5 +106,25 @@ After all tasks are done:
    - All scenario-linked tasks are complete
    - All `.md` files in the feature directory pass `npx markdownlint-cli2`
 4. If any validation check fails, report the specific failures and do not propose the transition. The user fixes the issues and re-runs the command.
-5. If all checks pass, present a summary and ask the user to approve the transition to `done`. Do not update the status until the user confirms.
-6. On confirmation, update the spec's frontmatter `status` field from `in-progress` to `done`.
+5. **Pre-`done` review gate.** Read the target spec's frontmatter `review:` block before asking for the `done` transition:
+   - If `review.last-run` is missing, `null`, or the `review:` block is absent, halt with:
+
+     ```text
+     blocked: spec has not been reviewed — run /gov:review before completing
+     ```
+
+   - If `review.blocking: true`, halt with:
+
+     ```text
+     blocked: spec has {must-violations} MUST violation(s) — see specs/NNN-feature/review.md
+
+     resolve the violations and re-run /gov:review,
+     or run /gov:review --waive <rule-id> --reason "..." for each waivable finding.
+     ```
+
+     where `{must-violations}` is the integer value from `review.must-violations`.
+   - Otherwise, proceed to step 6.
+
+   This gate fires after all tasks are complete but before status changes — the spec stays at `in-progress` until review is clean. The gate fires even with `--auto` set (per §pipeline-boundaries, pipeline gates always require explicit handling).
+6. If all checks pass, present a summary and ask the user to approve the transition to `done`. Do not update the status until the user confirms.
+7. On confirmation, update the spec's frontmatter `status` field from `in-progress` to `done`.

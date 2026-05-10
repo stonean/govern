@@ -41,6 +41,7 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 | `/{project}:clarify` | draft → clarified | Resolve open questions and advance a spec from draft to clarified. |
 | `/{project}:plan` | clarified → planned | Create a technical plan and task breakdown for a clarified spec. |
 | `/{project}:implement` | planned → in-progress → done | Execute implementation tasks for the targeted feature. |
+| `/{project}:review` | blocks `done` (MUST violations) | Run a code review covering reuse, quality, security, efficiency, and simplicity; blocks `done` when MUST violations are present. |
 | `/{project}:validate` | — | Check a feature's artifacts for consistency and cross-spec alignment. |
 
 <!-- generated:commands-pipeline:end -->

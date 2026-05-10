@@ -25,6 +25,7 @@ When adding files under `framework/`, place them by purpose, not by extension.
 ## Workflow
 
 - Read `framework/commands/{name}.md` before recommending, describing, or disambiguating a slash command — don't guess from the name. Source files are authoritative; the generated `.claude/commands/gov/*.md` copies are produced by the pre-commit hook.
+- `.govern.toml` is treated as a shared adopter-side database, not as a schema owned by any single spec. When a new spec adds a section/key (its own "table"), document it in that spec's body and behavior — do not generate a §cross-spec-impact signpost on spec 019 (or any prior `.govern.toml` spec) for the addition. Reason: surfaced 2026-05-10 while clarifying spec 020 — adding `[review] tech-stack-verified` did not warrant reopening 019. How to apply: only treat a `.govern.toml` change as cross-spec impact when it modifies an *existing* key already documented in another spec.
 
 ## Gotchas
 

@@ -93,6 +93,7 @@ pipeline_table="$(build_pipeline_table \
   '/{project}:clarify'   'draft → clarified'                  "$CMD_DIR/clarify.md" \
   '/{project}:plan'      'clarified → planned'                "$CMD_DIR/plan.md" \
   '/{project}:implement' 'planned → in-progress → done'       "$CMD_DIR/implement.md" \
+  '/{project}:review'    'blocks `done` (MUST violations)'    "$CMD_DIR/review.md" \
   '/{project}:validate'  '—'                                  "$CMD_DIR/validate.md" \
 )"
 

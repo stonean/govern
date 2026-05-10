@@ -1,6 +1,6 @@
 ---
 description: Check a feature's artifacts for consistency and cross-spec alignment.
-argument-hint: "[--all] [feature]"
+argument-hint: "[--all] [--fix] [feature]"
 ---
 
 # Validate
@@ -108,6 +108,19 @@ These drifts are advisory because the pre-commit hook resolves them on the next 
 - [ ] Event types mentioned in spec or plan align with `specs/events.md`
 - [ ] Error codes follow the convention from `specs/errors.md`
 - [ ] Data model definitions do not conflict with other specs' data-model.md files
+
+### Review state drift (blocking)
+
+For each spec at `status: done`, read the spec's frontmatter `review:` block:
+
+- [ ] `review.last-run` is set to a non-null timestamp. If the `review:` block is **present** but `last-run` is missing or `null`, report `Review drift: done spec missing review — run /gov:review` (**blocking**)
+- [ ] `review.blocking` is `false`. If `true`, report `Review drift: done spec has unresolved MUST violations — see review.md` (**blocking**)
+
+**Grandfather rule.** A `done` spec whose frontmatter has no `review:` block at all is treated as pre-`/gov:review` and exempt from this check. The block is added by the spec template (so every newly-scaffolded spec ships with it) and by `/gov:review` on first run; its absence on a done spec means the spec reached done before `/gov:review` existed. Adopters who want retroactive review run `/gov:review` against the spec to populate the block, after which the spec is subject to the drift check on every subsequent validate.
+
+Specs not at `status: done` are silently exempt — the `review:` block is populated lazily on first `/gov:review` run, so its absence on `draft` / `clarified` / `planned` / `in-progress` specs is normal.
+
+When `--fix` is set, this check additionally reverts affected specs from `done` to `in-progress` and emits a one-line notice for each (`reverted: specs/{feature}/{file} from done to in-progress — re-run /gov:review`). The revert is never silent; the notice is the point of the action. Re-running `/gov:review` on each reverted spec is left to the operator — auto-running it during `--fix` is out of scope. The grandfather rule applies under `--fix` too: pre-feature `done` specs with no `review:` block are never reverted.
 
 ### Rules (blocking and advisory)
 

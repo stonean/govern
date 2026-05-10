@@ -4,7 +4,7 @@ Standards and conventions for spec-driven software development. This project def
 
 ## TL;DR
 
-`govern` adds a spec-driven pipeline that your AI agent walks for you. You describe a feature in plain English; the agent produces the spec, plan, and tasks in a consistent shape. The surface area you learn is small — a handful of verb-named slash commands (`/specify`, `/clarify`, `/plan`, `/implement`, `/validate`) that map to things you already do: write a ticket, surface unknowns, sketch an approach, build it, check your work.
+`govern` adds a spec-driven pipeline that your AI agent walks for you. You describe a feature in plain English; the agent produces the spec, plan, and tasks in a consistent shape. The surface area you learn is small — a handful of verb-named slash commands (`/specify`, `/clarify`, `/plan`, `/implement`, `/review`, `/validate`) that map to things you already do: write a ticket, surface unknowns, sketch an approach, build it, audit it, check your work.
 
 The payoff is that ambiguity gets caught upstream of code, and every feature lands with a written record of *why* it's built the way it is.
 
@@ -55,6 +55,7 @@ See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred 
 | [017-derive-dont-ask](specs/017-derive-dont-ask/spec.md) | done | none | Apply the **Design Principles** rule added to `AGENTS.md` on 2026-05-06 ("Never design framework features that depend on human diligence or discipline") to every existing framework input that violates it. |
 | [018-adopter-owned-pre-commit](specs/018-adopter-owned-pre-commit/spec.md) | done | 017 | Split the adopter pre-commit hook into two files so `/govern` can keep its generators in sync without ever overwriting code the adopter added to their own pre-commit hook. |
 | [019-config-decisions](specs/019-config-decisions/spec.md) | done | 005 | `.govern.toml` is currently a single-purpose pin file: `[pinned] files = [...]` keeps `/govern` from overwriting customized files. |
+| [020-code-review](specs/020-code-review/spec.md) | done | none | Adds `/gov:review`, a verb-named slash command that audits implementation code against the framework's rules across five dimensions (reuse, quality, security, efficiency, simplicity), writes a `review.md` artifact alongside the spec, and gates the `in-progress → done` transition via three reinforcing mechanisms. |
 
 <!-- generated:feature-specs:end -->
 
@@ -100,6 +101,7 @@ Adoption installs a full set of slash commands that operationalize the pipeline.
 | `/clarify` | Resolve open questions in the current spec, advance status to `clarified` |
 | `/plan` | Create plan.md with technical decisions, affected files, and resolved questions |
 | `/implement` | Work through tasks, update spec status to `in-progress` then `done` |
+| `/review` | Run a code review covering reuse, quality, security, efficiency, and simplicity. Writes `review.md` and the spec's `review:` frontmatter block. Blocks `done` when MUST violations are present. `--all` reviews every `in-progress` or `done` feature. `--fix` applies conservative auto-fixes. Waive MUST findings with `--waive <rule-id> --reason "<text>"`. |
 | `/validate` | Audit spec, plan, tasks, and scenarios for completeness and consistency. `--all` scans every feature. `--fix` auto-corrects fixable checkbox mismatches. Composable: `--all --fix` |
 
 ### Elaborate (add precision)
@@ -131,6 +133,18 @@ Adoption installs a full set of slash commands that operationalize the pipeline.
 | --- | --- |
 | `/govern` | Adopt or update `govern` in an existing project (the installer that placed every other command) |
 | `/configure` | Configure agent permissions for `govern` commands |
+
+### Waivers
+
+`/review` blocks the spec from reaching `done` while any MUST violation is unresolved. When a violation is intentional — internal-only endpoint, framework-version constraint, etc. — record a waiver explicitly rather than silencing the gate:
+
+```bash
+/review --waive <rule-id> --reason "<text>"
+```
+
+The waiver appends a record to the spec's `review.waivers` frontmatter list (`rule`, `file`, `reason`, `waived-at`, `waived-by`). It is anchored to the rule ID and file path: if the file is renamed or the rule no longer fires there, the waiver expires on the next `/review` run and the finding re-blocks.
+
+The waiver list is open-schema — organizations that require additional fields (e.g., `co-waived-by`, `approved-by-team`, `ticket`) can layer them on without `govern` erroring on the unknown keys, then gate those fields in their own CI. See [specs/020-code-review/data-model.md](specs/020-code-review/data-model.md) for the full schema and expiry rules.
 
 ## Starting a New Project
 
@@ -199,9 +213,11 @@ Follow the pipeline defined in `constitution.md`:
 
 1. **Spec** — resolve all open questions, update status to `clarified`
 2. **Plan** — run `/plan` to create plan.md (technical decisions, affected files) and tasks.md (ordered work items) in one step. If the feature involves persistence, also add data-model.md. Updates spec status to `planned`
-3. **Implement** — follow the tasks list, update spec status to `in-progress`, then `done`
+3. **Implement** — follow the tasks list, update spec status to `in-progress`
+4. **Review** — run `/review` to audit the code against rules; resolve MUST violations or record waivers. The `done` transition is gated by `review.blocking: false`
+5. **Done** — `/implement` completes the `in-progress → done` transition when the review gate passes
 
-Run `/validate` any time to audit a feature's artifacts; it is not a pipeline gate, but it is the recommended check before starting `/implement`.
+Run `/validate` any time to audit a feature's artifacts; it is not a pipeline gate, but it is the recommended check before starting `/implement` and before the final `/review`.
 
 ## Security Rules
 
