@@ -454,6 +454,7 @@ Fetch each command template and copy it into `{config_dir}/commands/{project}/`.
 | `framework/commands/implement.md` | `{config_dir}/commands/{project}/implement.md` |
 | `framework/commands/log.md` | `{config_dir}/commands/{project}/log.md` |
 | `framework/commands/plan.md` | `{config_dir}/commands/{project}/plan.md` |
+| `framework/commands/review.md` | `{config_dir}/commands/{project}/review.md` |
 | `framework/commands/specify.md` | `{config_dir}/commands/{project}/specify.md` |
 | `framework/commands/status.md` | `{config_dir}/commands/{project}/status.md` |
 | `framework/commands/target.md` | `{config_dir}/commands/{project}/target.md` |
