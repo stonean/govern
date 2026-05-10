@@ -48,8 +48,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 8. Run `/gov:validate` against this spec
 
-- [ ] Run `/gov:validate` targeted at `021-runtime-boundary` and resolve any hard-fail or blocking findings.
-- [ ] Anchor-resolution check passes for `§runtime-boundary` references.
+- [x] Run `/gov:validate` targeted at `021-runtime-boundary` and resolve any hard-fail or blocking findings.
+- [x] Anchor-resolution check passes for `§runtime-boundary` references.
 - **Done when**: `/gov:validate` reports no hard-fail and no blocking findings on this spec.
 
 ## 9. Run `npx markdownlint-cli2` across all touched files
