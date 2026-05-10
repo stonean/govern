@@ -1,0 +1,63 @@
+name: markdown-only-pipeline
+
+# Opt-in invariant from constitution §runtime-boundary: prove the
+# markdown-only path completes without any runtime binary on PATH.
+# Tripwire — fails the moment a slash command silently introduces a
+# runtime dependency without a graceful fallback.
+
+on:
+  pull_request:
+    paths:
+      - 'framework/**'
+      - 'specs/**'
+      - '.claude/commands/**'
+      - 'scripts/lint-*.sh'
+      - '.github/workflows/markdown-only-pipeline.yml'
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  markdown-only:
+    name: Markdown-only path completes without runtime
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: (a) No runtime binary on PATH
+        run: |
+          set -euo pipefail
+          fail=0
+          while IFS= read -r raw; do
+            line="${raw%%#*}"
+            line="${line## }"
+            line="${line%% }"
+            [ -z "$line" ] && continue
+            if command -v "$line" >/dev/null 2>&1; then
+              echo "::error::Runtime tool '$line' is on PATH in CI; opt-in invariant violated"
+              fail=1
+            fi
+          done < framework/runtime-tools.txt
+          exit $fail
+
+      - name: (b) Bash generator scripts run clean
+        run: |
+          bash scripts/gen-spec-deps.sh --dry-run
+          bash scripts/gen-readme-table.sh --dry-run
+          bash scripts/gen-help-tables.sh --dry-run
+
+      - name: (c) markdownlint passes
+        run: npx markdownlint-cli2
+
+      - name: (d) Runtime-fallback lint passes
+        run: bash scripts/lint-runtime-fallback.sh
+
+      - name: (e) Frontmatter integrity
+        run: bash scripts/lint-frontmatter.sh

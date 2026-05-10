@@ -41,9 +41,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 7. Create `.github/workflows/markdown-only-pipeline.yml`
 
-- [ ] Workflow file with name `markdown-only-pipeline`, single job `markdown-only` on `ubuntu-latest`, triggered by `pull_request` (paths: `framework/**`, `specs/**`, `.claude/commands/**`) and by `push` to `main` (same paths).
-- [ ] Job steps: checkout; setup Node (for `npx markdownlint-cli2`); step (a) assert each name in `framework/runtime-tools.txt` is not on PATH; step (b) run all three `scripts/gen-*.sh --dry-run` and assert clean; step (c) `npx markdownlint-cli2`; step (d) `bash scripts/lint-runtime-fallback.sh`; step (e) `bash scripts/lint-frontmatter.sh`.
-- [ ] Each step has a `name:` that names the corresponding spec check (a/b/c/d/e) so failures map directly to spec acceptance criteria.
+- [x] Workflow file with name `markdown-only-pipeline`, single job `markdown-only` on `ubuntu-latest`, triggered by `pull_request` (paths: `framework/**`, `specs/**`, `.claude/commands/**`) and by `push` to `main` (same paths).
+- [x] Job steps: checkout; setup Node (for `npx markdownlint-cli2`); step (a) assert each name in `framework/runtime-tools.txt` is not on PATH; step (b) run all three `scripts/gen-*.sh --dry-run` and assert clean; step (c) `npx markdownlint-cli2`; step (d) `bash scripts/lint-runtime-fallback.sh`; step (e) `bash scripts/lint-frontmatter.sh`.
+- [x] Each step has a `name:` that names the corresponding spec check (a/b/c/d/e) so failures map directly to spec acceptance criteria.
 - **Done when**: the workflow file passes `actionlint` (if installed) or `yq` parse; pushing a branch with the file triggers the job (verified via GitHub Actions UI on PR).
 
 ## 8. Run `/gov:validate` against this spec
