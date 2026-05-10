@@ -353,7 +353,7 @@ When a `/groom` pass encounters an item that does not map to any existing spec, 
 
 ## Text-First Artifacts
 
-`govern` treats every artifact — constitution, specs, plans, tasks, scenarios, rules — as plain markdown the agent can edit with `Edit`. This is load-bearing: the agent's write path stays simple, PRs review glanceably, merge conflicts stay rare and human-resolvable, and adopting `govern` requires no bootstrap tooling beyond the AI agent itself.
+`govern` treats every artifact — constitution, specs, plans, tasks, scenarios, rules — as plain markdown the agent can edit with `Edit`. This is load-bearing: the agent's write path stays simple, PRs review glanceably, and merge conflicts stay rare and human-resolvable. The markdown framework is usable standalone with no tooling beyond the AI agent; an optional runtime (see [§runtime-boundary](#runtime-boundary)) provides deterministic execution of mechanical checks and fixes for adopters who opt in.
 
 ### Principles
 
