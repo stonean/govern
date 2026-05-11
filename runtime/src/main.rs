@@ -122,6 +122,56 @@ fn cwd() -> PathBuf {
     std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
 }
 
+fn run_parse(path: &std::path::Path, check_only: bool) -> ExitCode {
+    use govern_runtime::parser;
+
+    let source = match std::fs::read_to_string(path) {
+        Ok(s) => s,
+        Err(err) => {
+            eprintln!("failed to read {}: {err}", path.display());
+            return ExitCode::from(1);
+        }
+    };
+    let command_name = path
+        .file_stem()
+        .map(|s| s.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    match parser::parse(&source, &command_name) {
+        Ok(procedure) => {
+            if check_only {
+                ExitCode::SUCCESS
+            } else {
+                match serde_json::to_string_pretty(&procedure) {
+                    Ok(text) => {
+                        println!("{text}");
+                        ExitCode::SUCCESS
+                    }
+                    Err(err) => {
+                        eprintln!("failed to serialize AST: {err}");
+                        ExitCode::from(1)
+                    }
+                }
+            }
+        }
+        Err(parser::ParseError::LegacyProse) => {
+            if check_only {
+                eprintln!("{}: legacy prose (allowed)", path.display());
+                ExitCode::SUCCESS
+            } else {
+                eprintln!(
+                    "{}: legacy prose — no parseable Instructions section",
+                    path.display()
+                );
+                ExitCode::from(2)
+            }
+        }
+        Err(err) => {
+            eprintln!("{}: {err}", path.display());
+            ExitCode::from(1)
+        }
+    }
+}
+
 fn run_mcp_server(repo: PathBuf) -> ExitCode {
     use rmcp::ServiceExt;
     use rmcp::transport::stdio;
@@ -171,17 +221,13 @@ fn main() -> ExitCode {
             if emit_schema {
                 return emit_protocol_schema();
             }
-            if let Some(path) = file {
-                eprintln!(
-                    "runtime parse {} (check={check}): not yet implemented",
-                    path.display()
-                );
-            } else {
+            let Some(path) = file else {
                 eprintln!(
                     "runtime parse: missing FILE argument (use --emit-schema for the debug surface)"
                 );
-            }
-            ExitCode::from(1)
+                return ExitCode::from(1);
+            };
+            run_parse(&path, check)
         }
         Command::ReadSpec(args) => emit_result(primitives::read_spec::run(&args, &repo)),
         Command::ReadTasks(args) => emit_result(primitives::read_tasks::run(&args, &repo)),

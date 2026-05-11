@@ -57,11 +57,11 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 7. Implement the procedure parser
 
-- [ ] Walk the `pulldown-cmark` event stream and recognize: numbered list items as steps (with sub-numbering for nested lists), backtick-quoted code spans inside a step matching a primitive name from §The primitive library, HTML comments matching `<!-- llm:<identifier> -->` as extension-point markers.
-- [ ] Emit the `Procedure` AST defined in `data-model.md`. Parse errors carry `SourceRange`.
-- [ ] Distinguish two failure modes: `ParseError::LegacyProse` (no parseable structure detected — the file is in the pre-rewrite format) versus `ParseError::Invalid` (structure attempted but malformed).
-- [ ] Implement `runtime parse <file>` (prints AST as JSON) and `runtime parse --check <file>` (exit 0 if parseable or legacy-allowlisted, exit 1 otherwise).
-- [ ] Unit tests cover: a well-formed Instructions section parses fully; an empty file is legacy-prose; an Instructions section with a malformed primitive backtick is `Invalid`; a step with both a primitive call and an extension-point marker is allowed (the marker overrides the primitive — extension point wins).
+- [x] Walk the `pulldown-cmark` event stream and recognize: numbered list items as steps (with sub-numbering for nested lists), backtick-quoted code spans inside a step matching a primitive name from §The primitive library, HTML comments matching `<!-- llm:<identifier> -->` as extension-point markers.
+- [x] Emit the `Procedure` AST defined in `data-model.md`. Parse errors carry `SourceRange`.
+- [x] Distinguish two failure modes: `ParseError::LegacyProse` (no parseable structure detected — the file is in the pre-rewrite format) versus `ParseError::Invalid` (structure attempted but malformed).
+- [x] Implement `runtime parse <file>` (prints AST as JSON) and `runtime parse --check <file>` (exit 0 if parseable or legacy-allowlisted, exit 1 otherwise).
+- [x] Unit tests cover: a well-formed Instructions section parses fully; an empty file is legacy-prose; an Instructions section with a malformed primitive backtick is `Invalid`; a step with both a primitive call and an extension-point marker is allowed (the marker overrides the primitive — extension point wins).
 - **Done when**: every existing `framework/commands/*.md` either parses or returns `LegacyProse`; `runtime parse --check` on the current repo exits 0 (with all 14 commands in the legacy allowlist initially).
 
 ## 8. Wire the parseability check into `markdown-only-pipeline.yml`
