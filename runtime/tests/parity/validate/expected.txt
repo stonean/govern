@@ -1,0 +1,22 @@
+TODO: capture the LLM-driven `/gov:validate` output against
+`runtime/tests/fixtures/validate-basic/` and replace this file's body
+with the rendered report.
+
+Capture recipe (maintainer-only, requires an LLM-driven host):
+
+  1. cp -r runtime/tests/fixtures/validate-basic <a-clean-tempdir>
+  2. cp framework/commands/validate.md <a-clean-tempdir>/framework/commands/
+  3. From <a-clean-tempdir>, run `/gov:validate` in the LLM-driven host.
+  4. Capture the rendered findings list (one finding per line) into
+     this file. Each finding line includes severity, rule-id, and
+     message; the parity bound applies set-equality on
+     (rule-id, severity, file, line) and ignores message wording.
+
+Parity bound for `/gov:validate`:
+  - strict-fields: `findings[].rule-id`, `findings[].severity`
+    must match the runtime-driven path's findings set exactly.
+  - semantic-fields: `findings[].message` is semantic; wording may
+    differ between LLM responses without failing the check.
+
+Until this file is filled in, the parity test for `/gov:validate` is
+recorded as SKIPPED and does not block CI.

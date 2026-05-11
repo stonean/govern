@@ -1,0 +1,2 @@
+{"type":"llm-response","request-id":"req-1","response":{"passed":false,"finding":{"severity":"must","rule-id":"CFG-CONST-001","location":{"section":"Motivation","line":17},"message":"Spec does not commit to a central constants module."}}}
+{"type":"llm-response","request-id":"req-2","response":{"passed":false,"finding":{"severity":"should","rule-id":"CFG-CONST-001","location":{"section":"Motivation","line":17},"message":"Spec should describe the constants module location more concretely."}}}

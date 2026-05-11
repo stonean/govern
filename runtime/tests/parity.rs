@@ -67,6 +67,11 @@ fn target_basic_stream_matches_golden() {
     run_parity_case("target", "target-basic");
 }
 
+#[test]
+fn validate_basic_stream_matches_golden() {
+    run_parity_case("validate", "validate-basic");
+}
+
 fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
@@ -187,11 +192,19 @@ fn run_parity_case(command: &str, fixture: &str) {
         .spawn()
         .expect("spawn runtime");
 
-    // No host input — the parity fixtures exercise only deterministic
-    // primitives. Tests that need to deliver llm-response or gate-response
-    // envelopes write them to stdin before this call.
+    // Optional `stdin.jsonl` under the fixture supplies pre-canned host
+    // responses (llm-response, gate-response) for procedures that include
+    // extension points or gates.
+    let fixture_stdin = repo_root()
+        .join("runtime/tests/fixtures")
+        .join(fixture)
+        .join("stdin.jsonl");
     if let Some(mut stdin) = child.stdin.take() {
-        let _ = stdin.write_all(&[]);
+        if fixture_stdin.is_file() {
+            let payload = fs::read(&fixture_stdin).unwrap();
+            stdin.write_all(&payload).expect("write stdin payload");
+        }
+        drop(stdin);
     }
 
     let output = child.wait_with_output().expect("wait for runtime");

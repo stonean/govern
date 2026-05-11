@@ -118,10 +118,10 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 14. Rewrite `/gov:validate`
 
-- [ ] Rewrite `framework/commands/validate.md` to invoke the mechanical primitives (`validate-frontmatter`, `resolve-anchor`, `traverse-deps`, `check-rule-ids`, `run-generator`, `lint-markdown`) for the deterministic checks, and an `<!-- llm:assessSpecQuality -->` marker on the per-rule Verification step.
-- [ ] `parity: { semantic-fields: ["findings[].message"], strict-fields: ["findings[].rule-id", "findings[].severity"] }`.
-- [ ] Fixture under `runtime/tests/fixtures/validate-basic/`; golden stream + parity capture.
-- [ ] The fixture exercises at least one MUST-tier finding and one SHOULD-tier finding so the extension point's response routing is covered.
+- [x] Rewrite `framework/commands/validate.md` to invoke the mechanical primitives (`validate-frontmatter`, `resolve-anchor`, `traverse-deps`, `check-rule-ids`, `run-generator`, `lint-markdown`) for the deterministic checks, and an `<!-- llm:assessSpecQuality -->` marker on the per-rule Verification step.
+- [x] `parity: { semantic-fields: ["findings[].message"], strict-fields: ["findings[].rule-id", "findings[].severity"] }`.
+- [x] Fixture under `runtime/tests/fixtures/validate-basic/`; golden stream + parity capture.
+- [x] The fixture exercises at least one MUST-tier finding and one SHOULD-tier finding so the extension point's response routing is covered.
 - **Done when**: parseability + integration + parity green; the parity check on findings is set-equality on (rule-id, severity, file, line); tool-coverage lint green.
 
 ## 15. Rewrite `/gov:implement`

@@ -1,0 +1,12 @@
+{"type":"progress","message":"dispatching primitive `read-spec`","step":"1","primitive":"read-spec"}
+{"type":"progress","message":"dispatching primitive `validate-frontmatter`","step":"2","primitive":"validate-frontmatter"}
+{"type":"progress","message":"dispatching primitive `traverse-deps`","step":"3","primitive":"traverse-deps"}
+{"type":"progress","message":"dispatching primitive `resolve-anchor`","step":"4","primitive":"resolve-anchor"}
+{"type":"progress","message":"dispatching primitive `check-rule-ids`","step":"5","primitive":"check-rule-ids"}
+{"type":"progress","message":"dispatching primitive `run-generator`","step":"6","primitive":"run-generator"}
+{"type":"progress","message":"dispatching primitive `lint-markdown`","step":"7","primitive":"lint-markdown"}
+{"type":"llm-request","extension-point":"assessSpecQuality","request-id":"req-1","request":{"feature":"003-validate","path":"specs/003-validate/spec.md","paths":["specs/003-validate/spec.md"],"rule-files":["framework/rules/configuration.md"],"script":"scripts/gen-noop.sh","setAt":"2026-05-11T00:00:00Z"}}
+{"type":"progress","message":"received llm-response for `assessSpecQuality`","step":"8"}
+{"type":"llm-request","extension-point":"assessSpecQuality","request-id":"req-2","request":{"feature":"003-validate","llm:assessSpecQuality":{"finding":{"location":{"line":17,"section":"Motivation"},"message":"Spec does not commit to a central constants module.","rule-id":"CFG-CONST-001","severity":"must"},"passed":false},"path":"specs/003-validate/spec.md","paths":["specs/003-validate/spec.md"],"rule-files":["framework/rules/configuration.md"],"script":"scripts/gen-noop.sh","setAt":"2026-05-11T00:00:00Z"}}
+{"type":"progress","message":"received llm-response for `assessSpecQuality`","step":"9"}
+{"type":"complete","result":{},"runtime-version":"{{runtime-version}}"}

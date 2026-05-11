@@ -1,0 +1,8 @@
+{
+  "feature": "003-validate",
+  "path": "specs/003-validate/spec.md",
+  "paths": ["specs/003-validate/spec.md"],
+  "script": "scripts/gen-noop.sh",
+  "rule-files": ["framework/rules/configuration.md"],
+  "setAt": "2026-05-11T00:00:00Z"
+}
