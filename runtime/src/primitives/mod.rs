@@ -7,14 +7,18 @@
 
 #![allow(clippy::module_name_repetitions)]
 
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 pub mod check_rule_ids;
 pub mod check_stuck;
 pub mod derive_boundary;
+pub mod mark_criterion;
+pub mod mark_task;
 pub mod read_spec;
 pub mod read_tasks;
 pub mod resolve_anchor;
+pub mod set_status;
 pub mod traverse_deps;
 pub mod validate_frontmatter;
 
@@ -62,6 +66,56 @@ pub enum PrimitiveError {
         /// Requested feature name.
         feature: String,
     },
+    /// Requested task number not found in `tasks.md`.
+    #[error("task '{task_number}' not found in specs/{feature}/tasks.md")]
+    TaskNotFound {
+        /// Feature whose tasks file was scanned.
+        feature: String,
+        /// Task number that was requested.
+        task_number: String,
+    },
+    /// Subtask index is out of bounds for the located task.
+    #[error(
+        "subtask index {subtask_index} is out of range for task '{task_number}' (found {total})"
+    )]
+    SubtaskOutOfRange {
+        /// Feature whose tasks file was scanned.
+        feature: String,
+        /// Task number whose subtasks were counted.
+        task_number: String,
+        /// Requested subtask index.
+        subtask_index: usize,
+        /// Number of subtasks present.
+        total: usize,
+    },
+    /// Acceptance-criterion index is out of bounds.
+    #[error(
+        "criterion index {criterion_index} is out of range for specs/{feature}/spec.md (found {total})"
+    )]
+    CriterionOutOfRange {
+        /// Feature whose spec was scanned.
+        feature: String,
+        /// Requested criterion index.
+        criterion_index: usize,
+        /// Number of acceptance criteria present.
+        total: usize,
+    },
+    /// `set-status` was invoked with a `from` value that does not match disk.
+    #[error("status mismatch in specs/{feature}/spec.md: expected '{expected}', found '{actual}'")]
+    StatusMismatch {
+        /// Feature whose spec was scanned.
+        feature: String,
+        /// Status the caller expected on disk.
+        expected: String,
+        /// Status actually present on disk.
+        actual: String,
+    },
+    /// Frontmatter does not contain a `status:` field.
+    #[error("frontmatter in specs/{feature}/spec.md has no `status:` field")]
+    StatusFieldMissing {
+        /// Feature whose spec was scanned.
+        feature: String,
+    },
 }
 
 /// Convenience alias for primitive return values.
@@ -97,6 +151,91 @@ pub(crate) fn read_text(path: &Path) -> Result<String> {
 pub(crate) fn rel_path(path: &Path, repo: &Path) -> String {
     let display = path.strip_prefix(repo).unwrap_or(path);
     display.to_string_lossy().replace('\\', "/")
+}
+
+/// Atomically write `content` to `path` using `tempfile`'s create-then-rename
+/// pattern. The tempfile is created in `path`'s parent directory so the rename
+/// stays on the same filesystem (POSIX guarantee). A crash between creation
+/// and persist leaves `path` unchanged; the orphaned tempfile is the only
+/// recovery artifact.
+pub(crate) fn write_atomic(path: &Path, content: &str) -> Result<()> {
+    let parent = path.parent().unwrap_or_else(|| Path::new("."));
+    let mut tmp = tempfile::NamedTempFile::new_in(parent).map_err(|source| PrimitiveError::Io {
+        path: parent.into(),
+        source,
+    })?;
+    tmp.as_file_mut()
+        .write_all(content.as_bytes())
+        .map_err(|source| PrimitiveError::Io {
+            path: path.into(),
+            source,
+        })?;
+    tmp.as_file_mut()
+        .sync_all()
+        .map_err(|source| PrimitiveError::Io {
+            path: path.into(),
+            source,
+        })?;
+    tmp.persist(path).map_err(|err| PrimitiveError::Io {
+        path: path.into(),
+        source: err.error,
+    })?;
+    Ok(())
+}
+
+/// Shared helpers for identifying and flipping markdown task-list checkbox
+/// lines (`- [ ] ...` / `- [x] ...`). Used by both `mark-task` and
+/// `mark-criterion`; the regex is `^(\s*-\s+)\[([ xX])\](\s.*)?$`, expressed
+/// directly via byte inspection to avoid pulling in `regex` for this hot path.
+pub(crate) mod checkbox {
+    /// Return `(prefix_end, marker_index)` when `line` is a task-list
+    /// checkbox line. `prefix_end` is the byte index of the `[`; `marker_index`
+    /// is the byte index of the space/x/X marker character.
+    pub(crate) fn find_checkbox_line(line: &str) -> Option<(usize, usize)> {
+        let bytes = line.as_bytes();
+        let mut idx = 0;
+        while idx < bytes.len() && matches!(bytes[idx], b' ' | b'\t') {
+            idx += 1;
+        }
+        if bytes.get(idx) != Some(&b'-') {
+            return None;
+        }
+        idx += 1;
+        let mut saw_space = false;
+        while idx < bytes.len() && matches!(bytes[idx], b' ' | b'\t') {
+            saw_space = true;
+            idx += 1;
+        }
+        if !saw_space {
+            return None;
+        }
+        if bytes.get(idx) != Some(&b'[') {
+            return None;
+        }
+        let bracket_idx = idx;
+        let marker_idx = idx + 1;
+        if !matches!(bytes.get(marker_idx), Some(&b' ' | &b'x' | &b'X')) {
+            return None;
+        }
+        if bytes.get(marker_idx + 1) != Some(&b']') {
+            return None;
+        }
+        match bytes.get(marker_idx + 2) {
+            Some(&b' ' | &b'\t' | &b'\n' | &b'\r') | None => Some((bracket_idx, marker_idx)),
+            _ => None,
+        }
+    }
+
+    /// Return `(previous_state, rewritten_line)` after flipping the marker at
+    /// `marker_idx` (obtained from [`find_checkbox_line`]) to `desired`.
+    pub(crate) fn flip_checkbox_at(line: &str, marker_idx: usize, desired: bool) -> (bool, String) {
+        let previous = matches!(line.as_bytes()[marker_idx], b'x' | b'X');
+        let mut out = String::with_capacity(line.len());
+        out.push_str(&line[..marker_idx]);
+        out.push(if desired { 'x' } else { ' ' });
+        out.push_str(&line[marker_idx + 1..]);
+        (previous, out)
+    }
 }
 
 /// Parse an ATX heading line and return `(level, text)` when the line matches

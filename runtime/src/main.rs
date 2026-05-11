@@ -7,8 +7,9 @@ use clap::{Parser, Subcommand};
 
 use govern_runtime::primitives;
 use govern_runtime::schema::primitives::{
-    CheckRuleIdsArgs, CheckStuckArgs, DeriveBoundaryArgs, ReadSpecArgs, ReadTasksArgs,
-    ResolveAnchorArgs, TraverseDepsArgs, ValidateFrontmatterArgs,
+    CheckRuleIdsArgs, CheckStuckArgs, DeriveBoundaryArgs, MarkCriterionArgs, MarkTaskArgs,
+    ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs, SetStatusArgs, TraverseDepsArgs,
+    ValidateFrontmatterArgs,
 };
 
 #[derive(Parser, Debug)]
@@ -65,6 +66,12 @@ enum Command {
     CheckStuck(CheckStuckArgs),
     /// Derive the runtime write boundary from git history.
     DeriveBoundary(DeriveBoundaryArgs),
+    /// Flip a single subtask checkbox in `tasks.md` (atomic rewrite).
+    MarkTask(MarkTaskArgs),
+    /// Flip a single acceptance-criterion checkbox in `spec.md`.
+    MarkCriterion(MarkCriterionArgs),
+    /// Update the `status:` field in spec frontmatter, guarded by `from`.
+    SetStatus(SetStatusArgs),
 }
 
 fn emit_protocol_schema() -> ExitCode {
@@ -150,5 +157,8 @@ fn main() -> ExitCode {
         Command::DeriveBoundary(args) => {
             emit_result(primitives::derive_boundary::run(&args, &repo))
         }
+        Command::MarkTask(args) => emit_result(primitives::mark_task::run(&args, &repo)),
+        Command::MarkCriterion(args) => emit_result(primitives::mark_criterion::run(&args, &repo)),
+        Command::SetStatus(args) => emit_result(primitives::set_status::run(&args, &repo)),
     }
 }

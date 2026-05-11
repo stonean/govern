@@ -34,10 +34,10 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 4. Implement write primitives with atomic semantics
 
-- [ ] `mark-task` — flips a single checkbox via tempfile-in-parent + `persist` rename. Returns the previous and current states.
-- [ ] `mark-criterion` — same approach for acceptance criteria checkboxes.
-- [ ] `set-status` — updates the `status:` field in spec frontmatter; refuses if the caller's `from` value doesn't match disk state.
-- [ ] Each write primitive has a unit test that simulates an interrupted write (drops the `NamedTempFile` without `persist`) and asserts the target file is unchanged.
+- [x] `mark-task` — flips a single checkbox via tempfile-in-parent + `persist` rename. Returns the previous and current states.
+- [x] `mark-criterion` — same approach for acceptance criteria checkboxes.
+- [x] `set-status` — updates the `status:` field in spec frontmatter; refuses if the caller's `from` value doesn't match disk state.
+- [x] Each write primitive has a unit test that simulates an interrupted write (drops the `NamedTempFile` without `persist`) and asserts the target file is unchanged.
 - **Done when**: `cargo test --release primitives::` passes including the interruption tests; on macOS+Linux, the rename is verified atomic by reading the file from a parallel thread mid-write.
 
 ## 5. Implement wrapper primitives
