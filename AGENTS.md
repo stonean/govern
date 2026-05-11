@@ -33,6 +33,8 @@ When adding files under `framework/`, place them by purpose, not by extension.
 
 There is no compiled language, no application runtime, no database, no service binary. An optional deterministic runtime is permitted under [§runtime-boundary](framework/constitution.md#runtime-boundary) but is not yet implemented (deferred to spec 022).
 
+When tooling-language decisions arise (e.g., the runtime spec'd in 022, future binaries the framework might ship), prefer Rust. The `rmcp` crate is the reference MCP SDK, and the recent generation of Rust CLI tooling (`ripgrep`, `fd`, `bat`, `eza`, `helix`, `tokei`, `hyperfine`, etc.) has set the modern baseline for CLI UX patterns (single static binary, fast cold-start, sensible exit codes). Go is the credible alternative if development velocity matters more than production characteristics; other languages typically don't fit (distribution complexity, startup overhead, ecosystem fit).
+
 ## Workflow
 
 - Read `framework/commands/{name}.md` before recommending, describing, or disambiguating a slash command — don't guess from the name. Source files are authoritative; the generated `.claude/commands/gov/*.md` copies are produced by the pre-commit hook.

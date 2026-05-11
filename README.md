@@ -57,7 +57,7 @@ See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred 
 | [019-config-decisions](specs/019-config-decisions/spec.md) | done | 005 | `.govern.toml` is currently a single-purpose pin file: `[pinned] files = [...]` keeps `/govern` from overwriting customized files. |
 | [020-code-review](specs/020-code-review/spec.md) | done | none | Adds `/gov:review`, a verb-named slash command that audits implementation code against the framework's rules across five dimensions (reuse, quality, security, efficiency, simplicity), writes a `review.md` artifact alongside the spec, and gates the `in-progress → done` transition via three reinforcing mechanisms. |
 | [021-runtime-boundary](specs/021-runtime-boundary/spec.md) | done | 020 | Establish the constitutional scope, eligibility criteria, and opt-in invariant for an optional deterministic runtime that adopters may install alongside the markdown framework. |
-| [022-deterministic-runtime](specs/022-deterministic-runtime/spec.md) | draft | none | The runtime is the deterministic execution layer for govern. |
+| [022-deterministic-runtime](specs/022-deterministic-runtime/spec.md) | clarified | 021 | The runtime is the deterministic execution layer for govern. |
 
 <!-- generated:feature-specs:end -->
 
