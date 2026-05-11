@@ -66,10 +66,10 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 8. Wire the parseability check into `markdown-only-pipeline.yml`
 
-- [ ] Create `runtime/legacy-prose-commands.txt` listing all 14 command file paths (one per line). This task's edits remove a path from the file as each command is rewritten in later tasks.
-- [ ] Create `scripts/lint-procedure-parseability.sh`: builds `runtime/` in release mode (one cargo invocation, cached across runs), invokes `./runtime/target/release/runtime parse --check framework/commands/*.md` honoring the allowlist, exits non-zero on failure.
-- [ ] Edit `.github/workflows/markdown-only-pipeline.yml` to add step (f) after step (e), invoking the new lint. Add a comment in the workflow explaining that the binary built here is a workflow-local copy (used only for the parseability check) and not on `PATH` for the other steps.
-- [ ] Verify spec 021's check (a) still passes — the binary is built at `./runtime/target/release/runtime` (relative path), not added to PATH.
+- [x] Create `runtime/legacy-prose-commands.txt` listing all 14 command file paths (one per line). This task's edits remove a path from the file as each command is rewritten in later tasks.
+- [x] Create `scripts/lint-procedure-parseability.sh`: builds `runtime/` in release mode (one cargo invocation, cached across runs), invokes `./runtime/target/release/runtime parse --check framework/commands/*.md` honoring the allowlist, exits non-zero on failure.
+- [x] Edit `.github/workflows/markdown-only-pipeline.yml` to add step (f) after step (e), invoking the new lint. Add a comment in the workflow explaining that the binary built here is a workflow-local copy (used only for the parseability check) and not on `PATH` for the other steps.
+- [x] Verify spec 021's check (a) still passes — the binary is built at `./runtime/target/release/runtime` (relative path), not added to PATH.
 - **Done when**: the workflow file passes `actionlint`; locally running the workflow's bash steps produces the same exit codes as before plus the new step (f) exiting 0.
 
 ## 9. Implement the interpreter walker

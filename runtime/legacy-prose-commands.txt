@@ -1,0 +1,29 @@
+# Allowlist for slash command files that have not yet been rewritten to
+# the parseable conventions (numbered steps + backtick-quoted primitive
+# names + HTML-comment extension markers).
+#
+# Consumed by scripts/lint-procedure-parseability.sh. Each non-blank,
+# non-comment line is a repo-relative path to a `framework/commands/*.md`
+# file that is allowed to return ParseError::LegacyProse. Entries are
+# removed as each command is rewritten in spec 022's tasks 12-17 and the
+# follow-on scenarios (`/gov:clarify`, `/gov:review`, `/gov:groom`).
+#
+# Files NOT in this list must parse cleanly as a Procedure under
+# `runtime parse --check`. Files in this list MAY return legacy-prose
+# without failing CI; if a file in this list ever starts parsing as a
+# real procedure, that's a win and the entry can be removed.
+
+framework/commands/ask.md
+framework/commands/capture.md
+framework/commands/clarify.md
+framework/commands/elaborate.md
+framework/commands/groom.md
+framework/commands/help.md
+framework/commands/implement.md
+framework/commands/log.md
+framework/commands/plan.md
+framework/commands/review.md
+framework/commands/specify.md
+framework/commands/status.md
+framework/commands/target.md
+framework/commands/validate.md

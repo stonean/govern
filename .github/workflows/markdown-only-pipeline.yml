@@ -13,6 +13,8 @@ on:
       - '.claude/commands/**'
       - 'scripts/lint-*.sh'
       - '.github/workflows/markdown-only-pipeline.yml'
+      - 'runtime/legacy-prose-commands.txt'
+      - 'runtime/src/parser/**'
   push:
     branches:
       - main
@@ -61,3 +63,22 @@ jobs:
 
       - name: (e) Frontmatter integrity
         run: bash scripts/lint-frontmatter.sh
+
+      # Step (f) builds a workflow-private copy of the runtime binary at
+      # runtime/target/release/runtime and invokes it via a *relative
+      # path* — never adding it to PATH. The opt-in invariant from step
+      # (a) (no runtime binary on PATH) is unchanged: a workflow-local
+      # compile for the parseability check does not constitute a
+      # runtime install.
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            runtime/target
+          key: ${{ runner.os }}-runtime-parseability-${{ hashFiles('runtime/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-runtime-parseability-
+      - name: (f) Procedure parseability
+        run: bash scripts/lint-procedure-parseability.sh
