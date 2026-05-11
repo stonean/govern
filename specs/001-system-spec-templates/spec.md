@@ -3,6 +3,13 @@ title: "001-system-spec-templates — spec"
 status: done
 dependencies: []
 tags: [templates, pipeline]
+review:
+  last-run: 2026-05-10T00:00:00Z
+  reviewed-against: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
+  must-violations: 0
+  should-violations: 0
+  low-confidence: 0
+  blocking: false
 ---
 
 # 001 — System Spec Templates

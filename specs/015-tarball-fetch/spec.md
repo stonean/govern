@@ -3,6 +3,13 @@ title: "015-tarball-fetch — spec"
 status: done
 dependencies: [007-govern-workflow, 012-multi-agent-govern]
 tags: [bootstrap, performance]
+review:
+  last-run: 2026-05-10T00:00:00Z
+  reviewed-against: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
+  must-violations: 0
+  should-violations: 0
+  low-confidence: 0
+  blocking: false
 ---
 
 # 015 — Tarball Fetch

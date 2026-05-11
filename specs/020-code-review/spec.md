@@ -3,8 +3,8 @@ spec: 020-code-review
 status: done
 dependencies: []
 review:
-  last-run: 2026-05-10T22:31:48Z
-  reviewed-against: 4f56945d5e491d824932d48f6e425022f580d280
+  last-run: 2026-05-10T00:00:00Z
+  reviewed-against: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
   must-violations: 0
   should-violations: 0
   low-confidence: 0

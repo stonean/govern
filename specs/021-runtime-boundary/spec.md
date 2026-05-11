@@ -2,8 +2,8 @@
 status: in-progress
 dependencies: [020-code-review]
 review:
-  last-run: null
-  reviewed-against: null
+  last-run: 2026-05-10T00:00:00Z
+  reviewed-against: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
   must-violations: 0
   should-violations: 0
   low-confidence: 0
