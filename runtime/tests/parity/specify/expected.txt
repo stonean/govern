@@ -1,0 +1,29 @@
+TODO: capture the LLM-driven `/gov:specify` output against
+`runtime/tests/fixtures/specify-basic/` and replace this file's body
+with the captured post-run state.
+
+Capture recipe (maintainer-only, requires an LLM-driven host):
+
+  1. cp -r runtime/tests/fixtures/specify-basic <a-clean-tempdir>
+  2. cp framework/commands/specify.md <a-clean-tempdir>/framework/commands/
+  3. cd <a-clean-tempdir> && git init && git add . && git commit -m chore
+  4. Run `/gov:specify webhook delivery` (or any feature description) in
+     the LLM-driven host; answer the lightweight-track questions, then
+     confirm the create-feature gate when prompted.
+  5. After the run, capture:
+     a. The post-run frontmatter of
+        <a-clean-tempdir>/specs/006-specify/spec.md.
+     b. The repo-relative path the LLM wrote (expected:
+        specs/006-specify/spec.md — path-only equality).
+
+Parity bound for `/gov:specify`:
+  - strict-fields: `frontmatter` — the spec frontmatter must match the
+    runtime-driven path's values exactly.
+  - strict-files: `specs/{NNN-feature}/spec.md` (path-only) — the new
+    feature directory and spec.md must land at the expected NNN path;
+    body bytes may differ.
+  - semantic-fields: `spec-body` — the body content is semantic;
+    wording may differ between LLM responses without failing the check.
+
+Until this file is filled in, the parity test for `/gov:specify` is
+recorded as SKIPPED and does not block CI.

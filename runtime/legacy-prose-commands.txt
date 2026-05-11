@@ -21,4 +21,3 @@ framework/commands/groom.md
 framework/commands/help.md
 framework/commands/log.md
 framework/commands/review.md
-framework/commands/specify.md

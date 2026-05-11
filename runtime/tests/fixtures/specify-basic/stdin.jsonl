@@ -1,0 +1,2 @@
+{"type":"llm-response","request-id":"req-1","response":{"content":"## Motivation\n\nFixture body filled by the writeSpecBody extension.\n","section":"body"}}
+{"type":"gate-response","request-id":"req-2","confirmed":true}

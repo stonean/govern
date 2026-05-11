@@ -141,9 +141,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 17. Rewrite `/gov:specify`
 
-- [ ] Rewrite `framework/commands/specify.md` to invoke `lint-markdown`, `gate-confirm`, and `<!-- llm:writeSpecBody -->` markers on the new-feature-spec creation step.
-- [ ] `parity: { strict-fields: ["frontmatter"], strict-files: ["specs/<NNN>-<slug>/spec.md (path-only)"], semantic-fields: ["spec-body"] }`.
-- [ ] Fixture under `runtime/tests/fixtures/specify-basic/` with an empty `specs/` directory.
+- [x] Rewrite `framework/commands/specify.md` to invoke `lint-markdown`, `gate-confirm`, and `<!-- llm:writeSpecBody -->` markers on the new-feature-spec creation step.
+- [x] `parity: { strict-fields: ["frontmatter"], strict-files: ["specs/<NNN>-<slug>/spec.md (path-only)"], semantic-fields: ["spec-body"] }`.
+- [x] Fixture under `runtime/tests/fixtures/specify-basic/` with an empty `specs/` directory.
 - **Done when**: parseability + integration + parity green; the new feature directory is created at the right `NNN-slug` path with valid frontmatter; tool-coverage lint green.
 
 ## 18. Populate `framework/runtime-tools.txt`

@@ -1,0 +1,6 @@
+{"type":"llm-request","extension-point":"writeSpecBody","request-id":"req-1","request":{"feature":"006-specify","path":"specs/006-specify","paths":["specs/006-specify/spec.md"],"setAt":"2026-05-11T00:00:00Z"}}
+{"type":"progress","message":"received llm-response for `writeSpecBody`","step":"2"}
+{"type":"progress","message":"dispatching primitive `lint-markdown`","step":"3","primitive":"lint-markdown"}
+{"type":"gate-confirm","gate":"step-4","request-id":"req-2","prompt":"Ask the user to approve creating the new feature and setting it as the session target before any session-file write. On confirmation, the host writes the session JSON to point at the new feature; on denial, the walker exits cleanly without writing the session."}
+{"type":"progress","message":"gate `step-4` confirmed","step":"4"}
+{"type":"complete","result":{},"runtime-version":"{{runtime-version}}"}
