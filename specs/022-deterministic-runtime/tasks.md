@@ -42,9 +42,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 5. Implement wrapper primitives
 
-- [ ] `run-generator` — spawn a bash script with `--dry-run`, capture stdout/stderr/exit. Non-zero exit becomes `drift: true` (not an operational error).
-- [ ] `lint-markdown` — spawn `npx markdownlint-cli2` with the given paths; capture and parse the output into the `violations` array.
-- [ ] `gate-confirm` — under the subprocess interpreter, emits the `gate-confirm` JSON message and blocks for a `gate-response`. Under the MCP surface, returns the prompt unchanged and the caller is responsible for routing it (the MCP tool's response shape is `{ "prompt": "...", "gate": "..." }` and the client returns `{ "confirmed": bool }` as a separate tool call — documented in the MCP server's tool description).
+- [x] `run-generator` — spawn a bash script with `--dry-run`, capture stdout/stderr/exit. Non-zero exit becomes `drift: true` (not an operational error).
+- [x] `lint-markdown` — spawn `npx markdownlint-cli2` with the given paths; capture and parse the output into the `violations` array.
+- [x] `gate-confirm` — under the subprocess interpreter, emits the `gate-confirm` JSON message and blocks for a `gate-response`. Under the MCP surface, returns the prompt unchanged and the caller is responsible for routing it (the MCP tool's response shape is `{ "prompt": "...", "gate": "..." }` and the client returns `{ "confirmed": bool }` as a separate tool call — documented in the MCP server's tool description).
 - **Done when**: `cargo test --release primitives::` passes; manual smoke test of `runtime run-generator --script scripts/gen-spec-deps.sh` exits 0 and reports `drift: false`.
 
 ## 6. Expose primitives as MCP tools

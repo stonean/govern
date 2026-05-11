@@ -5,11 +5,13 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 
+use std::io;
+
 use govern_runtime::primitives;
 use govern_runtime::schema::primitives::{
-    CheckRuleIdsArgs, CheckStuckArgs, DeriveBoundaryArgs, MarkCriterionArgs, MarkTaskArgs,
-    ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs, SetStatusArgs, TraverseDepsArgs,
-    ValidateFrontmatterArgs,
+    CheckRuleIdsArgs, CheckStuckArgs, DeriveBoundaryArgs, GateConfirmArgs, LintMarkdownArgs,
+    MarkCriterionArgs, MarkTaskArgs, ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs,
+    RunGeneratorArgs, SetStatusArgs, TraverseDepsArgs, ValidateFrontmatterArgs,
 };
 
 #[derive(Parser, Debug)]
@@ -72,6 +74,12 @@ enum Command {
     MarkCriterion(MarkCriterionArgs),
     /// Update the `status:` field in spec frontmatter, guarded by `from`.
     SetStatus(SetStatusArgs),
+    /// Invoke a bash generator with `--dry-run`; non-zero exit is drift.
+    RunGenerator(RunGeneratorArgs),
+    /// Wrap `npx markdownlint-cli2` and surface violations.
+    LintMarkdown(LintMarkdownArgs),
+    /// Emit a `gate-confirm` envelope on stdout and block for a response.
+    GateConfirm(GateConfirmArgs),
 }
 
 fn emit_protocol_schema() -> ExitCode {
@@ -160,5 +168,22 @@ fn main() -> ExitCode {
         Command::MarkTask(args) => emit_result(primitives::mark_task::run(&args, &repo)),
         Command::MarkCriterion(args) => emit_result(primitives::mark_criterion::run(&args, &repo)),
         Command::SetStatus(args) => emit_result(primitives::set_status::run(&args, &repo)),
+        Command::RunGenerator(args) => emit_result(primitives::run_generator::run(&args, &repo)),
+        Command::LintMarkdown(args) => emit_result(primitives::lint_markdown::run(&args, &repo)),
+        Command::GateConfirm(args) => {
+            // The CLI binding is the subprocess-interpreter surface: emit the
+            // gate-confirm envelope on stdout, then read one gate-response
+            // line from stdin. The MCP surface routes prompts via the host
+            // instead and is wired up in task 6.
+            let request_id = primitives::gate_confirm::fresh_request_id();
+            let stdin = io::stdin();
+            let mut reader = stdin.lock();
+            let result = {
+                let stdout = io::stdout();
+                let mut writer = stdout.lock();
+                primitives::gate_confirm::run_blocking(&args, &request_id, &mut reader, &mut writer)
+            };
+            emit_result(result)
+        }
     }
 }
