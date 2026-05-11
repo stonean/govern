@@ -22,6 +22,17 @@ The `framework/` directory is govern's source — everything that ships to adopt
 
 When adding files under `framework/`, place them by purpose, not by extension.
 
+## Tech Stack
+
+`govern` is a text-first framework. The implementation is intentionally narrow:
+
+- **Markdown** — every primary artifact (constitution, specs, plans, tasks, scenarios, rules, slash command sources, templates). Source of truth per [§text-first-artifacts](framework/constitution.md#text-first-artifacts).
+- **Bash scripts** under `scripts/` — generators (`gen-*.sh`), the pre-commit hook installer (`install-hooks.sh`), and lints (`lint-*.sh`). All deterministic; no application logic.
+- **GitHub Actions YAML** under `.github/workflows/` — CI configuration only.
+- **Node.js / `npx`** — invoked at lint time for `markdownlint-cli2` only; not a build dependency, no `package.json` or `node_modules`.
+
+There is no compiled language, no application runtime, no database, no service binary. An optional deterministic runtime is permitted under [§runtime-boundary](framework/constitution.md#runtime-boundary) but is not yet implemented (deferred to spec 022).
+
 ## Workflow
 
 - Read `framework/commands/{name}.md` before recommending, describing, or disambiguating a slash command — don't guess from the name. Source files are authoritative; the generated `.claude/commands/gov/*.md` copies are produced by the pre-commit hook.
