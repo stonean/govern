@@ -127,11 +127,12 @@ fn exec_reads_extension_response_from_stdin() {
         .expect("spawn runtime");
 
     // Pre-write the host response. The walker generates request-id `req-1`
-    // deterministically for the first extension point.
+    // deterministically for the first extension point. The payload must
+    // satisfy WriteCodeResponse — edits + summary are both required.
     let mut stdin = child.stdin.take().unwrap();
     stdin
         .write_all(
-            b"{\"type\":\"llm-response\",\"request-id\":\"req-1\",\"response\":{\"edits\":[]}}\n",
+            b"{\"type\":\"llm-response\",\"request-id\":\"req-1\",\"response\":{\"edits\":[],\"summary\":\"no-op\"}}\n",
         )
         .unwrap();
     drop(stdin);

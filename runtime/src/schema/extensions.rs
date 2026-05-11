@@ -9,6 +9,7 @@
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 // -- assessSpecQuality -------------------------------------------------------
 
@@ -178,6 +179,110 @@ pub struct WriteSpecBodyResponse {
     pub section: String,
 }
 
+// -- validation --------------------------------------------------------------
+
+/// Validation errors raised by [`validate_response`] and
+/// [`validate_write_code_boundary`].
+#[derive(Debug, thiserror::Error)]
+pub enum ValidationError {
+    /// The extension identifier is not known to this runtime version.
+    #[error("unknown extension point `{0}`")]
+    UnknownExtension(String),
+    /// The response payload did not match the expected schema.
+    #[error("schema-mismatch in `{identifier}`: {source}")]
+    Schema {
+        /// Extension identifier the response was checked against.
+        identifier: String,
+        /// Underlying serde error (field path + reason).
+        #[source]
+        source: serde_json::Error,
+    },
+    /// A `writeCode` edit targeted a path outside the request's
+    /// `write-boundary`.
+    #[error("out-of-boundary-edit: path `{path}` is not within {boundary:?}")]
+    OutOfBoundary {
+        /// Offending edit path.
+        path: String,
+        /// Boundary patterns the path was checked against.
+        boundary: Vec<String>,
+    },
+}
+
+/// Deserialize `response` into the response type for `identifier`. Returns
+/// the parsed value (boxed via [`Value`] for callers that prefer to keep
+/// working with JSON), or a [`ValidationError::Schema`] when the payload
+/// is malformed.
+///
+/// # Errors
+///
+/// Returns [`ValidationError::UnknownExtension`] when `identifier` is not
+/// `assessSpecQuality`, `writeCode`, or `writeSpecBody`; otherwise
+/// [`ValidationError::Schema`] when deserialization fails.
+pub fn validate_response(identifier: &str, response: &Value) -> Result<(), ValidationError> {
+    macro_rules! check {
+        ($ty:ty) => {{
+            serde_json::from_value::<$ty>(response.clone())
+                .map(|_| ())
+                .map_err(|source| ValidationError::Schema {
+                    identifier: identifier.into(),
+                    source,
+                })
+        }};
+    }
+    match identifier {
+        "assessSpecQuality" => check!(AssessSpecQualityResponse),
+        "writeCode" => check!(WriteCodeResponse),
+        "writeSpecBody" => check!(WriteSpecBodyResponse),
+        other => Err(ValidationError::UnknownExtension(other.into())),
+    }
+}
+
+/// Check every edit path in a parsed `writeCode` response against the
+/// `boundary` patterns. Returns the first offending path as
+/// [`ValidationError::OutOfBoundary`]. A boundary entry ending in `/**`
+/// matches any descendant; an entry ending in `/*` matches direct
+/// children; any other entry is an exact-path match.
+///
+/// # Errors
+///
+/// See above.
+pub fn validate_write_code_boundary(
+    response: &WriteCodeResponse,
+    boundary: &[String],
+) -> Result<(), ValidationError> {
+    for edit in &response.edits {
+        if !path_in_boundary(&edit.path, boundary) {
+            return Err(ValidationError::OutOfBoundary {
+                path: edit.path.clone(),
+                boundary: boundary.to_vec(),
+            });
+        }
+    }
+    Ok(())
+}
+
+fn path_in_boundary(path: &str, boundary: &[String]) -> bool {
+    boundary
+        .iter()
+        .any(|pattern| matches_pattern(path, pattern))
+}
+
+fn matches_pattern(path: &str, pattern: &str) -> bool {
+    if let Some(prefix) = pattern.strip_suffix("/**") {
+        return path == prefix || path.starts_with(&format!("{prefix}/"));
+    }
+    if let Some(prefix) = pattern.strip_suffix("/*") {
+        if let Some(rest) = path.strip_prefix(&format!("{prefix}/")) {
+            return !rest.contains('/');
+        }
+        return false;
+    }
+    if pattern == "**" {
+        return true;
+    }
+    path == pattern
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
@@ -288,6 +393,145 @@ mod tests {
         assert_eq!(r_value["edits"][0]["action"], "create");
         assert_eq!(r_value["edits"][1]["action"], "edit");
         assert_eq!(round_trip(&response), response);
+    }
+
+    #[test]
+    fn validate_response_rejects_missing_required_field() {
+        use super::{ValidationError, validate_response};
+        let response = serde_json::json!({
+            // `passed` is required by AssessSpecQualityResponse — leave it out
+            "finding": {
+                "severity": "must",
+                "rule-id": "QUAL-CLARITY-001",
+                "location": { "section": "Foo", "line": 1 },
+                "message": "..."
+            }
+        });
+        let err = validate_response("assessSpecQuality", &response).unwrap_err();
+        match err {
+            ValidationError::Schema { identifier, source } => {
+                assert_eq!(identifier, "assessSpecQuality");
+                assert!(source.to_string().contains("passed"));
+            }
+            other => panic!("expected Schema, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn validate_response_rejects_unexpected_enum_value() {
+        use super::{ValidationError, validate_response};
+        let response = serde_json::json!({
+            "edits": [
+                {
+                    "path": "runtime/src/foo.rs",
+                    "action": "rename",
+                    "content": null,
+                    "patch": null
+                }
+            ],
+            "summary": "rename a file"
+        });
+        let err = validate_response("writeCode", &response).unwrap_err();
+        match err {
+            ValidationError::Schema { identifier, source } => {
+                assert_eq!(identifier, "writeCode");
+                assert!(
+                    source.to_string().contains("rename") || source.to_string().contains("variant")
+                );
+            }
+            other => panic!("expected Schema, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn validate_response_accepts_well_formed_payload() {
+        use super::validate_response;
+        let response = serde_json::json!({
+            "passed": true
+        });
+        validate_response("assessSpecQuality", &response).unwrap();
+    }
+
+    #[test]
+    fn validate_response_rejects_unknown_extension() {
+        use super::{ValidationError, validate_response};
+        let response = serde_json::json!({});
+        let err = validate_response("notAnExtension", &response).unwrap_err();
+        assert!(matches!(err, ValidationError::UnknownExtension(_)));
+    }
+
+    #[test]
+    fn write_code_boundary_rejects_out_of_boundary_path() {
+        use super::{ValidationError, validate_write_code_boundary};
+        let response = WriteCodeResponse {
+            edits: vec![WriteCodeEdit {
+                path: "framework/constitution.md".into(),
+                action: WriteCodeAction::Edit,
+                content: Some("malicious".into()),
+                patch: None,
+            }],
+            summary: "edit constitution".into(),
+        };
+        let boundary = vec![
+            "runtime/**".into(),
+            "specs/022-deterministic-runtime/**".into(),
+        ];
+        let err = validate_write_code_boundary(&response, &boundary).unwrap_err();
+        match err {
+            ValidationError::OutOfBoundary { path, .. } => {
+                assert_eq!(path, "framework/constitution.md");
+            }
+            other => panic!("expected OutOfBoundary, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn write_code_boundary_accepts_in_boundary_paths() {
+        use super::validate_write_code_boundary;
+        let response = WriteCodeResponse {
+            edits: vec![
+                WriteCodeEdit {
+                    path: "runtime/src/foo.rs".into(),
+                    action: WriteCodeAction::Create,
+                    content: Some("// hi".into()),
+                    patch: None,
+                },
+                WriteCodeEdit {
+                    path: "specs/022-deterministic-runtime/tasks.md".into(),
+                    action: WriteCodeAction::Edit,
+                    content: Some("...".into()),
+                    patch: None,
+                },
+            ],
+            summary: "ok".into(),
+        };
+        let boundary = vec![
+            "runtime/**".into(),
+            "specs/022-deterministic-runtime/**".into(),
+        ];
+        validate_write_code_boundary(&response, &boundary).unwrap();
+    }
+
+    #[test]
+    fn boundary_pattern_double_star_matches_descendants() {
+        use super::matches_pattern;
+        assert!(matches_pattern("runtime/src/foo.rs", "runtime/**"));
+        assert!(matches_pattern("runtime", "runtime/**"));
+        assert!(!matches_pattern("framework/foo.md", "runtime/**"));
+    }
+
+    #[test]
+    fn boundary_pattern_single_star_matches_direct_children_only() {
+        use super::matches_pattern;
+        assert!(matches_pattern("runtime/foo.rs", "runtime/*"));
+        assert!(!matches_pattern("runtime/src/foo.rs", "runtime/*"));
+    }
+
+    #[test]
+    fn boundary_pattern_exact_match() {
+        use super::matches_pattern;
+        assert!(matches_pattern("runtime/Cargo.toml", "runtime/Cargo.toml"));
+        assert!(!matches_pattern("runtime/Cargo.lock", "runtime/Cargo.toml"));
     }
 
     #[test]

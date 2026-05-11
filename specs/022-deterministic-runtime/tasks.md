@@ -92,10 +92,10 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 11. Define the three extension-point schemas and add validation
 
-- [ ] In `schema/extensions.rs`, finalize the `assessSpecQuality`, `writeCode`, `writeSpecBody` request/response types (already drafted in `data-model.md`).
-- [ ] The interpreter validates incoming `llm-response` payloads against the schema for the extension point that emitted the request. Validation failures emit `error: schema-mismatch` with the field path and the parsed schema diff.
-- [ ] For `writeCode`, the interpreter additionally checks that every `edits[].path` is within the `write-boundary` and rejects the response with `error: out-of-boundary-edit` before applying any edit.
-- [ ] Unit tests under `schema::extensions::tests` cover: missing required field; unexpected enum value; out-of-boundary path in `writeCode`.
+- [x] In `schema/extensions.rs`, finalize the `assessSpecQuality`, `writeCode`, `writeSpecBody` request/response types (already drafted in `data-model.md`).
+- [x] The interpreter validates incoming `llm-response` payloads against the schema for the extension point that emitted the request. Validation failures emit `error: schema-mismatch` with the field path and the parsed schema diff.
+- [x] For `writeCode`, the interpreter additionally checks that every `edits[].path` is within the `write-boundary` and rejects the response with `error: out-of-boundary-edit` before applying any edit.
+- [x] Unit tests under `schema::extensions::tests` cover: missing required field; unexpected enum value; out-of-boundary path in `writeCode`.
 - **Done when**: `cargo test --release schema::extensions::` passes; an invalid `llm-response` causes a clean `error` envelope and exit 1.
 
 ## 12. Rewrite `/gov:status`
