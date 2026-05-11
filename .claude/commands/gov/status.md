@@ -1,5 +1,7 @@
 ---
 description: Display the pipeline dashboard for all feature specs.
+parity:
+  strict-stdout: true
 ---
 
 # Status
@@ -19,39 +21,32 @@ Read-only overview of every feature's progress through the pipeline. Shows which
 
 ## Instructions
 
-**Steps 1–2 must complete before any other work. Do NOT read spec directories, list files, or perform any dashboard work until step 2 resolves.**
+Steps 1–2 must complete before any other work. Do NOT read spec directories, list files, or perform any dashboard work until step 2 resolves.
 
-1. Read `.claude/gov-session.json` for the current session target (if any), including optional `scenario` and `scenarioPath` fields.
-2. If a session target exists, read **only** the target spec's `spec.md` (or `spec-and-plan.md`) to extract the YAML frontmatter `status` field and count entries in the body's `## Open Questions` section. Count entries the same way `/gov:clarify` does: top-level list items or `**Bold-prefix**`-style headings; treat the section as having zero entries when it is missing, empty, or contains only a placeholder line such as `*None — all resolved.*`.
-   - If `status` is **not** `done`: display the target feature name and status. If a scenario is targeted, also read the scenario file (frontmatter `spec-ref` plus body) and display scenario detail: scenario name, spec-ref, context summary, and open question count. Then prompt the next pipeline command:
-     - If a scenario is targeted **and** the scenario has one or more open questions → `/gov:clarify` (scenario-targeted, resolves scenario-level open questions regardless of parent spec status).
-     - **Recovery state — `(status ∈ {clarified, planned, in-progress}, open-question count ≥ 1)`** → `/gov:clarify` (the recovery path will surface the inconsistency before any forward action). This state usually arises from a manual frontmatter edit; the normal back-edge via `/gov:ask` keeps spec status and open-question presence in sync.
-     - Otherwise, prompt based on the spec's status: `draft` → `/gov:clarify`, `clarified` → `/gov:plan`, `planned`/`in-progress` → `/gov:implement`.
+1. The walker context already contains the session target's feature field when `.claude/gov-session.json` exists — the runtime exec subcommand seeds it from that file automatically. In the markdown-only path, read the session file directly to learn the current target (and any scenario it carries).
 
-     **Stop here — do not build the full dashboard.**
-   - If `status` **is** `done`: continue to step 3 to build the full dashboard.
-3. List directories under `specs/` matching the `NNN-*` pattern.
-4. For each feature directory, read **only** `spec.md` (or `spec-and-plan.md` if `spec.md` does not exist). Do not read or list any other files. Parse the YAML frontmatter block at the top of the file and extract:
-   - `status` (allowed values: `draft`, `clarified`, `planned`, `in-progress`, `done`)
-   - `dependencies` (list of spec slugs; empty list permitted)
-   - `tags` (list of free-form strings; may be empty or absent — treat absent as empty)
-   - Open question count from the body's `## Open Questions` section (using the same counting rule as step 2)
-5. Check whether these files exist (do not read them): `plan.md`, `tasks.md`, `data-model.md`.
-6. Count `.md` files in the `scenarios/` subdirectory (if it exists) without reading them.
-7. Display a table:
+2. When the session target names a feature, invoke `read-spec` against the targeted feature to load frontmatter, sections, and the open-question count from the body. Route on the loaded status (one of draft, clarified, planned, in-progress, done):
+   1. When the status is anything other than done, display the target feature name and status. If a scenario is targeted, also read the scenario file and display the scenario name, the section field (or the legacy spec-ref field for pre-017 scenarios), the context summary, and its open-question count. Then prompt the next pipeline command per the Status → next action table below, and stop. Do not build the full dashboard.
+   2. When the status is done, continue to step 3 to build the full dashboard.
 
-   | Feature | Status | Dependencies | Artifacts | Scenarios | Next Action |
-   | --- | --- | --- | --- | --- | --- |
+3. (Full dashboard path) List directories under `specs/` matching the NNN-feature pattern. For each feature directory, read only its spec file's YAML frontmatter and extract status, dependencies, tags (optional, treat absent as empty), and the open-question count from the body. Otherwise, follow the markdown-only path: open each file with the host and parse the same fields.
 
-   - Mark the session target with `>>`.
-   - Scenarios column shows the count of `.md` files in the feature's `scenarios/` directory (0 if none).
-   - Next Action based on status and open-question count:
-     - **Recovery state — `(status ∈ {clarified, planned, in-progress}, open-question count ≥ 1)`** → `clarify (recovery)`. This state usually arises from a manual frontmatter edit; the normal back-edge via `/gov:ask` keeps spec status and open-question presence in sync.
-     - Otherwise: `clarify`, `plan`, `implement`, or `done` per status.
+4. (Full dashboard path) For each feature, check whether plan.md, tasks.md, and data-model.md exist (without reading them) and count the markdown files in its scenarios subdirectory when one is present.
 
-8. Below the table, show:
-   - Count of specs at each status level.
-   - Which specs are blocked (dependencies not at `clarified` or later).
-   - Which specs are in the recovery state (any spec whose row's Next Action is `clarify (recovery)`). Surface them as a one-line callout: "{N} spec(s) in recovery state: {comma-separated slugs}. Run `/gov:clarify` on each to walk the questions; the spec reverts to `draft` and advances forward again."
-   - If at least one spec has non-empty `tags`, list the union of tags in use across the repo (one line, comma-separated). Skip the line entirely if no spec has tags.
-9. List any non-done specs (excluding the current target) and prompt the user to run `/gov:target` to select one.
+5. Display the dashboard table with one row per feature. Mark the session target with a leading `>>`. The Scenarios column shows the count of markdown files in the feature's scenarios subdirectory. The Next Action column comes from the Status → next action table below; when the status is in the set {clarified, planned, in-progress} and the open-question count is at least one, the Next Action is `clarify (recovery)` regardless of status — that recovery state usually arises from a manual frontmatter edit.
+
+6. Below the table, show counts per status level, the blocked specs (any feature whose dependencies are not at clarified or later), and any specs in the recovery state. Surface recovery-state specs as a one-line callout: "{N} spec(s) in recovery state: {comma-separated slugs}. Run `/gov:clarify` on each to walk the questions; the spec reverts to draft and advances forward again." If at least one spec has non-empty tags, list the union of tags in use across the repo on one line, comma-separated; skip the line entirely if no spec has tags.
+
+7. List any non-done specs (excluding the current target) and prompt the user to run `/gov:target` to select one.
+
+## Status → next action
+
+| Status | Next Action |
+| --- | --- |
+| draft | /gov:clarify |
+| clarified | /gov:plan |
+| planned | /gov:implement |
+| in-progress | /gov:implement |
+| done | done (spec is complete) |
+
+When a scenario is targeted and the scenario itself has one or more open questions, the next action is `/gov:clarify` (scenario-targeted, resolves scenario-level open questions regardless of parent spec status).

@@ -1,0 +1,16 @@
+TODO: capture the LLM-driven `/gov:status` output against
+`runtime/tests/fixtures/status-basic/` and replace this file's body with
+the captured dashboard text (no trailing whitespace, terminating newline).
+
+Capture recipe (maintainer-only, requires an LLM-driven host):
+
+  1. cp -r runtime/tests/fixtures/status-basic <a-clean-tempdir>
+  2. cp framework/commands/status.md <a-clean-tempdir>/framework/commands/
+  3. Run `/gov:status` against <a-clean-tempdir> in the LLM-driven host.
+  4. Capture the rendered dashboard output verbatim into this file.
+
+Parity bound for `/gov:status` is `strict-stdout: true` — the captured
+text must match the runtime's stdout byte-for-byte after the
+`{{runtime-version}}` placeholder is substituted. Until this file is
+filled in, the parity test for `/gov:status` is recorded as SKIPPED and
+does not block CI.

@@ -100,13 +100,13 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 12. Rewrite `/gov:status`
 
-- [ ] Edit `framework/commands/status.md`: rewrite the Instructions section to follow the parseable conventions (numbered steps, backtick-quoted primitive names from the runtime library, no extension-point markers — `/gov:status` is fully deterministic).
-- [ ] Add the `parity: { strict-stdout: true }` frontmatter field.
-- [ ] Remove `framework/commands/status.md` from `runtime/legacy-prose-commands.txt`.
-- [ ] Create `runtime/tests/fixtures/status-basic/` with a minimal repo state; create `runtime/tests/golden/status-basic.jsonl` with the expected JSON stream; create `runtime/tests/parity/status/expected.txt` with the captured LLM-driven output.
-- [ ] Verify `runtime parse --check framework/commands/status.md` passes.
-- [ ] Verify `runtime exec status` against the fixture produces the golden stream byte-for-byte and the dashboard output matches the parity capture.
-- [ ] Verify `scripts/lint-tool-coverage.sh` still passes (every primitive reference paired with a fallback marker within 20 lines).
+- [x] Edit `framework/commands/status.md`: rewrite the Instructions section to follow the parseable conventions (numbered steps, backtick-quoted primitive names from the runtime library, no extension-point markers — `/gov:status` is fully deterministic).
+- [x] Add the `parity: { strict-stdout: true }` frontmatter field.
+- [x] Remove `framework/commands/status.md` from `runtime/legacy-prose-commands.txt`.
+- [x] Create `runtime/tests/fixtures/status-basic/` with a minimal repo state; create `runtime/tests/golden/status-basic.jsonl` with the expected JSON stream; create `runtime/tests/parity/status/expected.txt` with the captured LLM-driven output.
+- [x] Verify `runtime parse --check framework/commands/status.md` passes.
+- [x] Verify `runtime exec status` against the fixture produces the golden stream byte-for-byte and the dashboard output matches the parity capture.
+- [x] Verify `scripts/lint-tool-coverage.sh` still passes (every primitive reference paired with a fallback marker within 20 lines).
 - **Done when**: parseability check green; integration + parity tests for `/gov:status` pass; tool-coverage lint green.
 
 ## 13. Rewrite `/gov:target`
