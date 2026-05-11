@@ -4,12 +4,12 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 1. Bootstrap the Rust crate at `runtime/`
 
-- [ ] Create `runtime/Cargo.toml` with package metadata (name `govern-runtime`, edition 2024, MSRV declared), the dependencies listed in the plan (`clap`, `serde`, `serde_json`, `serde_yaml`, `tokio`, `rmcp`, `pulldown-cmark`, `tempfile`, `thiserror`, `anyhow`, `regex`, `walkdir`, `git2`, `schemars`).
-- [ ] Create `runtime/src/main.rs` with a minimal clap-derive CLI exposing `mcp`, `exec`, `parse`, and `--version`. All subcommands print "not yet implemented" and exit 1; `--version` returns `env!("CARGO_PKG_VERSION")`.
-- [ ] Create `runtime/src/lib.rs` re-exporting `parser`, `interpreter`, `primitives`, `mcp`, `schema`, `io` modules as empty placeholders.
-- [ ] Create `runtime/.gitignore` excluding `target/`.
-- [ ] Create `runtime/CHANGELOG.md` with an initial `[Unreleased]` section.
-- [ ] Commit `runtime/Cargo.lock`.
+- [x] Create `runtime/Cargo.toml` with package metadata (name `govern-runtime`, edition 2024, MSRV declared), the dependencies listed in the plan (`clap`, `serde`, `serde_json`, `serde_yaml`, `tokio`, `rmcp`, `pulldown-cmark`, `tempfile`, `thiserror`, `anyhow`, `regex`, `walkdir`, `git2`, `schemars`).
+- [x] Create `runtime/src/main.rs` with a minimal clap-derive CLI exposing `mcp`, `exec`, `parse`, and `--version`. All subcommands print "not yet implemented" and exit 1; `--version` returns `env!("CARGO_PKG_VERSION")`.
+- [x] Create `runtime/src/lib.rs` re-exporting `parser`, `interpreter`, `primitives`, `mcp`, `schema`, `io` modules as empty placeholders.
+- [x] Create `runtime/.gitignore` excluding `target/`.
+- [x] Create `runtime/CHANGELOG.md` with an initial `[Unreleased]` section.
+- [x] Commit `runtime/Cargo.lock`.
 - **Done when**: `cargo build --release` in `runtime/` succeeds; `runtime/target/release/runtime --version` prints the version from `Cargo.toml`.
 
 ## 2. Define schemas in `runtime/src/schema/`

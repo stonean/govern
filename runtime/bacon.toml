@@ -1,0 +1,29 @@
+# bacon job definitions for the govern runtime crate.
+#
+# Install bacon: cargo install --locked bacon
+# Run the default job:    bacon
+# Switch jobs interactively: c (clippy), t (test), f (fmt), k (check)
+
+default_job = "clippy"
+
+[jobs.check]
+command = ["cargo", "check", "--all-targets", "--color", "always"]
+need_stdout = false
+
+[jobs.clippy]
+command = ["cargo", "clippy", "--all-targets", "--all-features", "--color", "always", "--", "-D", "warnings"]
+need_stdout = false
+
+[jobs.test]
+command = ["cargo", "test", "--color", "always", "--", "--color", "always"]
+need_stdout = true
+
+[jobs.fmt]
+command = ["cargo", "fmt", "--all", "--", "--check"]
+need_stdout = false
+
+[keybindings]
+c = "job:clippy"
+k = "job:check"
+t = "job:test"
+f = "job:fmt"

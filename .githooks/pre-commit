@@ -10,6 +10,11 @@
 #   3. gen-help-tables.sh      — five command tables in framework/commands/help.md
 #   4. gen-spec-deps.sh        — frontmatter dependencies from body inline links
 #
+# When staged files include anything under runtime/, this hook additionally
+# runs `cargo fmt --check`, `cargo clippy --all-targets --all-features
+# -- -D warnings`, and `cargo test` against the runtime crate. Skip the
+# cargo checks for a single commit with GOVERN_SKIP_RUNTIME_CHECKS=1.
+#
 # Installation: scripts/install-hooks.sh sets `git config core.hooksPath .githooks`.
 
 set -euo pipefail
@@ -29,3 +34,18 @@ git add framework/commands/help.md
 for f in specs/[0-9][0-9][0-9]-*/spec.md specs/[0-9][0-9][0-9]-*/spec-and-plan.md; do
   git add "$f"
 done
+
+# Runtime crate verification — only when staged changes touch runtime/.
+if [[ "${GOVERN_SKIP_RUNTIME_CHECKS:-0}" != "1" ]] \
+   && git diff --cached --name-only | grep -q '^runtime/'; then
+  if ! command -v cargo > /dev/null; then
+    echo "pre-commit: runtime/ changes staged but cargo not on PATH; skipping verification" >&2
+  else
+    (
+      cd runtime
+      cargo fmt --all -- --check
+      cargo clippy --all-targets --all-features -- -D warnings
+      cargo test --quiet
+    )
+  fi
+fi
