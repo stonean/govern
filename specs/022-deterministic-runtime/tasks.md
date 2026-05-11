@@ -21,15 +21,15 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 3. Implement read-only primitives
 
-- [ ] `read-spec` — parses spec frontmatter via `serde_yaml`, body sections via `pulldown-cmark`, acceptance criteria checkboxes, and open questions. Returns the `read-spec` result shape.
-- [ ] `read-tasks` — same approach for `tasks.md`.
-- [ ] `validate-frontmatter` — port of `scripts/lint-frontmatter.sh` semantics with real YAML parsing.
-- [ ] `resolve-anchor` — scan a markdown file for `§<anchor>` references and `<!-- §anchor -->` markers; cross-reference.
-- [ ] `traverse-deps` — read frontmatter `dependencies` and verify each named feature directory exists with a compatible `status`.
-- [ ] `check-rule-ids` — scan rule files for rule IDs, scan the target file for citations, flag missing or deprecated IDs.
-- [ ] `check-stuck` — use `git2` to count commits on a tasks.md path since the last status change.
-- [ ] `derive-boundary` — use `git2` to compute `git diff --name-only <first-commit-on-spec-dir>..HEAD` plus the spec dir.
-- [ ] Each primitive has a `clap`-derive args struct, a pure-Rust function (no I/O on stdout/stderr beyond the JSON result envelope), and a unit test against a fixture file under `runtime/tests/fixtures/primitives/`.
+- [x] `read-spec` — parses spec frontmatter via `serde_yaml`, body sections via `pulldown-cmark`, acceptance criteria checkboxes, and open questions. Returns the `read-spec` result shape.
+- [x] `read-tasks` — same approach for `tasks.md`.
+- [x] `validate-frontmatter` — port of `scripts/lint-frontmatter.sh` semantics with real YAML parsing.
+- [x] `resolve-anchor` — scan a markdown file for `§<anchor>` references and `<!-- §anchor -->` markers; cross-reference.
+- [x] `traverse-deps` — read frontmatter `dependencies` and verify each named feature directory exists with a compatible `status`.
+- [x] `check-rule-ids` — scan rule files for rule IDs, scan the target file for citations, flag missing or deprecated IDs.
+- [x] `check-stuck` — use `git2` to count commits on a tasks.md path since the last status change.
+- [x] `derive-boundary` — use `git2` to compute `git diff --name-only <first-commit-on-spec-dir>..HEAD` plus the spec dir.
+- [x] Each primitive has a `clap`-derive args struct, a pure-Rust function (no I/O on stdout/stderr beyond the JSON result envelope), and a unit test against a fixture file under `runtime/tests/fixtures/primitives/`.
 - **Done when**: `cargo test --release primitives::` passes; each primitive is invokable from the CLI surface (e.g., `runtime read-spec --feature 022-deterministic-runtime` prints valid JSON).
 
 ## 4. Implement write primitives with atomic semantics

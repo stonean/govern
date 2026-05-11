@@ -13,13 +13,15 @@ use serde::{Deserialize, Serialize};
 // -- read-spec ---------------------------------------------------------------
 
 /// Args for `read-spec`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct ReadSpecArgs {
     /// Feature directory name under `specs/`.
+    #[arg(long)]
     pub feature: String,
     /// Whether to populate `sections[].body`.
     #[serde(default)]
+    #[arg(long)]
     pub include_body: bool,
 }
 
@@ -110,10 +112,11 @@ pub struct ReadSpecResult {
 // -- read-tasks --------------------------------------------------------------
 
 /// Args for `read-tasks`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct ReadTasksArgs {
     /// Feature directory name under `specs/`.
+    #[arg(long)]
     pub feature: String,
 }
 
@@ -155,16 +158,20 @@ pub struct ReadTasksResult {
 // -- mark-task ---------------------------------------------------------------
 
 /// Args for `mark-task`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct MarkTaskArgs {
     /// Feature directory name.
+    #[arg(long)]
     pub feature: String,
     /// Top-level task number (e.g., "1").
+    #[arg(long)]
     pub task_number: String,
     /// Subtask index within the task (0-based).
+    #[arg(long)]
     pub subtask_index: usize,
     /// Desired checkbox state.
+    #[arg(long)]
     pub checked: bool,
 }
 
@@ -183,28 +190,34 @@ pub struct CheckboxToggleResult {
 // -- mark-criterion ----------------------------------------------------------
 
 /// Args for `mark-criterion`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct MarkCriterionArgs {
     /// Feature directory name.
+    #[arg(long)]
     pub feature: String,
     /// Acceptance criterion index (0-based, ordered as in the spec).
+    #[arg(long)]
     pub criterion_index: usize,
     /// Desired checkbox state.
+    #[arg(long)]
     pub checked: bool,
 }
 
 // -- set-status --------------------------------------------------------------
 
 /// Args for `set-status`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct SetStatusArgs {
     /// Feature directory name.
+    #[arg(long)]
     pub feature: String,
     /// Expected current status on disk.
+    #[arg(long)]
     pub from: String,
     /// Desired status to write.
+    #[arg(long)]
     pub to: String,
 }
 
@@ -223,10 +236,11 @@ pub struct SetStatusResult {
 // -- derive-boundary ---------------------------------------------------------
 
 /// Args for `derive-boundary`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct DeriveBoundaryArgs {
     /// Feature directory name.
+    #[arg(long)]
     pub feature: String,
 }
 
@@ -245,12 +259,14 @@ pub struct DeriveBoundaryResult {
 // -- check-stuck -------------------------------------------------------------
 
 /// Args for `check-stuck`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct CheckStuckArgs {
     /// Feature directory name.
+    #[arg(long)]
     pub feature: String,
     /// Commit-count threshold above which the task is considered stuck.
+    #[arg(long)]
     pub threshold: u32,
 }
 
@@ -284,10 +300,11 @@ pub struct FrontmatterFinding {
 }
 
 /// Args for `validate-frontmatter`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct ValidateFrontmatterArgs {
     /// Repo-relative path to the spec file.
+    #[arg(long)]
     pub path: String,
 }
 
@@ -304,10 +321,11 @@ pub struct ValidateFrontmatterResult {
 // -- resolve-anchor ----------------------------------------------------------
 
 /// Args for `resolve-anchor`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct ResolveAnchorArgs {
     /// Repo-relative path to the markdown file to scan.
+    #[arg(long)]
     pub path: String,
 }
 
@@ -336,10 +354,11 @@ pub struct ResolveAnchorResult {
 // -- traverse-deps -----------------------------------------------------------
 
 /// Args for `traverse-deps`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct TraverseDepsArgs {
     /// Feature directory name.
+    #[arg(long)]
     pub feature: String,
 }
 
@@ -371,12 +390,14 @@ pub struct TraverseDepsResult {
 // -- check-rule-ids ----------------------------------------------------------
 
 /// Args for `check-rule-ids`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct CheckRuleIdsArgs {
     /// Repo-relative path to the file scanned for citations.
+    #[arg(long)]
     pub path: String,
     /// Repo-relative paths to rule files defining the known rule IDs.
+    #[arg(long = "rule-file")]
     pub rule_files: Vec<String>,
 }
 
@@ -407,10 +428,11 @@ pub struct CheckRuleIdsResult {
 // -- run-generator -----------------------------------------------------------
 
 /// Args for `run-generator`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct RunGeneratorArgs {
     /// Repo-relative path to the bash script.
+    #[arg(long)]
     pub script: String,
 }
 
@@ -431,13 +453,15 @@ pub struct RunGeneratorResult {
 // -- lint-markdown -----------------------------------------------------------
 
 /// Args for `lint-markdown`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct LintMarkdownArgs {
     /// Paths or globs to lint.
+    #[arg(long = "path")]
     pub paths: Vec<String>,
     /// Whether to invoke `markdownlint-cli2` in fix mode.
     #[serde(default)]
+    #[arg(long)]
     pub fix: bool,
 }
 
@@ -470,12 +494,14 @@ pub struct LintMarkdownResult {
 // -- gate-confirm ------------------------------------------------------------
 
 /// Args for `gate-confirm`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct GateConfirmArgs {
     /// Named gate (e.g., "plan-finalize-status").
+    #[arg(long)]
     pub gate: String,
     /// Prompt shown to the user.
+    #[arg(long)]
     pub prompt: String,
 }
 

@@ -1,7 +1,15 @@
 //! `govern` deterministic runtime CLI entrypoint.
 
-use clap::{Parser, Subcommand};
+use std::path::PathBuf;
 use std::process::ExitCode;
+
+use clap::{Parser, Subcommand};
+
+use govern_runtime::primitives;
+use govern_runtime::schema::primitives::{
+    CheckRuleIdsArgs, CheckStuckArgs, DeriveBoundaryArgs, ReadSpecArgs, ReadTasksArgs,
+    ResolveAnchorArgs, TraverseDepsArgs, ValidateFrontmatterArgs,
+};
 
 #[derive(Parser, Debug)]
 #[command(
@@ -30,7 +38,7 @@ enum Command {
     /// Parse a slash command file under the procedure conventions.
     Parse {
         /// Path to the markdown file. Required unless `--emit-schema` is set.
-        file: Option<std::path::PathBuf>,
+        file: Option<PathBuf>,
         /// Exit non-zero if the file is unparseable and not on the legacy
         /// allowlist.
         #[arg(long, conflicts_with = "emit_schema")]
@@ -40,6 +48,23 @@ enum Command {
         #[arg(long, conflicts_with_all = ["file", "check"])]
         emit_schema: bool,
     },
+
+    /// Parse spec frontmatter and body sections.
+    ReadSpec(ReadSpecArgs),
+    /// Parse `tasks.md` into a structured task list.
+    ReadTasks(ReadTasksArgs),
+    /// Validate frontmatter shape against the pipeline schema.
+    ValidateFrontmatter(ValidateFrontmatterArgs),
+    /// Verify `§anchor` references resolve to `<!-- §anchor -->` markers.
+    ResolveAnchor(ResolveAnchorArgs),
+    /// Traverse spec dependencies and check status compatibility.
+    TraverseDeps(TraverseDepsArgs),
+    /// Verify cited rule IDs exist in rule files and aren't deprecated.
+    CheckRuleIds(CheckRuleIdsArgs),
+    /// Count tasks.md commits since the spec entered `in-progress`.
+    CheckStuck(CheckStuckArgs),
+    /// Derive the runtime write boundary from git history.
+    DeriveBoundary(DeriveBoundaryArgs),
 }
 
 fn emit_protocol_schema() -> ExitCode {
@@ -56,8 +81,34 @@ fn emit_protocol_schema() -> ExitCode {
     }
 }
 
+fn emit_result<T: serde::Serialize, E: std::fmt::Display>(
+    result: std::result::Result<T, E>,
+) -> ExitCode {
+    match result {
+        Ok(value) => match serde_json::to_string(&value) {
+            Ok(text) => {
+                println!("{text}");
+                ExitCode::SUCCESS
+            }
+            Err(err) => {
+                eprintln!("failed to serialize result: {err}");
+                ExitCode::from(1)
+            }
+        },
+        Err(err) => {
+            eprintln!("{err}");
+            ExitCode::from(1)
+        }
+    }
+}
+
+fn cwd() -> PathBuf {
+    std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+}
+
 fn main() -> ExitCode {
     let cli = Cli::parse();
+    let repo = cwd();
     match cli.command {
         Command::Mcp => {
             eprintln!("runtime mcp: not yet implemented");
@@ -86,6 +137,18 @@ fn main() -> ExitCode {
                 );
             }
             ExitCode::from(1)
+        }
+        Command::ReadSpec(args) => emit_result(primitives::read_spec::run(&args, &repo)),
+        Command::ReadTasks(args) => emit_result(primitives::read_tasks::run(&args, &repo)),
+        Command::ValidateFrontmatter(args) => {
+            emit_result(primitives::validate_frontmatter::run(&args, &repo))
+        }
+        Command::ResolveAnchor(args) => emit_result(primitives::resolve_anchor::run(&args, &repo)),
+        Command::TraverseDeps(args) => emit_result(primitives::traverse_deps::run(&args, &repo)),
+        Command::CheckRuleIds(args) => emit_result(primitives::check_rule_ids::run(&args, &repo)),
+        Command::CheckStuck(args) => emit_result(primitives::check_stuck::run(&args, &repo)),
+        Command::DeriveBoundary(args) => {
+            emit_result(primitives::derive_boundary::run(&args, &repo))
         }
     }
 }

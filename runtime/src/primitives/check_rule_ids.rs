@@ -1,0 +1,213 @@
+//! `check-rule-ids` — verify cited rule IDs exist in rule files and aren't
+//! deprecated.
+
+#![allow(clippy::expect_used)]
+
+use std::collections::{HashMap, HashSet};
+use std::path::Path;
+use std::sync::OnceLock;
+
+use regex::Regex;
+
+use crate::primitives::{Result, read_text};
+use crate::schema::primitives::{CheckRuleIdsArgs, CheckRuleIdsResult, RuleCitation};
+
+/// Execute the `check-rule-ids` primitive.
+///
+/// # Errors
+///
+/// Returns [`crate::primitives::PrimitiveError::Io`] when the target file
+/// or any rule file cannot be read.
+pub fn run(args: &CheckRuleIdsArgs, repo: &Path) -> Result<CheckRuleIdsResult> {
+    let mut known: HashMap<String, bool> = HashMap::new();
+    for rule_file in &args.rule_files {
+        let path = resolve(repo, rule_file);
+        let content = read_text(&path)?;
+        for cap in heading_id_regex().captures_iter(&content) {
+            let id = cap[1].to_string();
+            let deprecated = is_deprecated(&content, &id);
+            known.insert(id, deprecated);
+        }
+    }
+
+    let path = resolve(repo, &args.path);
+    let content = read_text(&path)?;
+    let mut citations: Vec<RuleCitation> = Vec::new();
+    let mut seen: HashSet<String> = HashSet::new();
+    let mut missing: HashSet<String> = HashSet::new();
+    let mut deprecated_hits: HashSet<String> = HashSet::new();
+    for cap in citation_regex().captures_iter(&content) {
+        let id = cap[0].to_string();
+        if !seen.insert(id.clone()) {
+            continue;
+        }
+        match known.get(&id).copied() {
+            Some(true) => {
+                deprecated_hits.insert(id.clone());
+                citations.push(RuleCitation {
+                    rule_id: id,
+                    found: true,
+                    deprecated: true,
+                });
+            }
+            Some(false) => citations.push(RuleCitation {
+                rule_id: id,
+                found: true,
+                deprecated: false,
+            }),
+            None => {
+                missing.insert(id.clone());
+                citations.push(RuleCitation {
+                    rule_id: id,
+                    found: false,
+                    deprecated: false,
+                });
+            }
+        }
+    }
+
+    let mut missing: Vec<String> = missing.into_iter().collect();
+    missing.sort();
+    let mut deprecated: Vec<String> = deprecated_hits.into_iter().collect();
+    deprecated.sort();
+    Ok(CheckRuleIdsResult {
+        citations,
+        missing,
+        deprecated,
+    })
+}
+
+fn resolve(repo: &Path, path_arg: &str) -> std::path::PathBuf {
+    let candidate = Path::new(path_arg);
+    if candidate.is_absolute() {
+        candidate.to_path_buf()
+    } else {
+        repo.join(candidate)
+    }
+}
+
+/// `### BE-AUTHN-001` — matches rule-ID headings inside a rule file.
+fn heading_id_regex() -> &'static Regex {
+    static R: OnceLock<Regex> = OnceLock::new();
+    R.get_or_init(|| {
+        Regex::new(r"(?m)^#{2,4}\s+([A-Z]{2,5}-[A-Z]{2,8}-\d{3,4})\b")
+            .expect("hard-coded regex compiles")
+    })
+}
+
+/// Plain text citations: `BE-AUTHN-001` anywhere in a body (not the heading
+/// line itself for the rule file's self-references).
+fn citation_regex() -> &'static Regex {
+    static R: OnceLock<Regex> = OnceLock::new();
+    R.get_or_init(|| {
+        Regex::new(r"\b[A-Z]{2,5}-[A-Z]{2,8}-\d{3,4}\b").expect("hard-coded regex compiles")
+    })
+}
+
+fn is_deprecated(content: &str, id: &str) -> bool {
+    let mut idx = 0usize;
+    while let Some(pos) = content[idx..].find(id) {
+        let abs = idx + pos;
+        let window_end = (abs + 256).min(content.len());
+        let window = &content[abs..window_end];
+        if window.contains("**Deprecated**") || window.contains("[DEPRECATED]") {
+            return true;
+        }
+        idx = abs + id.len();
+    }
+    false
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::unwrap_used, clippy::expect_used)]
+
+    use super::*;
+    use std::path::PathBuf;
+
+    fn fixture_repo() -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/primitives/sample-repo")
+    }
+
+    #[test]
+    fn fixture_spec_cites_known_rule() {
+        let repo = fixture_repo();
+        let result = run(
+            &CheckRuleIdsArgs {
+                path: "specs/001-basic/spec.md".into(),
+                rule_files: vec!["framework/rules/security-backend.md".into()],
+            },
+            &repo,
+        )
+        .unwrap();
+
+        let ids: Vec<&str> = result
+            .citations
+            .iter()
+            .map(|c| c.rule_id.as_str())
+            .collect();
+        assert!(ids.contains(&"BE-AUTHN-001"));
+        assert!(
+            result.missing.is_empty(),
+            "unexpected missing: {:?}",
+            result.missing
+        );
+        assert!(result.deprecated.is_empty());
+    }
+
+    #[test]
+    fn missing_rule_is_flagged() {
+        let tmp = tempfile::tempdir().unwrap();
+        let spec_path = tmp.path().join("spec.md");
+        std::fs::write(
+            &spec_path,
+            "# Demo\n\nReferences BE-AUTHN-001 and BE-MISSING-999.\n",
+        )
+        .unwrap();
+        let rule_path = tmp.path().join("rules.md");
+        std::fs::write(&rule_path, "# Rules\n\n### BE-AUTHN-001\n\n> Hashed.\n").unwrap();
+        let result = run(
+            &CheckRuleIdsArgs {
+                path: spec_path.to_string_lossy().into(),
+                rule_files: vec![rule_path.to_string_lossy().into()],
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert_eq!(result.missing, vec!["BE-MISSING-999".to_string()]);
+        let cited: HashMap<&str, &RuleCitation> = result
+            .citations
+            .iter()
+            .map(|c| (c.rule_id.as_str(), c))
+            .collect();
+        assert!(
+            cited
+                .get("BE-AUTHN-001")
+                .is_some_and(|c| c.found && !c.deprecated)
+        );
+        assert!(cited.get("BE-MISSING-999").is_some_and(|c| !c.found));
+    }
+
+    #[test]
+    fn deprecated_rule_is_flagged() {
+        let tmp = tempfile::tempdir().unwrap();
+        let spec_path = tmp.path().join("spec.md");
+        std::fs::write(&spec_path, "Cites BE-OLD-001.\n").unwrap();
+        let rule_path = tmp.path().join("rules.md");
+        std::fs::write(
+            &rule_path,
+            "### BE-OLD-001\n\n**Deprecated** — replaced by BE-NEW-002.\n",
+        )
+        .unwrap();
+        let result = run(
+            &CheckRuleIdsArgs {
+                path: spec_path.to_string_lossy().into(),
+                rule_files: vec![rule_path.to_string_lossy().into()],
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert_eq!(result.deprecated, vec!["BE-OLD-001".to_string()]);
+        assert!(result.missing.is_empty());
+    }
+}
