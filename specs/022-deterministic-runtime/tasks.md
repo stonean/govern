@@ -84,10 +84,10 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 10. Wire `runtime exec <command>` to the interpreter
 
-- [ ] In `main.rs`, the `exec` subcommand: locates the slash command file at `framework/commands/<command>.md` (or `.claude/commands/gov/<command>.md` if `framework/` is unavailable — useful for adopting projects), parses it, hands the AST to the interpreter, drives the JSON-over-stdio loop.
-- [ ] Output stream uses `runtime/src/io.rs` line-framing helpers; every JSON object is flushed immediately after writing.
-- [ ] Exit codes per the plan: 0 on `complete`, 1-127 on `error`, signal codes pass through to the process exit.
-- [ ] Integration test starts the runtime as a subprocess from the test harness, pipes stdin/stdout, and exercises a fixture command end-to-end.
+- [x] In `main.rs`, the `exec` subcommand: locates the slash command file at `framework/commands/<command>.md` (or `.claude/commands/gov/<command>.md` if `framework/` is unavailable — useful for adopting projects), parses it, hands the AST to the interpreter, drives the JSON-over-stdio loop.
+- [x] Output stream uses `runtime/src/io.rs` line-framing helpers; every JSON object is flushed immediately after writing.
+- [x] Exit codes per the plan: 0 on `complete`, 1-127 on `error`, signal codes pass through to the process exit.
+- [x] Integration test starts the runtime as a subprocess from the test harness, pipes stdin/stdout, and exercises a fixture command end-to-end.
 - **Done when**: `runtime exec status` against the `runtime/tests/fixtures/status-basic/` fixture produces the expected JSON stream and exits 0.
 
 ## 11. Define the three extension-point schemas and add validation

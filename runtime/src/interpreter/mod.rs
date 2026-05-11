@@ -24,6 +24,7 @@ use std::path::{Path, PathBuf};
 
 use serde_json::{Map, Value};
 
+use crate::io::{read_envelope, write_envelope};
 use crate::primitives;
 use crate::schema::primitives::{
     CheckRuleIdsArgs, CheckStuckArgs, DeriveBoundaryArgs, GateConfirmArgs, LintMarkdownArgs,
@@ -270,10 +271,7 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
     }
 
     fn emit(&mut self, message: &ProtocolMessage) -> std::io::Result<()> {
-        let serialized = serde_json::to_string(message)
-            .map_err(|err| std::io::Error::other(format!("failed to serialize envelope: {err}")))?;
-        writeln!(self.writer, "{serialized}")?;
-        self.writer.flush()
+        write_envelope(self.writer, message)
     }
 
     fn emit_progress(
@@ -341,20 +339,7 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
     }
 
     fn read_envelope(&mut self) -> std::io::Result<ProtocolMessage> {
-        let mut line = String::new();
-        let bytes = self.reader.read_line(&mut line)?;
-        if bytes == 0 {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::UnexpectedEof,
-                "stdin closed before next envelope",
-            ));
-        }
-        serde_json::from_str(line.trim()).map_err(|err| {
-            // Malformed JSON on stdin is a host-implementation bug per
-            // §json-over-stdio-framing; surface it as an I/O error rather
-            // than panicking inside the walker.
-            std::io::Error::other(format!("malformed envelope from stdin: {err}: {line:?}"))
-        })
+        read_envelope(self.reader)
     }
 }
 

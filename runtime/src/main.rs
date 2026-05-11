@@ -172,6 +172,80 @@ fn run_parse(path: &std::path::Path, check_only: bool) -> ExitCode {
     }
 }
 
+fn run_exec(command: &str, args: &[String], repo: &std::path::Path) -> ExitCode {
+    use govern_runtime::interpreter::{WalkOutcome, Walker};
+    use govern_runtime::parser;
+    use serde_json::{Map, Value};
+
+    let candidates = [
+        repo.join("framework/commands")
+            .join(format!("{command}.md")),
+        repo.join(".claude/commands/gov")
+            .join(format!("{command}.md")),
+    ];
+    let Some(path) = candidates.iter().find(|p| p.exists()) else {
+        eprintln!(
+            "runtime exec: command file not found (tried {})",
+            candidates
+                .iter()
+                .map(|p| p.display().to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
+        return ExitCode::from(1);
+    };
+
+    let source = match std::fs::read_to_string(path) {
+        Ok(s) => s,
+        Err(err) => {
+            eprintln!("failed to read {}: {err}", path.display());
+            return ExitCode::from(1);
+        }
+    };
+    let procedure = match parser::parse(&source, command) {
+        Ok(p) => p,
+        Err(err) => {
+            eprintln!("{}: {err}", path.display());
+            return ExitCode::from(2);
+        }
+    };
+
+    // Seed the walker context: session file (when present) overlaid with
+    // CLI `key=value` arg overrides.
+    let mut context = Map::new();
+    let session_path = repo.join(".claude/gov-session.json");
+    if let Ok(text) = std::fs::read_to_string(&session_path) {
+        if let Ok(Value::Object(map)) = serde_json::from_str::<Value>(&text) {
+            context.extend(map);
+        }
+    }
+    for arg in args {
+        if let Some((key, value)) = arg.split_once('=') {
+            context.insert(key.to_string(), Value::String(value.to_string()));
+        }
+    }
+
+    let stdin = io::stdin();
+    let stdout = io::stdout();
+    let mut reader = stdin.lock();
+    let mut writer = stdout.lock();
+    let mut walker = Walker::new(
+        &procedure,
+        repo.to_path_buf(),
+        context,
+        &mut reader,
+        &mut writer,
+    );
+    match walker.run() {
+        Ok(WalkOutcome::Complete) => ExitCode::SUCCESS,
+        Ok(WalkOutcome::Errored { .. }) => ExitCode::from(1),
+        Err(err) => {
+            eprintln!("runtime exec: I/O error: {err}");
+            ExitCode::from(74) // EX_IOERR
+        }
+    }
+}
+
 fn run_mcp_server(repo: PathBuf) -> ExitCode {
     use rmcp::ServiceExt;
     use rmcp::transport::stdio;
@@ -209,10 +283,7 @@ fn main() -> ExitCode {
     let repo = cwd();
     match cli.command {
         Command::Mcp => run_mcp_server(repo),
-        Command::Exec { command, args: _ } => {
-            eprintln!("runtime exec {command}: not yet implemented");
-            ExitCode::from(1)
-        }
+        Command::Exec { command, args } => run_exec(&command, &args, &repo),
         Command::Parse {
             file,
             check,
