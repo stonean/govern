@@ -1,0 +1,20 @@
+TODO: capture the LLM-driven `/gov:target 002-target` output against
+`runtime/tests/fixtures/target-basic/` and replace this file's body with
+the captured `.claude/gov-session.json` (no trailing whitespace,
+terminating newline). Parity bound for `/gov:target` is
+`strict-files: [".claude/gov-session.json"]` — the captured session
+JSON must match the runtime+host-written file byte-for-byte.
+
+Capture recipe (maintainer-only, requires an LLM-driven host):
+
+  1. cp -r runtime/tests/fixtures/target-basic <a-clean-tempdir>
+  2. cp framework/commands/target.md <a-clean-tempdir>/framework/commands/
+  3. From <a-clean-tempdir>, run `/gov:target 002-target` in the
+     LLM-driven host (no scenario argument).
+  4. After the run, capture the contents of
+     `<a-clean-tempdir>/.claude/gov-session.json` verbatim into this
+     file (omit the `setAt` line, which is non-deterministic — the
+     harness substitutes a stable timestamp before comparison).
+
+Until this file is filled in, the parity test for `/gov:target` is
+recorded as SKIPPED and does not block CI.

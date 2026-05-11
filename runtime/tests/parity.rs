@@ -62,6 +62,11 @@ fn status_basic_stream_matches_golden() {
     run_parity_case("status", "status-basic");
 }
 
+#[test]
+fn target_basic_stream_matches_golden() {
+    run_parity_case("target", "target-basic");
+}
+
 fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()

@@ -111,9 +111,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 13. Rewrite `/gov:target`
 
-- [ ] Same shape as task 12, against `framework/commands/target.md`. Includes session-file write through `mark-task`-equivalent atomic-write semantics (but the session file is JSON, not markdown — implementation note: the runtime uses the same tempfile+rename pattern for any state-modifying primitive regardless of target file shape).
-- [ ] `parity: { strict-files: [".claude/gov-session.json"] }`.
-- [ ] Fixture under `runtime/tests/fixtures/target-basic/`; golden + parity captures.
+- [x] Same shape as task 12, against `framework/commands/target.md`. Includes session-file write through `mark-task`-equivalent atomic-write semantics (but the session file is JSON, not markdown — implementation note: the runtime uses the same tempfile+rename pattern for any state-modifying primitive regardless of target file shape).
+- [x] `parity: { strict-files: [".claude/gov-session.json"] }`.
+- [x] Fixture under `runtime/tests/fixtures/target-basic/`; golden + parity captures.
 - **Done when**: parseability + integration + parity green for `/gov:target`; tool-coverage lint green.
 
 ## 14. Rewrite `/gov:validate`

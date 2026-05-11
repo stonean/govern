@@ -24,5 +24,4 @@ framework/commands/log.md
 framework/commands/plan.md
 framework/commands/review.md
 framework/commands/specify.md
-framework/commands/target.md
 framework/commands/validate.md
