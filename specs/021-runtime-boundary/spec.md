@@ -58,17 +58,17 @@ A row is added to the canonical sources table in §drift-prevention naming §run
 
 ## Acceptance Criteria
 
-- [ ] `framework/constitution.md` §text-first-artifacts opening paragraph is amended to reference an optional runtime; the load-bearing properties (Edit, glanceable PRs, rare conflicts, markdown source-of-truth) remain in the paragraph verbatim.
-- [ ] `framework/constitution.md` contains a new `§runtime-boundary` subsection with the five principles, the three eligibility criteria, the opt-in invariant, the versioning rule, the non-scope list, and a one-line forward pointer to spec 022.
-- [ ] The five principles use RFC 2119 keywords (MUST / MUST NOT) consistent with the rule format declared in §rules.
-- [ ] The non-scope list uses MUST NOT for each excluded item, in the same RFC 2119 register as the five principles.
-- [ ] An anchor marker `<!-- §runtime-boundary -->` exists at the new subsection so `/gov:validate`'s anchor-resolution check resolves references to it.
-- [ ] `framework/constitution.md` §drift-prevention canonical sources table contains a row whose Fact column names "Runtime contract / boundary," pointing at `framework/constitution.md` §runtime-boundary.
-- [ ] A CI workflow exists in this repo that asserts: (a) no runtime binary on `PATH`, (b) all bash generator scripts (`gen-spec-deps.sh`, `gen-readme-table.sh`, `gen-help-tables.sh`) run clean in `--dry-run`, (c) `npx markdownlint-cli2` passes, (d) a slash-command-runtime-fallback lint scans `framework/commands/*.md` and verifies every reference to a runtime tool is wrapped in a graceful-fallback pattern, and (e) frontmatter integrity (status enum and dependencies-list shape) holds across all spec and scenario files.
-- [ ] The CI workflow above runs on every PR that modifies `framework/`, `specs/`, or `.claude/commands/`.
-- [ ] The existing principle bullets in §text-first-artifacts (markdown by default, frontmatter for metadata, relative links not wiki-links, derived views gitignored, exceptions require amendment) are unchanged — only the opening paragraph is edited.
-- [ ] `/gov:validate` against this spec passes (no hard-fail or blocking findings) once acceptance criteria are met.
-- [ ] `npx markdownlint-cli2` against `framework/constitution.md` and the new spec files passes after the edits.
+- [x] `framework/constitution.md` §text-first-artifacts opening paragraph is amended to reference an optional runtime; the load-bearing properties (Edit, glanceable PRs, rare conflicts, markdown source-of-truth) remain in the paragraph verbatim.
+- [x] `framework/constitution.md` contains a new `§runtime-boundary` subsection with the five principles, the three eligibility criteria, the opt-in invariant, the versioning rule, the non-scope list, and a one-line forward pointer to spec 022.
+- [x] The five principles use RFC 2119 keywords (MUST / MUST NOT) consistent with the rule format declared in §rules.
+- [x] The non-scope list uses MUST NOT for each excluded item, in the same RFC 2119 register as the five principles.
+- [x] An anchor marker `<!-- §runtime-boundary -->` exists at the new subsection so `/gov:validate`'s anchor-resolution check resolves references to it.
+- [x] `framework/constitution.md` §drift-prevention canonical sources table contains a row whose Fact column names "Runtime contract / boundary," pointing at `framework/constitution.md` §runtime-boundary.
+- [x] A CI workflow exists in this repo that asserts: (a) no runtime binary on `PATH`, (b) all bash generator scripts (`gen-spec-deps.sh`, `gen-readme-table.sh`, `gen-help-tables.sh`) run clean in `--dry-run`, (c) `npx markdownlint-cli2` passes, (d) a slash-command-runtime-fallback lint scans `framework/commands/*.md` and verifies every reference to a runtime tool is wrapped in a graceful-fallback pattern, and (e) frontmatter integrity (status enum and dependencies-list shape) holds across all spec and scenario files.
+- [x] The CI workflow above runs on every PR that modifies `framework/`, `specs/`, or `.claude/commands/`.
+- [x] The existing principle bullets in §text-first-artifacts (markdown by default, frontmatter for metadata, relative links not wiki-links, derived views gitignored, exceptions require amendment) are unchanged — only the opening paragraph is edited.
+- [x] `/gov:validate` against this spec passes (no hard-fail or blocking findings) once acceptance criteria are met.
+- [x] `npx markdownlint-cli2` against `framework/constitution.md` and the new spec files passes after the edits.
 
 ## Non-Goals
 

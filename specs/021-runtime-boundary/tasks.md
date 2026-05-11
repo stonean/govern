@@ -59,5 +59,5 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 10. Cross-spec impact sweep
 
-- [ ] Re-read the inline links in `spec.md` and `plan.md` body and confirm no other sibling spec needs an update because of decisions made here. The current expectation is that only 020-code-review is cited (as motivating evidence, not as a behavioral dependency), so no updates are needed elsewhere.
+- [x] Re-read the inline links in `spec.md` and `plan.md` body and confirm no other sibling spec needs an update because of decisions made here. The current expectation is that only 020-code-review is cited (as motivating evidence, not as a behavioral dependency), so no updates are needed elsewhere.
 - **Done when**: confirmed in writing in the PR description that no §cross-spec-impact action was triggered.

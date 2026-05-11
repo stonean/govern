@@ -408,8 +408,8 @@ For non-frontmatter checks (spec integrity, artifact completeness, plan/task con
 1. **Markdown is source of truth** — the runtime MUST NOT own state the markdown cannot reconstruct. Runtime-owned data (caches, indexes, parsed graphs) is derived and gitignored, per the existing rule on structured derived views.
 2. **Determinism only** — the runtime MUST NOT call an LLM. Work requiring semantic judgment (content quality, `/clarify` resolution, `/capture` sketching, per-rule Verification reads, `/groom` routing) stays in slash commands.
 3. **Opt-in for adopters** — the runtime MUST NOT be a prerequisite for any pipeline gate. A markdown-only adopter — agent + `Edit`, no binary on `PATH` — must complete every cycle (greenfield, brownfield, reopen) and reach `done` on every spec.
-4. **Schema follows the constitution** — the runtime reads frontmatter and artifact structure according to the schemas declared in this document. Schema changes ship through the constitution; the runtime updates to match. The constitution does not import runtime types.
-5. **MCP is the seam** — the runtime exposes its capabilities as MCP tools. Slash commands call those tools when they want determinism, keeping the runtime accessible to any agent host and preventing `govern`-specific coupling.
+4. **Schema follows the constitution** — the runtime MUST read frontmatter and artifact structure according to the schemas declared in this document. Schema changes ship through the constitution; the runtime MUST update to match. The constitution MUST NOT import runtime types.
+5. **MCP is the seam** — the runtime MUST expose its capabilities as MCP tools so slash commands can call them when they want determinism. This keeps the runtime accessible to any agent host and prevents `govern`-specific coupling.
 
 #### Eligibility criteria
 
