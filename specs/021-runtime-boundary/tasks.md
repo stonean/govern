@@ -54,7 +54,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 9. Run `npx markdownlint-cli2` across all touched files
 
-- [ ] Lint `framework/constitution.md`, `specs/021-runtime-boundary/*.md`, and any new markdown the previous tasks introduced.
+- [x] Lint `framework/constitution.md`, `specs/021-runtime-boundary/*.md`, and any new markdown the previous tasks introduced.
 - **Done when**: `npx markdownlint-cli2` exits 0 against the full repo.
 
 ## 10. Cross-spec impact sweep
