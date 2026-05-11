@@ -7,6 +7,7 @@ use clap::{Parser, Subcommand};
 
 use std::io;
 
+use govern_runtime::mcp::server::GovRuntimeServer;
 use govern_runtime::primitives;
 use govern_runtime::schema::primitives::{
     CheckRuleIdsArgs, CheckStuckArgs, DeriveBoundaryArgs, GateConfirmArgs, LintMarkdownArgs,
@@ -121,14 +122,43 @@ fn cwd() -> PathBuf {
     std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
 }
 
+fn run_mcp_server(repo: PathBuf) -> ExitCode {
+    use rmcp::ServiceExt;
+    use rmcp::transport::stdio;
+
+    let runtime = match tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+    {
+        Ok(rt) => rt,
+        Err(err) => {
+            eprintln!("failed to start tokio runtime: {err}");
+            return ExitCode::from(1);
+        }
+    };
+
+    runtime.block_on(async move {
+        let server = GovRuntimeServer::new(repo);
+        let service = match server.serve(stdio()).await {
+            Ok(svc) => svc,
+            Err(err) => {
+                eprintln!("failed to start mcp server: {err}");
+                return ExitCode::from(1);
+            }
+        };
+        if let Err(err) = service.waiting().await {
+            eprintln!("mcp server terminated with error: {err}");
+            return ExitCode::from(1);
+        }
+        ExitCode::SUCCESS
+    })
+}
+
 fn main() -> ExitCode {
     let cli = Cli::parse();
     let repo = cwd();
     match cli.command {
-        Command::Mcp => {
-            eprintln!("runtime mcp: not yet implemented");
-            ExitCode::from(1)
-        }
+        Command::Mcp => run_mcp_server(repo),
         Command::Exec { command, args: _ } => {
             eprintln!("runtime exec {command}: not yet implemented");
             ExitCode::from(1)

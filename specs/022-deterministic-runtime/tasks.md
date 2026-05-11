@@ -49,10 +49,10 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 6. Expose primitives as MCP tools
 
-- [ ] Wire `rmcp` server in `runtime/src/mcp/server.rs`; expose each primitive as a tool named `gov-rt:<verb>-<noun>` per the resolved naming convention.
-- [ ] Tool input schemas are derived from `schemars::JsonSchema` derives on the args structs.
-- [ ] Each tool's handler delegates to the primitive's pure-Rust function and serializes the result.
-- [ ] Integration test in `runtime/tests/mcp.rs` starts the server in-process, connects an `rmcp` client, lists tools, and invokes each primitive against the per-primitive fixture from task 3 or 4. The test asserts that every tool name in `framework/runtime-tools.txt` is present.
+- [x] Wire `rmcp` server in `runtime/src/mcp/server.rs`; expose each primitive as a tool named `gov-rt:<verb>-<noun>` per the resolved naming convention.
+- [x] Tool input schemas are derived from `schemars::JsonSchema` derives on the args structs.
+- [x] Each tool's handler delegates to the primitive's pure-Rust function and serializes the result.
+- [x] Integration test in `runtime/tests/mcp.rs` starts the server in-process, connects an `rmcp` client, lists tools, and invokes each primitive against the per-primitive fixture from task 3 or 4. The test asserts that every tool name in `framework/runtime-tools.txt` is present.
 - **Done when**: `runtime mcp` starts and serves the listed tools; the integration test exercises every primitive and passes.
 
 ## 7. Implement the procedure parser
