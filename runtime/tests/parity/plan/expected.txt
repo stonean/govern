@@ -1,0 +1,27 @@
+TODO: capture the LLM-driven `/gov:plan` output against
+`runtime/tests/fixtures/plan-basic/` and replace this file's body with
+the captured post-run state.
+
+Capture recipe (maintainer-only, requires an LLM-driven host):
+
+  1. cp -r runtime/tests/fixtures/plan-basic <a-clean-tempdir>
+  2. cp framework/commands/plan.md <a-clean-tempdir>/framework/commands/
+  3. cd <a-clean-tempdir> && git init && git add . && git commit -m chore
+  4. Run `/gov:plan` in the LLM-driven host; confirm the
+     clarified → planned gate when prompted.
+  5. After the run, capture:
+     a. The post-run frontmatter `status` field from
+        <a-clean-tempdir>/specs/005-plan/spec.md (expected: planned).
+     b. The plan body the LLM wrote into the working artifacts; the
+        runtime exposes it as the request payload sent to the
+        writeSpecBody extension.
+
+Parity bound for `/gov:plan`:
+  - strict-fields: `status-transition` — the spec frontmatter status
+    must match the runtime-driven path exactly (clarified → planned).
+  - semantic-fields: `plan-body` — section content (Technical
+    Decisions, Affected Files, Trade-offs) is semantic; wording may
+    differ between LLM responses without failing the check.
+
+Until this file is filled in, the parity test for `/gov:plan` is
+recorded as SKIPPED and does not block CI.

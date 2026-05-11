@@ -1,0 +1,8 @@
+{
+  "feature": "005-plan",
+  "path": "specs/005-plan",
+  "paths": ["specs/005-plan/spec.md"],
+  "from": "clarified",
+  "to": "planned",
+  "setAt": "2026-05-11T00:00:00Z"
+}

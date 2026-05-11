@@ -134,9 +134,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 16. Rewrite `/gov:plan`
 
-- [ ] Rewrite `framework/commands/plan.md` to invoke `read-spec`, `set-status`, `lint-markdown`, `gate-confirm`, and `<!-- llm:writeSpecBody -->` markers on the plan-creation step (one per plan section to fill: Technical Decisions, Affected Files, Trade-offs).
-- [ ] `parity: { strict-fields: ["status-transition"], semantic-fields: ["plan-body"] }`.
-- [ ] Fixture under `runtime/tests/fixtures/plan-basic/` with a clarified spec.
+- [x] Rewrite `framework/commands/plan.md` to invoke `read-spec`, `set-status`, `lint-markdown`, `gate-confirm`, and `<!-- llm:writeSpecBody -->` markers on the plan-creation step (one per plan section to fill: Technical Decisions, Affected Files, Trade-offs).
+- [x] `parity: { strict-fields: ["status-transition"], semantic-fields: ["plan-body"] }`.
+- [x] Fixture under `runtime/tests/fixtures/plan-basic/` with a clarified spec.
 - **Done when**: parseability + integration + parity green; the status transition `clarified → planned` is strict-equal; tool-coverage lint green.
 
 ## 17. Rewrite `/gov:specify`

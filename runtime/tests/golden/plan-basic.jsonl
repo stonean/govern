@@ -1,0 +1,13 @@
+{"type":"progress","message":"dispatching primitive `read-spec`","step":"1","primitive":"read-spec"}
+{"type":"progress","message":"dispatching primitive `lint-markdown`","step":"2","primitive":"lint-markdown"}
+{"type":"llm-request","extension-point":"writeSpecBody","request-id":"req-1","request":{"feature":"005-plan","from":"clarified","path":"specs/005-plan","paths":["specs/005-plan/spec.md"],"setAt":"2026-05-11T00:00:00Z","to":"planned"}}
+{"type":"progress","message":"received llm-response for `writeSpecBody`","step":"3"}
+{"type":"llm-request","extension-point":"writeSpecBody","request-id":"req-2","request":{"feature":"005-plan","from":"clarified","llm:writeSpecBody":{"content":"## Technical Decisions\n\n- Use the standard library.\n","section":"Technical Decisions"},"path":"specs/005-plan","paths":["specs/005-plan/spec.md"],"setAt":"2026-05-11T00:00:00Z","to":"planned"}}
+{"type":"progress","message":"received llm-response for `writeSpecBody`","step":"4"}
+{"type":"llm-request","extension-point":"writeSpecBody","request-id":"req-3","request":{"feature":"005-plan","from":"clarified","llm:writeSpecBody":{"content":"## Affected Files\n\n| File | Action | Purpose |\n| --- | --- | --- |\n","section":"Affected Files"},"path":"specs/005-plan","paths":["specs/005-plan/spec.md"],"setAt":"2026-05-11T00:00:00Z","to":"planned"}}
+{"type":"progress","message":"received llm-response for `writeSpecBody`","step":"5"}
+{"type":"gate-confirm","gate":"step-6","request-id":"req-4","prompt":"Ask the user to approve the transition from clarified to planned after presenting a summary of the plan body and the task breakdown. On confirmation, continue to step 7; on denial, the walker exits cleanly without modifying the spec."}
+{"type":"progress","message":"gate `step-6` confirmed","step":"6"}
+{"type":"progress","message":"dispatching primitive `set-status`","step":"7","primitive":"set-status"}
+{"type":"progress","message":"dispatching primitive `lint-markdown`","step":"8","primitive":"lint-markdown"}
+{"type":"complete","result":{},"runtime-version":"{{runtime-version}}"}

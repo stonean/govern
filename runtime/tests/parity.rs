@@ -78,6 +78,11 @@ fn implement_basic_stream_matches_golden() {
 }
 
 #[test]
+fn plan_basic_stream_matches_golden() {
+    run_parity_case("plan", "plan-basic");
+}
+
+#[test]
 fn implement_rejects_out_of_boundary_write_code_edit() {
     ensure_binary_built();
     let bin = runtime_binary();

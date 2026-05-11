@@ -1,6 +1,11 @@
 ---
 description: Create a technical plan and task breakdown for a clarified spec.
 argument-hint: "[feature]"
+parity:
+  strict-fields:
+    - status-transition
+  semantic-fields:
+    - plan-body
 ---
 
 # Plan
@@ -9,7 +14,7 @@ Create a technical plan and task breakdown for a clarified spec.
 
 ## Purpose
 
-Pipeline gate: `clarified` → `planned`. A spec cannot be implemented until it has a plan with technical decisions, affected files, and an ordered task list. This command produces both `plan.md` and `tasks.md`.
+Pipeline gate: clarified → planned. A spec cannot be implemented until it has a plan with technical decisions, affected files, and an ordered task list. This command produces both `plan.md` and `tasks.md`.
 
 ## Context
 
@@ -28,11 +33,31 @@ Read the spec's `status` field from the YAML frontmatter at the top of the file.
 
 ## Scope Boundaries
 
-- Read only files needed for planning: the target spec, `specs/system.md`, and cross-spec files per the checklist below. Do NOT read source code, test files, or unrelated specs beyond what the checklist requires.
+- Read only files needed for planning: the target spec, `specs/system.md`, and cross-spec files per the markdown-only reference below. Do NOT read source code, test files, or unrelated specs beyond what the checklist requires.
 - Do NOT begin implementation. This command produces `plan.md` and `tasks.md` only.
 - Reference: §plan-phase, §tasks-phase, §readiness-check, §text-first-artifacts (constitution loaded by `/{project}:target` — do not re-read).
 
 ## Instructions
+
+1. Invoke `read-spec` against the targeted feature to load the spec's frontmatter, sections, acceptance criteria, and open-question count. The result drives downstream prompts; the procedure refuses to proceed when the spec's status is not clarified.
+
+2. Invoke `lint-markdown` against the feature directory's markdown files. Pre-plan violations are surfaced as advisory findings; the procedure continues regardless.
+
+3. <!-- llm:writeSpecBody --> Fill the Technical Decisions section of the plan. The host returns the markdown body for the section; the walker forwards the response through the context. Otherwise, follow the markdown-only path: hand-write the Technical Decisions section into `plan.md`.
+
+4. <!-- llm:writeSpecBody --> Fill the Affected Files section of the plan. The host returns a table listing files this feature creates or modifies, alongside an action and purpose for each row. The runtime write boundary used by `/{project}:implement` is derived from git history; this section is a planning aid, not authoritative. Otherwise, fall back to the markdown-only path.
+
+5. <!-- llm:writeSpecBody --> Fill the Trade-offs section of the plan. The host enumerates the considered-and-rejected alternatives plus known limitations. Otherwise, fall back to the markdown-only path.
+
+6. Ask the user to approve the transition from clarified to planned after presenting a summary of the plan body and the task breakdown. On confirmation, continue to step 7; on denial, the walker exits cleanly without modifying the spec.
+
+7. Invoke `set-status` to flip the spec frontmatter's status from clarified to planned; the primitive guards against a stale "from" value so concurrent edits surface as an operational error rather than a silent overwrite.
+
+8. Invoke `lint-markdown` a second time as the readiness gate's final check. Any violations surface as advisory findings the user resolves before running `/{project}:implement`. Otherwise, follow the markdown-only path.
+
+## Markdown-only reference
+
+The full plan-creation procedure (existing-artifact protection, cross-spec context checklist, plan section contents, task breakdown rules, readiness gate, and cross-spec impact check) is documented below for the markdown-only path. The numbered steps above invoke the mechanical primitives that automate the deterministic phases; the host applies the same procedure against the markdown-only path when the runtime is unavailable.
 
 ### Recompute dependencies (safety net)
 
@@ -40,16 +65,13 @@ Run `scripts/gen-spec-deps.sh --dry-run` against the target spec. If it reports 
 
 ### Detect existing artifacts
 
-Before generating any artifacts, check the feature directory for existing plan files. This protects work the user may have already invested — including plans that survived a `/{project}:ask` back-edge cycle (clarified+ → draft → clarified again) and any other re-run.
+Before generating any artifacts, check the feature directory for existing plan files. This protects work the user may have already invested — including plans that survived a `/{project}:ask` back-edge cycle.
 
-1. Check the feature directory for `plan.md`, `tasks.md`, and `data-model.md`. (If the spec file is `spec-and-plan.md`, this check still runs — `data-model.md` is the only artifact that can pre-exist in lightweight-track features; the plan and tasks live inside the combined document.)
+1. Check the feature directory for `plan.md`, `tasks.md`, and `data-model.md`.
 2. If none of those files exist, skip this section and proceed to the cross-spec context checklist with the standard template-copy flow unchanged.
-3. If any of those files exists, list each one that exists with its last-modified timestamp, then prompt:
-   > Plan artifacts exist from a prior `/{project}:plan` run. Keep them and run the readiness check, or replace with fresh templates?
-
-   The default is **keep**.
-4. **Keep** — skip the template copy entirely. Do not overwrite or modify the existing artifacts during this step. Proceed to the cross-spec context checklist; in **Create the plan** and **Create the task breakdown**, skip the "copy template" steps and treat the existing files as the working artifacts. Then run the validation gate. Advance status to `planned` only if all readiness checks pass; on failure, report the specific failures and exit without advancing — the user fixes the kept artifacts and re-runs.
-5. **Replace** — copy fresh templates over the existing files (`specs/templates/plan.md` → `plan.md`, `specs/templates/tasks.md` → `tasks.md`, and a fresh `data-model.md` only if the prior one existed and the feature still needs one). The user is responsible for re-applying any kept content. Then proceed with the standard plan flow below.
+3. If any of those files exists, list each one that exists with its last-modified timestamp, then prompt: "Plan artifacts exist from a prior `/{project}:plan` run. Keep them and run the readiness check, or replace with fresh templates?" The default is **keep**.
+4. **Keep** — skip the template copy entirely. Do not overwrite or modify the existing artifacts during this step. Proceed to the cross-spec context checklist; in **Create the plan** and **Create the task breakdown**, skip the "copy template" steps and treat the existing files as the working artifacts. Then run the validation gate. Advance status to planned only if all readiness checks pass; on failure, report the specific failures and exit without advancing.
+5. **Replace** — copy fresh templates over the existing files. The user is responsible for re-applying any kept content.
 
 ### Cross-spec context checklist
 
@@ -69,7 +91,7 @@ If the spec file is `spec-and-plan.md` (lightweight track), the plan section is 
 1. **If the user picked "keep" in the existing-artifact prompt above**, skip the template copy — `plan.md` is already on disk and is the working artifact. Otherwise (no prior artifacts, or "replace"), copy `specs/templates/plan.md` into the feature directory as `plan.md`.
 2. Fill in (or, on the keep path, edit/extend the existing content):
    - **Technical Decisions**: each decision with rationale. Code snippets, function signatures, and package paths belong here.
-   - **Affected Files**: a *planning aid* — list the files you expect to create or modify so reviewers can sanity-check scope. The runtime write boundary used by `/{project}:implement` is derived from `git diff` against the spec dir's first commit; this list is not authoritative and does not need to be exhaustive. Implement-time additions surface naturally.
+   - **Affected Files**: a *planning aid* — list the files you expect to create or modify so reviewers can sanity-check scope.
    - **Data Model**: data structure definitions. Create `data-model.md` if the feature introduces or modifies domain entities or data structures.
    - **Trade-offs**: what was considered and rejected, known limitations.
 3. Cross-validate against the files loaded in the checklist above:
@@ -90,14 +112,14 @@ If the spec file is `spec-and-plan.md` (lightweight track), the plan section is 
 
 Before proposing the status transition, run the readiness check. All checks must pass — failures block the transition.
 
-- [ ] Acceptance criteria are concrete and testable
-- [ ] All open questions are resolved
-- [ ] Data model exists if the feature introduces or modifies domain entities or data structures
-- [ ] Plan does not conflict with `system.md` or other feature specs
-- [ ] Data model is consistent with related specs
-- [ ] Event types align with `events.md`
-- [ ] Tasks are ordered and each has a clear definition of done
-- [ ] All `.md` files in the feature directory pass `npx markdownlint-cli2`
+- Acceptance criteria are concrete and testable
+- All open questions are resolved
+- Data model exists if the feature introduces or modifies domain entities or data structures
+- Plan does not conflict with `system.md` or other feature specs
+- Data model is consistent with related specs
+- Event types align with `events.md`
+- Tasks are ordered and each has a clear definition of done
+- All `.md` files in the feature directory pass `npx markdownlint-cli2`
 
 If any check fails, report the specific failures and do not propose the transition. The user fixes the issues and re-runs the command.
 
@@ -107,6 +129,6 @@ After the plan is written and before finalizing, list every sibling spec referen
 
 ### Finalize
 
-1. Present a summary of the plan, task breakdown, and validation gate results. Ask the user to approve the transition to `planned`. Do not update the status until the user confirms.
-2. On confirmation, update the spec's frontmatter `status` field from `clarified` to `planned`.
+1. Present a summary of the plan, task breakdown, and validation gate results. Ask the user to approve the transition to planned. Do not update the status until the user confirms.
+2. On confirmation, update the spec's frontmatter `status` field from clarified to planned.
 3. Display the next step: "Run `/{project}:implement` to begin implementation."

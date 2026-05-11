@@ -1,0 +1,4 @@
+{"type":"llm-response","request-id":"req-1","response":{"content":"## Technical Decisions\n\n- Use the standard library.\n","section":"Technical Decisions"}}
+{"type":"llm-response","request-id":"req-2","response":{"content":"## Affected Files\n\n| File | Action | Purpose |\n| --- | --- | --- |\n","section":"Affected Files"}}
+{"type":"llm-response","request-id":"req-3","response":{"content":"## Trade-offs\n\nConsidered and rejected: nothing.\n","section":"Trade-offs"}}
+{"type":"gate-response","request-id":"req-4","confirmed":true}
