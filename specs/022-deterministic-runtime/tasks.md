@@ -74,12 +74,12 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 9. Implement the interpreter walker
 
-- [ ] `runtime/src/interpreter/mod.rs`: a synchronous walker over the parsed `Procedure`. Maintains a `State` struct (position, parsed file contents, pending payloads).
-- [ ] For each `Step::Primitive`, dispatch to the primitive's pure function. Errors halt the walker and emit an `error` JSON envelope.
-- [ ] For each `Step::Extension`, emit `llm-request` to stdout with a fresh `request-id`, suspend reading stdin until the matching `llm-response` arrives.
-- [ ] For each gate (recognized by the prose pattern "Ask the user to approve" — initial implementation; revisited if a more structured marker is needed), emit `gate-confirm` and suspend.
-- [ ] `Step::Prose` is no-op for the walker (information for the markdown-only path only).
-- [ ] Integration test under `runtime/tests/walker.rs` walks a fixture procedure that exercises every step type; the test mocks stdin/stdout and asserts the expected JSON sequence.
+- [x] `runtime/src/interpreter/mod.rs`: a synchronous walker over the parsed `Procedure`. Maintains a `State` struct (position, parsed file contents, pending payloads).
+- [x] For each `Step::Primitive`, dispatch to the primitive's pure function. Errors halt the walker and emit an `error` JSON envelope.
+- [x] For each `Step::Extension`, emit `llm-request` to stdout with a fresh `request-id`, suspend reading stdin until the matching `llm-response` arrives.
+- [x] For each gate (recognized by the prose pattern "Ask the user to approve" — initial implementation; revisited if a more structured marker is needed), emit `gate-confirm` and suspend.
+- [x] `Step::Prose` is no-op for the walker (information for the markdown-only path only).
+- [x] Integration test under `runtime/tests/walker.rs` walks a fixture procedure that exercises every step type; the test mocks stdin/stdout and asserts the expected JSON sequence.
 - **Done when**: `cargo test --release walker::` passes; manual smoke test of `runtime exec status` against a fixture repo produces a JSON message stream.
 
 ## 10. Wire `runtime exec <command>` to the interpreter
