@@ -126,10 +126,10 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 15. Rewrite `/gov:implement`
 
-- [ ] Rewrite `framework/commands/implement.md` to invoke `read-tasks`, `derive-boundary`, `check-stuck`, `mark-task`, `set-status`, `gate-confirm`, and an `<!-- llm:writeCode -->` marker on the per-task work step.
-- [ ] `parity: { strict-fields: ["task-checkbox-state"], strict-files: ["specs/.../tasks.md"], semantic-fields: ["code-edits[].content"] }`.
-- [ ] Fixture under `runtime/tests/fixtures/implement-basic/` with a feature ready for implementation (status: planned, one task pending).
-- [ ] The fixture exercises the write-boundary check: a malicious `writeCode` response that edits a file outside the boundary is rejected.
+- [x] Rewrite `framework/commands/implement.md` to invoke `read-tasks`, `derive-boundary`, `check-stuck`, `mark-task`, `set-status`, `gate-confirm`, and an `<!-- llm:writeCode -->` marker on the per-task work step.
+- [x] `parity: { strict-fields: ["task-checkbox-state"], strict-files: ["specs/.../tasks.md"], semantic-fields: ["code-edits[].content"] }`.
+- [x] Fixture under `runtime/tests/fixtures/implement-basic/` with a feature ready for implementation (status: planned, one task pending).
+- [x] The fixture exercises the write-boundary check: a malicious `writeCode` response that edits a file outside the boundary is rejected.
 - **Done when**: parseability + integration + parity green; out-of-boundary rejection test passes; tool-coverage lint green.
 
 ## 16. Rewrite `/gov:plan`

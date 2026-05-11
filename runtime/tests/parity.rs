@@ -72,6 +72,62 @@ fn validate_basic_stream_matches_golden() {
     run_parity_case("validate", "validate-basic");
 }
 
+#[test]
+fn implement_basic_stream_matches_golden() {
+    run_parity_case("implement", "implement-basic");
+}
+
+#[test]
+fn implement_rejects_out_of_boundary_write_code_edit() {
+    ensure_binary_built();
+    let bin = runtime_binary();
+    let staged = stage_fixture("implement", "implement-basic");
+
+    // Replace the staged stdin.jsonl with a malicious writeCode response
+    // that edits a file outside the write boundary. The gate-response on
+    // line 1 is unchanged; the writeCode edit's path escapes
+    // `specs/004-implement/**` and `runtime/**`.
+    let stdin = "{\"type\":\"gate-response\",\"request-id\":\"req-1\",\"confirmed\":true}\n{\"type\":\"llm-response\",\"request-id\":\"req-2\",\"response\":{\"edits\":[{\"path\":\"framework/constitution.md\",\"action\":\"edit\",\"content\":\"malicious\"}],\"summary\":\"escape the boundary\"}}\n";
+
+    let mut child = Command::new(&bin)
+        .arg("exec")
+        .arg("implement")
+        .current_dir(staged.path())
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn runtime");
+    {
+        let mut child_stdin = child.stdin.take().expect("stdin");
+        child_stdin
+            .write_all(stdin.as_bytes())
+            .expect("stdin write");
+    }
+    let output = child.wait_with_output().expect("wait");
+    assert!(
+        !output.status.success(),
+        "expected non-zero exit on out-of-boundary edit; stdout:\n{}",
+        String::from_utf8_lossy(&output.stdout)
+    );
+    let stdout = String::from_utf8(output.stdout).expect("utf-8 stdout");
+    let last_line = stdout.lines().last().unwrap_or_default();
+    let envelope: serde_json::Value = serde_json::from_str(last_line)
+        .unwrap_or_else(|err| panic!("last line is not JSON: {err}\n{stdout}"));
+    assert_eq!(envelope["type"], "error", "final envelope is error");
+    assert_eq!(
+        envelope["code"], "out-of-boundary-edit",
+        "error code surfaces the boundary violation"
+    );
+    assert!(
+        envelope["message"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("framework/constitution.md"),
+        "error message names the offending path"
+    );
+}
+
 fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
@@ -136,7 +192,29 @@ fn stage_fixture(command: &str, fixture: &str) -> tempfile::TempDir {
     fs::create_dir_all(&command_dst_dir).unwrap();
     fs::copy(&command_src, command_dst_dir.join(format!("{command}.md"))).unwrap();
 
+    // Primitives that read git history (`derive-boundary`, `check-stuck`)
+    // need a real repo. Init one in the tempdir and commit the staged
+    // state so every primitive that calls `Repository::discover` finds a
+    // valid history. Fixtures that don't exercise those primitives pay a
+    // tiny git-init overhead but otherwise are unaffected.
+    init_git_repo(tmp.path());
+
     tmp
+}
+
+fn init_git_repo(path: &Path) {
+    use git2::{IndexAddOption, Repository, Signature};
+    let repo = Repository::init(path).expect("git init");
+    let mut index = repo.index().unwrap();
+    index
+        .add_all(["*"], IndexAddOption::DEFAULT, None)
+        .expect("git add");
+    index.write().expect("index write");
+    let tree_id = index.write_tree().expect("write tree");
+    let tree = repo.find_tree(tree_id).unwrap();
+    let sig = Signature::now("Parity Test", "parity@example.com").expect("signature");
+    repo.commit(Some("HEAD"), &sig, &sig, "chore: fixture", &tree, &[])
+        .expect("initial commit");
 }
 
 fn read_parity_spec(command: &str) -> ParitySpec {
