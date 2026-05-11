@@ -182,9 +182,11 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 23. Cross-spec impact sweep
 
-- [ ] Re-read inline links in `spec.md`, `plan.md`, and `data-model.md` and confirm whether any sibling spec needs an update. The expected references are: 020-code-review (motivating evidence only), 021-runtime-boundary (constitutional precondition, no update needed because 021 already commits to a forward reference here). The constitution's §runtime-boundary subsection is referenced read-only; this spec does not introduce a constitution amendment.
-- [ ] If any §cross-spec-impact rule fires, record the affected change in the sibling spec with a back-link to this spec before proceeding.
+- [x] Re-read inline links in `spec.md`, `plan.md`, and `data-model.md` and confirm whether any sibling spec needs an update. The expected references are: 020-code-review (motivating evidence only), 021-runtime-boundary (constitutional precondition, no update needed because 021 already commits to a forward reference here). The constitution's §runtime-boundary subsection is referenced read-only; this spec does not introduce a constitution amendment.
+- [x] If any §cross-spec-impact rule fires, record the affected change in the sibling spec with a back-link to this spec before proceeding.
 - **Done when**: confirmed in writing that no §cross-spec-impact action was triggered, or each triggered change is recorded in its target spec.
+
+> Confirmed 2026-05-11: no `§cross-spec-impact` action triggered. 020 and 021 are referenced read-only; no sibling spec body cites 022. Constitution `§runtime-boundary` anchor resolves at line 400.
 
 ## 24. Run `/gov:validate` against this spec and fix findings
 
@@ -195,7 +197,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 25. Run `npx markdownlint-cli2` and final sweep
 
-- [ ] Lint all rewritten command files under `framework/commands/`, all spec files under `specs/022-deterministic-runtime/`, the root `README.md`, and `framework/bootstrap/govern.md`.
-- [ ] Verify the existing `scripts/lint-frontmatter.sh` and `scripts/lint-tool-coverage.sh` still exit 0.
-- [ ] Run the full `markdown-only-pipeline.yml` workflow locally (manually executing the bash steps); confirm steps (a)–(f) all pass with the runtime binary not on `PATH` (a workflow-local build exists for step (f) only).
+- [x] Lint all rewritten command files under `framework/commands/`, all spec files under `specs/022-deterministic-runtime/`, the root `README.md`, and `framework/bootstrap/govern.md`.
+- [x] Verify the existing `scripts/lint-frontmatter.sh` and `scripts/lint-tool-coverage.sh` still exit 0.
+- [x] Run the full `markdown-only-pipeline.yml` workflow locally (manually executing the bash steps); confirm steps (a)–(f) all pass with the runtime binary not on `PATH` (a workflow-local build exists for step (f) only).
 - **Done when**: every lint exits 0; the markdown-only workflow is green; this spec is ready to advance to `done`.
+
+> Confirmed 2026-05-11: markdownlint-cli2 on the 022 spec dir + README.md + bootstrap/govern.md reports 0 errors. lint-frontmatter, lint-tool-coverage, lint-procedure-parseability, gen-spec-deps --dry-run, gen-readme-table --dry-run, gen-help-tables --dry-run all exit 0. Workflow steps (a)–(f) execute green locally.
