@@ -1,5 +1,5 @@
 ---
-status: clarified
+status: planned
 dependencies: [021-runtime-boundary]
 review:
   last-run: null
