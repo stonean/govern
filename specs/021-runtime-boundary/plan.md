@@ -8,9 +8,9 @@ Three distinct deliverables:
 
 1. **Constitutional amendment** to `framework/constitution.md` — three edits: the opening paragraph of §text-first-artifacts, a new §runtime-boundary subsection at the end of §text-first-artifacts, and a row added to the §drift-prevention canonical sources table.
 2. **CI workflow** — a new GitHub Actions workflow that asserts the five deterministic checks from the spec's opt-in invariant. The workflow runs on every PR matching the path filter and is the tripwire that catches a future PR introducing a silent runtime dependency.
-3. **Runtime-tools manifest + fallback lint script** — a small bash/grep script under `scripts/` plus a manifest file (initially empty) under `framework/`. The manifest enumerates runtime tools by canonical name; the lint scans `framework/commands/*.md` for references to any tool in the manifest and verifies each is paired with a graceful-fallback marker.
+3. **Runtime-tools manifest + tool-coverage lint script** — a small bash/grep script under `scripts/` plus a manifest file (initially empty) under `framework/`. The manifest enumerates runtime tools by canonical name; the lint scans `framework/commands/*.md` for references to any tool in the manifest and verifies each is paired with a graceful-fallback marker.
 
-The amendment text is fully drafted in the spec body; this plan's job is to specify *where* in the constitution it lands, *how* the CI workflow is structured, and *how* the fallback lint operates concretely.
+The amendment text is fully drafted in the spec body; this plan's job is to specify *where* in the constitution it lands, *how* the CI workflow is structured, and *how* the tool-coverage lint operates concretely.
 
 ## Technical Decisions
 
@@ -37,7 +37,7 @@ Filename matches the workflow's job: prove the markdown-only path still works. T
 | (a) runtime binary absent | `command -v <name> && exit 1 \|\| true` for each name in `framework/runtime-tools.txt` |
 | (b) bash generators clean | `bash scripts/gen-spec-deps.sh --dry-run && bash scripts/gen-readme-table.sh --dry-run && bash scripts/gen-help-tables.sh --dry-run` |
 | (c) markdownlint | `npx markdownlint-cli2` |
-| (d) fallback lint | `bash scripts/lint-runtime-fallback.sh` |
+| (d) tool-coverage lint | `bash scripts/lint-tool-coverage.sh` |
 | (e) frontmatter integrity | `bash scripts/lint-frontmatter.sh` |
 
 Workflow trigger is `pull_request` with `paths` filter `framework/**`, `specs/**`, `.claude/commands/**`. Push to `main` also triggers the workflow to catch direct commits.
@@ -50,9 +50,9 @@ No matrix, no caching, no Rust/Go toolchain — the entire job runs in plain Ubu
 
 The manifest is plain text rather than YAML/JSON because (1) the consumers are shell scripts, (2) it's a flat list, (3) editing it is unambiguous in PRs.
 
-### Fallback lint operates by proximity scan
+### Tool-coverage lint operates by proximity scan
 
-`scripts/lint-runtime-fallback.sh` is a bash script that:
+`scripts/lint-tool-coverage.sh` is a bash script that:
 
 1. Reads `framework/runtime-tools.txt` and builds a list of tool names (one per line, ignoring blank lines and `#` comments).
 2. Greps each tool name across `framework/commands/*.md` (including any deferred-tool MCP names — full string match, not regex).
@@ -83,7 +83,7 @@ The amendment introduces no domain entities. The runtime-tools manifest is a fla
 
 ### Order of work
 
-The tasks order is: (1) constitution amendment → (2) runtime-tools manifest stub → (3) fallback lint script → (4) frontmatter lint script → (5) workflow file → (6) `/gov:validate` against this spec → (7) markdownlint pass. The workflow lands last so it can be exercised against the completed amendment and lint scripts in the same PR.
+The tasks order is: (1) constitution amendment → (2) runtime-tools manifest stub → (3) tool-coverage lint script → (4) frontmatter lint script → (5) workflow file → (6) `/gov:validate` against this spec → (7) markdownlint pass. The workflow lands last so it can be exercised against the completed amendment and lint scripts in the same PR.
 
 ## Affected Files
 
@@ -91,7 +91,7 @@ The tasks order is: (1) constitution amendment → (2) runtime-tools manifest st
 | --- | --- | --- |
 | `framework/constitution.md` | Edit | Three amendments: §text-first-artifacts opening paragraph; new §runtime-boundary subsection; new row in §drift-prevention canonical sources table |
 | `framework/runtime-tools.txt` | Create | Empty (comment-only) manifest of canonical runtime tool names; populated by spec 022 |
-| `scripts/lint-runtime-fallback.sh` | Create | Proximity-scan bash script verifying every runtime-tool reference in `framework/commands/*.md` has a fallback marker within 20 lines |
+| `scripts/lint-tool-coverage.sh` | Create | Proximity-scan bash script verifying every runtime-tool reference in `framework/commands/*.md` has a fallback marker within 20 lines |
 | `scripts/lint-frontmatter.sh` | Create | Bash script verifying frontmatter shape (delimiters, status enum, dependencies field presence/format) across spec and scenario files |
 | `.github/workflows/markdown-only-pipeline.yml` | Create | CI workflow running the five deterministic checks on every PR matching the path filter |
 | `specs/021-runtime-boundary/plan.md` | Create | This file |
@@ -102,15 +102,15 @@ The tasks order is: (1) constitution amendment → (2) runtime-tools manifest st
 ### Considered and rejected
 
 - **Storing the runtime-tools manifest as YAML or JSON** — rejected. Consumers are shell scripts; a flat text file is unambiguous in PRs and removes a parsing dependency from CI. Upgrade path remains open if structured metadata is ever needed.
-- **Implementing the fallback lint as a structured-marker check (e.g., `<!-- runtime-tool: name --> ... <!-- /runtime-tool -->`)** — rejected. Structured markers depend on author discipline, exactly the anti-pattern the Design Principles section in `AGENTS.md` forbids. The proximity scan is derived from existing command prose and requires no author markup.
-- **Running the fallback lint as a Rust binary** — rejected for spec 021. The runtime itself is deferred to 022; introducing a binary here contradicts the spec's "no binary in this spec" non-goal. If 022 lands a Rust runtime, the lint can be subsumed into it as a runtime-eligible capability.
+- **Implementing the tool-coverage lint as a structured-marker check (e.g., `<!-- runtime-tool: name --> ... <!-- /runtime-tool -->`)** — rejected. Structured markers depend on author discipline, exactly the anti-pattern the Design Principles section in `AGENTS.md` forbids. The proximity scan is derived from existing command prose and requires no author markup.
+- **Running the tool-coverage lint as a Rust binary** — rejected for spec 021. The runtime itself is deferred to 022; introducing a binary here contradicts the spec's "no binary in this spec" non-goal. The lint runs only in the markdown-only-pipeline workflow (which asserts the runtime is absent), so a runtime version would be unreachable in that context — the bash implementation is permanent, not a stepping stone to a binary version.
 - **Splitting the amendment into three separate PRs** — rejected. The three edits are interdependent (the opening-paragraph forward reference, the subsection it points to, and the canonical sources row pointing back at the subsection). They land together or not at all.
 - **Triggering the workflow on every PR regardless of path** — rejected. Docs-only or release-only PRs cannot introduce a silent runtime dependency; running the workflow on them wastes runner minutes without strengthening the invariant.
 - **Hand-authored "runtime-eligibility" labels on slash commands** — rejected during clarify (Q6). Resolution recorded in spec.
 
 ### Known limitations
 
-- The fallback lint's 20-line proximity window is a heuristic. False positives occur when a real fallback uses synonyms outside the accepted token list (`Otherwise`, `Fallback`, `If unavailable`, `markdown-only path`). Resolution is paraphrasing — author cost is low. The window can be tuned when spec 022 introduces real tool references and the heuristic is empirically tested.
+- The tool-coverage lint's 20-line proximity window is a heuristic. False positives occur when a real fallback uses synonyms outside the accepted token list (`Otherwise`, `Fallback`, `If unavailable`, `markdown-only path`). Resolution is paraphrasing — author cost is low. The window can be tuned when spec 022 introduces real tool references and the heuristic is empirically tested.
 - The frontmatter lint is shape-only, not a real YAML parser. Adversarial frontmatter (deeply nested, multi-line strings with `---` inside) can defeat it. `/gov:validate`'s hard-fail tier remains the rigorous check; this lint is a CI-side smoke test.
 - The CI workflow asserts the runtime binary is absent, but only knows binary names from `framework/runtime-tools.txt`. A binary using a different name than is in the manifest could slip past. Mitigated by treating the manifest as the canonical list spec 022 must populate; deviations are caught at PR review of 022.
 - The workflow does not exercise LLM-driven slash commands. By design — see spec's Q2 resolution. A separate scheduled smoke-test job exercising the LLM path is out of scope for 021.

@@ -12,7 +12,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 - [x] Add the `<!-- §runtime-boundary -->` anchor marker on a line of its own, followed by the `### Runtime Boundary` heading. Place after the existing "Validation Severity" subsection and before §drift-prevention.
 - [x] Write the subsection body with: five principles (each MUST or MUST NOT, RFC 2119 register), three eligibility criteria (Deterministic, Currently mechanical, Degradation-not-failure), opt-in invariant (CI MUST exercise the cycle with the runtime binary absent), versioning rule (lockstep), non-scope statement (MUST NOT for each of: spec authoring tool, workflow orchestrator, long-running service, storage layer; closes with "Lifting any of these exclusions requires a constitutional amendment").
-- [x] Add the one-line forward pointer: *"Specific capabilities are introduced through their own feature specs, beginning with spec 022 (runtime v0)."*
+- [x] Add the one-line forward pointer: *"Specific capabilities are introduced through their own feature specs, beginning with spec 022 (deterministic runtime)."*
 - **Done when**: `grep -c '<!-- §runtime-boundary -->' framework/constitution.md` returns 1; the subsection contains the literal strings "MUST NOT" appearing in both the principles and the non-scope list; the forward-pointer sentence is present.
 
 ## 3. Add the §drift-prevention canonical sources row
@@ -23,14 +23,14 @@ Tasks derived from the [plan](plan.md). Complete in order.
 ## 4. Create `framework/runtime-tools.txt`
 
 - [x] Create the file with a comment header explaining its purpose and linking to §runtime-boundary in `framework/constitution.md`. No tool entries — spec 022 populates this.
-- **Done when**: the file exists with only comment lines (each starting `#`) and is referenced from the fallback lint script.
+- **Done when**: the file exists with only comment lines (each starting `#`) and is referenced from the tool-coverage lint script.
 
-## 5. Create `scripts/lint-runtime-fallback.sh`
+## 5. Create `scripts/lint-tool-coverage.sh`
 
 - [x] Bash script that reads `framework/runtime-tools.txt` (skipping blank lines and `#` comments), iterates over `framework/commands/*.md`, finds each match of each tool name, and for each match scans forward 20 lines for any case-insensitive occurrence of: `Otherwise`, `Fallback`, `If unavailable`, `markdown-only path`.
 - [x] On match-without-fallback, print `path:line: missing fallback for tool '<name>'`. Exit 1 if any error; exit 0 if all references have a fallback OR the manifest is empty.
 - [x] `chmod +x` and verify it runs with the empty manifest (passing trivially).
-- **Done when**: `bash scripts/lint-runtime-fallback.sh` exits 0 against the current repo; a manual test with a temporary tool name in the manifest and a contrived violation in a command file exits 1 with a clear error.
+- **Done when**: `bash scripts/lint-tool-coverage.sh` exits 0 against the current repo; a manual test with a temporary tool name in the manifest and a contrived violation in a command file exits 1 with a clear error.
 
 ## 6. Create `scripts/lint-frontmatter.sh`
 
@@ -42,7 +42,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 ## 7. Create `.github/workflows/markdown-only-pipeline.yml`
 
 - [x] Workflow file with name `markdown-only-pipeline`, single job `markdown-only` on `ubuntu-latest`, triggered by `pull_request` (paths: `framework/**`, `specs/**`, `.claude/commands/**`) and by `push` to `main` (same paths).
-- [x] Job steps: checkout; setup Node (for `npx markdownlint-cli2`); step (a) assert each name in `framework/runtime-tools.txt` is not on PATH; step (b) run all three `scripts/gen-*.sh --dry-run` and assert clean; step (c) `npx markdownlint-cli2`; step (d) `bash scripts/lint-runtime-fallback.sh`; step (e) `bash scripts/lint-frontmatter.sh`.
+- [x] Job steps: checkout; setup Node (for `npx markdownlint-cli2`); step (a) assert each name in `framework/runtime-tools.txt` is not on PATH; step (b) run all three `scripts/gen-*.sh --dry-run` and assert clean; step (c) `npx markdownlint-cli2`; step (d) `bash scripts/lint-tool-coverage.sh`; step (e) `bash scripts/lint-frontmatter.sh`.
 - [x] Each step has a `name:` that names the corresponding spec check (a/b/c/d/e) so failures map directly to spec acceptance criteria.
 - **Done when**: the workflow file passes `actionlint` (if installed) or `yq` parse; pushing a branch with the file triggers the job (verified via GitHub Actions UI on PR).
 

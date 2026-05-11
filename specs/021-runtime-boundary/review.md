@@ -13,7 +13,7 @@ skipped-passes: []
 
 ## Summary
 
-Constitutional amendment (§text-first-artifacts opening, new §runtime-boundary subsection, drift-prevention table row) plus the deterministic CI tripwire that enforces the markdown-only opt-in invariant: `framework/runtime-tools.txt` (empty manifest), `scripts/lint-runtime-fallback.sh` (proximity-scan for graceful-fallback markers near runtime-tool references), `scripts/lint-frontmatter.sh` (shape-only frontmatter integrity check), `.github/workflows/markdown-only-pipeline.yml` (the five-check workflow). All scripts and CI YAML audited globally. Spec is `in-progress`; no findings block its advance to `done`. All five passes ran; no findings. `blocking: no`.
+Constitutional amendment (§text-first-artifacts opening, new §runtime-boundary subsection, drift-prevention table row) plus the deterministic CI tripwire that enforces the markdown-only opt-in invariant: `framework/runtime-tools.txt` (empty manifest), `scripts/lint-tool-coverage.sh` (proximity-scan for graceful-fallback markers near runtime-tool references), `scripts/lint-frontmatter.sh` (shape-only frontmatter integrity check), `.github/workflows/markdown-only-pipeline.yml` (the five-check workflow). All scripts and CI YAML audited globally. Spec is `in-progress`; no findings block its advance to `done`. All five passes ran; no findings. `blocking: no`.
 
 ## MUST violations (blocking)
 
@@ -39,7 +39,7 @@ _None._
 
 ### Security
 
-`lint-runtime-fallback.sh` and `lint-frontmatter.sh` both use `set -euo pipefail`, no `eval`, no network, no user-controlled input — they walk repo files and emit text. The CI workflow pins `actions/checkout@v4` and `actions/setup-node@v4`, runs with `contents: read`, and gates the workflow via `paths:` filter. The runtime-tools manifest is empty (populated by spec 022); the lint exits 0 on an empty manifest, which is the correct no-op behavior.
+`lint-tool-coverage.sh` and `lint-frontmatter.sh` both use `set -euo pipefail`, no `eval`, no network, no user-controlled input — they walk repo files and emit text. The CI workflow pins `actions/checkout@v4` and `actions/setup-node@v4`, runs with `contents: read`, and gates the workflow via `paths:` filter. The runtime-tools manifest is empty (populated by spec 022); the lint exits 0 on an empty manifest, which is the correct no-op behavior.
 
 ### Reuse
 

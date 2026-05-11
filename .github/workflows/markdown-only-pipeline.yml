@@ -56,8 +56,8 @@ jobs:
       - name: (c) markdownlint passes
         run: npx markdownlint-cli2
 
-      - name: (d) Runtime-fallback lint passes
-        run: bash scripts/lint-runtime-fallback.sh
+      - name: (d) Tool-coverage lint passes
+        run: bash scripts/lint-tool-coverage.sh
 
       - name: (e) Frontmatter integrity
         run: bash scripts/lint-frontmatter.sh

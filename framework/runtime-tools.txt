@@ -6,12 +6,13 @@
 # or runtime binary names). The list is consumed by:
 #
 #   - .github/workflows/markdown-only-pipeline.yml (asserts no entry is on PATH)
-#   - scripts/lint-runtime-fallback.sh           (verifies references in
+#   - scripts/lint-tool-coverage.sh              (verifies references in
 #                                                  framework/commands/*.md
 #                                                  are wrapped in a graceful
 #                                                  fallback)
 #
-# This file ships empty in spec 021 (runtime boundary). Spec 022 (runtime v0)
-# adds the first real entries when slash commands begin to call runtime tools.
+# This file ships empty in spec 021 (runtime boundary). Spec 022
+# (deterministic runtime) adds the first real entries when slash commands
+# begin to call runtime tools.
 #
 # Tool names are case-sensitive exact-match strings.

@@ -433,7 +433,7 @@ The runtime ships in lockstep with the framework. A `govern` release includes th
 
 To prevent scope creep, the runtime MUST NOT be a spec authoring tool, MUST NOT be a workflow orchestrator, MUST NOT be a long-running service, and MUST NOT be a storage layer. Lifting any of these exclusions requires a constitutional amendment.
 
-Specific capabilities are introduced through their own feature specs, beginning with spec 022 (runtime v0).
+Specific capabilities are introduced through their own feature specs, beginning with spec 022 (deterministic runtime).
 
 <!-- §drift-prevention -->
 
