@@ -1,0 +1,58 @@
+name: runtime
+
+# Per-PR build, test, clippy, and fmt for the deterministic runtime
+# crate. Triggers only on changes that affect the runtime — pure spec or
+# framework edits stay on the markdown-only path's workflow.
+
+on:
+  pull_request:
+    paths:
+      - 'runtime/**'
+      - 'framework/commands/*.md'
+      - '.github/workflows/runtime.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'runtime/**'
+      - 'framework/commands/*.md'
+      - '.github/workflows/runtime.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: build + test (ubuntu-latest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: runtime
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            runtime/target
+          key: ${{ runner.os }}-runtime-${{ hashFiles('runtime/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-runtime-
+
+      - name: cargo fmt --check
+        run: cargo fmt --check
+
+      - name: cargo build --release
+        run: cargo build --release
+
+      - name: cargo test --release
+        run: cargo test --release
+
+      - name: cargo clippy --release --all-targets -- -D warnings
+        run: cargo clippy --release --all-targets -- -D warnings

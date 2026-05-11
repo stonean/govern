@@ -11,8 +11,23 @@
 #                                                  are wrapped in a graceful
 #                                                  fallback)
 #
-# This file ships empty in spec 021 (runtime boundary). Spec 022
-# (deterministic runtime) adds the first real entries when slash commands
-# begin to call runtime tools.
-#
-# Tool names are case-sensitive exact-match strings.
+# Tool names are case-sensitive exact-match strings. The `gov-rt:`
+# namespace prefix is per spec 022's MCP naming-convention resolution —
+# the colon disambiguates primitives from slash commands (`gov:<cmd>`)
+# and guarantees no collision with PATH-visible binaries on stock
+# runners.
+
+gov-rt:read-spec
+gov-rt:read-tasks
+gov-rt:mark-task
+gov-rt:mark-criterion
+gov-rt:set-status
+gov-rt:derive-boundary
+gov-rt:check-stuck
+gov-rt:validate-frontmatter
+gov-rt:resolve-anchor
+gov-rt:traverse-deps
+gov-rt:check-rule-ids
+gov-rt:run-generator
+gov-rt:lint-markdown
+gov-rt:gate-confirm

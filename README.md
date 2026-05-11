@@ -61,6 +61,38 @@ See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred 
 
 <!-- generated:feature-specs:end -->
 
+## Runtime
+
+The `govern` runtime is an **optional** deterministic execution layer for slash commands. It parses the prose Instructions section of each `framework/commands/*.md` file directly and dispatches the mechanical work (reading specs, walking tasks, checking dependencies, atomic checkbox updates, gate handshakes) in native Rust instead of having the LLM do it in slow tokens. The LLM is invoked only at named extension points (`assessSpecQuality`, `writeCode`, `writeSpecBody`) where semantic judgment actually matters.
+
+The markdown-only path remains a first-class path per [constitution §runtime-boundary](framework/constitution.md#runtime-boundary). When the runtime is absent, the LLM walks the same prose as today.
+
+### Install
+
+Download the pre-built binary for your platform from the [latest release](https://github.com/stonean/govern/releases) and verify the checksum:
+
+```bash
+# Example for aarch64-apple-darwin; substitute your target triple.
+VERSION="0.1.0"
+TARGET="aarch64-apple-darwin"
+curl -L -o runtime.tar.gz \
+  "https://github.com/stonean/govern/releases/download/runtime-v${VERSION}/runtime-${TARGET}.tar.gz"
+curl -L -o runtime.tar.gz.sha256 \
+  "https://github.com/stonean/govern/releases/download/runtime-v${VERSION}/runtime-${TARGET}.tar.gz.sha256"
+shasum -a 256 -c runtime.tar.gz.sha256
+tar xzf runtime.tar.gz
+sudo install -m 0755 runtime /usr/local/bin/runtime
+runtime --version
+```
+
+Pre-built binaries are published for `aarch64-apple-darwin`, `x86_64-apple-darwin`, `x86_64-unknown-linux-gnu`, and `aarch64-unknown-linux-gnu`. A Windows binary may also be present when cross-compilation succeeds.
+
+### When to install
+
+Install if you adopt `govern` and run slash commands frequently — the wall-clock saving on `/gov:validate` and `/gov:implement` is significant. Skip if you only invoke the pipeline occasionally; the markdown-only path is faithful to the same semantics, just slower.
+
+If a runtime process crashes mid-procedure, re-run the slash command — the runtime reads state from your markdown and resumes from the next incomplete step. State-modifying primitives use filesystem-atomic writes (tempfile + rename), so crashes leave coherent markdown. On Windows the rename semantics are weaker; clean up any orphaned tempfile in the spec directory with a manual `rm` if you observe one.
+
 ## Adopting in an Existing Project
 
 For brownfield projects, install the `govern` command and run it — no clone required. Once adopted, use `/capture` to initialize skeleton specs for existing features and let them gain precision incrementally through bug fixes, enhancements, and clarification.

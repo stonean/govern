@@ -755,6 +755,7 @@ Next steps:
 4. Use `/{project}:log` to record any known issues or bugs into `specs/inbox.md`.
 5. Run `/{project}:groom` to walk the inbox and route each item to its proper spec or scenario.
 6. Create your first feature spec: `/{project}:specify {feature description}`.
+7. Optional: install the deterministic runtime for faster slash commands — see [Runtime](https://github.com/stonean/govern#runtime) in the govern README.
 
 To adopt an additional agent later, re-run `/govern --add-agent`.
 
@@ -772,7 +773,7 @@ Updated agents: {comma-separated `name` of selected agents}.
 
 Review changes to updated files and commit when ready. To adopt an additional agent, re-run `/govern --add-agent`.
 
-Tip: `specs/` is plain markdown and works in any PKM tool (Obsidian, Logseq, Foam) or as a published site (Quartz, MkDocs).
+Tip: `specs/` is plain markdown and works in any PKM tool (Obsidian, Logseq, Foam) or as a published site (Quartz, MkDocs). Optional: install the deterministic runtime for faster slash commands — see [Runtime](https://github.com/stonean/govern#runtime) in the govern README.
 
 ---
 

@@ -148,36 +148,36 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 18. Populate `framework/runtime-tools.txt`
 
-- [ ] Replace the file body with the 14 MCP tool names from the plan's manifest section, one per line, preserving the comment header from spec 021.
-- [ ] Verify `scripts/lint-tool-coverage.sh` exits 0 after the rewrites in tasks 12-17 (every reference in the six rewritten commands is paired with a fallback marker within 20 lines).
-- [ ] Verify spec 021's CI check (a) — `command -v <name>` returns non-zero for each entry — still passes; none of the 14 names should collide with any real binary on a stock Ubuntu runner.
+- [x] Replace the file body with the 14 MCP tool names from the plan's manifest section, one per line, preserving the comment header from spec 021.
+- [x] Verify `scripts/lint-tool-coverage.sh` exits 0 after the rewrites in tasks 12-17 (every reference in the six rewritten commands is paired with a fallback marker within 20 lines).
+- [x] Verify spec 021's CI check (a) — `command -v <name>` returns non-zero for each entry — still passes; none of the 14 names should collide with any real binary on a stock Ubuntu runner.
 - **Done when**: the manifest matches the plan; `scripts/lint-tool-coverage.sh` exits 0.
 
 ## 19. Create `.github/workflows/runtime.yml`
 
-- [ ] Workflow `runtime` with `paths` filter on `runtime/**` and `framework/commands/*.md`. Triggers on `pull_request` and `push` to `main`.
-- [ ] Single job on `ubuntu-latest`: checkout, install Rust toolchain (`dtolnay/rust-toolchain@stable`), `cargo build --release`, `cargo test --release`, `cargo clippy -- -D warnings`, `cargo fmt --check`.
-- [ ] Cache cargo registry and target directory via `actions/cache` keyed on `Cargo.lock`.
+- [x] Workflow `runtime` with `paths` filter on `runtime/**` and `framework/commands/*.md`. Triggers on `pull_request` and `push` to `main`.
+- [x] Single job on `ubuntu-latest`: checkout, install Rust toolchain (`dtolnay/rust-toolchain@stable`), `cargo build --release`, `cargo test --release`, `cargo clippy -- -D warnings`, `cargo fmt --check`.
+- [x] Cache cargo registry and target directory via `actions/cache` keyed on `Cargo.lock`.
 - **Done when**: workflow file passes `actionlint`; pushing a PR triggers the job and it runs to completion locally via `act` or in real CI.
 
 ## 20. Create `.github/workflows/runtime-release.yml`
 
-- [ ] Tag-triggered workflow on `runtime-v*`. Matrix across target triples: `aarch64-apple-darwin`, `x86_64-apple-darwin` (on `macos-latest`), `x86_64-unknown-linux-gnu` (on `ubuntu-latest`), `aarch64-unknown-linux-gnu` (cross-compiled via `cargo-zigbuild` on `ubuntu-latest`), and `x86_64-pc-windows-msvc` (on `windows-latest`) — Windows entry is best-effort per the spec's resolved Distribution channels question.
-- [ ] Each matrix entry: build, strip, tarball or zip with the binary plus a `sha256sum` file, upload as a release asset via `softprops/action-gh-release`.
-- [ ] Workflow includes a smoke test step on each platform: the built binary is invoked with `--version` after build to catch obvious link-time failures.
+- [x] Tag-triggered workflow on `runtime-v*`. Matrix across target triples: `aarch64-apple-darwin`, `x86_64-apple-darwin` (on `macos-latest`), `x86_64-unknown-linux-gnu` (on `ubuntu-latest`), `aarch64-unknown-linux-gnu` (cross-compiled via `cargo-zigbuild` on `ubuntu-latest`), and `x86_64-pc-windows-msvc` (on `windows-latest`) — Windows entry is best-effort per the spec's resolved Distribution channels question.
+- [x] Each matrix entry: build, strip, tarball or zip with the binary plus a `sha256sum` file, upload as a release asset via `softprops/action-gh-release`.
+- [x] Workflow includes a smoke test step on each platform: the built binary is invoked with `--version` after build to catch obvious link-time failures.
 - [ ] Manually push the first tag `runtime-v0.1.0` (or whatever version the `Cargo.toml` declares) once the workflow file lands; verify all matrix legs produce artifacts.
 - **Done when**: a tag push produces a GitHub release with the six (or five, if Windows defers) tarballs/zips and checksums; each release asset's binary runs `--version` cleanly on its target platform.
 
 ## 21. Add the Runtime section to root `README.md`
 
-- [ ] After the "Feature Specs" section and before the closing material, add a `## Runtime` section: one paragraph of rationale (opt-in, faster slash commands, markdown-only path still works), a fenced bash block with install instructions (curl against the GitHub release artifact URL pattern, with sha256 verification), and a "When to install" paragraph (recommended for adopters who run slash commands frequently; skip if usage is occasional).
-- [ ] No edit to `framework/templates/project/project-readme.md` — the install surface is this repo's README, not the adopted project's.
+- [x] After the "Feature Specs" section and before the closing material, add a `## Runtime` section: one paragraph of rationale (opt-in, faster slash commands, markdown-only path still works), a fenced bash block with install instructions (curl against the GitHub release artifact URL pattern, with sha256 verification), and a "When to install" paragraph (recommended for adopters who run slash commands frequently; skip if usage is occasional).
+- [x] No edit to `framework/templates/project/project-readme.md` — the install surface is this repo's README, not the adopted project's.
 - **Done when**: README renders cleanly; the install snippet runs end-to-end against a real release artifact (validated after task 20).
 
 ## 22. Add the bootstrap completion-message pointer
 
-- [ ] Edit `framework/bootstrap/govern.md` in both completion-message blocks (first-run, lines ~750-763, and update-mode, the parallel block below). Append one line to the "Next steps" list pointing readers at the README Runtime section: "Optional: install the deterministic runtime for faster slash commands — see [Runtime](https://github.com/<owner>/<repo>#runtime)."
-- [ ] No detect-and-warn anywhere else — spot-check that no slash command source references the runtime binary path or checks `command -v` for any name in `framework/runtime-tools.txt`.
+- [x] Edit `framework/bootstrap/govern.md` in both completion-message blocks (first-run, lines ~750-763, and update-mode, the parallel block below). Append one line to the "Next steps" list pointing readers at the README Runtime section: "Optional: install the deterministic runtime for faster slash commands — see [Runtime](https://github.com/<owner>/<repo>#runtime)."
+- [x] No detect-and-warn anywhere else — spot-check that no slash command source references the runtime binary path or checks `command -v` for any name in `framework/runtime-tools.txt`.
 - **Done when**: bootstrap output includes the line in both modes; no slash command source nags about missing runtime.
 
 ## 23. Cross-spec impact sweep
