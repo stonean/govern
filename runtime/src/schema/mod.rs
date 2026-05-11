@@ -1,3 +1,15 @@
-//! Typed schemas for primitives, JSON protocol messages, and extension points.
+//! Typed schemas for primitives, the JSON-over-stdio protocol, and
+//! initial-release LLM extension points.
 //!
-//! Implemented in a later task per `specs/022-deterministic-runtime/tasks.md`.
+//! Each submodule mirrors one type group from
+//! [`specs/022-deterministic-runtime/data-model.md`]:
+//!
+//! - [`procedure`] — the AST emitted by the procedure parser.
+//! - [`protocol`] — the JSON-over-stdio envelope and message types.
+//! - [`primitives`] — per-primitive args/result shapes.
+//! - [`extensions`] — the three initial-release extension-point payloads.
+
+pub mod extensions;
+pub mod primitives;
+pub mod procedure;
+pub mod protocol;

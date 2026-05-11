@@ -14,9 +14,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 2. Define schemas in `runtime/src/schema/`
 
-- [ ] Create one module per type group from `data-model.md`: `procedure.rs` (AST), `protocol.rs` (envelope + message types), `primitives.rs` (per-primitive args/results), `extensions.rs` (the three extension-point payloads).
-- [ ] Each type derives `serde::{Serialize, Deserialize}` and `schemars::JsonSchema`.
-- [ ] Unit tests exercise round-trip serialization for one example of each message type.
+- [x] Create one module per type group from `data-model.md`: `procedure.rs` (AST), `protocol.rs` (envelope + message types), `primitives.rs` (per-primitive args/results), `extensions.rs` (the three extension-point payloads).
+- [x] Each type derives `serde::{Serialize, Deserialize}` and `schemars::JsonSchema`.
+- [x] Unit tests exercise round-trip serialization for one example of each message type.
 - **Done when**: `cargo test --release schema::` passes; running `runtime parse --emit-schema` (a debug subcommand) prints the JSON schema for the protocol envelope.
 
 ## 3. Implement read-only primitives
