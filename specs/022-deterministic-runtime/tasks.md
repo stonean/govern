@@ -190,10 +190,12 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 24. Run `/gov:validate` against this spec and fix findings
 
-- [ ] Run `/gov:validate` targeted at `022-deterministic-runtime` and resolve any hard-fail or blocking findings on spec, plan, tasks, and data-model files.
-- [ ] Confirm anchor resolution: `§runtime-boundary` references in this spec resolve to the marker in `framework/constitution.md`.
-- [ ] Confirm dependency status: `021-runtime-boundary` is `done`.
+- [x] Run `/gov:validate` targeted at `022-deterministic-runtime` and resolve any hard-fail or blocking findings on spec, plan, tasks, and data-model files.
+- [x] Confirm anchor resolution: `§runtime-boundary` references in this spec resolve to the marker in `framework/constitution.md`.
+- [x] Confirm dependency status: `021-runtime-boundary` is `done`.
 - **Done when**: `/gov:validate` reports no hard-fail and no blocking findings.
+
+> Confirmed 2026-05-11: validate-frontmatter clean; traverse-deps compatible (021 at `done`); `§runtime-boundary` resolves to 2 markers in `framework/constitution.md`; gen-spec-deps reports no drift; markdownlint-cli2 over `specs/022-deterministic-runtime/` reports 0 errors. Advisory anchor mismatches in `spec.md` (`§LLM`, `§The`, `§runtime-boundary`, `§text-first-artifacts`) are pre-existing cross-file or multi-word references the primitive's regex doesn't span; they are advisory, not blocking.
 
 ## 25. Run `npx markdownlint-cli2` and final sweep
 
