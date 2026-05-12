@@ -165,8 +165,10 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 - [x] Tag-triggered workflow on `runtime-v*`. Matrix across target triples: `aarch64-apple-darwin`, `x86_64-apple-darwin` (on `macos-latest`), `x86_64-unknown-linux-gnu` (on `ubuntu-latest`), `aarch64-unknown-linux-gnu` (cross-compiled via `cargo-zigbuild` on `ubuntu-latest`), and `x86_64-pc-windows-msvc` (on `windows-latest`) — Windows entry is best-effort per the spec's resolved Distribution channels question.
 - [x] Each matrix entry: build, strip, tarball or zip with the binary plus a `sha256sum` file, upload as a release asset via `softprops/action-gh-release`.
 - [x] Workflow includes a smoke test step on each platform: the built binary is invoked with `--version` after build to catch obvious link-time failures.
-- [ ] Manually push the first tag `runtime-v0.1.0` (or whatever version the `Cargo.toml` declares) once the workflow file lands; verify all matrix legs produce artifacts.
+- [x] Manually push the first tag `runtime-v0.1.0` (or whatever version the `Cargo.toml` declares) once the workflow file lands; verify all matrix legs produce artifacts.
 - **Done when**: a tag push produces a GitHub release with the six (or five, if Windows defers) tarballs/zips and checksums; each release asset's binary runs `--version` cleanly on its target platform.
+
+> Confirmed 2026-05-12: tag `runtime-v0.1.0` pushed; all 5 matrix legs green (aarch64/x86_64 macOS, x86_64/aarch64 Linux, x86_64 Windows). Release at <https://github.com/stonean/govern/releases/tag/runtime-v0.1.0> ships 5 archives + 5 sha256 sidecars. The release workflow's per-platform `--version` smoke test ran inside each matrix job before the upload step.
 
 ## 21. Add the Runtime section to root `README.md`
 
