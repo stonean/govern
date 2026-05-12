@@ -81,9 +81,11 @@ curl -L -o runtime.tar.gz.sha256 \
   "https://github.com/stonean/govern/releases/download/runtime-v${VERSION}/runtime-${TARGET}.tar.gz.sha256"
 shasum -a 256 -c runtime.tar.gz.sha256
 tar xzf runtime.tar.gz
-sudo install -m 0755 runtime /usr/local/bin/runtime
-runtime --version
+sudo install -m 0755 runtime /usr/local/bin/gvrn
+gvrn --version
 ```
+
+The binary is named `runtime` inside the tarball (the in-project Cargo target name); the `install` step renames it to `gvrn` at its `/usr/local/bin/` destination so it's unambiguous on `$PATH`. Adjust the destination name to taste if you prefer a different one — nothing in the framework hard-codes the installed binary's name.
 
 Pre-built binaries are published for `aarch64-apple-darwin`, `x86_64-apple-darwin`, `x86_64-unknown-linux-gnu`, and `aarch64-unknown-linux-gnu`. A Windows binary may also be present when cross-compilation succeeds.
 
