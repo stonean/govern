@@ -220,9 +220,15 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 - [x] 26.8 Create fixture `runtime/tests/fixtures/govern-basic/` (adopter-project skeleton plus a tiny archive asset) and the golden JSONL stream; add the parity test case.
 
   > Scope adjusted 2026-05-12: parity-test coverage of the full bootstrap procedure requires mock-HTTP infrastructure inside the parity harness (fetch-archive needs an HTTP server). That mock layer is deferred. End-to-end coverage of the back half (extract → substitute → merge sharing context) ships as `exec_chains_bootstrap_primitives_extract_substitute_merge` in `runtime/tests/exec_subprocess.rs`. The full govern-basic parity fixture remains a follow-up once mock-HTTP support lands.
-
+  >
   > Resolved 2026-05-12 (post-/gov:review): mock-HTTP support landed in `runtime/tests/parity.rs` (a minimal `MockHttp` server binds to 127.0.0.1:0 and serves the test-time-built tarball + sidecar on dynamic routes; the harness substitutes `{MOCK_HTTP}` in the staged session JSON with the server URL before launch). The `govern-basic` fixture under `runtime/tests/fixtures/govern-basic/` now exercises `/install` (a fixture-local stand-in for the production `/govern` procedure) end-to-end through all four bootstrap primitives plus the gate-confirm, and the golden + parity-capture artifacts ship alongside the other six commands.
 - [x] 26.9 Add CHANGELOG entry; bump `gvrn` to 0.2.0; re-run every lint (cargo test, clippy, fmt, lint-procedure-parseability, lint-tool-coverage, markdownlint).
 
   > Confirmed 2026-05-12: gvrn 0.2.0 builds; cargo test reports 172 OK across all targets; clippy --all-targets -- -D warnings clean; cargo fmt --check clean; lint-procedure-parseability, lint-tool-coverage, lint-frontmatter all exit 0; markdownlint-cli2 on the 022 spec dir + CHANGELOG + bootstrap reports 0 errors.
 - **Done when**: the scenario's described behavior is correctly implemented and tested.
+
+## 27. Implement scenario: apply-manifest
+
+- [ ] Implement the behavior described in `scenarios/apply-manifest.md`
+
+Done when: the scenario's described behavior is correctly implemented and tested.
