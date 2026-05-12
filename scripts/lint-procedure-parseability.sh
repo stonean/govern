@@ -4,7 +4,7 @@
 # as the allowlist of files not yet rewritten to the new conventions.
 #
 # Workflow-local: this script builds the runtime binary in --release mode
-# at runtime/target/release/runtime and invokes it via that relative
+# at runtime/target/release/gvrn and invokes it via that relative
 # path. It does NOT add the binary to PATH, so the opt-in invariant
 # check (step (a) in markdown-only-pipeline.yml) remains intact — the
 # parseability check is a workflow-private compile, not a runtime
@@ -20,7 +20,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 runtime_dir="$repo_root/runtime"
-runtime_bin="$runtime_dir/target/release/runtime"
+runtime_bin="$runtime_dir/target/release/gvrn"
 allowlist="$runtime_dir/legacy-prose-commands.txt"
 
 if [[ ! -d "$runtime_dir" ]]; then

@@ -146,7 +146,7 @@ fn repo_root() -> PathBuf {
 }
 
 fn runtime_binary() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/release/runtime")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/release/gvrn")
 }
 
 fn ensure_binary_built() {

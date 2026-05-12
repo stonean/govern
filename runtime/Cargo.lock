@@ -427,7 +427,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "govern-runtime"
+name = "gvrn"
 version = "0.1.0"
 dependencies = [
  "anyhow",

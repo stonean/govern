@@ -7,9 +7,9 @@ use clap::{Parser, Subcommand};
 
 use std::io;
 
-use govern_runtime::mcp::server::GovRuntimeServer;
-use govern_runtime::primitives;
-use govern_runtime::schema::primitives::{
+use gvrn::mcp::server::GovRuntimeServer;
+use gvrn::primitives;
+use gvrn::schema::primitives::{
     CheckRuleIdsArgs, CheckStuckArgs, DeriveBoundaryArgs, GateConfirmArgs, LintMarkdownArgs,
     MarkCriterionArgs, MarkTaskArgs, ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs,
     RunGeneratorArgs, SetStatusArgs, TraverseDepsArgs, ValidateFrontmatterArgs,
@@ -17,7 +17,7 @@ use govern_runtime::schema::primitives::{
 
 #[derive(Parser, Debug)]
 #[command(
-    name = "runtime",
+    name = "gvrn",
     version,
     about = "Deterministic runtime for the govern pipeline."
 )]
@@ -84,7 +84,7 @@ enum Command {
 }
 
 fn emit_protocol_schema() -> ExitCode {
-    let schema = schemars::schema_for!(govern_runtime::schema::protocol::ProtocolMessage);
+    let schema = schemars::schema_for!(gvrn::schema::protocol::ProtocolMessage);
     match serde_json::to_string_pretty(&schema) {
         Ok(text) => {
             println!("{text}");
@@ -123,7 +123,7 @@ fn cwd() -> PathBuf {
 }
 
 fn run_parse(path: &std::path::Path, check_only: bool) -> ExitCode {
-    use govern_runtime::parser;
+    use gvrn::parser;
 
     let source = match std::fs::read_to_string(path) {
         Ok(s) => s,
@@ -173,8 +173,8 @@ fn run_parse(path: &std::path::Path, check_only: bool) -> ExitCode {
 }
 
 fn run_exec(command: &str, args: &[String], repo: &std::path::Path) -> ExitCode {
-    use govern_runtime::interpreter::{WalkOutcome, Walker};
-    use govern_runtime::parser;
+    use gvrn::interpreter::{WalkOutcome, Walker};
+    use gvrn::parser;
     use serde_json::{Map, Value};
 
     let candidates = [

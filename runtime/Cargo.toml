@@ -1,5 +1,5 @@
 [package]
-name = "govern-runtime"
+name = "gvrn"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
@@ -9,11 +9,11 @@ repository = "https://github.com/stonean/govern"
 readme = "../README.md"
 
 [[bin]]
-name = "runtime"
+name = "gvrn"
 path = "src/main.rs"
 
 [lib]
-name = "govern_runtime"
+name = "gvrn"
 path = "src/lib.rs"
 
 [dependencies]

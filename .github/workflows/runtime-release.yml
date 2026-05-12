@@ -1,13 +1,13 @@
 name: runtime-release
 
 # Tag-triggered cross-compile + GitHub release upload for the
-# deterministic runtime binary. Tag scheme: runtime-v<MAJOR>.<MINOR>.<PATCH>.
+# deterministic runtime binary. Tag scheme: gvrn-v<MAJOR>.<MINOR>.<PATCH>.
 # The release notes are sourced from runtime/CHANGELOG.md.
 
 on:
   push:
     tags:
-      - 'runtime-v*'
+      - 'gvrn-v*'
 
 permissions:
   contents: write
@@ -68,36 +68,36 @@ jobs:
         if: matrix.os != 'ubuntu-latest' || !matrix.cross
         shell: bash
         run: |
-          ./target/${{ matrix.target }}/release/runtime${{ matrix.ext }} --version
+          ./target/${{ matrix.target }}/release/gvrn${{ matrix.ext }} --version
 
       - name: Package (tar.gz, Unix)
         if: matrix.os != 'windows-latest'
         shell: bash
         run: |
           cd target/${{ matrix.target }}/release
-          tar -czf "runtime-${{ matrix.target }}.tar.gz" runtime
-          shasum -a 256 "runtime-${{ matrix.target }}.tar.gz" > "runtime-${{ matrix.target }}.tar.gz.sha256"
+          tar -czf "gvrn-${{ matrix.target }}.tar.gz" gvrn
+          shasum -a 256 "gvrn-${{ matrix.target }}.tar.gz" > "gvrn-${{ matrix.target }}.tar.gz.sha256"
 
       - name: Package (zip, Windows)
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
           cd target/${{ matrix.target }}/release
-          Compress-Archive -Path "runtime.exe" -DestinationPath "runtime-${{ matrix.target }}.zip"
-          Get-FileHash "runtime-${{ matrix.target }}.zip" -Algorithm SHA256 | Select-Object -ExpandProperty Hash > "runtime-${{ matrix.target }}.zip.sha256"
+          Compress-Archive -Path "gvrn.exe" -DestinationPath "gvrn-${{ matrix.target }}.zip"
+          Get-FileHash "gvrn-${{ matrix.target }}.zip" -Algorithm SHA256 | Select-Object -ExpandProperty Hash > "gvrn-${{ matrix.target }}.zip.sha256"
 
       - name: Upload Unix artifacts to release
         if: matrix.os != 'windows-latest'
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            runtime/target/${{ matrix.target }}/release/runtime-${{ matrix.target }}.tar.gz
-            runtime/target/${{ matrix.target }}/release/runtime-${{ matrix.target }}.tar.gz.sha256
+            runtime/target/${{ matrix.target }}/release/gvrn-${{ matrix.target }}.tar.gz
+            runtime/target/${{ matrix.target }}/release/gvrn-${{ matrix.target }}.tar.gz.sha256
 
       - name: Upload Windows artifacts to release
         if: matrix.os == 'windows-latest'
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            runtime/target/${{ matrix.target }}/release/runtime-${{ matrix.target }}.zip
-            runtime/target/${{ matrix.target }}/release/runtime-${{ matrix.target }}.zip.sha256
+            runtime/target/${{ matrix.target }}/release/gvrn-${{ matrix.target }}.zip
+            runtime/target/${{ matrix.target }}/release/gvrn-${{ matrix.target }}.zip.sha256

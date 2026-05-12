@@ -75,26 +75,23 @@ Download the pre-built binary for your platform from the [latest release](https:
 # Example for aarch64-apple-darwin; substitute your target triple.
 VERSION="0.1.0"
 TARGET="aarch64-apple-darwin"
-ARCHIVE="runtime-${TARGET}.tar.gz"
-BASE="https://github.com/stonean/govern/releases/download/runtime-v${VERSION}"
+ARCHIVE="gvrn-${TARGET}.tar.gz"
+BASE="https://github.com/stonean/govern/releases/download/gvrn-v${VERSION}"
 
-# Work in a scratch tempdir so the extracted `runtime` file does not
-# collide with any `runtime/` directory in the current working tree
-# (e.g., when running this snippet from inside the govern repo).
+# Work in a scratch tempdir so the extracted `gvrn` binary lands away
+# from the caller's working tree.
 tmp="$(mktemp -d)" && cd "${tmp}"
 
 curl -LO "${BASE}/${ARCHIVE}"
 curl -LO "${BASE}/${ARCHIVE}.sha256"
 shasum -a 256 -c "${ARCHIVE}.sha256"
 tar xzf "${ARCHIVE}"
-sudo install -m 0755 runtime /usr/local/bin/gvrn
+sudo install -m 0755 gvrn /usr/local/bin/gvrn
 gvrn --version
 
 # Clean up.
 cd - >/dev/null && rm -rf "${tmp}"
 ```
-
-The binary is named `runtime` inside the tarball (the in-project Cargo target name); the `install` step renames it to `gvrn` at its `/usr/local/bin/` destination so it's unambiguous on `$PATH`. Adjust the destination name to taste if you prefer a different one — nothing in the framework hard-codes the installed binary's name.
 
 Pre-built binaries are published for `aarch64-apple-darwin`, `x86_64-apple-darwin`, `x86_64-unknown-linux-gnu`, and `aarch64-unknown-linux-gnu`. A Windows binary may also be present when cross-compilation succeeds.
 

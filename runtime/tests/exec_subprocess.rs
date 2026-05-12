@@ -14,8 +14,8 @@ use serde_json::Value;
 
 fn runtime_binary() -> PathBuf {
     // CARGO_MANIFEST_DIR is the runtime crate. The release binary lives
-    // under target/release/runtime relative to it.
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/release/runtime")
+    // under target/release/gvrn relative to it.
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/release/gvrn")
 }
 
 fn write_procedure_repo(tmp: &Path, command_name: &str, body: &str) {

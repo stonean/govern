@@ -12,8 +12,8 @@ use std::path::PathBuf;
 
 use serde_json::{Map, Value};
 
-use govern_runtime::interpreter::{WalkOutcome, Walker};
-use govern_runtime::schema::procedure::{Procedure, SourceRange, Step, StepNumber};
+use gvrn::interpreter::{WalkOutcome, Walker};
+use gvrn::schema::procedure::{Procedure, SourceRange, Step, StepNumber};
 
 fn loc() -> SourceRange {
     SourceRange {
