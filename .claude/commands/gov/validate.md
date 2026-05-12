@@ -34,19 +34,21 @@ If `--all` is not present, use the feature identifier if provided, otherwise fal
 
 ## Instructions
 
-1. Invoke `read-spec` against the targeted feature to load frontmatter, sections, and the open-question count from the body. The result drives subsequent steps' tier classification (status governs which artifact-completeness checks apply).
+> **For agent runtimes**: backticked primitive names in this section map to MCP tools the optional [gvrn runtime](https://crates.io/crates/gvrn) registers as `gov-rt:<primitive>` (e.g., `gov-rt:read-spec`). When that MCP server is registered for your session, **call the `gov-rt:*` tool** for each step listed below — that is the deterministic path. When the server is not registered, walk the prose to produce the same result. The two paths share a contract; neither one wraps the other.
 
-2. Invoke `validate-frontmatter` against the spec path to check that the YAML block parses and that the required fields (status, dependencies) are present with valid values. Frontmatter findings are hard-fail tier; the rest of the procedure still runs to surface every issue in a single pass.
+1. Invoke `read-spec` (MCP: `gov-rt:read-spec`) against the targeted feature to load frontmatter, sections, and the open-question count from the body. The result drives subsequent steps' tier classification (status governs which artifact-completeness checks apply).
 
-3. Invoke `traverse-deps` against the feature to verify each dependency directory exists and carries a compatible status. Missing dependencies are blocking; incompatible statuses are blocking when this spec is at clarified or later.
+2. Invoke `validate-frontmatter` (MCP: `gov-rt:validate-frontmatter`) against the spec path to check that the YAML block parses and that the required fields (status, dependencies) are present with valid values. Frontmatter findings are hard-fail tier; the rest of the procedure still runs to surface every issue in a single pass.
 
-4. Invoke `resolve-anchor` against the spec path to confirm every section reference of the form §anchor resolves to a corresponding marker comment. Unresolved anchors are advisory — they usually indicate the constitution was renamed or restructured without updating callers. Otherwise, fall back to the markdown-only path.
+3. Invoke `traverse-deps` (MCP: `gov-rt:traverse-deps`) against the feature to verify each dependency directory exists and carries a compatible status. Missing dependencies are blocking; incompatible statuses are blocking when this spec is at clarified or later.
 
-5. Invoke `check-rule-ids` against the spec path with the project's rule files. Cited rule IDs that are missing are blocking; cited rule IDs marked deprecated are advisory. Otherwise, follow the markdown-only path.
+4. Invoke `resolve-anchor` (MCP: `gov-rt:resolve-anchor`) against the spec path to confirm every section reference of the form §anchor resolves to a corresponding marker comment. Unresolved anchors are advisory — they usually indicate the constitution was renamed or restructured without updating callers. Otherwise, fall back to the markdown-only path.
 
-6. Invoke `run-generator` against scripts/gen-spec-deps.sh to detect drift in the body inline links and frontmatter dependencies. A non-zero exit surfaces as an advisory drift finding — the pre-commit hook resolves these on the next commit. Otherwise, follow the markdown-only path.
+5. Invoke `check-rule-ids` (MCP: `gov-rt:check-rule-ids`) against the spec path with the project's rule files. Cited rule IDs that are missing are blocking; cited rule IDs marked deprecated are advisory. Otherwise, follow the markdown-only path.
 
-7. Invoke `lint-markdown` against the markdown files in the feature directory. Each returned violation is surfaced as an advisory finding. Otherwise, follow the markdown-only path.
+6. Invoke `run-generator` (MCP: `gov-rt:run-generator`) against scripts/gen-spec-deps.sh to detect drift in the body inline links and frontmatter dependencies. A non-zero exit surfaces as an advisory drift finding — the pre-commit hook resolves these on the next commit. Otherwise, follow the markdown-only path.
+
+7. Invoke `lint-markdown` (MCP: `gov-rt:lint-markdown`) against the markdown files in the feature directory. Each returned violation is surfaced as an advisory finding. Otherwise, follow the markdown-only path.
 
 8. <!-- llm:assessSpecQuality --> For every loaded MUST-tier rule whose Verification trigger fires against the spec, request a semantic assessment via the extension point. The host responds with a structured finding carrying severity, rule-id, location, and message. MUST-tier findings join the Blocking tier in the rendered report. Otherwise, fall back to the markdown-only path.
 

@@ -32,11 +32,13 @@ If the constitution has not been loaded in this session (e.g., `/gov:target` has
 
 ## Instructions
 
+> **For agent runtimes**: backticked primitive names in this section map to MCP tools the optional [gvrn runtime](https://crates.io/crates/gvrn) registers as `gov-rt:<primitive>` (e.g., `gov-rt:lint-markdown`). When that MCP server is registered for your session, **call the `gov-rt:*` tool** for each step listed below — that is the deterministic path. When the server is not registered, walk the prose to produce the same result. The two paths share a contract; neither one wraps the other.
+
 1. The walker context carries the feature description, the resolved NNN-slug, and the chosen track (standard or lightweight). The host pre-computes these from `$ARGUMENTS` and the lightweight-track detection prompts before invoking the runtime; the runtime steps below assume the new feature's directory already exists with an empty spec file copied from the template.
 
 2. <!-- llm:writeSpecBody --> Fill the new spec body following §spec-requirements: a Motivation section, Acceptance Criteria with concrete and testable checkboxes, Open Questions, and any inline links to other specs that scripts/gen-spec-deps.sh will derive the frontmatter dependencies from. The host returns the markdown body for the new file; the walker forwards the response through the context. Otherwise, follow the markdown-only path: hand-write the spec body directly.
 
-3. Invoke `lint-markdown` against the new spec file to surface any markdown violations the LLM may have introduced. Otherwise, fall back to the markdown-only path.
+3. Invoke `lint-markdown` (MCP: `gov-rt:lint-markdown`) against the new spec file to surface any markdown violations the LLM may have introduced. Otherwise, fall back to the markdown-only path.
 
 4. Ask the user to approve creating the new feature and setting it as the session target before any session-file write. On confirmation, the host writes the session JSON to point at the new feature; on denial, the walker exits cleanly without writing the session.
 
