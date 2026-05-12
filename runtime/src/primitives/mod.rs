@@ -24,6 +24,7 @@ pub mod read_tasks;
 pub mod resolve_anchor;
 pub mod run_generator;
 pub mod set_status;
+pub mod substitute_templates;
 pub mod traverse_deps;
 pub mod validate_frontmatter;
 

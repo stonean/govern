@@ -12,8 +12,8 @@ use gvrn::primitives;
 use gvrn::schema::primitives::{
     CheckRuleIdsArgs, CheckStuckArgs, DeriveBoundaryArgs, ExtractArchiveArgs, FetchArchiveArgs,
     GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs, ReadSpecArgs,
-    ReadTasksArgs, ResolveAnchorArgs, RunGeneratorArgs, SetStatusArgs, TraverseDepsArgs,
-    ValidateFrontmatterArgs,
+    ReadTasksArgs, ResolveAnchorArgs, RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs,
+    TraverseDepsArgs, ValidateFrontmatterArgs,
 };
 
 #[derive(Parser, Debug)]
@@ -84,6 +84,8 @@ enum Command {
     FetchArchive(FetchArchiveArgs),
     /// Extract a local `.tar.gz` / `.zip` archive into a destination directory.
     ExtractArchive(ExtractArchiveArgs),
+    /// Walk a source tree, apply `{key}` substitutions, and write to a destination.
+    SubstituteTemplates(SubstituteTemplatesArgs),
     /// Emit a `gate-confirm` envelope on stdout and block for a response.
     GateConfirm(GateConfirmArgs),
 }
@@ -325,6 +327,9 @@ fn main() -> ExitCode {
         Command::FetchArchive(args) => emit_result(primitives::fetch_archive::run(&args, &repo)),
         Command::ExtractArchive(args) => {
             emit_result(primitives::extract_archive::run(&args, &repo))
+        }
+        Command::SubstituteTemplates(args) => {
+            emit_result(primitives::substitute_templates::run(&args, &repo))
         }
         Command::GateConfirm(args) => {
             // The CLI binding is the subprocess-interpreter surface: emit the
