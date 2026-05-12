@@ -8,6 +8,14 @@
 //! `dest` directory all yield [`PrimitiveError::UnsafeArchivePath`]
 //! before any file is written.
 //!
+//! On Unix, file permissions are preserved from the archive's entry
+//! metadata (`tar` header mode bits; zip `unix_mode`). This matters for
+//! the bootstrap path: scripts under `scripts/` need to land with their
+//! executable bit set so the adopter's pre-commit hook can run them.
+//! Windows ignores the mode bits (NTFS doesn't have a direct analog
+//! and `fs::set_permissions` only toggles the read-only attribute on
+//! that platform).
+//!
 //! The result lists every regular file extracted (relative to `dest`)
 //! in archive order. Directory entries are created implicitly and not
 //! counted. Symlinks inside the archive are not extracted — they are
@@ -15,7 +23,6 @@
 //! finding).
 
 use std::fs;
-use std::io::Read;
 use std::path::{Component, Path, PathBuf};
 
 use crate::primitives::{PrimitiveError, Result};
@@ -144,6 +151,9 @@ fn extract_tar_gz(archive: &Path, dest: &Path) -> Result<Vec<String>> {
             path: safe.clone(),
             source,
         })?;
+        let mode = entry.header().mode().ok();
+        drop(out);
+        apply_unix_mode(&safe, mode)?;
         files.push(entry_path.to_string_lossy().replace('\\', "/"));
     }
     Ok(files)
@@ -185,12 +195,42 @@ fn extract_zip(archive: &Path, dest: &Path) -> Result<Vec<String>> {
             path: safe.clone(),
             source,
         })?;
-        let mut buf: Vec<u8> = Vec::new();
-        // Drain remaining bytes so the next iteration can advance the cursor.
-        let _ = entry.read_to_end(&mut buf);
+        let mode = entry.unix_mode();
+        drop(out);
+        apply_unix_mode(&safe, mode)?;
         files.push(raw_path.to_string_lossy().replace('\\', "/"));
     }
     Ok(files)
+}
+
+/// Apply Unix permission bits to `path`. No-op on non-Unix platforms.
+/// Mask the mode to the standard 12 bits (sticky + setuid/setgid +
+/// `rwxrwxrwx`) so archives that encode the regular-file type marker
+/// in their high bits don't propagate that into the on-disk mode.
+#[cfg(unix)]
+fn apply_unix_mode(path: &Path, mode: Option<u32>) -> Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+    if let Some(bits) = mode {
+        let masked = bits & 0o7777;
+        if masked != 0 {
+            fs::set_permissions(path, fs::Permissions::from_mode(masked)).map_err(|source| {
+                PrimitiveError::Io {
+                    path: path.into(),
+                    source,
+                }
+            })?;
+        }
+    }
+    Ok(())
+}
+
+#[cfg(not(unix))]
+fn apply_unix_mode(_path: &Path, _mode: Option<u32>) -> Result<()> {
+    // NTFS doesn't carry the Unix mode bits, and Windows'
+    // `fs::set_permissions` only toggles the read-only attribute.
+    // Archives extracted on Windows simply inherit the default
+    // platform permissions.
+    Ok(())
 }
 
 fn zip_to_io(archive: &Path) -> impl Fn(zip::result::ZipError) -> PrimitiveError + '_ {
@@ -337,6 +377,78 @@ mod tests {
         let dest = Path::new("/tmp/out");
         let resolved = safe_join(dest, Path::new("sub/nested/file.txt")).unwrap();
         assert_eq!(resolved, Path::new("/tmp/out/sub/nested/file.txt"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn tar_gz_preserves_unix_mode_bits() {
+        use std::os::unix::fs::PermissionsExt;
+        let tmp = tempfile::tempdir().unwrap();
+        let archive = tmp.path().join("scripts.tar.gz");
+        // Build a tarball with one entry at mode 0o755 (an executable
+        // script). The mode lives in the tar header, not in the bytes
+        // on disk where we read the script from.
+        let file = fs::File::create(&archive).unwrap();
+        let encoder = flate2::write::GzEncoder::new(file, flate2::Compression::default());
+        let mut builder = tar::Builder::new(encoder);
+        let body = b"#!/usr/bin/env bash\necho hi\n";
+        let mut header = tar::Header::new_gnu();
+        header.set_size(body.len() as u64);
+        header.set_mode(0o755);
+        header.set_cksum();
+        builder
+            .append_data(&mut header, "scripts/run.sh", &body[..])
+            .unwrap();
+        builder.into_inner().unwrap().finish().unwrap();
+
+        let dest = tmp.path().join("out");
+        run(
+            &ExtractArchiveArgs {
+                archive: archive.to_string_lossy().into_owned(),
+                dest: dest.to_string_lossy().into_owned(),
+                format: None,
+            },
+            tmp.path(),
+        )
+        .unwrap();
+
+        let extracted = dest.join("scripts/run.sh");
+        let mode = fs::metadata(&extracted).unwrap().permissions().mode() & 0o7777;
+        assert_eq!(mode, 0o755, "extracted file lost its executable bit");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn zip_preserves_unix_mode_bits() {
+        use std::os::unix::fs::PermissionsExt;
+        let tmp = tempfile::tempdir().unwrap();
+        let archive = tmp.path().join("scripts.zip");
+        let file = fs::File::create(&archive).unwrap();
+        let mut writer = zip::ZipWriter::new(file);
+        let options: zip::write::SimpleFileOptions = zip::write::SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated)
+            .unix_permissions(0o755);
+        writer.start_file("scripts/run.sh", options).unwrap();
+        writer.write_all(b"#!/usr/bin/env bash\necho hi\n").unwrap();
+        writer.finish().unwrap();
+
+        let dest = tmp.path().join("out");
+        run(
+            &ExtractArchiveArgs {
+                archive: archive.to_string_lossy().into_owned(),
+                dest: dest.to_string_lossy().into_owned(),
+                format: None,
+            },
+            tmp.path(),
+        )
+        .unwrap();
+
+        let mode = fs::metadata(dest.join("scripts/run.sh"))
+            .unwrap()
+            .permissions()
+            .mode()
+            & 0o7777;
+        assert_eq!(mode, 0o755, "extracted file lost its executable bit");
     }
 
     #[test]
