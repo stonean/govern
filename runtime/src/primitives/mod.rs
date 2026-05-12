@@ -10,6 +10,7 @@
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
+pub mod apply_manifest;
 pub mod check_rule_ids;
 pub mod check_stuck;
 pub mod derive_boundary;
@@ -178,6 +179,15 @@ pub enum PrimitiveError {
         path: PathBuf,
         /// One-line description of the structural failure.
         reason: String,
+    },
+    /// Manifest entry referenced an unknown strategy. Valid values are
+    /// `update`, `create`, and `skip-if-conflict`.
+    #[error(
+        "unknown manifest strategy '{strategy}' (expected 'update', 'create', or 'skip-if-conflict')"
+    )]
+    UnknownManifestStrategy {
+        /// Strategy string as it appeared in the manifest entry.
+        strategy: String,
     },
 }
 

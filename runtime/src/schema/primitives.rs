@@ -526,6 +526,93 @@ pub struct MergeClaudeMdResult {
     pub marker: String,
 }
 
+// -- apply-manifest ----------------------------------------------------------
+
+/// One entry in an `apply-manifest` request.
+///
+/// `source` is a path relative to the args' `source-root`; `dest` is a
+/// path relative to the args' `target-root`. Both use forward slashes;
+/// the primitive normalizes to the host OS when joining.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct ManifestEntry {
+    /// Path under `source-root` to read.
+    pub source: String,
+    /// Path under `target-root` to write.
+    pub dest: String,
+    /// Per-entry strategy: `update` / `create` / `skip-if-conflict`.
+    pub strategy: String,
+    /// Substitution keys (without braces) to exclude for this entry only.
+    /// Unlisted keys are substituted normally; unknown keys are no-ops.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub keep_literals: Option<Vec<String>>,
+}
+
+/// Args for `apply-manifest`.
+///
+/// Only `source-root` and `target-root` are exposed as CLI flags; `entries`,
+/// `pinned`, and `substitutions` are set via the JSON context (the CLI surface
+/// of this primitive is a debug entry point, not the production path).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct ApplyManifestArgs {
+    /// Local path to the source tree (typically a prior `extract-archive`
+    /// staging directory).
+    #[arg(long)]
+    pub source_root: String,
+    /// Local path to the destination tree; created on demand for each entry.
+    #[arg(long)]
+    pub target_root: String,
+    /// Per-entry manifest. Set via JSON context — not exposed as CLI flags.
+    #[serde(default)]
+    #[arg(skip)]
+    pub entries: Vec<ManifestEntry>,
+    /// Destination paths the primitive must never touch, regardless of strategy.
+    /// Forward-slash form, relative to `target-root`. Set via JSON context.
+    #[serde(default)]
+    #[arg(skip)]
+    pub pinned: Vec<String>,
+    /// `{key}` → value substitution map applied to text files. Per-entry
+    /// `keep-literals` masks specific keys for individual entries. Set via
+    /// JSON context.
+    #[serde(default)]
+    #[arg(skip)]
+    pub substitutions: std::collections::BTreeMap<String, String>,
+}
+
+/// One per-entry outcome from `apply-manifest`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct ManifestEntryResult {
+    /// Echo of the entry's `source` field.
+    pub source: String,
+    /// Echo of the entry's `dest` field.
+    pub dest: String,
+    /// One of `created` / `updated` / `unchanged` / `skipped-exists` /
+    /// `skipped-pinned` / `source-missing`.
+    pub action: String,
+}
+
+/// Result for `apply-manifest`.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct ApplyManifestResult {
+    /// Per-entry outcomes in declaration order.
+    pub entries: Vec<ManifestEntryResult>,
+    /// Count of `created` actions across all entries.
+    pub created: u32,
+    /// Count of `updated` actions across all entries.
+    pub updated: u32,
+    /// Count of `unchanged` actions across all entries.
+    pub unchanged: u32,
+    /// Count of `skipped-exists` actions across all entries.
+    pub skipped_exists: u32,
+    /// Count of `skipped-pinned` actions across all entries.
+    pub skipped_pinned: u32,
+    /// Count of `source-missing` actions across all entries.
+    pub source_missing: u32,
+}
+
 // -- substitute-templates ----------------------------------------------------
 
 /// Args for `substitute-templates`.
@@ -1059,6 +1146,67 @@ mod tests {
         let r_value: serde_json::Value = serde_json::to_value(&result).unwrap();
         assert_eq!(r_value["count"], 2);
         assert_eq!(r_value["files"][1], "dir/b.txt");
+        assert_eq!(round_trip(&result), result);
+    }
+
+    #[test]
+    fn apply_manifest_round_trip() {
+        use super::{ApplyManifestArgs, ApplyManifestResult, ManifestEntry, ManifestEntryResult};
+        use std::collections::BTreeMap;
+        let mut subs = BTreeMap::new();
+        subs.insert("project".into(), "anvil".into());
+        let args = ApplyManifestArgs {
+            source_root: "/tmp/staging".into(),
+            target_root: "/tmp/project".into(),
+            entries: vec![
+                ManifestEntry {
+                    source: "framework/commands/status.md".into(),
+                    dest: "framework/commands/status.md".into(),
+                    strategy: "update".into(),
+                    keep_literals: None,
+                },
+                ManifestEntry {
+                    source: "govern.md".into(),
+                    dest: ".claude/commands/anvil/govern.md".into(),
+                    strategy: "update".into(),
+                    keep_literals: Some(vec!["project".into(), "cli-config-dir".into()]),
+                },
+            ],
+            pinned: vec!["AGENTS.md".into()],
+            substitutions: subs,
+        };
+        let value: serde_json::Value = serde_json::to_value(&args).unwrap();
+        assert_eq!(value["source-root"], "/tmp/staging");
+        assert_eq!(value["target-root"], "/tmp/project");
+        assert_eq!(value["entries"][0]["strategy"], "update");
+        assert_eq!(value["entries"][1]["keep-literals"][0], "project");
+        // keep-literals omitted on the first entry should not serialize.
+        assert!(
+            value["entries"][0]
+                .as_object()
+                .unwrap()
+                .get("keep-literals")
+                .is_none()
+        );
+        assert_eq!(round_trip(&args), args);
+
+        let result = ApplyManifestResult {
+            entries: vec![ManifestEntryResult {
+                source: "framework/commands/status.md".into(),
+                dest: "framework/commands/status.md".into(),
+                action: "created".into(),
+            }],
+            created: 1,
+            updated: 0,
+            unchanged: 0,
+            skipped_exists: 0,
+            skipped_pinned: 1,
+            source_missing: 0,
+        };
+        let r_value: serde_json::Value = serde_json::to_value(&result).unwrap();
+        assert_eq!(r_value["skipped-pinned"], 1);
+        assert_eq!(r_value["source-missing"], 0);
+        assert_eq!(r_value["entries"][0]["action"], "created");
         assert_eq!(round_trip(&result), result);
     }
 
