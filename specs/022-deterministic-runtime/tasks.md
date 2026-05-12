@@ -207,3 +207,16 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 - **Done when**: every lint exits 0; the markdown-only workflow is green; this spec is ready to advance to `done`.
 
 > Confirmed 2026-05-11: markdownlint-cli2 on the 022 spec dir + README.md + bootstrap/govern.md reports 0 errors. lint-frontmatter, lint-tool-coverage, lint-procedure-parseability, gen-spec-deps --dry-run, gen-readme-table --dry-run, gen-help-tables --dry-run all exit 0. Workflow steps (a)–(f) execute green locally.
+
+## 26. Implement scenario: govern-bootstrap
+
+- [x] 26.1 Add `fetch-archive` primitive — download a URL to a local path, fetch its sha256 sidecar, verify the hash; pure-Rust function with unit tests for the verification helper. Adds `reqwest` (blocking, rustls-tls) and `sha2` deps.
+- [ ] 26.2 Add `extract-archive` primitive — untar/unzip a local archive into a staging directory; tar.gz on Unix and zip everywhere. Adds the `zip` crate (in-process; no shell-out).
+- [ ] 26.3 Add `substitute-templates` primitive — walk a staging tree, apply a `{key}` → value substitution map, write to a target tree; unit test on a small staging tree.
+- [ ] 26.4 Add `merge-claude-md` primitive — idempotent block insert/update; unit tests for first-run, update-mode, and no-op cases.
+- [ ] 26.5 Extend `gvrn exec`'s command resolution to also look at `framework/bootstrap/<name>.md` after the existing two candidates; integration test in `runtime/tests/exec_subprocess.rs`.
+- [ ] 26.6 Wire the four new primitives into the walker dispatcher and the MCP server tool list; update `framework/runtime-tools.txt`.
+- [ ] 26.7 Rewrite `framework/bootstrap/govern.md` Instructions section under the parseable conventions, keeping the existing prose as a `## Markdown-only reference` block; add `parity:` frontmatter.
+- [ ] 26.8 Create fixture `runtime/tests/fixtures/govern-basic/` (adopter-project skeleton plus a tiny archive asset) and the golden JSONL stream; add the parity test case.
+- [ ] 26.9 Add CHANGELOG entry; bump `gvrn` to 0.2.0; re-run every lint (cargo test, clippy, fmt, lint-procedure-parseability, lint-tool-coverage, markdownlint).
+- **Done when**: the scenario's described behavior is correctly implemented and tested.

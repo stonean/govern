@@ -13,6 +13,7 @@ use std::path::{Path, PathBuf};
 pub mod check_rule_ids;
 pub mod check_stuck;
 pub mod derive_boundary;
+pub mod fetch_archive;
 pub mod gate_confirm;
 pub mod lint_markdown;
 pub mod mark_criterion;
@@ -119,6 +120,41 @@ pub enum PrimitiveError {
         /// Feature whose spec was scanned.
         feature: String,
     },
+    /// HTTP fetch returned a non-success status code.
+    #[error("HTTP {status} fetching {url}")]
+    HttpStatus {
+        /// URL that returned the error.
+        url: String,
+        /// HTTP status code observed.
+        status: u16,
+    },
+    /// Underlying `reqwest` failure (connect refused, TLS error, etc.).
+    #[error("HTTP error on {url}: {source}")]
+    Http {
+        /// URL involved in the failed request.
+        url: String,
+        /// Underlying reqwest error.
+        #[source]
+        source: reqwest::Error,
+    },
+    /// sha256 sidecar did not match the computed hash of the downloaded archive.
+    #[error("sha256 mismatch for {path}: sidecar declared {expected}, computed {actual}")]
+    ChecksumMismatch {
+        /// Local path of the archive whose sha didn't match.
+        path: PathBuf,
+        /// Hex digest declared in the sidecar.
+        expected: String,
+        /// Hex digest computed locally.
+        actual: String,
+    },
+    /// sha256 sidecar payload didn't parse as `<hex>  <filename>` format.
+    #[error("malformed sha256 sidecar from {url}: {reason}")]
+    MalformedSidecar {
+        /// URL the sidecar was fetched from.
+        url: String,
+        /// One-line description of what was malformed.
+        reason: String,
+    },
 }
 
 /// Convenience alias for primitive return values.
@@ -162,13 +198,28 @@ pub(crate) fn rel_path(path: &Path, repo: &Path) -> String {
 /// and persist leaves `path` unchanged; the orphaned tempfile is the only
 /// recovery artifact.
 pub(crate) fn write_atomic(path: &Path, content: &str) -> Result<()> {
+    write_atomic_bytes(path, content.as_bytes())
+}
+
+/// Atomically write a byte slice to `path`. Same tempfile-plus-rename
+/// pattern as [`write_atomic`]; used by primitives that produce binary
+/// payloads (e.g., `fetch-archive` writing a downloaded tarball).
+pub(crate) fn write_atomic_bytes(path: &Path, content: &[u8]) -> Result<()> {
+    if let Some(parent) = path.parent() {
+        if !parent.as_os_str().is_empty() {
+            std::fs::create_dir_all(parent).map_err(|source| PrimitiveError::Io {
+                path: parent.into(),
+                source,
+            })?;
+        }
+    }
     let parent = path.parent().unwrap_or_else(|| Path::new("."));
     let mut tmp = tempfile::NamedTempFile::new_in(parent).map_err(|source| PrimitiveError::Io {
         path: parent.into(),
         source,
     })?;
     tmp.as_file_mut()
-        .write_all(content.as_bytes())
+        .write_all(content)
         .map_err(|source| PrimitiveError::Io {
             path: path.into(),
             source,

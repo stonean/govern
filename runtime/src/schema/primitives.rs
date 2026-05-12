@@ -491,6 +491,36 @@ pub struct LintMarkdownResult {
     pub exit_code: i32,
 }
 
+// -- fetch-archive -----------------------------------------------------------
+
+/// Args for `fetch-archive`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct FetchArchiveArgs {
+    /// URL of the archive (`.tar.gz`, `.zip`, etc.).
+    #[arg(long)]
+    pub url: String,
+    /// URL of the sha256 sidecar file (matching the `shasum -a 256` format —
+    /// one or more lines of `<hex>  <filename>`).
+    #[arg(long)]
+    pub sha256_url: String,
+    /// Local destination path for the downloaded archive.
+    #[arg(long)]
+    pub dest: String,
+}
+
+/// Result for `fetch-archive`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct FetchArchiveResult {
+    /// Repo-relative or absolute path where the archive was written.
+    pub path: String,
+    /// Lowercase hex sha256 of the downloaded archive (matches the sidecar).
+    pub sha256: String,
+    /// Size of the downloaded archive in bytes.
+    pub bytes: u64,
+}
+
 // -- gate-confirm ------------------------------------------------------------
 
 /// Args for `gate-confirm`.
@@ -810,6 +840,30 @@ mod tests {
         };
         assert_eq!(round_trip(&args), args);
         let result = GateConfirmResult { confirmed: true };
+        assert_eq!(round_trip(&result), result);
+    }
+
+    #[test]
+    fn fetch_archive_round_trip() {
+        use super::{FetchArchiveArgs, FetchArchiveResult};
+        let args = FetchArchiveArgs {
+            url: "https://example.test/gvrn-0.2.0.tar.gz".into(),
+            sha256_url: "https://example.test/gvrn-0.2.0.tar.gz.sha256".into(),
+            dest: "/tmp/gvrn.tar.gz".into(),
+        };
+        let value: serde_json::Value = serde_json::to_value(&args).unwrap();
+        assert_eq!(
+            value["sha256-url"],
+            "https://example.test/gvrn-0.2.0.tar.gz.sha256"
+        );
+        assert_eq!(value["dest"], "/tmp/gvrn.tar.gz");
+        assert_eq!(round_trip(&args), args);
+
+        let result = FetchArchiveResult {
+            path: "/tmp/gvrn.tar.gz".into(),
+            sha256: "abc123".into(),
+            bytes: 12345,
+        };
         assert_eq!(round_trip(&result), result);
     }
 }
