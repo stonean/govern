@@ -22,8 +22,8 @@ entry point (parser names, walker dispatch, MCP `TOOL_NAMES`,
 `framework/runtime-tools.txt`), rewrites the `/govern` bootstrap
 procedure to a six-primitive shape (eliminating the host-generated
 bash walker that the live anvil bootstrap had to fall back to), and
-extends the `govern-basic` parity fixture to exercise every strategy
-+ marker style + cleanup path end-to-end. `gvrn` bumps 0.2.1 → 0.3.0
+extends the `govern-basic` parity fixture to exercise every strategy,
+marker style, and cleanup path end-to-end. `gvrn` bumps 0.2.1 → 0.3.0
 and ships to crates.io plus GitHub releases.
 
 No MUST violations: the shipped rule catalogs (`security-backend.md`,
@@ -58,10 +58,10 @@ loads. **Spec remains non-blocking and may advance to `done` after
 
 - **File**: `runtime/src/primitives/apply_manifest.rs:147,159`,
   `runtime/src/primitives/merge_managed_block.rs:63`
-- **Rule**: BE-INPUT-004 — _"User-supplied values MUST NOT be used
+- **Rule**: BE-INPUT-004 — *"User-supplied values MUST NOT be used
   directly in filesystem paths. Filesystem operations MUST resolve
   the canonical path and verify it falls within the expected base
-  directory before opening the file."_
+  directory before opening the file."*
 - **Finding**: `apply-manifest`'s `process_entry` joins
   `source_root` / `target_root` with `entry.source` / `entry.dest`
   via `Path::join` and writes / reads without canonicalizing and
