@@ -619,9 +619,13 @@ pub struct FetchArchiveArgs {
     #[arg(long)]
     pub url: String,
     /// URL of the sha256 sidecar file (matching the `shasum -a 256` format —
-    /// one or more lines of `<hex>  <filename>`).
+    /// one or more lines of `<hex>  <filename>`). **Optional**: when
+    /// absent the primitive downloads without verifying but still
+    /// returns the computed sha256 in the result, so callers can verify
+    /// out-of-band against a known-good digest if desired.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[arg(long)]
-    pub sha256_url: String,
+    pub sha256_url: Option<String>,
     /// Local path where the downloaded archive is written. Used as the
     /// `archive` input by a subsequent `extract-archive` step in the
     /// bootstrap procedure.
@@ -635,8 +639,15 @@ pub struct FetchArchiveArgs {
 pub struct FetchArchiveResult {
     /// Repo-relative or absolute path where the archive was written.
     pub path: String,
-    /// Lowercase hex sha256 of the downloaded archive (matches the sidecar).
+    /// Lowercase hex sha256 of the downloaded archive. When the args
+    /// included `sha256_url`, this value also matched the sidecar's
+    /// digest (verification succeeded). When the sidecar URL was
+    /// absent, this is the computed digest only — the host can
+    /// compare it against a known-good value out-of-band.
     pub sha256: String,
+    /// Whether the sha256 was verified against a sidecar URL provided
+    /// in the args. `false` when no sidecar URL was supplied.
+    pub verified: bool,
     /// Size of the downloaded archive in bytes.
     pub bytes: u64,
 }
@@ -1056,7 +1067,7 @@ mod tests {
         use super::{FetchArchiveArgs, FetchArchiveResult};
         let args = FetchArchiveArgs {
             url: "https://example.test/gvrn-0.2.0.tar.gz".into(),
-            sha256_url: "https://example.test/gvrn-0.2.0.tar.gz.sha256".into(),
+            sha256_url: Some("https://example.test/gvrn-0.2.0.tar.gz.sha256".into()),
             archive: "/tmp/gvrn.tar.gz".into(),
         };
         let value: serde_json::Value = serde_json::to_value(&args).unwrap();
@@ -1067,9 +1078,20 @@ mod tests {
         assert_eq!(value["archive"], "/tmp/gvrn.tar.gz");
         assert_eq!(round_trip(&args), args);
 
+        // Absent sha256_url omits the field entirely.
+        let args_no_sidecar = FetchArchiveArgs {
+            url: "https://example.test/main.tar.gz".into(),
+            sha256_url: None,
+            archive: "/tmp/main.tar.gz".into(),
+        };
+        let v: serde_json::Value = serde_json::to_value(&args_no_sidecar).unwrap();
+        assert!(!v.as_object().unwrap().contains_key("sha256-url"));
+        assert_eq!(round_trip(&args_no_sidecar), args_no_sidecar);
+
         let result = FetchArchiveResult {
             path: "/tmp/gvrn.tar.gz".into(),
             sha256: "abc123".into(),
+            verified: true,
             bytes: 12345,
         };
         assert_eq!(round_trip(&result), result);

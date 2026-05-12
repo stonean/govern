@@ -1,6 +1,5 @@
 {
   "url": "{MOCK_HTTP}/archive.tar.gz",
-  "sha256-url": "{MOCK_HTTP}/archive.tar.gz.sha256",
   "archive": "downloaded.tar.gz",
   "dest": "staging",
   "source-dir": "staging",

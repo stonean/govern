@@ -1,15 +1,32 @@
-//! `fetch-archive` — download an archive plus its sha256 sidecar and
-//! verify the hash before returning. The procedural use case is the
-//! `/govern` bootstrap installer (scenario `govern-bootstrap` on spec
-//! 022): adopters fetch a tagged framework release from GitHub and the
-//! sidecar URL guards against corrupted downloads.
+//! `fetch-archive` — download an archive and, optionally, verify its
+//! sha256 against a sidecar file.
+//!
+//! The procedural use case is the `/govern` bootstrap installer
+//! (scenario `govern-bootstrap` on spec 022). The framework operates
+//! live-on-main, so the bootstrap fetches GitHub's auto-generated
+//! source tarball (`/archive/refs/heads/main.tar.gz`), which has no
+//! companion sha256 sidecar. Other procedural callers (release-asset
+//! installers, future runtime auto-update) do have sidecars and want
+//! verification.
+//!
+//! Behavior:
+//!
+//! - `sha256_url = Some(_)`: download the archive, fetch the sidecar,
+//!   parse its leading hex token, compare against the computed sha. A
+//!   mismatch raises [`PrimitiveError::ChecksumMismatch`]; the archive
+//!   is still written (the host decides what to do with the artifact —
+//!   inspect, retry, abort).
+//! - `sha256_url = None`: download the archive, compute the sha256,
+//!   return it in the result with `verified: false`. The host can
+//!   compare against a known-good digest out-of-band if it cares.
+//!
+//! Either way the result includes the computed digest and a
+//! `verified: bool` so the host knows whether to trust it.
 //!
 //! The primitive is blocking — it spins reqwest's blocking client per
 //! call rather than dragging an async runtime through the primitive
 //! surface. Network failures map to [`PrimitiveError::Http`] (transport)
-//! or [`PrimitiveError::HttpStatus`] (non-2xx). A successful download
-//! whose computed sha doesn't match the sidecar maps to
-//! [`PrimitiveError::ChecksumMismatch`].
+//! or [`PrimitiveError::HttpStatus`] (non-2xx).
 //!
 //! The sidecar format matches `shasum -a 256` output: one or more lines
 //! shaped `<hex>  <filename>`. Only the first hex digest is consulted;
@@ -37,16 +54,21 @@ pub fn run(args: &FetchArchiveArgs, repo: &Path) -> Result<FetchArchiveResult> {
     let body = fetch_bytes(&args.url)?;
     let computed = sha256_hex(&body);
 
-    let sidecar = fetch_text(&args.sha256_url)?;
-    let expected = parse_sidecar_hex(&sidecar, &args.sha256_url)?;
-
-    if computed != expected {
-        return Err(PrimitiveError::ChecksumMismatch {
-            path: dest,
-            expected,
-            actual: computed,
-        });
-    }
+    let verified = match &args.sha256_url {
+        Some(sidecar_url) => {
+            let sidecar = fetch_text(sidecar_url)?;
+            let expected = parse_sidecar_hex(&sidecar, sidecar_url)?;
+            if computed != expected {
+                return Err(PrimitiveError::ChecksumMismatch {
+                    path: dest,
+                    expected,
+                    actual: computed,
+                });
+            }
+            true
+        }
+        None => false,
+    };
 
     let bytes = u64::try_from(body.len()).unwrap_or(u64::MAX);
     write_atomic_bytes(&dest, &body)?;
@@ -54,6 +76,7 @@ pub fn run(args: &FetchArchiveArgs, repo: &Path) -> Result<FetchArchiveResult> {
     Ok(FetchArchiveResult {
         path: dest.to_string_lossy().into_owned(),
         sha256: computed,
+        verified,
         bytes,
     })
 }

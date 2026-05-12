@@ -21,7 +21,7 @@ The same `govern.md` supports every agent the framework knows about. The set of 
 
 1. The walker context carries the inputs the host has already gathered and validated: project (the destination project name), description (one-line project description), languages (comma-separated), agents (registry keys), framework-version (release tag), archive-url and sha256-url (computed from framework-version), staging-dir and substitutions-map. The host runs the markdown-only reference below to collect inputs, derive registry values, and seed context; the runtime walks the procedure that follows.
 
-2. Invoke `fetch-archive` to download the framework release tarball and its sha256 sidecar; the primitive verifies the hash before persisting the archive. A mismatch halts the procedure with an `error` envelope so no partial state lands in the destination tree.
+2. Invoke `fetch-archive` to download the framework tarball. The primitive verifies the sha256 against a sidecar URL when one is supplied; without a sidecar (the live-on-main case, since GitHub's auto-generated source tarballs ship without sidecars) it returns the computed digest and `verified: false`, leaving any out-of-band verification to the host. A sidecar mismatch halts the procedure with an `error` envelope so no partial state lands in the destination tree.
 
 3. Invoke `extract-archive` to expand the verified tarball into the staging directory. Path-traversal protection is applied per entry; symlinks are skipped. Otherwise, follow the markdown-only path's `tar -xzf` workflow.
 
