@@ -613,6 +613,59 @@ pub struct ApplyManifestResult {
     pub source_missing: u32,
 }
 
+// -- enforce-manifest --------------------------------------------------------
+
+/// Args for `enforce-manifest`.
+///
+/// Walks `directory`, removes files matching `glob-include` that are not
+/// in `expected` and not in `pinned`, and returns the per-file outcome.
+/// The primitive does not create `directory` when missing — that's
+/// `apply-manifest`'s job.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct EnforceManifestArgs {
+    /// Local path to the directory to enforce.
+    #[arg(long)]
+    pub directory: String,
+    /// Files relative to `directory` that must remain (basenames for
+    /// top-level, slash-delimited relative paths for recursive). Set via
+    /// JSON context.
+    #[serde(default)]
+    #[arg(skip)]
+    pub expected: Vec<String>,
+    /// Files relative to `directory` that must remain regardless of
+    /// `expected`. Reported under `pinned-kept` so callers can surface
+    /// the count in completion messages. Set via JSON context.
+    #[serde(default)]
+    #[arg(skip)]
+    pub pinned: Vec<String>,
+    /// When `true`, walk subdirectories recursively. Default `false` —
+    /// the bootstrap's slash-command cleanup is top-level only.
+    #[serde(default)]
+    #[arg(long)]
+    pub recursive: bool,
+    /// Glob applied to each file's basename. Default `*.md`. Files whose
+    /// basename does not match the glob are left untouched (not even
+    /// considered for removal).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[arg(long)]
+    pub glob_include: Option<String>,
+}
+
+/// Result for `enforce-manifest`.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct EnforceManifestResult {
+    /// Forward-slash relative paths of files removed during the walk.
+    pub removed: Vec<String>,
+    /// Forward-slash relative paths of files kept because they were in
+    /// `expected`.
+    pub kept: Vec<String>,
+    /// Forward-slash relative paths of files kept because they were in
+    /// `pinned`.
+    pub pinned_kept: Vec<String>,
+}
+
 // -- substitute-templates ----------------------------------------------------
 
 /// Args for `substitute-templates`.
@@ -1146,6 +1199,44 @@ mod tests {
         let r_value: serde_json::Value = serde_json::to_value(&result).unwrap();
         assert_eq!(r_value["count"], 2);
         assert_eq!(r_value["files"][1], "dir/b.txt");
+        assert_eq!(round_trip(&result), result);
+    }
+
+    #[test]
+    fn enforce_manifest_round_trip() {
+        use super::{EnforceManifestArgs, EnforceManifestResult};
+        let args = EnforceManifestArgs {
+            directory: ".claude/commands/anvil".into(),
+            expected: vec!["status.md".into(), "target.md".into()],
+            pinned: vec!["adopter-custom.md".into()],
+            recursive: false,
+            glob_include: Some("*.md".into()),
+        };
+        let value: serde_json::Value = serde_json::to_value(&args).unwrap();
+        assert_eq!(value["directory"], ".claude/commands/anvil");
+        assert_eq!(value["expected"][0], "status.md");
+        assert_eq!(value["glob-include"], "*.md");
+        assert_eq!(round_trip(&args), args);
+
+        // glob_include omitted serializes without the field.
+        let args_default_glob = EnforceManifestArgs {
+            directory: "x".into(),
+            expected: vec![],
+            pinned: vec![],
+            recursive: true,
+            glob_include: None,
+        };
+        let v: serde_json::Value = serde_json::to_value(&args_default_glob).unwrap();
+        assert!(!v.as_object().unwrap().contains_key("glob-include"));
+        assert_eq!(v["recursive"], true);
+
+        let result = EnforceManifestResult {
+            removed: vec!["legacy.md".into()],
+            kept: vec!["status.md".into()],
+            pinned_kept: vec!["adopter-custom.md".into()],
+        };
+        let r_value: serde_json::Value = serde_json::to_value(&result).unwrap();
+        assert_eq!(r_value["pinned-kept"][0], "adopter-custom.md");
         assert_eq!(round_trip(&result), result);
     }
 

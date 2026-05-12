@@ -14,6 +14,7 @@ pub mod apply_manifest;
 pub mod check_rule_ids;
 pub mod check_stuck;
 pub mod derive_boundary;
+pub mod enforce_manifest;
 pub mod extract_archive;
 pub mod fetch_archive;
 pub mod gate_confirm;

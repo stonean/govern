@@ -10,10 +10,11 @@ use std::io;
 use gvrn::mcp::server::GovRuntimeServer;
 use gvrn::primitives;
 use gvrn::schema::primitives::{
-    ApplyManifestArgs, CheckRuleIdsArgs, CheckStuckArgs, DeriveBoundaryArgs, ExtractArchiveArgs,
-    FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs,
-    MergeClaudeMdArgs, ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs, RunGeneratorArgs,
-    SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs, ValidateFrontmatterArgs,
+    ApplyManifestArgs, CheckRuleIdsArgs, CheckStuckArgs, DeriveBoundaryArgs, EnforceManifestArgs,
+    ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs,
+    MarkTaskArgs, MergeClaudeMdArgs, ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs,
+    RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs,
+    ValidateFrontmatterArgs,
 };
 
 #[derive(Parser, Debug)]
@@ -88,6 +89,8 @@ enum Command {
     SubstituteTemplates(SubstituteTemplatesArgs),
     /// Strategy-aware bulk substitute + write driven by a manifest.
     ApplyManifest(ApplyManifestArgs),
+    /// Remove files in a directory that are not in the expected manifest.
+    EnforceManifest(EnforceManifestArgs),
     /// Idempotently merge a framework-managed block into the adopter's CLAUDE.md.
     MergeClaudeMd(MergeClaudeMdArgs),
     /// Emit a `gate-confirm` envelope on stdout and block for a response.
@@ -342,6 +345,9 @@ fn main() -> ExitCode {
             emit_result(primitives::substitute_templates::run(&args, &repo))
         }
         Command::ApplyManifest(args) => emit_result(primitives::apply_manifest::run(&args, &repo)),
+        Command::EnforceManifest(args) => {
+            emit_result(primitives::enforce_manifest::run(&args, &repo))
+        }
         Command::MergeClaudeMd(args) => emit_result(primitives::merge_claude_md::run(&args, &repo)),
         Command::GateConfirm(args) => {
             // The CLI binding is the subprocess-interpreter surface: emit the
