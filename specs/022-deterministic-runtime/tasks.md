@@ -214,7 +214,7 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 - [x] 26.2 Add `extract-archive` primitive — untar/unzip a local archive into a staging directory; tar.gz on Unix and zip everywhere. Adds the `zip` crate (in-process; no shell-out).
 - [x] 26.3 Add `substitute-templates` primitive — walk a staging tree, apply a `{key}` → value substitution map, write to a target tree; unit test on a small staging tree.
 - [x] 26.4 Add `merge-claude-md` primitive — idempotent block insert/update; unit tests for first-run, update-mode, and no-op cases.
-- [ ] 26.5 Extend `gvrn exec`'s command resolution to also look at `framework/bootstrap/<name>.md` after the existing two candidates; integration test in `runtime/tests/exec_subprocess.rs`.
+- [x] 26.5 Extend `gvrn exec`'s command resolution to also look at `framework/bootstrap/<name>.md` after the existing two candidates; integration test in `runtime/tests/exec_subprocess.rs`.
 - [ ] 26.6 Wire the four new primitives into the walker dispatcher and the MCP server tool list; update `framework/runtime-tools.txt`.
 - [ ] 26.7 Rewrite `framework/bootstrap/govern.md` Instructions section under the parseable conventions, keeping the existing prose as a `## Markdown-only reference` block; add `parity:` frontmatter.
 - [ ] 26.8 Create fixture `runtime/tests/fixtures/govern-basic/` (adopter-project skeleton plus a tiny archive asset) and the golden JSONL stream; add the parity test case.

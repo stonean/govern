@@ -159,6 +159,61 @@ fn exec_reads_extension_response_from_stdin() {
 }
 
 #[test]
+fn exec_resolves_bootstrap_procedure_under_framework_bootstrap() {
+    ensure_binary_built();
+    // Bootstrap procedures live at framework/bootstrap/<name>.md so the
+    // /govern installer can be invoked before any framework/commands/
+    // files exist in the adopter's project. The runtime falls back to
+    // this third candidate path when the first two don't resolve.
+    let tmp = tempfile::tempdir().unwrap();
+    let bootstrap_dir = tmp.path().join("framework/bootstrap");
+    fs::create_dir_all(&bootstrap_dir).unwrap();
+    fs::write(
+        bootstrap_dir.join("govern.md"),
+        "# /govern\n\n## Instructions\n\n1. Invoke `read-spec` against the targeted feature.\n",
+    )
+    .unwrap();
+
+    let feature_dir = tmp.path().join("specs/001-basic");
+    fs::create_dir_all(&feature_dir).unwrap();
+    fs::write(
+        feature_dir.join("spec.md"),
+        "---\nstatus: clarified\ndependencies: []\n---\n\n# 001\n\nbody.\n",
+    )
+    .unwrap();
+
+    let mut child = Command::new(runtime_binary())
+        .arg("exec")
+        .arg("govern")
+        .arg("feature=001-basic")
+        .current_dir(tmp.path())
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn runtime");
+    drop(child.stdin.take());
+
+    let stdout = child.stdout.take().unwrap();
+    let mut envelopes: Vec<Value> = Vec::new();
+    for line in BufReader::new(stdout).lines() {
+        let line = line.unwrap();
+        if line.trim().is_empty() {
+            continue;
+        }
+        envelopes.push(serde_json::from_str(&line).unwrap());
+    }
+    let status = child.wait().unwrap();
+    assert!(status.success(), "exit: {status:?}");
+    let types: Vec<&str> = envelopes
+        .iter()
+        .map(|v| v["type"].as_str().unwrap())
+        .collect();
+    assert_eq!(types, vec!["progress", "complete"]);
+    assert_eq!(envelopes[0]["primitive"], "read-spec");
+}
+
+#[test]
 fn exec_returns_nonzero_when_command_file_missing() {
     ensure_binary_built();
     let tmp = tempfile::tempdir().unwrap();

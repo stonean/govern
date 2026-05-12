@@ -191,6 +191,12 @@ fn run_exec(command: &str, args: &[String], repo: &std::path::Path) -> ExitCode 
             .join(format!("{command}.md")),
         repo.join(".claude/commands/gov")
             .join(format!("{command}.md")),
+        // Bootstrap procedures (`/govern` and its successors) live outside
+        // the project-installable command namespace because they're invoked
+        // before any framework files exist in the adopter's project. See
+        // spec 022 scenario `govern-bootstrap`.
+        repo.join("framework/bootstrap")
+            .join(format!("{command}.md")),
     ];
     let Some(path) = candidates.iter().find(|p| p.exists()) else {
         eprintln!(
