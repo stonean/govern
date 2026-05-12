@@ -93,6 +93,129 @@ fn govern_basic_stream_matches_golden() {
 }
 
 #[test]
+fn govern_basic_post_run_filesystem_state_matches_expectations() {
+    // Companion to govern_basic_stream_matches_golden: that test asserts the
+    // JSONL stream is byte-correct, this one walks the post-run on-disk
+    // state to verify every primitive's effects landed as designed.
+    //
+    // Per-entry expectations against
+    // runtime/tests/fixtures/govern-basic/.claude/gov-session.json:
+    //
+    // - update strategy + substitution → specify.md, feature.md with
+    //   `{project}` → "anvil"
+    // - skip-if-conflict strategy → AGENTS.md with `{project}` LEFT
+    //   LITERAL (substitution suppressed by strategy)
+    // - pinned dest → framework/constitution.md preserved verbatim from
+    //   the fixture's pre-seeded copy (apply-manifest's `skipped-pinned`)
+    // - keep-literals entry → .claude/commands/govern.md with `{project}`
+    //   and `{cli-config-dir}` kept LITERAL even though substitutions
+    //   are applied to other entries
+    // - merge-managed-block (line-prefix style) → .gitignore created
+    //   with the `# govern` block
+    // - enforce-manifest → legacy-cmd.md REMOVED from the target dir
+    ensure_binary_built();
+    let bin = runtime_binary();
+    let staged = stage_fixture("install", "govern-basic");
+
+    let mut child = Command::new(&bin)
+        .arg("exec")
+        .arg("install")
+        .current_dir(staged.path())
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn runtime");
+    {
+        let mut child_stdin = child.stdin.take().expect("stdin");
+        child_stdin
+            .write_all(
+                b"{\"type\":\"gate-response\",\"request-id\":\"req-1\",\"confirmed\":true}\n",
+            )
+            .expect("stdin write");
+    }
+    let output = child.wait_with_output().expect("wait");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        output.status.success(),
+        "runtime exec install failed: {:?}\nstderr:\n{stderr}",
+        output.status
+    );
+
+    let project = staged.path().join("project");
+    let read = |rel: &str| {
+        fs::read_to_string(project.join(rel))
+            .unwrap_or_else(|err| panic!("read project/{rel}: {err}"))
+    };
+
+    // update strategy + substitution applied.
+    let specify = read("framework/commands/specify.md");
+    assert!(
+        specify.contains("# /anvil:specify"),
+        "specify.md must substitute {{project}} → anvil: {specify:?}"
+    );
+    assert!(
+        !specify.contains("{project}"),
+        "specify.md must have no remaining placeholders: {specify:?}"
+    );
+
+    // create strategy + substitution applied (dest absent at start).
+    let feature = read("framework/templates/feature.md");
+    assert!(
+        feature.contains("# anvil feature template"),
+        "feature.md must substitute {{project}}: {feature:?}"
+    );
+
+    // skip-if-conflict: substitution NOT applied.
+    let agents = read("AGENTS.md");
+    assert!(
+        agents.contains("{project}"),
+        "AGENTS.md must keep {{project}} LITERAL (skip-if-conflict suppresses substitution): {agents:?}"
+    );
+
+    // Pinned: pre-seeded adopter copy preserved verbatim.
+    let constitution = read("framework/constitution.md");
+    assert!(
+        constitution.contains("Adopter-edited constitution"),
+        "pinned constitution must keep adopter content; got: {constitution:?}"
+    );
+    assert!(
+        !constitution.contains("Framework-owned governance rules"),
+        "pinned constitution must NOT be overwritten with the staged framework copy"
+    );
+
+    // keep-literals entry: placeholders preserved even though
+    // substitutions are applied to other entries in the same run.
+    let govern_md = read(".claude/commands/govern.md");
+    assert!(
+        govern_md.contains("{project}") && govern_md.contains("{cli-config-dir}"),
+        "govern.md must keep {{project}} and {{cli-config-dir}} LITERAL: {govern_md:?}"
+    );
+
+    // merge-managed-block (line-prefix) created .gitignore.
+    let gitignore = read(".gitignore");
+    assert!(
+        gitignore.starts_with("# govern\n"),
+        ".gitignore must start with the # govern marker line: {gitignore:?}"
+    );
+    assert!(
+        gitignore.contains(".cache/") && gitignore.contains("staging/"),
+        ".gitignore must contain the block body: {gitignore:?}"
+    );
+
+    // enforce-manifest pruned the pre-seeded legacy file.
+    assert!(
+        !project.join("framework/commands/legacy-cmd.md").exists(),
+        "enforce-manifest must remove framework/commands/legacy-cmd.md"
+    );
+    // And kept the file in the expected list.
+    assert!(
+        project.join("framework/commands/specify.md").exists(),
+        "enforce-manifest must keep framework/commands/specify.md (in expected list)"
+    );
+}
+
+#[test]
 fn implement_rejects_out_of_boundary_write_code_edit() {
     ensure_binary_built();
     let bin = runtime_binary();

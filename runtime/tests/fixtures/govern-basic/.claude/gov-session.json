@@ -1,13 +1,48 @@
 {
   "url": "{MOCK_HTTP}/archive.tar.gz",
+  "sha256-url": "{MOCK_HTTP}/archive.tar.gz.sha256",
   "archive": "downloaded.tar.gz",
   "dest": "staging",
-  "source-dir": "staging",
-  "target-dir": "project",
+  "source-root": "staging",
+  "target-root": "project",
+  "entries": [
+    {
+      "source": "framework/commands/specify.md",
+      "dest": "framework/commands/specify.md",
+      "strategy": "update"
+    },
+    {
+      "source": "framework/templates/feature.md",
+      "dest": "framework/templates/feature.md",
+      "strategy": "create"
+    },
+    {
+      "source": "AGENTS.md",
+      "dest": "AGENTS.md",
+      "strategy": "skip-if-conflict"
+    },
+    {
+      "source": "framework/constitution.md",
+      "dest": "framework/constitution.md",
+      "strategy": "update"
+    },
+    {
+      "source": ".claude/commands/govern.md",
+      "dest": ".claude/commands/govern.md",
+      "strategy": "update",
+      "keep-literals": ["project", "cli-config-dir"]
+    }
+  ],
+  "pinned": ["framework/constitution.md"],
   "substitutions": {
-    "project": "anvil"
+    "project": "anvil",
+    "cli-config-dir": ".claude"
   },
-  "path": "project/CLAUDE.md",
-  "block": "framework managed block\nproject = anvil",
+  "path": "project/.gitignore",
+  "block": ".cache/\nstaging/",
+  "marker": "govern",
+  "marker-style": "line-prefix",
+  "directory": "project/framework/commands",
+  "expected": ["specify.md"],
   "setAt": "2026-05-12T00:00:00Z"
 }

@@ -15,13 +15,24 @@ Capture recipe (maintainer-only, requires an LLM-driven host):
   5. Run `/govern` (or `/install` for the fixture procedure) in the
      LLM-driven host; confirm the install gate when prompted.
   6. After the run, record:
-     a. The contents of `<a-clean-tempdir>/project/scripts/gen-noop.sh`
-        with its 0o755 mode preserved.
-     b. The contents of `<a-clean-tempdir>/project/framework/commands/specify.md`
-        with `{project}` substituted to `anvil`.
-     c. The contents of `<a-clean-tempdir>/project/CLAUDE.md` with the
-        framework-managed block installed between the BEGIN / END
-        markers.
+     a. `<a-clean-tempdir>/project/framework/commands/specify.md` with
+        `{project}` substituted to `anvil` (update strategy).
+     b. `<a-clean-tempdir>/project/framework/templates/feature.md` with
+        `{project}` substituted to `anvil` (create strategy — written
+        because the dest was absent in this fixture).
+     c. `<a-clean-tempdir>/project/AGENTS.md` with `{project}` LITERAL
+        (skip-if-conflict strategy — no substitution).
+     d. `<a-clean-tempdir>/project/framework/constitution.md` unchanged
+        from its pre-seeded contents (pinned in the manifest — the
+        primitive records `skipped-pinned` and does NOT overwrite).
+     e. `<a-clean-tempdir>/project/.gitignore` containing the
+        framework-managed `# govern` block (line-prefix marker style).
+     f. `<a-clean-tempdir>/project/.claude/commands/govern.md` with
+        `{project}` and `{cli-config-dir}` kept LITERAL via the
+        keep-literals entry, so the next adopter's `/govern` run
+        substitutes them per their project.
+     g. `<a-clean-tempdir>/project/framework/commands/legacy-cmd.md`
+        REMOVED by enforce-manifest (not in the expected list).
 
 Parity bound for `/govern` (fixture: `/install`):
   - strict-files: every file listed under `parity.strict-files` in the

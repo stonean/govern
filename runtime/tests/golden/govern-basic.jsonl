@@ -2,6 +2,7 @@
 {"type":"progress","message":"dispatching primitive `extract-archive`","step":"3","primitive":"extract-archive"}
 {"type":"gate-confirm","gate":"step-4","request-id":"req-1","prompt":"Ask the user to approve writing the framework files into the project before any destination-tree changes."}
 {"type":"progress","message":"gate `step-4` confirmed","step":"4"}
-{"type":"progress","message":"dispatching primitive `substitute-templates`","step":"5","primitive":"substitute-templates"}
-{"type":"progress","message":"dispatching primitive `merge-claude-md`","step":"6","primitive":"merge-claude-md"}
+{"type":"progress","message":"dispatching primitive `apply-manifest`","step":"5","primitive":"apply-manifest"}
+{"type":"progress","message":"dispatching primitive `merge-managed-block`","step":"6","primitive":"merge-managed-block"}
+{"type":"progress","message":"dispatching primitive `enforce-manifest`","step":"7","primitive":"enforce-manifest"}
 {"type":"complete","result":{},"runtime-version":"{{runtime-version}}"}
