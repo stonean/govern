@@ -33,8 +33,8 @@ use crate::schema::primitives::{SubstituteTemplatesArgs, SubstituteTemplatesResu
 /// Returns [`PrimitiveError::Io`] when source files cannot be read or
 /// destination files cannot be written.
 pub fn run(args: &SubstituteTemplatesArgs, repo: &Path) -> Result<SubstituteTemplatesResult> {
-    let source = resolve_path(repo, &args.source);
-    let dest = resolve_path(repo, &args.dest);
+    let source = resolve_path(repo, &args.source_dir);
+    let dest = resolve_path(repo, &args.target_dir);
 
     fs::create_dir_all(&dest).map_err(|source| PrimitiveError::Io {
         path: dest.clone(),
@@ -81,7 +81,7 @@ pub fn run(args: &SubstituteTemplatesArgs, repo: &Path) -> Result<SubstituteTemp
 
     let files_written = u32::try_from(files.len()).unwrap_or(u32::MAX);
     Ok(SubstituteTemplatesResult {
-        dest: dest.to_string_lossy().into_owned(),
+        target_dir: dest.to_string_lossy().into_owned(),
         files_written,
         substitutions_applied,
         files,
@@ -173,8 +173,8 @@ mod tests {
         fs::write(src.join("nested/cmd.md"), "/{project}:status").unwrap();
 
         let args = SubstituteTemplatesArgs {
-            source: src.to_string_lossy().into_owned(),
-            dest: dst.to_string_lossy().into_owned(),
+            source_dir: src.to_string_lossy().into_owned(),
+            target_dir: dst.to_string_lossy().into_owned(),
             substitutions: map(&[("project", "anvil")]),
         };
         let result = run(&args, tmp.path()).unwrap();
@@ -201,8 +201,8 @@ mod tests {
         fs::write(src.join("bin.dat"), bin).unwrap();
 
         let args = SubstituteTemplatesArgs {
-            source: src.to_string_lossy().into_owned(),
-            dest: dst.to_string_lossy().into_owned(),
+            source_dir: src.to_string_lossy().into_owned(),
+            target_dir: dst.to_string_lossy().into_owned(),
             substitutions: map(&[("project", "anvil")]),
         };
         let result = run(&args, tmp.path()).unwrap();
@@ -222,8 +222,8 @@ mod tests {
         fs::write(dst.join("a.txt"), "old body").unwrap();
 
         let args = SubstituteTemplatesArgs {
-            source: src.to_string_lossy().into_owned(),
-            dest: dst.to_string_lossy().into_owned(),
+            source_dir: src.to_string_lossy().into_owned(),
+            target_dir: dst.to_string_lossy().into_owned(),
             substitutions: map(&[("project", "anvil")]),
         };
         let result = run(&args, tmp.path()).unwrap();

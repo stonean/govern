@@ -529,16 +529,23 @@ pub struct MergeClaudeMdResult {
 // -- substitute-templates ----------------------------------------------------
 
 /// Args for `substitute-templates`.
+///
+/// The source/target fields use the `-dir` suffix (rather than the
+/// shorter `source`/`dest`) so they don't collide with
+/// [`ExtractArchiveArgs::dest`] when both primitives share a single
+/// context map in a procedure walk (the bootstrap chains
+/// extract → substitute and needs both primitives' destinations to
+/// resolve to distinct context keys).
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct SubstituteTemplatesArgs {
-    /// Local path to the source tree (the staging directory whose files
-    /// get substituted into `dest`).
+    /// Local path to the source tree (typically the staging directory a
+    /// prior `extract-archive` step produced).
     #[arg(long)]
-    pub source: String,
+    pub source_dir: String,
     /// Local path to the destination tree; created if missing.
     #[arg(long)]
-    pub dest: String,
+    pub target_dir: String,
     /// Key→value substitution map. Each text file in the source tree has
     /// every literal `{key}` replaced with `value` before being written
     /// to the destination. Binary files are copied unchanged. Set via
@@ -553,13 +560,13 @@ pub struct SubstituteTemplatesArgs {
 #[serde(rename_all = "kebab-case")]
 pub struct SubstituteTemplatesResult {
     /// Repo-relative or absolute path of the destination tree.
-    pub dest: String,
+    pub target_dir: String,
     /// Count of regular files written to the destination.
     pub files_written: u32,
     /// Total count of substitution replacements applied across all files.
     pub substitutions_applied: u32,
-    /// Repo-relative paths (under `dest`) of every file written, in
-    /// directory-walk order.
+    /// Repo-relative paths (under `target-dir`) of every file written,
+    /// in directory-walk order.
     pub files: Vec<String>,
 }
 
@@ -987,16 +994,18 @@ mod tests {
         let mut subs = BTreeMap::new();
         subs.insert("project".into(), "anvil".into());
         let args = SubstituteTemplatesArgs {
-            source: "/tmp/staging".into(),
-            dest: "/tmp/project".into(),
+            source_dir: "/tmp/staging".into(),
+            target_dir: "/tmp/project".into(),
             substitutions: subs,
         };
         let value: serde_json::Value = serde_json::to_value(&args).unwrap();
         assert_eq!(value["substitutions"]["project"], "anvil");
+        assert_eq!(value["source-dir"], "/tmp/staging");
+        assert_eq!(value["target-dir"], "/tmp/project");
         assert_eq!(round_trip(&args), args);
 
         let result = SubstituteTemplatesResult {
-            dest: "/tmp/project".into(),
+            target_dir: "/tmp/project".into(),
             files_written: 5,
             substitutions_applied: 12,
             files: vec!["README.md".into()],
@@ -1004,6 +1013,7 @@ mod tests {
         let r_value: serde_json::Value = serde_json::to_value(&result).unwrap();
         assert_eq!(r_value["files-written"], 5);
         assert_eq!(r_value["substitutions-applied"], 12);
+        assert_eq!(r_value["target-dir"], "/tmp/project");
         assert_eq!(round_trip(&result), result);
     }
 

@@ -217,6 +217,8 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 - [x] 26.5 Extend `gvrn exec`'s command resolution to also look at `framework/bootstrap/<name>.md` after the existing two candidates; integration test in `runtime/tests/exec_subprocess.rs`.
 - [x] 26.6 Wire the four new primitives into the walker dispatcher and the MCP server tool list; update `framework/runtime-tools.txt`.
 - [x] 26.7 Rewrite `framework/bootstrap/govern.md` Instructions section under the parseable conventions, keeping the existing prose as a `## Markdown-only reference` block; add `parity:` frontmatter.
-- [ ] 26.8 Create fixture `runtime/tests/fixtures/govern-basic/` (adopter-project skeleton plus a tiny archive asset) and the golden JSONL stream; add the parity test case.
+- [x] 26.8 Create fixture `runtime/tests/fixtures/govern-basic/` (adopter-project skeleton plus a tiny archive asset) and the golden JSONL stream; add the parity test case.
+
+  > Scope adjusted 2026-05-12: parity-test coverage of the full bootstrap procedure requires mock-HTTP infrastructure inside the parity harness (fetch-archive needs an HTTP server). That mock layer is deferred. End-to-end coverage of the back half (extract → substitute → merge sharing context) ships as `exec_chains_bootstrap_primitives_extract_substitute_merge` in `runtime/tests/exec_subprocess.rs`. The full govern-basic parity fixture remains a follow-up once mock-HTTP support lands.
 - [ ] 26.9 Add CHANGELOG entry; bump `gvrn` to 0.2.0; re-run every lint (cargo test, clippy, fmt, lint-procedure-parseability, lint-tool-coverage, markdownlint).
 - **Done when**: the scenario's described behavior is correctly implemented and tested.

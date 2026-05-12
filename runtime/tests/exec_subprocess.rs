@@ -5,6 +5,7 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+use std::collections::BTreeMap;
 use std::fs;
 use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
@@ -156,6 +157,102 @@ fn exec_reads_extension_response_from_stdin() {
     assert_eq!(types, vec!["llm-request", "progress", "complete"]);
     assert_eq!(envelopes[0]["extension-point"], "writeCode");
     assert_eq!(envelopes[0]["request-id"], "req-1");
+}
+
+#[test]
+fn exec_chains_bootstrap_primitives_extract_substitute_merge() {
+    ensure_binary_built();
+    // Walks the back half of the bootstrap procedure end-to-end:
+    // a synthetic gvrn-exec target invokes extract-archive on a
+    // committed-shape (test-built) tarball, then substitute-templates
+    // over the staged tree, then merge-claude-md against CLAUDE.md.
+    // The full procedure also includes fetch-archive (HTTP); that
+    // first step needs a mock server and is deferred — its unit tests
+    // cover hash-verification independently.
+    let tmp = tempfile::tempdir().unwrap();
+
+    // Build a tiny tarball inline so the fixture stays text-only in git.
+    let tarball_path = tmp.path().join("framework.tar.gz");
+    {
+        let file = fs::File::create(&tarball_path).unwrap();
+        let encoder = flate2::write::GzEncoder::new(file, flate2::Compression::default());
+        let mut builder = tar::Builder::new(encoder);
+        let template = b"# {project}\n\nProject: {project}\n";
+        let mut header = tar::Header::new_gnu();
+        header.set_size(template.len() as u64);
+        header.set_mode(0o644);
+        header.set_cksum();
+        builder
+            .append_data(&mut header, "README.md", &template[..])
+            .unwrap();
+        builder.into_inner().unwrap().finish().unwrap();
+    }
+
+    // Write the synthetic procedure file under framework/bootstrap/.
+    let bootstrap_dir = tmp.path().join("framework/bootstrap");
+    fs::create_dir_all(&bootstrap_dir).unwrap();
+    fs::write(
+        bootstrap_dir.join("install.md"),
+        "# /install\n\n## Instructions\n\n1. Invoke `extract-archive` against the staged tarball.\n2. Invoke `substitute-templates` to materialize the project files.\n3. Invoke `merge-claude-md` to install the managed block.\n",
+    )
+    .unwrap();
+
+    // Seed the session JSON with every arg the three primitives need.
+    let session_dir = tmp.path().join(".claude");
+    fs::create_dir_all(&session_dir).unwrap();
+    let mut subs = BTreeMap::new();
+    subs.insert("project".to_string(), "anvil".to_string());
+    let session = serde_json::json!({
+        // extract-archive args
+        "archive": tarball_path.to_string_lossy(),
+        "dest": tmp.path().join("staging").to_string_lossy(),
+        // substitute-templates args — distinct key names (source-dir,
+        // target-dir) so they don't collide with extract-archive's dest.
+        "source-dir": tmp.path().join("staging").to_string_lossy(),
+        "target-dir": tmp.path().join("project").to_string_lossy(),
+        // merge-claude-md args
+        "path": tmp.path().join("CLAUDE.md").to_string_lossy(),
+        "block": "framework managed block\nproject = anvil",
+        "substitutions": subs,
+    });
+    let session_path = session_dir.join("gov-session.json");
+    let mut sf = fs::File::create(&session_path).unwrap();
+    sf.write_all(session.to_string().as_bytes()).unwrap();
+
+    let child = Command::new(runtime_binary())
+        .arg("exec")
+        .arg("install")
+        .current_dir(tmp.path())
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .expect("spawn runtime");
+    let stderr = String::from_utf8_lossy(&child.stderr);
+    assert!(
+        child.status.success(),
+        "exit {:?}\nstderr:\n{stderr}\nstdout:\n{}",
+        child.status,
+        String::from_utf8_lossy(&child.stdout)
+    );
+
+    // Verify the chain's observable effects:
+    // - extract-archive wrote README.md into the staging dir
+    // - substitute-templates wrote a substituted copy into the project dir
+    // - merge-claude-md created CLAUDE.md with the managed block
+    assert!(tmp.path().join("staging/README.md").exists());
+    let written = fs::read_to_string(tmp.path().join("project/README.md")).unwrap();
+    assert!(
+        written.contains("# anvil") && written.contains("Project: anvil"),
+        "substitution didn't take effect: {written}"
+    );
+    let claude = fs::read_to_string(tmp.path().join("CLAUDE.md")).unwrap();
+    assert!(
+        claude.contains("<!-- BEGIN govern-managed -->")
+            && claude.contains("framework managed block")
+            && claude.contains("project = anvil"),
+        "CLAUDE.md missing managed block:\n{claude}"
+    );
 }
 
 #[test]
