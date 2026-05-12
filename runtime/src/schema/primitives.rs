@@ -606,6 +606,12 @@ pub struct ExtractArchiveResult {
 // -- fetch-archive -----------------------------------------------------------
 
 /// Args for `fetch-archive`.
+///
+/// The local destination uses the `archive` field name (not `dest`) so
+/// it shares a context key with [`ExtractArchiveArgs::archive`] when both
+/// primitives appear in the same procedure walk — fetch writes the
+/// downloaded archive to that path; extract then reads it from the same
+/// path without the host having to thread two keys.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct FetchArchiveArgs {
@@ -616,9 +622,11 @@ pub struct FetchArchiveArgs {
     /// one or more lines of `<hex>  <filename>`).
     #[arg(long)]
     pub sha256_url: String,
-    /// Local destination path for the downloaded archive.
+    /// Local path where the downloaded archive is written. Used as the
+    /// `archive` input by a subsequent `extract-archive` step in the
+    /// bootstrap procedure.
     #[arg(long)]
-    pub dest: String,
+    pub archive: String,
 }
 
 /// Result for `fetch-archive`.
@@ -1049,14 +1057,14 @@ mod tests {
         let args = FetchArchiveArgs {
             url: "https://example.test/gvrn-0.2.0.tar.gz".into(),
             sha256_url: "https://example.test/gvrn-0.2.0.tar.gz.sha256".into(),
-            dest: "/tmp/gvrn.tar.gz".into(),
+            archive: "/tmp/gvrn.tar.gz".into(),
         };
         let value: serde_json::Value = serde_json::to_value(&args).unwrap();
         assert_eq!(
             value["sha256-url"],
             "https://example.test/gvrn-0.2.0.tar.gz.sha256"
         );
-        assert_eq!(value["dest"], "/tmp/gvrn.tar.gz");
+        assert_eq!(value["archive"], "/tmp/gvrn.tar.gz");
         assert_eq!(round_trip(&args), args);
 
         let result = FetchArchiveResult {

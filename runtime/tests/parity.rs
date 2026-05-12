@@ -88,6 +88,11 @@ fn specify_basic_stream_matches_golden() {
 }
 
 #[test]
+fn govern_basic_stream_matches_golden() {
+    run_parity_case("install", "govern-basic");
+}
+
+#[test]
 fn implement_rejects_out_of_boundary_write_code_edit() {
     ensure_binary_built();
     let bin = runtime_binary();
@@ -190,17 +195,56 @@ fn stage_fixture(command: &str, fixture: &str) -> tempfile::TempDir {
     );
     copy_dir_recursive(&fixture_root, tmp.path());
 
-    let command_src = repo
+    // Two paths to provide the procedure file the runtime resolves:
+    // (a) repo-canonical `framework/commands/<cmd>.md` — copy it in;
+    // (b) fixture-local under `framework/bootstrap/<cmd>.md` (for
+    //     bootstrap-namespaced procedures the runtime resolves via the
+    //     third candidate path) — already copied by copy_dir_recursive.
+    let canonical = repo
         .join("framework/commands")
         .join(format!("{command}.md"));
-    assert!(
-        command_src.is_file(),
-        "missing canonical command file: {}",
-        command_src.display()
-    );
-    let command_dst_dir = tmp.path().join("framework/commands");
-    fs::create_dir_all(&command_dst_dir).unwrap();
-    fs::copy(&command_src, command_dst_dir.join(format!("{command}.md"))).unwrap();
+    if canonical.is_file() {
+        let command_dst_dir = tmp.path().join("framework/commands");
+        fs::create_dir_all(&command_dst_dir).unwrap();
+        fs::copy(&canonical, command_dst_dir.join(format!("{command}.md"))).unwrap();
+    } else {
+        // Confirm the fixture supplied its own procedure file somewhere
+        // the runtime knows about.
+        let bootstrap = tmp
+            .path()
+            .join("framework/bootstrap")
+            .join(format!("{command}.md"));
+        let project_local = tmp
+            .path()
+            .join(".claude/commands/gov")
+            .join(format!("{command}.md"));
+        assert!(
+            bootstrap.is_file() || project_local.is_file(),
+            "no canonical or fixture-local procedure file for {command}"
+        );
+    }
+
+    // Mock-HTTP setup: when a fixture ships a `mock-http/staging/`
+    // subtree, build a tarball at test time, compute its sha256,
+    // start a localhost HTTP server, and substitute `{MOCK_HTTP}` in
+    // the staged session JSON with the dynamic URL.
+    let staging = tmp.path().join("mock-http/staging");
+    if staging.is_dir() {
+        let (archive_bytes, sha256_hex) = build_tarball_with_sha256(&staging);
+        let server = MockHttp::start(vec![
+            ("/archive.tar.gz".into(), archive_bytes),
+            (
+                "/archive.tar.gz.sha256".into(),
+                format!("{sha256_hex}  archive.tar.gz\n").into_bytes(),
+            ),
+        ]);
+        substitute_in_session(tmp.path(), "{MOCK_HTTP}", &server.url());
+        // MockHttp's listener-loop thread holds its own Arc clone of
+        // the routes and runs detached — `server` falling out of scope
+        // here is harmless (the type carries no Drop logic); the thread
+        // and bound port persist until process exit.
+        let _ = server;
+    }
 
     // Primitives that read git history (`derive-boundary`, `check-stuck`)
     // need a real repo. Init one in the tempdir and commit the staged
@@ -210,6 +254,116 @@ fn stage_fixture(command: &str, fixture: &str) -> tempfile::TempDir {
     init_git_repo(tmp.path());
 
     tmp
+}
+
+/// Tar+gzip every regular file under `root` into an in-memory archive,
+/// preserving Unix mode bits. Returns the archive bytes plus the
+/// lowercase-hex sha256 digest.
+fn build_tarball_with_sha256(root: &Path) -> (Vec<u8>, String) {
+    use sha2::{Digest, Sha256};
+    let buffer: Vec<u8> = Vec::new();
+    let encoder = flate2::write::GzEncoder::new(buffer, flate2::Compression::default());
+    let mut builder = tar::Builder::new(encoder);
+    builder.follow_symlinks(false);
+    builder
+        .append_dir_all(".", root)
+        .expect("append staging tree");
+    let archive_bytes = builder
+        .into_inner()
+        .expect("finish tar")
+        .finish()
+        .expect("finish gzip");
+    let mut hasher = Sha256::new();
+    hasher.update(&archive_bytes);
+    let digest = hasher.finalize();
+    let mut hex = String::with_capacity(64);
+    for byte in digest {
+        use std::fmt::Write as _;
+        let _ = write!(&mut hex, "{byte:02x}");
+    }
+    (archive_bytes, hex)
+}
+
+/// Read the staged `.claude/gov-session.json`, replace every occurrence
+/// of `placeholder` with `replacement`, and write the result back.
+/// No-op when the session file is absent.
+fn substitute_in_session(root: &Path, placeholder: &str, replacement: &str) {
+    let path = root.join(".claude/gov-session.json");
+    if !path.is_file() {
+        return;
+    }
+    let text = fs::read_to_string(&path).unwrap();
+    let replaced = text.replace(placeholder, replacement);
+    fs::write(&path, replaced).unwrap();
+}
+
+/// Minimal HTTP/1.1 server for parity fixtures that exercise
+/// `fetch-archive`. Binds to 127.0.0.1:0 (kernel-assigned port),
+/// services one route per request, ignores headers, and closes the
+/// connection after responding.
+struct MockHttp {
+    addr: std::net::SocketAddr,
+}
+
+impl MockHttp {
+    fn start(routes: Vec<(String, Vec<u8>)>) -> Self {
+        use std::net::TcpListener;
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind mock http");
+        let addr = listener.local_addr().expect("local addr");
+        let routes = std::sync::Arc::new(routes);
+        std::thread::spawn(move || {
+            for stream in listener.incoming() {
+                let Ok(stream) = stream else { continue };
+                let routes = routes.clone();
+                std::thread::spawn(move || {
+                    let _ = MockHttp::handle(stream, &routes);
+                });
+            }
+        });
+        Self { addr }
+    }
+
+    fn url(&self) -> String {
+        format!("http://{}", self.addr)
+    }
+
+    fn handle(
+        mut stream: std::net::TcpStream,
+        routes: &[(String, Vec<u8>)],
+    ) -> std::io::Result<()> {
+        use std::io::{BufRead, BufReader, Write};
+        let peek = stream.try_clone()?;
+        let mut reader = BufReader::new(peek);
+        let mut request_line = String::new();
+        reader.read_line(&mut request_line)?;
+        let path = request_line
+            .split_whitespace()
+            .nth(1)
+            .unwrap_or("/")
+            .to_string();
+        // Drain headers — read lines until the blank CRLF terminator.
+        let mut hdr = String::new();
+        while reader.read_line(&mut hdr)? > 0 {
+            if hdr.trim().is_empty() {
+                break;
+            }
+            hdr.clear();
+        }
+        if let Some((_, body)) = routes.iter().find(|(p, _)| *p == path) {
+            let header = format!(
+                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nContent-Type: application/octet-stream\r\nConnection: close\r\n\r\n",
+                body.len()
+            );
+            stream.write_all(header.as_bytes())?;
+            stream.write_all(body)?;
+        } else {
+            let resp = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
+            stream.write_all(resp.as_bytes())?;
+        }
+        stream.flush()?;
+        let _ = stream.shutdown(std::net::Shutdown::Both);
+        Ok(())
+    }
 }
 
 fn init_git_repo(path: &Path) {
@@ -227,10 +381,21 @@ fn init_git_repo(path: &Path) {
         .expect("initial commit");
 }
 
-fn read_parity_spec(command: &str) -> ParitySpec {
-    let path = repo_root()
+fn read_parity_spec(command: &str, fixture: &str) -> ParitySpec {
+    // Prefer the repo-canonical command file; fall back to a fixture-
+    // local procedure file for bootstrap-namespaced fixtures.
+    let canonical = repo_root()
         .join("framework/commands")
         .join(format!("{command}.md"));
+    let path = if canonical.is_file() {
+        canonical
+    } else {
+        repo_root()
+            .join("runtime/tests/fixtures")
+            .join(fixture)
+            .join("framework/bootstrap")
+            .join(format!("{command}.md"))
+    };
     let source = fs::read_to_string(&path).unwrap();
     let body = source
         .strip_prefix("---\n")
@@ -311,7 +476,7 @@ fn run_parity_case(command: &str, fixture: &str) {
         "stream mismatch for {fixture}.jsonl — re-bless by overwriting the golden with the captured stdout",
     );
 
-    let spec = read_parity_spec(command);
+    let spec = read_parity_spec(command, fixture);
     let capture = read_parity_capture(command);
     if capture.contains("TODO:") {
         eprintln!(

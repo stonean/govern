@@ -32,7 +32,7 @@ use crate::schema::primitives::{FetchArchiveArgs, FetchArchiveResult};
 /// - [`PrimitiveError::MalformedSidecar`] when the sidecar's first hex token isn't a valid 64-char sha256.
 /// - [`PrimitiveError::ChecksumMismatch`] when the computed sha differs from the sidecar.
 pub fn run(args: &FetchArchiveArgs, repo: &Path) -> Result<FetchArchiveResult> {
-    let dest = resolve_dest(repo, &args.dest);
+    let dest = resolve_dest(repo, &args.archive);
 
     let body = fetch_bytes(&args.url)?;
     let computed = sha256_hex(&body);

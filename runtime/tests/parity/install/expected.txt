@@ -1,0 +1,36 @@
+TODO: capture the LLM-driven `/govern` output against
+`runtime/tests/fixtures/govern-basic/` and replace this file's body
+with the captured post-run state.
+
+Capture recipe (maintainer-only, requires an LLM-driven host):
+
+  1. cp -r runtime/tests/fixtures/govern-basic <a-clean-tempdir>
+  2. cp framework/bootstrap/govern.md <a-clean-tempdir>/framework/bootstrap/
+     (in the fixture the bootstrap procedure is `install.md`; the real
+     production procedure is `govern.md`).
+  3. Stand up a local HTTP server (the harness does this automatically
+     via the runtime-internal MockHttp; for the LLM-driven capture you
+     can use `python3 -m http.server` from the staging tree's parent).
+  4. Substitute `{MOCK_HTTP}` in the session JSON with the server URL.
+  5. Run `/govern` (or `/install` for the fixture procedure) in the
+     LLM-driven host; confirm the install gate when prompted.
+  6. After the run, record:
+     a. The contents of `<a-clean-tempdir>/project/scripts/gen-noop.sh`
+        with its 0o755 mode preserved.
+     b. The contents of `<a-clean-tempdir>/project/framework/commands/specify.md`
+        with `{project}` substituted to `anvil`.
+     c. The contents of `<a-clean-tempdir>/project/CLAUDE.md` with the
+        framework-managed block installed between the BEGIN / END
+        markers.
+
+Parity bound for `/govern` (fixture: `/install`):
+  - strict-files: every file listed under `parity.strict-files` in the
+    procedure's frontmatter must match byte-for-byte (after substitution).
+  - semantic-fields: completion-message wording is semantic; the
+    runtime emits a JSON `complete` envelope and the host renders the
+    human-readable completion message from that signal.
+
+Until this file is filled in, the parity test for `/govern` (fixture
+`govern-basic`) records the back-half pipeline against the golden
+JSONL stream byte-for-byte; the host-rendered completion-message
+capture remains SKIPPED.
