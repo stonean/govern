@@ -179,41 +179,28 @@ fn collect_entries(directory: &Path, recursive: bool) -> Result<Vec<PathBuf>> {
 
 /// Compile an fnmatch-style glob to an anchored regex. Supports `*`
 /// (zero or more characters) and `?` (exactly one character); every
-/// other character is treated as a literal and regex-escaped. Globs
-/// never cross directory separators because the caller matches them
-/// against a basename.
+/// other character is escaped to its literal regex form via
+/// [`regex::escape`]. Globs never cross directory separators because
+/// the caller matches them against a basename.
 ///
-/// Every character either becomes `.*` / `.`, an escaped literal, or a
-/// non-meta literal — the resulting regex is always valid, so this
-/// function is infallible by construction.
+/// Every character either becomes `.*` / `.` or a `regex::escape`d
+/// literal — the resulting regex is always valid, so this function is
+/// infallible by construction.
 fn compile_glob(pattern: &str) -> Regex {
     let mut re = String::with_capacity(pattern.len() * 2 + 2);
     re.push('^');
+    let mut buf = [0u8; 4];
     for c in pattern.chars() {
         match c {
             '*' => re.push_str(".*"),
             '?' => re.push('.'),
-            ch => {
-                if is_regex_meta(ch) {
-                    re.push('\\');
-                }
-                re.push(ch);
-            }
+            ch => re.push_str(&regex::escape(ch.encode_utf8(&mut buf))),
         }
     }
     re.push('$');
     Regex::new(&re).unwrap_or_else(|err| {
         unreachable!("compile_glob produced invalid regex {re:?} (pattern={pattern:?}): {err}")
     })
-}
-
-/// Returns `true` when `c` is a regex metacharacter that must be
-/// escaped when embedded as a literal in a regex pattern.
-fn is_regex_meta(c: char) -> bool {
-    matches!(
-        c,
-        '.' | '+' | '(' | ')' | '[' | ']' | '{' | '}' | '\\' | '^' | '$' | '|' | '#'
-    )
 }
 
 #[cfg(test)]

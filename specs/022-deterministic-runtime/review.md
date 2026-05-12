@@ -1,36 +1,52 @@
 ---
 spec: 022-deterministic-runtime
-scenario: govern-bootstrap
-reviewed-at: 2026-05-12T00:00:00Z
-reviewed-against: 6fc0acc
-diff-base: 6fc0acc~9
+scenario: apply-manifest
+reviewed-at: 2026-05-12T14:30:00Z
+reviewed-against: f8d4008
+diff-base: 6fc0acc
 must-violations: 0
-should-violations: 4
+should-violations: 3
 low-confidence: 2
 skipped-passes: []
 ---
 
-# Review — 022-deterministic-runtime (scenario: govern-bootstrap)
+# Review — 022-deterministic-runtime (scenario: apply-manifest)
 
 ## Summary
 
-Scenario `govern-bootstrap` adds four primitives (`fetch-archive`,
-`extract-archive`, `substitute-templates`, `merge-claude-md`), extends
-`gvrn exec`'s command-resolution surface to `framework/bootstrap/`,
-rewrites the bootstrap procedure under the parseable conventions, and
-ships a chain integration test plus unit coverage for each primitive.
+Scenario `apply-manifest` adds three primitives
+(`apply-manifest`, `enforce-manifest`, `merge-managed-block`),
+refactors `merge-claude-md` into a thin compat shim delegating to
+`merge-managed-block`, wires the new primitives across every runtime
+entry point (parser names, walker dispatch, MCP `TOOL_NAMES`,
+`framework/runtime-tools.txt`), rewrites the `/govern` bootstrap
+procedure to a six-primitive shape (eliminating the host-generated
+bash walker that the live anvil bootstrap had to fall back to), and
+extends the `govern-basic` parity fixture to exercise every strategy
++ marker style + cleanup path end-to-end. `gvrn` bumps 0.2.1 → 0.3.0
+and ships to crates.io plus GitHub releases.
 
 No MUST violations: the shipped rule catalogs (`security-backend.md`,
 `security-frontend.md`, `configuration.md`) target web-app patterns
 (auth/sessions, XSS, cross-module config) that don't fire against
-CLI/MCP primitive code. The runtime's own threat model (path
-traversal in archive extraction, sha256-verified downloads) is
-addressed in-code without rule-driven flagging.
+CLI/MCP primitive code. The single rule with surface contact is
+`BE-INPUT-004` (path-traversal defense for filesystem ops on
+user-supplied values); under the runtime's threat model the host
+that constructs manifest entries IS the operator (no privilege
+boundary crossed), so the rule's strict applicability is bounded —
+recorded as SHOULD with explicit threat-model context rather than
+silenced.
 
-Four SHOULD findings concern operational robustness and code reuse;
-two low-confidence findings flag potential edge cases worth a second
-look before the runtime ships v0.2.0 to real adopters. **Spec is
-non-blocking and may advance to `done` after `/gov:validate`.**
+Three SHOULD findings concern code-reuse drift (the `resolve_path` /
+forward-slash-normalization helpers continue to be duplicated
+per-primitive, now across 7 modules) and a defense-in-depth note on
+path-traversal handling. The simplicity-pass `is_regex_meta` finding
+that was flagged on the initial review run was applied via `--fix`
+(see [Auto-fix applied](#auto-fix-applied) below) and dropped from
+the count. Two low-confidence findings flag operational edge cases
+worth a second look before the runtime hits real-world bootstrap
+loads. **Spec remains non-blocking and may advance to `done` after
+`/gov:validate`.**
 
 ## MUST violations (blocking)
 
@@ -38,115 +54,144 @@ non-blocking and may advance to `done` after `/gov:validate`.**
 
 ## SHOULD violations (advisory)
 
-### SHOULD: timeout-missing — fetch-archive has no HTTP timeout configured
+### SHOULD: BE-INPUT-004 — defense-in-depth path-traversal check on host-supplied entry paths
 
-- **File**: `runtime/src/primitives/fetch_archive.rs:74-88`
-- **Pass**: efficiency
-- **Rule**: (no shipped rule; framework convention from the
-  CLI-baseline note in `AGENTS.md` Tech Stack — "fast cold-start,
-  sensible exit codes")
-- **Finding**: `reqwest::blocking::get(url)` uses reqwest's default
-  client, which has **no connect or read timeout**. A slow or
-  unresponsive URL will block the primitive indefinitely; the
-  procedure has no way to recover short of process kill. For the
-  bootstrap installer in particular, an adopter behind a flaky network
-  could see `/govern` appear to hang.
-- **Auto-fixable**: no (requires choosing a sensible default — 30s
-  connect, 60s overall, configurable via `--timeout`?)
-- **Suggested fix**: build a `reqwest::blocking::Client` once with
-  `Client::builder().connect_timeout(Duration::from_secs(30)).timeout(Duration::from_secs(120)).build()`,
-  cache it in a `OnceLock`, and use it for both `fetch_bytes` and
-  `fetch_text`. Surface timeouts as `PrimitiveError::Http`.
+- **File**: `runtime/src/primitives/apply_manifest.rs:147,159`,
+  `runtime/src/primitives/merge_managed_block.rs:63`
+- **Rule**: BE-INPUT-004 — _"User-supplied values MUST NOT be used
+  directly in filesystem paths. Filesystem operations MUST resolve
+  the canonical path and verify it falls within the expected base
+  directory before opening the file."_
+- **Finding**: `apply-manifest`'s `process_entry` joins
+  `source_root` / `target_root` with `entry.source` / `entry.dest`
+  via `Path::join` and writes / reads without canonicalizing and
+  re-checking containment. An absolute path in `entry.source`
+  (`"/etc/passwd"`) silently overrides `source_root` per Rust's
+  `PathBuf` semantics; a relative path containing `..` could escape
+  `target_root` after canonicalization. `merge-managed-block` has
+  the same shape — `args.path` is host-supplied and writes happen
+  without a base-directory check. Under the runtime's actual threat
+  model the host (LLM orchestrator / operator script) already runs
+  with the operator's filesystem privileges, so this isn't a
+  privilege boundary — recorded at SHOULD because BE-INPUT-004 was
+  written for web-service contexts where the user IS untrusted, and
+  the CLI threat model puts the trust boundary at the operator
+  level. The same shape exists in pre-027 primitives
+  (`extract-archive` has explicit path-traversal protection for
+  archive entries, but `substitute-templates`'s host-supplied
+  source/target dirs do not; `merge-claude-md`'s `path` arg does
+  not).
+- **Auto-fixable**: no — defense-in-depth design choice; whether
+  to harden the CLI's args boundary is a framework-level decision,
+  not a mechanical fix.
+- **Suggested fix**: if the runtime's threat model evolves to
+  treat the MCP/JSON host as untrusted (e.g., third-party MCP
+  clients invoking `gov-rt:*` tools without operator review),
+  add a canonical-path + base-directory check helper to
+  `primitives::mod` and call it from every primitive that writes a
+  host-supplied path. Until then, leave the contract explicit:
+  primitives trust the host, and the host is responsible for the
+  paths it supplies.
 
-### SHOULD: file-mode-not-preserved — extract-archive drops permission bits
+### SHOULD: reuse — `resolve_path` helper duplicated across 7 primitive modules
 
-- **File**: `runtime/src/primitives/extract_archive.rs:139-147` (tar.gz path), `:180-191` (zip path)
-- **Pass**: quality (confidence 95)
-- **Rule**: (no shipped rule; functional defect against the bootstrap's
-  acceptance criteria — extracted scripts must be runnable)
-- **Finding**: both `extract_tar_gz` and `extract_zip` write via
-  `File::create` followed by `io::copy` and never call
-  `fs::set_permissions` on the resulting file.
-  The tar entry's `header().mode()` and the zip entry's `unix_mode()` are
-  ignored. For the bootstrap path, this means executable scripts in
-  `scripts/` (e.g., `scripts/gen-spec-deps.sh`) land with `0o644` instead
-  of `0o755` and the pre-commit hook can't execute them — the adopter
-  project bootstraps broken.
-- **Auto-fixable**: yes (mechanical: `set_permissions` after the file
-  closes; cfg-gate on `unix` for the bit set)
-- **Suggested fix**: in `extract_tar_gz`, after the `io::copy`, call
-  `entry.header().mode().ok()` and (on Unix) apply it via
-  `fs::set_permissions(&safe, fs::Permissions::from_mode(mode))`. Same
-  shape for `extract_zip` using `entry.unix_mode()`. Add a unit test
-  that builds a tarball with `set_mode(0o755)`, extracts it, and asserts
-  the extracted file's mode round-trips.
+- **File**: `runtime/src/primitives/apply_manifest.rs:112-119`,
+  `runtime/src/primitives/enforce_manifest.rs:112-119`,
+  `runtime/src/primitives/merge_managed_block.rs:106-113`,
+  plus the four pre-existing copies in `extract_archive.rs`,
+  `substitute_templates.rs`, `run_generator.rs`, `fetch_archive.rs`.
+- **Rule**: AGENTS.md `Boundaries` + general reuse — duplicated
+  utility functions drift over time.
+- **Finding**: the apply-manifest scenario adds three new copies of
+  the same six-line `resolve_path(repo, p)` helper (absolute path →
+  as-is, relative path → `repo.join`). The pattern is now in 7
+  primitive modules and the bodies are byte-identical. A single
+  shared helper in `primitives::mod` would eliminate the drift
+  surface — and provide the natural home for the
+  canonicalize-and-base-check escalation if the threat model
+  changes (see BE-INPUT-004 above).
+- **Auto-fixable**: no — affects all 7 call sites; clean refactor
+  belongs in a follow-up commit rather than a `--fix` mechanical
+  pass.
+- **Suggested fix**: promote `resolve_path` to
+  `runtime/src/primitives/mod.rs` (alongside `read_text`, `rel_path`,
+  `write_atomic`, `write_atomic_bytes`); delete the per-module
+  copies. The rename surface is contained; tests already cover the
+  behavior.
 
-### SHOULD: duplicated-resolve-path — four primitives reimplement the same helper
+### SHOULD: reuse — forward-slash path normalization duplicated
 
-- **File**: `runtime/src/primitives/fetch_archive.rs:62-68`,
-  `runtime/src/primitives/extract_archive.rs:59-66`,
-  `runtime/src/primitives/substitute_templates.rs:90-97`,
-  `runtime/src/primitives/merge_claude_md.rs:71-78`
-- **Pass**: reuse
-- **Rule**: AGENTS.md `Workflow` — extract shared helpers when the same
-  shape appears more than twice
-- **Finding**: each of the four new primitives defines a private
-  `resolve_path(repo, p)` function with identical logic ("if absolute
-  return as-is, else `repo.join(p)`"). Other primitives in the same
-  module already do this inline; the four bootstrap primitives forked
-  the pattern into copy-paste helpers. Extract a single
-  `pub(crate) fn resolve_path(repo: &Path, p: &str) -> PathBuf` in
-  `primitives/mod.rs` next to `read_text` / `write_atomic_bytes` and
-  call it from each primitive.
-- **Auto-fixable**: yes
-- **Suggested fix**: add the helper to `primitives/mod.rs` and remove
-  the four local copies; no behavior change.
+- **File**: `runtime/src/primitives/apply_manifest.rs:121-123` (`normalize_dest_path`),
+  `runtime/src/primitives/enforce_manifest.rs:121-127` (`normalize` + `path_to_forward_slash`).
+- **Rule**: same reuse concern as above; smaller surface.
+- **Finding**: both new primitives need to normalize host-supplied
+  paths to forward-slash form for portable comparison (Windows
+  semantics) and to render `Path` values back to JSON-stable
+  strings. The helpers are slightly different (one accepts `&str`,
+  the other accepts `&Path`) but cover the same intent.
+  Promoting a small `forward_slash` helper alongside `rel_path` in
+  `primitives::mod` removes the duplication.
+- **Auto-fixable**: no — minor refactor; better landed as a
+  follow-up.
+- **Suggested fix**: add `pub(crate) fn forward_slash(p: impl AsRef<Path>) -> String`
+  to `primitives::mod`; collapse the per-primitive callers.
 
-### SHOULD: redundant-drain — extract_zip drains entries that std::io::copy already consumed
+## Auto-fix applied
 
-- **File**: `runtime/src/primitives/extract_archive.rs:188-190`
-- **Pass**: simplicity
-- **Rule**: (no shipped rule; framework convention against dead code)
-- **Finding**: after `std::io::copy(&mut entry, &mut out)` reads the
-  zip entry to EOF, the subsequent `let _ = entry.read_to_end(&mut buf)`
-  is a no-op (entry is already exhausted). The comment claims it's
-  needed to advance the cursor, but `zip::ZipArchive::by_index(i)`
-  reseeks per call — there's no shared cursor to advance. Remove the
-  drain and its comment.
-- **Auto-fixable**: yes (delete three lines)
-- **Suggested fix**: drop lines 188-190 of `extract_archive.rs`.
+The simplicity finding `enforce_manifest::is_regex_meta` →
+`regex::escape` was applied via `/gov:review` `--fix` on the same
+HEAD as this review (`f8d4008`). The `is_regex_meta` table was
+deleted; `compile_glob` now delegates per-character escaping to
+`regex::escape` (already in the crate's deps). All 14
+`enforce_manifest::tests` still pass byte-for-byte against the new
+implementation, including
+`glob_escapes_regex_metacharacters` (verifies `legacy.md` does NOT
+match `legacyXmd` — i.e. `.` is treated as a literal, not a regex
+`any`) and `regex_metacharacter_inside_glob_is_treated_as_a_literal`
+(verifies `[bracket].md` matches its literal form). The pre-fix
+behavior is preserved by `regex::escape`'s contract.
 
 ## Low-confidence findings
 
-### LOW: silent-truncation — fetch-archive surfaces oversized responses as a sha mismatch
+### LOW-CONFIDENCE: quality — `apply-manifest` reads the entire destination file to detect `unchanged`
 
-- **File**: `runtime/src/primitives/fetch_archive.rs:84-90`
-- **Pass**: quality (confidence 65)
-- **Finding**: `response.take(MAX_FETCH_BYTES).read_to_end(&mut buf)`
-  silently truncates the body when the response exceeds 256 MiB. The
-  truncated body fails sha256 verification later, so the user sees a
-  `ChecksumMismatch` error rather than "exceeded MAX_FETCH_BYTES." For
-  the bootstrap workflow this is unlikely to fire (framework tarballs
-  are ~50 KiB compressed), but the error message would mislead
-  whoever does hit it.
-- **Suggested fix**: check `response.content_length()` before
-  reading; if present and over the limit, fail fast with a new
-  `PrimitiveError::ArchiveTooLarge { expected, limit }` variant.
-  Lower-priority if MAX_FETCH_BYTES never matters in practice.
+- **File**: `runtime/src/primitives/apply_manifest.rs:178-201`
+  (`apply_update`).
+- **Confidence**: 60 — depends on real-world file sizes the
+  bootstrap touches. Framework files are small (`<10 KiB`); not yet
+  exercised against larger payloads.
+- **Finding**: when `dest_exists`, `apply_update` reads the entire
+  destination into memory and compares against the post-substitution
+  bytes. For small files this is fine; for a `unchanged` decision
+  across a large staging tree the cost is `O(sum-of-file-sizes)`
+  per run. A streaming compare (read N bytes at a time, short-circuit
+  on first mismatch) would bound the memory cost.
+- **Auto-fixable**: no — optimization that's only worth doing when
+  use cases prove it's needed.
+- **Suggested fix**: defer until profiling on a real bootstrap
+  identifies a hot spot. Document the current behavior in the
+  primitive's module docs.
 
-### LOW: marker-substring-match — merge-claude-md uses unanchored substring search
+### LOW-CONFIDENCE: quality — `find_line_prefix_block` byte-offset arithmetic is dense
 
-- **File**: `runtime/src/primitives/merge_claude_md.rs:96-128`
-- **Pass**: quality (confidence 50)
-- **Finding**: `text.find(begin)` matches the BEGIN marker anywhere in
-  the file — including inside fenced code blocks where an adopter
-  might be quoting the marker for documentation purposes. If a code
-  example happens to embed `<!-- BEGIN govern-managed -->` and `<!-- END govern-managed -->`,
-  the primitive treats those quoted markers as the managed region and
-  replaces the wrong block. Unlikely in practice but possible.
-- **Suggested fix**: low-priority. If it ever matters, anchor markers
-  to lines that contain *only* the marker (e.g., scan line-by-line and
-  match on stripped equality rather than substring).
+- **File**: `runtime/src/primitives/merge_managed_block.rs:220-240`.
+- **Confidence**: 70 — unit tests cover the surface (created /
+  inserted / updated / unchanged across line-prefix shapes,
+  including CRLF and EOF-no-newline edge cases), but the manual
+  byte-offset math (`offset + line_end + usize::from(line_end < rest.len())`)
+  is harder to audit than line-iterator-based scanning would be.
+- **Finding**: the implementation walks the file by repeatedly
+  finding `\n` in a tail slice, computing the next offset by
+  conditionally adding 1 for the consumed newline. The
+  `usize::from(bool)` idiom is correct but non-obvious; a reader
+  has to verify the loop variant manually. Refactoring to use
+  `text.lines()` plus a separate byte-offset tracker (or
+  `text.split_inclusive('\n').enumerate()`) would make the loop
+  invariant explicit.
+- **Auto-fixable**: no — refactor pending a clearer reading-by-line
+  shape.
+- **Suggested fix**: defer until the function needs to be touched
+  for another reason; current behavior is correct and tested.
 
 ## Waived findings
 
@@ -154,20 +199,4 @@ non-blocking and may advance to `done` after `/gov:validate`.**
 
 ## Skipped passes
 
-*None — all five passes ran.*
-
-## Notes
-
-- The shipped security rule files (`security-backend.md`,
-  `security-frontend.md`) cover web-application threats that don't
-  apply to a CLI / MCP server. The runtime's threat model — archive
-  path traversal, supply-chain integrity (sha256 verification of
-  downloads), unbounded resource use — is addressed in-code (see
-  `safe_join` in `extract_archive.rs` and the `MAX_FETCH_BYTES` cap in
-  `fetch_archive.rs`). A future spec adding a `framework/rules/security-cli.md`
-  would let `/gov:review` flag these patterns automatically.
-- The govern-basic parity fixture is recorded as deferred in
-  `tasks.md`'s sub-task 26.8 note; the back-half chain test in
-  `runtime/tests/exec_subprocess.rs` covers the post-fetch pipeline
-  end-to-end. The full-procedure parity check waits on mock-HTTP
-  support in the parity harness.
+*None — all five passes ran against the apply-manifest scope.*
