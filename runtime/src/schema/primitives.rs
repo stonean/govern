@@ -491,6 +491,39 @@ pub struct LintMarkdownResult {
     pub exit_code: i32,
 }
 
+// -- extract-archive ---------------------------------------------------------
+
+/// Args for `extract-archive`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct ExtractArchiveArgs {
+    /// Local path to the archive (`.tar.gz`, `.tgz`, `.zip`).
+    #[arg(long)]
+    pub archive: String,
+    /// Destination directory; created if missing.
+    #[arg(long)]
+    pub dest: String,
+    /// Explicit format override (`tar-gz` / `zip`). Auto-detected from the
+    /// archive's extension when absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[arg(long)]
+    pub format: Option<String>,
+}
+
+/// Result for `extract-archive`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct ExtractArchiveResult {
+    /// Repo-relative or absolute path of the destination directory.
+    pub dest: String,
+    /// Repo-relative paths of every regular file extracted, in archive order.
+    pub files: Vec<String>,
+    /// Count of regular files extracted (directories are not counted).
+    pub count: u32,
+    /// Detected or override format echoed back (`tar-gz` or `zip`).
+    pub format: String,
+}
+
 // -- fetch-archive -----------------------------------------------------------
 
 /// Args for `fetch-archive`.
@@ -840,6 +873,32 @@ mod tests {
         };
         assert_eq!(round_trip(&args), args);
         let result = GateConfirmResult { confirmed: true };
+        assert_eq!(round_trip(&result), result);
+    }
+
+    #[test]
+    fn extract_archive_round_trip() {
+        use super::{ExtractArchiveArgs, ExtractArchiveResult};
+        let args = ExtractArchiveArgs {
+            archive: "/tmp/gvrn.tar.gz".into(),
+            dest: "/tmp/out".into(),
+            format: Some("tar-gz".into()),
+        };
+        let value: serde_json::Value = serde_json::to_value(&args).unwrap();
+        assert_eq!(value["archive"], "/tmp/gvrn.tar.gz");
+        assert_eq!(value["dest"], "/tmp/out");
+        assert_eq!(value["format"], "tar-gz");
+        assert_eq!(round_trip(&args), args);
+
+        let result = ExtractArchiveResult {
+            dest: "/tmp/out".into(),
+            files: vec!["a.txt".into(), "dir/b.txt".into()],
+            count: 2,
+            format: "tar-gz".into(),
+        };
+        let r_value: serde_json::Value = serde_json::to_value(&result).unwrap();
+        assert_eq!(r_value["count"], 2);
+        assert_eq!(r_value["files"][1], "dir/b.txt");
         assert_eq!(round_trip(&result), result);
     }
 

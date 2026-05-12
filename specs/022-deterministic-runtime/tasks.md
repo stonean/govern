@@ -211,7 +211,7 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 ## 26. Implement scenario: govern-bootstrap
 
 - [x] 26.1 Add `fetch-archive` primitive — download a URL to a local path, fetch its sha256 sidecar, verify the hash; pure-Rust function with unit tests for the verification helper. Adds `reqwest` (blocking, rustls-tls) and `sha2` deps.
-- [ ] 26.2 Add `extract-archive` primitive — untar/unzip a local archive into a staging directory; tar.gz on Unix and zip everywhere. Adds the `zip` crate (in-process; no shell-out).
+- [x] 26.2 Add `extract-archive` primitive — untar/unzip a local archive into a staging directory; tar.gz on Unix and zip everywhere. Adds the `zip` crate (in-process; no shell-out).
 - [ ] 26.3 Add `substitute-templates` primitive — walk a staging tree, apply a `{key}` → value substitution map, write to a target tree; unit test on a small staging tree.
 - [ ] 26.4 Add `merge-claude-md` primitive — idempotent block insert/update; unit tests for first-run, update-mode, and no-op cases.
 - [ ] 26.5 Extend `gvrn exec`'s command resolution to also look at `framework/bootstrap/<name>.md` after the existing two candidates; integration test in `runtime/tests/exec_subprocess.rs`.

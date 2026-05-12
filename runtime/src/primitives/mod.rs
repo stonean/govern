@@ -13,6 +13,7 @@ use std::path::{Path, PathBuf};
 pub mod check_rule_ids;
 pub mod check_stuck;
 pub mod derive_boundary;
+pub mod extract_archive;
 pub mod fetch_archive;
 pub mod gate_confirm;
 pub mod lint_markdown;
@@ -154,6 +155,18 @@ pub enum PrimitiveError {
         url: String,
         /// One-line description of what was malformed.
         reason: String,
+    },
+    /// Archive format could not be inferred from extension and no override given.
+    #[error("unknown archive format for {path} (expected .tar.gz/.tgz/.zip)")]
+    UnknownArchiveFormat {
+        /// Local archive path whose format couldn't be determined.
+        path: PathBuf,
+    },
+    /// Archive entry path escapes the destination directory (`..`, absolute).
+    #[error("unsafe archive entry path: {entry}")]
+    UnsafeArchivePath {
+        /// Entry path as it appeared inside the archive.
+        entry: String,
     },
 }
 
