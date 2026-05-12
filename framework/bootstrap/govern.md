@@ -19,17 +19,19 @@ The same `govern.md` supports every agent the framework knows about. The set of 
 
 ## Instructions
 
+> **For agent runtimes**: backticked primitive names in this section (`fetch-archive`, `extract-archive`, `substitute-templates`, `merge-claude-md`) map to MCP tools the optional [gvrn runtime](https://crates.io/crates/gvrn) registers as `gov-rt:<primitive>` (e.g., `gov-rt:fetch-archive`). When that MCP server is registered for your session, **call the `gov-rt:*` tool** for each step listed below — that is the deterministic path. When it is not registered, walk the markdown-only reference below (`tar -xzf`, `curl`, etc.) to produce the same result. The two paths share a contract; neither one wraps the other.
+
 1. The walker context carries the inputs the host has already gathered and validated: project (the destination project name), description (one-line project description), languages (comma-separated), agents (registry keys), framework-version (release tag), archive-url and sha256-url (computed from framework-version), staging-dir and substitutions-map. The host runs the markdown-only reference below to collect inputs, derive registry values, and seed context; the runtime walks the procedure that follows.
 
-2. Invoke `fetch-archive` to download the framework tarball. The primitive verifies the sha256 against a sidecar URL when one is supplied; without a sidecar (the live-on-main case, since GitHub's auto-generated source tarballs ship without sidecars) it returns the computed digest and `verified: false`, leaving any out-of-band verification to the host. A sidecar mismatch halts the procedure with an `error` envelope so no partial state lands in the destination tree.
+2. Invoke `fetch-archive` (MCP: `gov-rt:fetch-archive`) to download the framework tarball. The primitive verifies the sha256 against a sidecar URL when one is supplied; without a sidecar (the live-on-main case, since GitHub's auto-generated source tarballs ship without sidecars) it returns the computed digest and `verified: false`, leaving any out-of-band verification to the host. A sidecar mismatch halts the procedure with an `error` envelope so no partial state lands in the destination tree.
 
-3. Invoke `extract-archive` to expand the verified tarball into the staging directory. Path-traversal protection is applied per entry; symlinks are skipped. Otherwise, follow the markdown-only path's `tar -xzf` workflow.
+3. Invoke `extract-archive` (MCP: `gov-rt:extract-archive`) to expand the verified tarball into the staging directory. Path-traversal protection is applied per entry; symlinks are skipped. Otherwise, follow the markdown-only path's `tar -xzf` workflow.
 
 4. Ask the user to approve writing the framework files into the project before any destination-tree changes. On confirmation, continue to step 5; on denial, the walker exits cleanly without modifying the project.
 
-5. Invoke `substitute-templates` to walk the staging tree, apply `{project}` / `{cli-config-dir}` / `{description}` / `{languages}` substitutions to every text file, and write the result into the project at the host-supplied destination root. Binary files are copied unchanged; existing files at the same relative paths are overwritten.
+5. Invoke `substitute-templates` (MCP: `gov-rt:substitute-templates`) to walk the staging tree, apply `{project}` / `{cli-config-dir}` / `{description}` / `{languages}` substitutions to every text file, and write the result into the project at the host-supplied destination root. Binary files are copied unchanged; existing files at the same relative paths are overwritten.
 
-6. Invoke `merge-claude-md` to idempotently install (or update) the framework-managed block in `CLAUDE.md`. First-run creates the file; subsequent runs update only the region between the BEGIN / END markers, preserving the rest of the file byte-for-byte.
+6. Invoke `merge-claude-md` (MCP: `gov-rt:merge-claude-md`) to idempotently install (or update) the framework-managed block in `CLAUDE.md`. First-run creates the file; subsequent runs update only the region between the BEGIN / END markers, preserving the rest of the file byte-for-byte.
 
 7. Render the completion message (host responsibility): list the agents configured, the next pipeline command (`/{project}:specify`), the optional runtime install pointer (see the README's Runtime section), and any per-agent post-install reminders from the registry rows above.
 
