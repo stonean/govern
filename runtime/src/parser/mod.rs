@@ -48,6 +48,9 @@ pub const PRIMITIVE_NAMES: &[&str] = &[
     "extract-archive",
     "substitute-templates",
     "merge-claude-md",
+    "apply-manifest",
+    "enforce-manifest",
+    "merge-managed-block",
 ];
 
 /// Parse errors raised by [`parse`] and [`check`].

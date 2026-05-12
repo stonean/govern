@@ -22,14 +22,15 @@ use rmcp::{ServerHandler, tool, tool_handler, tool_router};
 use crate::primitives;
 use crate::primitives::gate_confirm::GatePromptPayload;
 use crate::schema::primitives::{
-    CheckRuleIdsArgs, CheckRuleIdsResult, CheckStuckArgs, CheckStuckResult, CheckboxToggleResult,
-    DeriveBoundaryArgs, DeriveBoundaryResult, ExtractArchiveArgs, ExtractArchiveResult,
+    ApplyManifestArgs, ApplyManifestResult, CheckRuleIdsArgs, CheckRuleIdsResult, CheckStuckArgs,
+    CheckStuckResult, CheckboxToggleResult, DeriveBoundaryArgs, DeriveBoundaryResult,
+    EnforceManifestArgs, EnforceManifestResult, ExtractArchiveArgs, ExtractArchiveResult,
     FetchArchiveArgs, FetchArchiveResult, GateConfirmArgs, LintMarkdownArgs, LintMarkdownResult,
-    MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeClaudeMdResult, ReadSpecArgs,
-    ReadSpecResult, ReadTasksArgs, ReadTasksResult, ResolveAnchorArgs, ResolveAnchorResult,
-    RunGeneratorArgs, RunGeneratorResult, SetStatusArgs, SetStatusResult, SubstituteTemplatesArgs,
-    SubstituteTemplatesResult, TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs,
-    ValidateFrontmatterResult,
+    MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeClaudeMdResult, MergeManagedBlockArgs,
+    MergeManagedBlockResult, ReadSpecArgs, ReadSpecResult, ReadTasksArgs, ReadTasksResult,
+    ResolveAnchorArgs, ResolveAnchorResult, RunGeneratorArgs, RunGeneratorResult, SetStatusArgs,
+    SetStatusResult, SubstituteTemplatesArgs, SubstituteTemplatesResult, TraverseDepsArgs,
+    TraverseDepsResult, ValidateFrontmatterArgs, ValidateFrontmatterResult,
 };
 
 /// Canonical MCP tool names exposed by the server, in manifest order.
@@ -52,6 +53,9 @@ pub const TOOL_NAMES: &[&str] = &[
     "gov-rt:extract-archive",
     "gov-rt:substitute-templates",
     "gov-rt:merge-claude-md",
+    "gov-rt:apply-manifest",
+    "gov-rt:enforce-manifest",
+    "gov-rt:merge-managed-block",
 ];
 
 /// MCP server. Cloned per request by `rmcp`, so all state lives behind
@@ -312,6 +316,45 @@ impl GovRuntimeServer {
         params: Parameters<MergeClaudeMdArgs>,
     ) -> Result<Json<MergeClaudeMdResult>, String> {
         primitives::merge_claude_md::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "gov-rt:apply-manifest",
+        description = "Strategy-aware bulk substitute + write driven by a manifest."
+    )]
+    async fn apply_manifest(
+        &self,
+        params: Parameters<ApplyManifestArgs>,
+    ) -> Result<Json<ApplyManifestResult>, String> {
+        primitives::apply_manifest::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "gov-rt:enforce-manifest",
+        description = "Remove files in a directory that are not in the expected manifest."
+    )]
+    async fn enforce_manifest(
+        &self,
+        params: Parameters<EnforceManifestArgs>,
+    ) -> Result<Json<EnforceManifestResult>, String> {
+        primitives::enforce_manifest::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "gov-rt:merge-managed-block",
+        description = "Idempotently merge a framework-managed block with configurable marker shape."
+    )]
+    async fn merge_managed_block(
+        &self,
+        params: Parameters<MergeManagedBlockArgs>,
+    ) -> Result<Json<MergeManagedBlockResult>, String> {
+        primitives::merge_managed_block::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
     }
