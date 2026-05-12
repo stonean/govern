@@ -28,9 +28,10 @@ use crate::io::{read_envelope, write_envelope};
 use crate::primitives;
 use crate::schema::extensions::{self, ValidationError, WriteCodeResponse};
 use crate::schema::primitives::{
-    CheckRuleIdsArgs, CheckStuckArgs, DeriveBoundaryArgs, GateConfirmArgs, LintMarkdownArgs,
-    MarkCriterionArgs, MarkTaskArgs, ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs,
-    RunGeneratorArgs, SetStatusArgs, TraverseDepsArgs, ValidateFrontmatterArgs,
+    CheckRuleIdsArgs, CheckStuckArgs, DeriveBoundaryArgs, ExtractArchiveArgs, FetchArchiveArgs,
+    GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs,
+    ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs, RunGeneratorArgs, SetStatusArgs,
+    SubstituteTemplatesArgs, TraverseDepsArgs, ValidateFrontmatterArgs,
 };
 use crate::schema::procedure::{Procedure, Step, StepNumber};
 use crate::schema::protocol::{ErrorLocation, ProtocolMessage};
@@ -472,6 +473,10 @@ fn dispatch_primitive(
         "check-rule-ids" => call!(CheckRuleIdsArgs, check_rule_ids),
         "run-generator" => call!(RunGeneratorArgs, run_generator),
         "lint-markdown" => call!(LintMarkdownArgs, lint_markdown),
+        "fetch-archive" => call!(FetchArchiveArgs, fetch_archive),
+        "extract-archive" => call!(ExtractArchiveArgs, extract_archive),
+        "substitute-templates" => call!(SubstituteTemplatesArgs, substitute_templates),
+        "merge-claude-md" => call!(MergeClaudeMdArgs, merge_claude_md),
         "gate-confirm" => {
             // The interpreter-level gate handler emits gate-confirm via
             // its own path (see handle_gate). When a primitive named

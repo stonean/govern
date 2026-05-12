@@ -23,11 +23,13 @@ use crate::primitives;
 use crate::primitives::gate_confirm::GatePromptPayload;
 use crate::schema::primitives::{
     CheckRuleIdsArgs, CheckRuleIdsResult, CheckStuckArgs, CheckStuckResult, CheckboxToggleResult,
-    DeriveBoundaryArgs, DeriveBoundaryResult, GateConfirmArgs, LintMarkdownArgs,
-    LintMarkdownResult, MarkCriterionArgs, MarkTaskArgs, ReadSpecArgs, ReadSpecResult,
-    ReadTasksArgs, ReadTasksResult, ResolveAnchorArgs, ResolveAnchorResult, RunGeneratorArgs,
-    RunGeneratorResult, SetStatusArgs, SetStatusResult, TraverseDepsArgs, TraverseDepsResult,
-    ValidateFrontmatterArgs, ValidateFrontmatterResult,
+    DeriveBoundaryArgs, DeriveBoundaryResult, ExtractArchiveArgs, ExtractArchiveResult,
+    FetchArchiveArgs, FetchArchiveResult, GateConfirmArgs, LintMarkdownArgs, LintMarkdownResult,
+    MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeClaudeMdResult, ReadSpecArgs,
+    ReadSpecResult, ReadTasksArgs, ReadTasksResult, ResolveAnchorArgs, ResolveAnchorResult,
+    RunGeneratorArgs, RunGeneratorResult, SetStatusArgs, SetStatusResult, SubstituteTemplatesArgs,
+    SubstituteTemplatesResult, TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs,
+    ValidateFrontmatterResult,
 };
 
 /// Canonical MCP tool names exposed by the server, in manifest order.
@@ -46,6 +48,10 @@ pub const TOOL_NAMES: &[&str] = &[
     "gov-rt:run-generator",
     "gov-rt:lint-markdown",
     "gov-rt:gate-confirm",
+    "gov-rt:fetch-archive",
+    "gov-rt:extract-archive",
+    "gov-rt:substitute-templates",
+    "gov-rt:merge-claude-md",
 ];
 
 /// MCP server. Cloned per request by `rmcp`, so all state lives behind
@@ -256,6 +262,58 @@ impl GovRuntimeServer {
             &params.0,
             &request_id,
         )))
+    }
+
+    #[tool(
+        name = "gov-rt:fetch-archive",
+        description = "Download an archive plus its sha256 sidecar and verify the hash."
+    )]
+    async fn fetch_archive(
+        &self,
+        params: Parameters<FetchArchiveArgs>,
+    ) -> Result<Json<FetchArchiveResult>, String> {
+        primitives::fetch_archive::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "gov-rt:extract-archive",
+        description = "Extract a local `.tar.gz` / `.zip` archive into a destination directory."
+    )]
+    async fn extract_archive(
+        &self,
+        params: Parameters<ExtractArchiveArgs>,
+    ) -> Result<Json<ExtractArchiveResult>, String> {
+        primitives::extract_archive::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "gov-rt:substitute-templates",
+        description = "Walk a source tree, apply `{key}` substitutions, and write to a destination."
+    )]
+    async fn substitute_templates(
+        &self,
+        params: Parameters<SubstituteTemplatesArgs>,
+    ) -> Result<Json<SubstituteTemplatesResult>, String> {
+        primitives::substitute_templates::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "gov-rt:merge-claude-md",
+        description = "Idempotently merge a framework-managed block into the adopter's CLAUDE.md."
+    )]
+    async fn merge_claude_md(
+        &self,
+        params: Parameters<MergeClaudeMdArgs>,
+    ) -> Result<Json<MergeClaudeMdResult>, String> {
+        primitives::merge_claude_md::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
     }
 }
 

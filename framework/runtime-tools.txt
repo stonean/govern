@@ -31,3 +31,7 @@ gov-rt:check-rule-ids
 gov-rt:run-generator
 gov-rt:lint-markdown
 gov-rt:gate-confirm
+gov-rt:fetch-archive
+gov-rt:extract-archive
+gov-rt:substitute-templates
+gov-rt:merge-claude-md

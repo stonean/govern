@@ -44,6 +44,10 @@ pub const PRIMITIVE_NAMES: &[&str] = &[
     "run-generator",
     "lint-markdown",
     "gate-confirm",
+    "fetch-archive",
+    "extract-archive",
+    "substitute-templates",
+    "merge-claude-md",
 ];
 
 /// Parse errors raised by [`parse`] and [`check`].
