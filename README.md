@@ -75,14 +75,18 @@ Download the pre-built binary for your platform from the [latest release](https:
 # Example for aarch64-apple-darwin; substitute your target triple.
 VERSION="0.1.0"
 TARGET="aarch64-apple-darwin"
-curl -L -o runtime.tar.gz \
-  "https://github.com/stonean/govern/releases/download/runtime-v${VERSION}/runtime-${TARGET}.tar.gz"
-curl -L -o runtime.tar.gz.sha256 \
-  "https://github.com/stonean/govern/releases/download/runtime-v${VERSION}/runtime-${TARGET}.tar.gz.sha256"
-shasum -a 256 -c runtime.tar.gz.sha256
-tar xzf runtime.tar.gz
+ARCHIVE="runtime-${TARGET}.tar.gz"
+BASE="https://github.com/stonean/govern/releases/download/runtime-v${VERSION}"
+
+curl -LO "${BASE}/${ARCHIVE}"
+curl -LO "${BASE}/${ARCHIVE}.sha256"
+shasum -a 256 -c "${ARCHIVE}.sha256"
+tar xzf "${ARCHIVE}"
 sudo install -m 0755 runtime /usr/local/bin/gvrn
 gvrn --version
+
+# Clean up the working directory.
+rm -f "${ARCHIVE}" "${ARCHIVE}.sha256" runtime
 ```
 
 The binary is named `runtime` inside the tarball (the in-project Cargo target name); the `install` step renames it to `gvrn` at its `/usr/local/bin/` destination so it's unambiguous on `$PATH`. Adjust the destination name to taste if you prefer a different one — nothing in the framework hard-codes the installed binary's name.
