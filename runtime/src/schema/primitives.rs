@@ -491,6 +491,41 @@ pub struct LintMarkdownResult {
     pub exit_code: i32,
 }
 
+// -- merge-claude-md ---------------------------------------------------------
+
+/// Args for `merge-claude-md`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct MergeClaudeMdArgs {
+    /// Local path to the adopter's `CLAUDE.md` (relative paths resolve
+    /// against the runtime's `repo`).
+    #[arg(long)]
+    pub path: String,
+    /// Markdown block the framework wants to install (between the BEGIN /
+    /// END marker pair). Trailing whitespace is normalized to a single
+    /// newline before write.
+    #[arg(long)]
+    pub block: String,
+    /// Marker name used to delimit the framework-managed region.
+    /// Defaults to `govern-managed`. Multiple frameworks can coexist in
+    /// the same CLAUDE.md by using different marker names.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[arg(long)]
+    pub marker: Option<String>,
+}
+
+/// Result for `merge-claude-md`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct MergeClaudeMdResult {
+    /// Repo-relative or absolute path of the merged file.
+    pub path: String,
+    /// One of `created`, `inserted`, `updated`, `unchanged`.
+    pub action: String,
+    /// Marker name actually applied (echoes the arg's value or the default).
+    pub marker: String,
+}
+
 // -- substitute-templates ----------------------------------------------------
 
 /// Args for `substitute-templates`.
@@ -911,6 +946,38 @@ mod tests {
         assert_eq!(round_trip(&args), args);
         let result = GateConfirmResult { confirmed: true };
         assert_eq!(round_trip(&result), result);
+    }
+
+    #[test]
+    fn merge_claude_md_round_trip() {
+        use super::{MergeClaudeMdArgs, MergeClaudeMdResult};
+        let args = MergeClaudeMdArgs {
+            path: "CLAUDE.md".into(),
+            block: "framework block body".into(),
+            marker: Some("govern-managed".into()),
+        };
+        let value: serde_json::Value = serde_json::to_value(&args).unwrap();
+        assert_eq!(value["block"], "framework block body");
+        assert_eq!(value["marker"], "govern-managed");
+        assert_eq!(round_trip(&args), args);
+
+        let result = MergeClaudeMdResult {
+            path: "CLAUDE.md".into(),
+            action: "created".into(),
+            marker: "govern-managed".into(),
+        };
+        let r_value: serde_json::Value = serde_json::to_value(&result).unwrap();
+        assert_eq!(r_value["action"], "created");
+        assert_eq!(round_trip(&result), result);
+
+        // marker omitted serializes without the field
+        let args_no_marker = MergeClaudeMdArgs {
+            path: "CLAUDE.md".into(),
+            block: "x".into(),
+            marker: None,
+        };
+        let v: serde_json::Value = serde_json::to_value(&args_no_marker).unwrap();
+        assert!(!v.as_object().unwrap().contains_key("marker"));
     }
 
     #[test]

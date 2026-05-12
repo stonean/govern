@@ -11,9 +11,9 @@ use gvrn::mcp::server::GovRuntimeServer;
 use gvrn::primitives;
 use gvrn::schema::primitives::{
     CheckRuleIdsArgs, CheckStuckArgs, DeriveBoundaryArgs, ExtractArchiveArgs, FetchArchiveArgs,
-    GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs, ReadSpecArgs,
-    ReadTasksArgs, ResolveAnchorArgs, RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs,
-    TraverseDepsArgs, ValidateFrontmatterArgs,
+    GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs,
+    ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs, RunGeneratorArgs, SetStatusArgs,
+    SubstituteTemplatesArgs, TraverseDepsArgs, ValidateFrontmatterArgs,
 };
 
 #[derive(Parser, Debug)]
@@ -86,6 +86,8 @@ enum Command {
     ExtractArchive(ExtractArchiveArgs),
     /// Walk a source tree, apply `{key}` substitutions, and write to a destination.
     SubstituteTemplates(SubstituteTemplatesArgs),
+    /// Idempotently merge a framework-managed block into the adopter's CLAUDE.md.
+    MergeClaudeMd(MergeClaudeMdArgs),
     /// Emit a `gate-confirm` envelope on stdout and block for a response.
     GateConfirm(GateConfirmArgs),
 }
@@ -331,6 +333,7 @@ fn main() -> ExitCode {
         Command::SubstituteTemplates(args) => {
             emit_result(primitives::substitute_templates::run(&args, &repo))
         }
+        Command::MergeClaudeMd(args) => emit_result(primitives::merge_claude_md::run(&args, &repo)),
         Command::GateConfirm(args) => {
             // The CLI binding is the subprocess-interpreter surface: emit the
             // gate-confirm envelope on stdout, then read one gate-response

@@ -19,6 +19,7 @@ pub mod gate_confirm;
 pub mod lint_markdown;
 pub mod mark_criterion;
 pub mod mark_task;
+pub mod merge_claude_md;
 pub mod read_spec;
 pub mod read_tasks;
 pub mod resolve_anchor;
@@ -168,6 +169,15 @@ pub enum PrimitiveError {
     UnsafeArchivePath {
         /// Entry path as it appeared inside the archive.
         entry: String,
+    },
+    /// CLAUDE.md merge found a BEGIN marker without a matching END (or
+    /// vice versa).
+    #[error("malformed managed-block markers in {path}: {reason}")]
+    MalformedMarkers {
+        /// Path of the file whose markers were malformed.
+        path: PathBuf,
+        /// One-line description of the structural failure.
+        reason: String,
     },
 }
 
