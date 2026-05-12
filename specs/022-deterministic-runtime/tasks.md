@@ -216,7 +216,7 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 - [x] 26.4 Add `merge-claude-md` primitive — idempotent block insert/update; unit tests for first-run, update-mode, and no-op cases.
 - [x] 26.5 Extend `gvrn exec`'s command resolution to also look at `framework/bootstrap/<name>.md` after the existing two candidates; integration test in `runtime/tests/exec_subprocess.rs`.
 - [x] 26.6 Wire the four new primitives into the walker dispatcher and the MCP server tool list; update `framework/runtime-tools.txt`.
-- [ ] 26.7 Rewrite `framework/bootstrap/govern.md` Instructions section under the parseable conventions, keeping the existing prose as a `## Markdown-only reference` block; add `parity:` frontmatter.
+- [x] 26.7 Rewrite `framework/bootstrap/govern.md` Instructions section under the parseable conventions, keeping the existing prose as a `## Markdown-only reference` block; add `parity:` frontmatter.
 - [ ] 26.8 Create fixture `runtime/tests/fixtures/govern-basic/` (adopter-project skeleton plus a tiny archive asset) and the golden JSONL stream; add the parity test case.
 - [ ] 26.9 Add CHANGELOG entry; bump `gvrn` to 0.2.0; re-run every lint (cargo test, clippy, fmt, lint-procedure-parseability, lint-tool-coverage, markdownlint).
 - **Done when**: the scenario's described behavior is correctly implemented and tested.

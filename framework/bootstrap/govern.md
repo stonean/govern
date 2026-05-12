@@ -1,6 +1,14 @@
 ---
 description: Adopt or update govern in an existing project.
 argument-hint: "[project] [--agents=key1,key2,...] [--add-agent]"
+parity:
+  strict-files:
+    - "{cli-config-dir}/commands/govern.md"
+    - "{cli-config-dir}/commands/{project}/specify.md"
+    - "{cli-config-dir}/commands/{project}/clarify.md"
+    - "AGENTS.md"
+  semantic-fields:
+    - completion-message
 ---
 
 # govern
@@ -8,6 +16,22 @@ argument-hint: "[project] [--agents=key1,key2,...] [--add-agent]"
 Bootstrap `govern` in an existing project. This command fetches templates from the `govern` repo, scaffolds `govern` files for one or more AI coding CLIs, resolves placeholders, and displays next steps.
 
 The same `govern.md` supports every agent the framework knows about. The set of supported agents lives in the **Agent Registry** below; per-agent values are looked up by registry key during scaffolding.
+
+## Instructions
+
+1. The walker context carries the inputs the host has already gathered and validated: project (the destination project name), description (one-line project description), languages (comma-separated), agents (registry keys), framework-version (release tag), archive-url and sha256-url (computed from framework-version), staging-dir and substitutions-map. The host runs the markdown-only reference below to collect inputs, derive registry values, and seed context; the runtime walks the procedure that follows.
+
+2. Invoke `fetch-archive` to download the framework release tarball and its sha256 sidecar; the primitive verifies the hash before persisting the archive. A mismatch halts the procedure with an `error` envelope so no partial state lands in the destination tree.
+
+3. Invoke `extract-archive` to expand the verified tarball into the staging directory. Path-traversal protection is applied per entry; symlinks are skipped. Otherwise, follow the markdown-only path's `tar -xzf` workflow.
+
+4. Ask the user to approve writing the framework files into the project before any destination-tree changes. On confirmation, continue to step 5; on denial, the walker exits cleanly without modifying the project.
+
+5. Invoke `substitute-templates` to walk the staging tree, apply `{project}` / `{cli-config-dir}` / `{description}` / `{languages}` substitutions to every text file, and write the result into the project at the host-supplied destination root. Binary files are copied unchanged; existing files at the same relative paths are overwritten.
+
+6. Invoke `merge-claude-md` to idempotently install (or update) the framework-managed block in `CLAUDE.md`. First-run creates the file; subsequent runs update only the region between the BEGIN / END markers, preserving the rest of the file byte-for-byte.
+
+7. Render the completion message (host responsibility): list the agents configured, the next pipeline command (`/{project}:specify`), the optional runtime install pointer (see the README's Runtime section), and any per-agent post-install reminders from the registry rows above.
 
 ## Agent Registry
 
