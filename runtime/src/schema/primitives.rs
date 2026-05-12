@@ -666,6 +666,60 @@ pub struct EnforceManifestResult {
     pub pinned_kept: Vec<String>,
 }
 
+// -- merge-managed-block -----------------------------------------------------
+
+/// Args for `merge-managed-block`.
+///
+/// Generalization of [`MergeClaudeMdArgs`] that handles configurable
+/// marker shapes. `marker-style: "html-comment"` (default) reproduces
+/// `merge-claude-md`'s exact behavior; `marker-style: "line-prefix"`
+/// uses a single `# {marker}` preamble line followed by the block,
+/// terminated by a blank line or EOF — matching `.gitignore` and
+/// `.gitattributes` conventions.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct MergeManagedBlockArgs {
+    /// Local path to the file to merge into (relative paths resolve
+    /// against the runtime's `repo`).
+    #[arg(long)]
+    pub path: String,
+    /// Markdown / plain-text block the framework wants to install.
+    /// Trailing whitespace is normalized to a single newline before
+    /// write.
+    #[arg(long)]
+    pub block: String,
+    /// Marker name used to delimit the framework-managed region.
+    /// Defaults to `govern-managed`. Multiple frameworks can coexist in
+    /// the same file by using different marker names.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[arg(long)]
+    pub marker: Option<String>,
+    /// One of `html-comment` (default) or `line-prefix`. The former
+    /// uses `<!-- BEGIN/END {marker} -->` pairs; the latter uses a
+    /// single `# {marker}` preamble line followed by the block,
+    /// terminated by a blank line or EOF.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[arg(long)]
+    pub marker_style: Option<String>,
+}
+
+/// Result for `merge-managed-block`. Same shape as
+/// [`MergeClaudeMdResult`] — `merge-claude-md` is now a compat shim
+/// that delegates to `merge-managed-block` with
+/// `marker-style: html-comment` and `marker: govern-managed`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct MergeManagedBlockResult {
+    /// Repo-relative or absolute path of the merged file.
+    pub path: String,
+    /// One of `created`, `inserted`, `updated`, `unchanged`.
+    pub action: String,
+    /// Marker name actually applied (echoes the arg's value or the default).
+    pub marker: String,
+    /// Marker style actually applied (echoes the arg's value or the default).
+    pub marker_style: String,
+}
+
 // -- substitute-templates ----------------------------------------------------
 
 /// Args for `substitute-templates`.
@@ -1199,6 +1253,42 @@ mod tests {
         let r_value: serde_json::Value = serde_json::to_value(&result).unwrap();
         assert_eq!(r_value["count"], 2);
         assert_eq!(r_value["files"][1], "dir/b.txt");
+        assert_eq!(round_trip(&result), result);
+    }
+
+    #[test]
+    fn merge_managed_block_round_trip() {
+        use super::{MergeManagedBlockArgs, MergeManagedBlockResult};
+        let args = MergeManagedBlockArgs {
+            path: ".gitignore".into(),
+            block: ".claude/\nspecs/.cache/".into(),
+            marker: Some("govern-managed".into()),
+            marker_style: Some("line-prefix".into()),
+        };
+        let value: serde_json::Value = serde_json::to_value(&args).unwrap();
+        assert_eq!(value["marker-style"], "line-prefix");
+        assert_eq!(value["marker"], "govern-managed");
+        assert_eq!(round_trip(&args), args);
+
+        // marker_style omitted serializes without the field.
+        let args_default_style = MergeManagedBlockArgs {
+            path: "CLAUDE.md".into(),
+            block: "x".into(),
+            marker: None,
+            marker_style: None,
+        };
+        let v: serde_json::Value = serde_json::to_value(&args_default_style).unwrap();
+        assert!(!v.as_object().unwrap().contains_key("marker-style"));
+        assert!(!v.as_object().unwrap().contains_key("marker"));
+
+        let result = MergeManagedBlockResult {
+            path: ".gitignore".into(),
+            action: "inserted".into(),
+            marker: "govern-managed".into(),
+            marker_style: "line-prefix".into(),
+        };
+        let r_value: serde_json::Value = serde_json::to_value(&result).unwrap();
+        assert_eq!(r_value["marker-style"], "line-prefix");
         assert_eq!(round_trip(&result), result);
     }
 

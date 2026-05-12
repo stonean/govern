@@ -12,8 +12,8 @@ use gvrn::primitives;
 use gvrn::schema::primitives::{
     ApplyManifestArgs, CheckRuleIdsArgs, CheckStuckArgs, DeriveBoundaryArgs, EnforceManifestArgs,
     ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs,
-    MarkTaskArgs, MergeClaudeMdArgs, ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs,
-    RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs,
+    MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs, ReadSpecArgs, ReadTasksArgs,
+    ResolveAnchorArgs, RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs,
     ValidateFrontmatterArgs,
 };
 
@@ -93,6 +93,8 @@ enum Command {
     EnforceManifest(EnforceManifestArgs),
     /// Idempotently merge a framework-managed block into the adopter's CLAUDE.md.
     MergeClaudeMd(MergeClaudeMdArgs),
+    /// Idempotently merge a framework-managed block with configurable marker shape.
+    MergeManagedBlock(MergeManagedBlockArgs),
     /// Emit a `gate-confirm` envelope on stdout and block for a response.
     GateConfirm(GateConfirmArgs),
 }
@@ -349,6 +351,9 @@ fn main() -> ExitCode {
             emit_result(primitives::enforce_manifest::run(&args, &repo))
         }
         Command::MergeClaudeMd(args) => emit_result(primitives::merge_claude_md::run(&args, &repo)),
+        Command::MergeManagedBlock(args) => {
+            emit_result(primitives::merge_managed_block::run(&args, &repo))
+        }
         Command::GateConfirm(args) => {
             // The CLI binding is the subprocess-interpreter surface: emit the
             // gate-confirm envelope on stdout, then read one gate-response

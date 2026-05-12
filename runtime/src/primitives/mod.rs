@@ -22,6 +22,7 @@ pub mod lint_markdown;
 pub mod mark_criterion;
 pub mod mark_task;
 pub mod merge_claude_md;
+pub mod merge_managed_block;
 pub mod read_spec;
 pub mod read_tasks;
 pub mod resolve_anchor;

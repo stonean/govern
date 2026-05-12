@@ -1,132 +1,47 @@
-//! `merge-claude-md` — idempotently install or update a
-//! framework-managed block in the adopter's `CLAUDE.md`.
+//! `merge-claude-md` — compat shim that delegates to
+//! [`crate::primitives::merge_managed_block`] with
+//! `marker-style: "html-comment"` and `marker: "govern-managed"`.
 //!
 //! The managed region is delimited by paired HTML-comment markers
-//! `<!-- BEGIN {marker} -->` and `<!-- END {marker} -->` (marker name
-//! defaults to `govern-managed`). On each invocation the primitive
-//! chooses one of four actions:
+//! `<!-- BEGIN govern-managed -->` and `<!-- END govern-managed -->`.
+//! All four actions — `created`, `inserted`, `updated`, `unchanged` —
+//! are inherited from `merge-managed-block`.
 //!
-//! - **created**: the file did not exist; a new file containing only
-//!   the marker pair plus the supplied block is written.
-//! - **inserted**: the file existed but contained no markers; the
-//!   marker pair plus block is appended to the end after a blank-line
-//!   separator (with a single trailing newline).
-//! - **updated**: markers were present; the body between them differed
-//!   from the supplied block, so the markers' contents are replaced.
-//!   Content outside the markers is preserved byte-for-byte.
-//! - **unchanged**: markers were present and the body matched; the
-//!   file is not rewritten (preserves mtime, idempotent for tools).
-//!
-//! Markers must be balanced: a BEGIN without an END (or vice versa)
-//! yields [`PrimitiveError::MalformedMarkers`] — that's an adopter-edit
-//! error the primitive refuses to silently repair.
+//! Retained as a thin wrapper so existing callers (the bootstrap
+//! fixture, parity goldens, and any host scripts) keep working
+//! unchanged. Slated for removal in the next major `gvrn` release;
+//! new callers should reach for `merge-managed-block` directly so
+//! they can opt into other marker styles.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
-use crate::primitives::{PrimitiveError, Result, read_text, write_atomic};
-use crate::schema::primitives::{MergeClaudeMdArgs, MergeClaudeMdResult};
-
-const DEFAULT_MARKER: &str = "govern-managed";
+use crate::primitives::Result;
+use crate::primitives::merge_managed_block;
+use crate::schema::primitives::{MergeClaudeMdArgs, MergeClaudeMdResult, MergeManagedBlockArgs};
 
 /// Execute the `merge-claude-md` primitive.
 ///
 /// # Errors
 ///
-/// - [`PrimitiveError::Io`] on local filesystem failures.
-/// - [`PrimitiveError::MalformedMarkers`] when the file contains a BEGIN marker
-///   without an END (or vice versa).
+/// Forwarded verbatim from
+/// [`crate::primitives::merge_managed_block::run`]:
+///
+/// - [`crate::primitives::PrimitiveError::Io`] on local filesystem failures.
+/// - [`crate::primitives::PrimitiveError::MalformedMarkers`] when the
+///   file contains a BEGIN marker without an END (or vice versa).
 pub fn run(args: &MergeClaudeMdArgs, repo: &Path) -> Result<MergeClaudeMdResult> {
-    let path = resolve_path(repo, &args.path);
-    let marker = args
-        .marker
-        .as_deref()
-        .map_or_else(|| DEFAULT_MARKER.to_string(), str::to_string);
-    let begin = format!("<!-- BEGIN {marker} -->");
-    let end = format!("<!-- END {marker} -->");
-    let normalized_block = normalize_block(&args.block);
-
-    let existing = match path.try_exists() {
-        Ok(true) => Some(read_text(&path)?),
-        Ok(false) => None,
-        Err(source) => {
-            return Err(PrimitiveError::Io {
-                path: path.clone(),
-                source,
-            });
-        }
+    let delegated = MergeManagedBlockArgs {
+        path: args.path.clone(),
+        block: args.block.clone(),
+        marker: args.marker.clone(),
+        marker_style: None, // defaults to html-comment in merge-managed-block
     };
-
-    let (new_content, action) =
-        compute_merge(existing.as_deref(), &begin, &end, &normalized_block, &path)?;
-    if let Some(content) = new_content {
-        write_atomic(&path, &content)?;
-    }
-
+    let result = merge_managed_block::run(&delegated, repo)?;
     Ok(MergeClaudeMdResult {
-        path: path.to_string_lossy().into_owned(),
-        action: action.into(),
-        marker,
+        path: result.path,
+        action: result.action,
+        marker: result.marker,
     })
-}
-
-fn resolve_path(repo: &Path, p: &str) -> PathBuf {
-    let candidate = Path::new(p);
-    if candidate.is_absolute() {
-        candidate.to_path_buf()
-    } else {
-        repo.join(candidate)
-    }
-}
-
-fn normalize_block(block: &str) -> String {
-    block.trim_matches('\n').to_string()
-}
-
-/// Compute the post-merge file content and the action label. Returns
-/// `(Some(content), action)` when the file should be written, or
-/// `(None, "unchanged")` when no write is needed.
-fn compute_merge(
-    existing: Option<&str>,
-    begin: &str,
-    end: &str,
-    block: &str,
-    path: &Path,
-) -> Result<(Option<String>, &'static str)> {
-    match existing {
-        None => Ok((Some(format!("{begin}\n{block}\n{end}\n")), "created")),
-        Some(text) => match (text.find(begin), text.find(end)) {
-            (None, None) => {
-                let separator = if text.ends_with('\n') { "\n" } else { "\n\n" };
-                let combined = format!("{text}{separator}{begin}\n{block}\n{end}\n");
-                Ok((Some(combined), "inserted"))
-            }
-            (Some(b_idx), Some(e_idx)) if b_idx < e_idx => {
-                let before = &text[..b_idx];
-                let inner_start = b_idx + begin.len();
-                let inner = text[inner_start..e_idx].trim_matches('\n');
-                let after = &text[e_idx + end.len()..];
-                if inner == block {
-                    return Ok((None, "unchanged"));
-                }
-                Ok((
-                    Some(format!("{before}{begin}\n{block}\n{end}{after}")),
-                    "updated",
-                ))
-            }
-            (Some(_), Some(_)) => Err(PrimitiveError::MalformedMarkers {
-                path: path.into(),
-                reason: "END marker appears before BEGIN marker".into(),
-            }),
-            (Some(_), None) => Err(PrimitiveError::MalformedMarkers {
-                path: path.into(),
-                reason: "BEGIN marker present without matching END".into(),
-            }),
-            (None, Some(_)) => Err(PrimitiveError::MalformedMarkers {
-                path: path.into(),
-                reason: "END marker present without matching BEGIN".into(),
-            }),
-        },
-    }
 }
 
 #[cfg(test)]
@@ -134,6 +49,7 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
 
     use super::*;
+    use crate::primitives::PrimitiveError;
     use std::fs;
 
     fn args(path: &Path, block: &str) -> MergeClaudeMdArgs {
@@ -248,6 +164,6 @@ mod tests {
         )
         .unwrap();
         let err = run(&args(&path, "anything"), tmp.path()).unwrap_err();
-        matches!(err, PrimitiveError::MalformedMarkers { .. });
+        assert!(matches!(err, PrimitiveError::MalformedMarkers { .. }));
     }
 }
