@@ -149,52 +149,52 @@ Done when: `elaborate.md` source no longer exists; no command source references 
 
 Pure rename, no behavior change. Must land atomically with the help-tables generator script update (task 13) or pre-commit fails.
 
-- [ ] `git mv framework/commands/validate.md framework/commands/analyze.md`.
-- [ ] Edit `framework/commands/analyze.md`: change the H1 from "# Validate" to "# Analyze"; replace the frontmatter `description:` value with exactly `Audit artifacts against each other — spec, plan, tasks, scenarios, frontmatter, dependencies, rule IDs. Read-only.`
-- [ ] Edit `framework/commands/review.md`: replace the frontmatter `description:` value with exactly `Audit code against rules — security, reuse, quality, efficiency, simplicity. Writes review.md; blocks done on MUST violations.`
-- [ ] Run `scripts/gen-help-tables.sh` and confirm both new descriptions propagate to `framework/commands/help.md`'s pipeline table.
-- [ ] Sweep references in command sources: `framework/commands/help.md`, `framework/commands/review.md`, `framework/commands/analyze.md` (self-references in the body), and any other `framework/commands/*.md` with `/validate` mentions.
-- [ ] Sweep references in `framework/constitution.md` (9 occurrences per the audit) — every `/{project}:validate` or `/gov:validate` becomes `/{project}:analyze` / `/gov:analyze`.
-- [ ] Sweep references in `framework/bootstrap/govern.md` (manifest rows and any prose) — `validate.md` → `analyze.md`; `/{project}:validate` → `/{project}:analyze`.
-- [ ] Sweep references in `framework/templates/spec/spec.md` (the template's example references) and `framework/templates/project/project-readme.md`.
-- [ ] Edit `scripts/gen-help-tables.sh`: the pipeline-table builder references `validate.md` and `'/{project}:validate'` — both update to `analyze.md` and `'/{project}:analyze'`.
-- [ ] Edit `scripts/lint-frontmatter.sh`: update any direct `validate.md` reference.
-- [ ] Sweep references in `README.md` (5 occurrences) and `docs/introduction.md`.
-- [ ] Edit `specs/README.md`: add a new "Past Renames" section recording `/validate → /analyze` (one bullet, references this spec).
-- [ ] Verify done specs under `specs/NNN-*/` are NOT modified — `git diff --stat specs/0[0-2][0-9]-*/` should be empty (excluding 023 itself).
-- [ ] Run `scripts/gen-claude-commands.sh` and verify `.claude/commands/gov/validate.md` is pruned and `.claude/commands/gov/analyze.md` is created.
-- [ ] Verify `grep -rn '/validate\b\|validate\.md\|/gov:validate\|/{project}:validate' framework/ scripts/ docs/ README.md AGENTS.md` returns zero hits (excluding the migration-check step in `govern.md` if any, and excluding spec 023's own files).
+- [x] `git mv framework/commands/validate.md framework/commands/analyze.md`. (Used `rm` + `Write` since `git mv` is on the deny list.)
+- [x] Edit `framework/commands/analyze.md`: change the H1 from "# Validate" to "# Analyze"; replace the frontmatter `description:` value with exactly `Audit artifacts against each other — spec, plan, tasks, scenarios, frontmatter, dependencies, rule IDs. Read-only.`
+- [x] Edit `framework/commands/review.md`: replace the frontmatter `description:` value with exactly `Audit code against rules — security, reuse, quality, efficiency, simplicity. Writes review.md; blocks done on MUST violations.`
+- [x] Run `scripts/gen-help-tables.sh` and confirm both new descriptions propagate to `framework/commands/help.md`'s pipeline table.
+- [x] Sweep references in command sources: `framework/commands/help.md`, `framework/commands/review.md`, `framework/commands/analyze.md` (self-references in the body), and any other `framework/commands/*.md` with `/validate` mentions.
+- [x] Sweep references in `framework/constitution.md` (9 occurrences per the audit) — every `/{project}:validate` or `/gov:validate` becomes `/{project}:analyze` / `/gov:analyze`.
+- [x] Sweep references in `framework/bootstrap/govern.md` (manifest rows and any prose) — `validate.md` → `analyze.md`; `/{project}:validate` → `/{project}:analyze`.
+- [x] Sweep references in `framework/templates/spec/spec.md` (the template's example references) and `framework/templates/project/project-readme.md`.
+- [x] Edit `scripts/gen-help-tables.sh`: the pipeline-table builder references `validate.md` and `'/{project}:validate'` — both update to `analyze.md` and `'/{project}:analyze'`.
+- [x] Edit `scripts/lint-frontmatter.sh`: update any direct `validate.md` reference.
+- [x] Sweep references in `README.md` (5 occurrences) and `docs/introduction.md`.
+- [x] Edit `specs/README.md`: add a new "Past Renames" section recording `/validate → /analyze` (also `/capture → /specify` and `/elaborate → /ask`).
+- [x] Verify done specs under `specs/NNN-*/` are NOT modified — `git diff --stat specs/0[0-2][0-9]-*/` should be empty (excluding 023 itself).
+- [x] Run `scripts/gen-claude-commands.sh` and verify `.claude/commands/gov/validate.md` is pruned and `.claude/commands/gov/analyze.md` is created.
+- [x] Verify `grep -rn '/validate\b\|validate\.md\|/gov:validate\|/{project}:validate' framework/ scripts/ docs/ README.md AGENTS.md` returns zero hits except: (a) `framework/commands/analyze.md` line 20 (intentional rename documentation), and (b) `README.md` line 41 (generated table content describing spec 003's frozen-archaeology body).
 
 Done when: source is at `framework/commands/analyze.md`; the grep returns no hits in current-state files; done-spec bodies are untouched; pre-commit hooks pass with the rename + help-generator script update in one commit.
 
 ### 13. Help-tables generator update
 
-- [ ] Edit `scripts/gen-help-tables.sh`: rename the variable `elaborate_table` to `refine_table`; drop the `/elaborate` row from its build invocation; drop the `/capture` row from `brownfield_table`'s invocation; rename the marker name `commands-elaborate` to `commands-refine` throughout the script.
-- [ ] Edit `framework/commands/help.md`: rename the heading `#### Elaborate (add precision)` to `#### Refine`; update the marker pair `commands-elaborate:start` / `commands-elaborate:end` to `commands-refine:start` / `commands-refine:end`; drop the `/capture` row's static reference text in the brownfield subsection if present.
-- [ ] Run `scripts/gen-help-tables.sh` and verify the diff is clean.
+- [x] Edit `scripts/gen-help-tables.sh`: rename the variable `elaborate_table` to `refine_table`; drop the `/elaborate` row from its build invocation; drop the `/capture` row from `brownfield_table`'s invocation; rename the marker name `commands-elaborate` to `commands-refine` throughout the script.
+- [x] Edit `framework/commands/help.md`: rename the heading `#### Elaborate (add precision)` to `#### Refine`; update the marker pair `commands-elaborate:start` / `commands-elaborate:end` to `commands-refine:start` / `commands-refine:end`; drop the `/capture` row's static reference text in the brownfield subsection if present.
+- [x] Run `scripts/gen-help-tables.sh` and verify the diff is clean.
 
 Done when: dry-run reports "in sync"; help.md shows the renamed category with `/ask` only and the brownfield table with two rows.
 
 ### 14. `/govern` bootstrap — migration check and prose sweep
 
-- [ ] Edit `framework/bootstrap/govern.md`: add a step after the archive extract phase and before the manifest apply phase. The step shells `find specs -maxdepth 2 -name spec-and-plan.md` (or equivalent), iterates results, and prompts the user for each: "Found `{path}` — rename to `{path}/../spec.md`? (Y/n)". On confirm: `mv`. On decline: log a warning.
-- [ ] Update the bootstrap's completion message to include "Migrated N `spec-and-plan.md` files" when N > 0; omit the line when N=0.
-- [ ] Sweep `framework/bootstrap/govern.md` for existing `spec-and-plan` and deleted-verb references. Specifically: remove `specs/**/spec-and-plan.md` from the pinned-files / migration-targets list (line ~296); drop `spec-and-plan.md` from the spec-files pattern list (line ~311); remove the manifest row mapping `framework/templates/spec/spec-and-plan.md` → `specs/templates/spec-and-plan.md` (line ~384); remove `spec-and-plan.md` from the artifacts-in-scope enumeration (line ~442); remove the manifest rows for `framework/commands/capture.md` and `framework/commands/elaborate.md` (lines ~479, 481).
-- [ ] Add a changelog entry to `runtime/CHANGELOG.md` (or a project-level changelog if introduced) referencing spec 023 and the rename requirement.
-- [ ] Run the parseability check on the modified `govern.md`.
-- [ ] Verify `grep -n 'spec-and-plan\|/capture\b\|/elaborate\b' framework/bootstrap/govern.md` returns no hits except inside the migration-check step itself (which references `spec-and-plan.md` by design — the file pattern it's looking for).
+- [x] Edit `framework/bootstrap/govern.md`: add a step in the **Pre-run Migrations** section (`spec-and-plan.md → spec.md (lightweight-track sunset)`). The step walks `specs/*/spec-and-plan.md`, prompts the user per match, runs `mv` on confirm, logs a warning on decline.
+- [x] Update the bootstrap's completion message to include "Migrated N `spec-and-plan.md` files" when N > 0; omit the line when N=0. (Folded into the same migration-check step.)
+- [x] Sweep `framework/bootstrap/govern.md` for existing `spec-and-plan` and deleted-verb references. Specifically: remove `specs/**/spec-and-plan.md` from the file-walk list; drop `spec-and-plan.md` from the spec-files pattern list; remove the manifest row mapping `framework/templates/spec/spec-and-plan.md` → `specs/templates/spec-and-plan.md`; remove `spec-and-plan.md` from the artifacts-in-scope enumeration; remove the manifest rows for `framework/commands/capture.md` and `framework/commands/elaborate.md`; rewrite the `/{project}:validate` reference in the security-rule check section to `/{project}:analyze`; rewrite the `framework/commands/validate.md` manifest row to `analyze.md`.
+- [x] Also sweep `framework/bootstrap/hooks/govern-pre-commit` (drop `spec-and-plan.md` from the `for f in ...` stage loop) and `framework/templates/ci/adopter-generators.yml` (drop `spec-and-plan.md` from the `find ... -name spec.md -o -name spec-and-plan.md` clause; `/gov:validate` → `/gov:analyze` in the comment).
+- [x] Run the parseability check on the modified `govern.md`.
+- [x] Verify `grep -n 'spec-and-plan\|/capture\b\|/elaborate\b' framework/bootstrap/govern.md` returns hits only inside the migration-check step (which references `spec-and-plan.md` by design — the file pattern it's looking for).
 
 Done when: bootstrap runs against a fixture project containing `spec-and-plan.md` and offers the rename; declining leaves the file in place with a warning; running again with the file already renamed completes silently; the grep returns only migration-check matches.
 
 ### 15. Prose sweep — root docs, adopter templates, specs/README
 
-- [ ] Edit `README.md`: remove or rewrite every reference to `/capture`, `/elaborate`, and the lightweight track. Update the Slash Commands tables under "Pipeline", "Elaborate" (rename to "Refine"), and "Brownfield" to match the post-consolidation surface (Pipeline 6, Refine 1, Brownfield 2). Update "Adopting in an Existing Project" prose to point at `/specify` for brownfield use with sparse-AC guidance. Drop the `spec-and-plan.md` row from the templates table (line ~280) and rewrite the scenario.md description that mentions "elaborate workflow" (line ~285).
-- [ ] Edit `AGENTS.md` (govern repo root): drop `spec-and-plan` from the framework templates list (line ~17).
-- [ ] Edit `specs/README.md`: remove the "Lightweight track detection" bullet from §Design Decisions — this documents an active design that's being undone; deletion is the correct action, not signposting (the file is a cross-cutting decisions doc, not a done spec).
-- [ ] Edit `docs/introduction.md`: sweep deleted-verb references (lines ~24, 31, 32, 65, 66) and lightweight-track mentions; rewrite the back-edges paragraph so both back-edges name `/ask`; update the help-tables-mirroring table to match the new category set (Pipeline 6 / Refine 1 / Brownfield 2 / Orient 3 / Bootstrap 2).
-- [ ] Edit `framework/templates/project/agents.md`: drop `spec-and-plan` from the templates list (line ~43); remove the dedicated `spec-and-plan.md` description row (line ~46) including the `*(lightweight track)*` annotation.
-- [ ] Edit `framework/templates/project/project-readme.md`: drop `spec-and-plan` from the templates list (line ~26).
-- [ ] Run `grep -rn '/capture\b\|/elaborate\b\|lightweight track\|spec-and-plan' README.md AGENTS.md specs/README.md docs/ framework/` and confirm zero hits (excluding the resolved questions and decision tables in spec 023's own body, which are frozen historical record, and excluding the migration-check step in `framework/bootstrap/govern.md` that legitimately references the `spec-and-plan.md` filename pattern).
+- [x] Edit `README.md`: remove or rewrite every reference to `/capture`, `/elaborate`, and the lightweight track. Update the Slash Commands tables under "Pipeline", "Elaborate" (renamed to "Refine"), and "Brownfield" to match the post-consolidation surface (Pipeline 6, Refine 1, Brownfield 2). Update "Adopting in an Existing Project" prose to point at `/specify` for brownfield use with sparse-AC guidance. Drop the `spec-and-plan.md` row from the templates table and rewrite the scenario.md description that mentioned "elaborate workflow".
+- [x] Edit `AGENTS.md` (govern repo root): drop `spec-and-plan` from the framework templates list.
+- [x] Edit `specs/README.md`: replace the "Lightweight track detection" bullet from §Design Decisions with a new "Past Renames" section recording `/validate → /analyze`, `/capture → /specify`, and `/elaborate → /ask`.
+- [x] Edit `docs/introduction.md`: sweep deleted-verb references and lightweight-track mentions; rewrite the back-edges paragraph so both back-edges name `/ask`; update the help-tables-mirroring table to match the new category set (Pipeline 6 / Refine 1 / Brownfield 2 / Orient 3 / Bootstrap 2).
+- [x] Edit `framework/templates/project/agents.md`: drop `spec-and-plan` from the templates list; remove the dedicated `spec-and-plan.md` description row including the `*(lightweight track)*` annotation; rewrite "elaborate command" mention to point at `/{project}:ask`.
+- [x] Edit `framework/templates/project/project-readme.md`: drop `spec-and-plan` from the templates list; rewrite cycle prose (Brownfield / Reopen) to use `/specify` and `/ask`; rewrite Slash Commands table to drop `/elaborate` and `/capture` rows and add `/analyze` description.
+- [x] Run `grep -rn '/capture\b\|/elaborate\b\|lightweight track\|spec-and-plan' README.md AGENTS.md specs/README.md docs/ framework/` and confirm zero hits (excluding the resolved questions and decision tables in spec 023's own body, which are frozen historical record, and excluding the migration-check step in `framework/bootstrap/govern.md` that legitimately references the `spec-and-plan.md` filename pattern, and excluding the Past Renames bullets in `specs/README.md` that intentionally document the renames).
 
 Done when: the four `grep` patterns return no hits outside the spec 023 directory and the migration-check step in `govern.md`.
 

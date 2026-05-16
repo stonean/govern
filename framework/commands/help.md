@@ -41,21 +41,20 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 | `/{project}:clarify` | draft → clarified | Resolve open questions and advance a spec from draft to clarified. |
 | `/{project}:plan` | clarified → planned | Create a technical plan and task breakdown for a clarified spec. |
 | `/{project}:implement` | planned → in-progress → done | Execute implementation tasks for the targeted feature. |
-| `/{project}:review` | blocks `done` (MUST violations) | Run a code review covering reuse, quality, security, efficiency, and simplicity; blocks `done` when MUST violations are present. |
-| `/{project}:validate` | — | Check a feature's artifacts for consistency and cross-spec alignment. |
+| `/{project}:review` | blocks `done` (MUST violations) | Audit code against rules — security, reuse, quality, efficiency, simplicity. Writes review.md; blocks done on MUST violations. |
+| `/{project}:analyze` | — | Audit artifacts against each other — spec, plan, tasks, scenarios, frontmatter, dependencies, rule IDs. Read-only. |
 
 <!-- generated:commands-pipeline:end -->
 
-#### Elaborate (add precision)
+#### Refine
 
-<!-- generated:commands-elaborate:start -->
+<!-- generated:commands-refine:start -->
 
 | Command | Description |
 | --- | --- |
 | `/{project}:ask` | Add a question or a scenario to the targeted spec (classifier-driven). |
-| `/{project}:elaborate` |  |
 
-<!-- generated:commands-elaborate:end -->
+<!-- generated:commands-refine:end -->
 
 #### Brownfield (absorb existing reality)
 
@@ -63,7 +62,6 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 
 | Command | Description |
 | --- | --- |
-| `/{project}:capture` |  |
 | `/{project}:log` | Record a raw item to the inbox. |
 | `/{project}:groom` | Walk the inbox and route each item to its proper home. |
 

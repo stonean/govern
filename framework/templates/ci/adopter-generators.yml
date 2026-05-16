@@ -11,7 +11,7 @@
 #
 #   2. Review-blocking gate — every spec at `status: done` must have a
 #      non-null `review.last-run` and `review.blocking: false`. The local
-#      `/gov:implement` halt and `/gov:validate` drift check catch this
+#      `/gov:implement` halt and `/gov:analyze` drift check catch this
 #      pre-merge; this step catches bypasses (direct frontmatter edits).
 #
 # When new adopter-relevant checks are added by future govern releases, this
@@ -52,7 +52,7 @@ jobs:
           fi
 
       - name: Review-blocking gate on done specs
-        # Scans every spec frontmatter (spec.md and spec-and-plan.md). For
+        # Scans every spec.md frontmatter. For
         # any spec at `status: done` that has a `review:` block, requires
         # `review.last-run` to be a non-null timestamp and `review.blocking`
         # to be false. Pre-feature `done` specs without a `review:` block
@@ -83,5 +83,5 @@ jobs:
               echo "::error file=$f::Review-blocking gate: review.blocking=true — see $(dirname "$f")/review.md"
               fail=1
             fi
-          done < <(find specs -maxdepth 2 \( -name spec.md -o -name spec-and-plan.md \) -type f)
+          done < <(find specs -maxdepth 2 -name spec.md -type f)
           exit $fail

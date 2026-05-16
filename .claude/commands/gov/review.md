@@ -1,5 +1,5 @@
 ---
-description: Run a code review covering reuse, quality, security, efficiency, and simplicity; blocks `done` when MUST violations are present.
+description: Audit code against rules — security, reuse, quality, efficiency, simplicity. Writes review.md; blocks done on MUST violations.
 argument-hint: "[--all] [--fix] [feature]"
 ---
 
@@ -10,7 +10,7 @@ covering reuse, quality, security, efficiency, and simplicity. Produces a
 `review.md` artifact alongside the spec. **Blocks the spec from reaching `done`
 when MUST violations are present.**
 
-`/gov:review` audits **code against rules**. It is complementary to `/gov:validate`,
+`/gov:review` audits **code against rules**. It is complementary to `/gov:analyze`,
 which audits **artifacts against each other**. Both should pass before a spec
 advances to `done`.
 
@@ -50,7 +50,7 @@ advances to `done`.
 can advance to `done`. The recommended sequence is:
 
 ```text
-/gov:implement   →   /gov:review   →   /gov:validate   →   spec status: done
+/gov:implement   →   /gov:review   →   /gov:analyze   →   spec status: done
 ```
 
 `/gov:implement` MUST NOT mark a spec `done` while the target's `review.md`
@@ -246,10 +246,10 @@ records `review.blocking: true`. This is enforced as follows:
    resolve the violations and re-run /gov:review, or waive with /gov:review --waive
    ```
 
-2. **`/gov:validate`** — adds a check to its existing audit: if the spec's
+2. **`/gov:analyze`** — adds a check to its existing audit: if the spec's
    status is `done` but `review.blocking` is `true` or `review.last-run` is
    missing, this is a validation failure. Composable with `--fix`:
-   `/gov:validate --fix` reverts `done` → `in-progress` and emits a notice
+   `/gov:analyze --fix` reverts `done` → `in-progress` and emits a notice
    (it never silently downgrades; the notice is the point).
 
 3. **CI hook** — the shipped GHA template at
@@ -351,7 +351,7 @@ At the start of every `/gov:review` run, before counting findings into
 The `review.waivers` list follows the §text-first-artifacts open-schema
 rule. Adopters MAY add fields (e.g., `co-waived-by`, `approved-by-team`,
 `ticket`) to enforce org-specific waiver policy in their own CI; `/gov:review`
-and `/gov:validate` will not error on unknown fields.
+and `/gov:analyze` will not error on unknown fields.
 
 ## Auto-fix scope
 

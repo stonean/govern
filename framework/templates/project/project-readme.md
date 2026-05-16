@@ -23,7 +23,7 @@
 - [specs/errors.md](specs/errors.md) — Error handling conventions
 - [specs/events.md](specs/events.md) — Global event catalog
 - [specs/inbox.md](specs/inbox.md) — Temporary inbox for known issues during brownfield adoption
-- [specs/templates/](specs/templates/) — Templates for spec, plan, tasks, data-model, research, scenario, and spec-and-plan documents
+- [specs/templates/](specs/templates/) — Templates for spec, plan, tasks, data-model, research, and scenario documents
 
 ### Feature Specs
 
@@ -40,13 +40,13 @@
 /{project}:specify ──▶ draft ──/{project}:clarify──▶ clarified ──/{project}:plan──▶ planned ──/{project}:implement──▶ in-progress ──▶ done
 ```
 
-Each command enforces its pipeline gate — you cannot plan without a clarified spec, and you cannot implement without a plan. Two back-edges exist: `/{project}:ask` reverts a `clarified`, `planned`, or `in-progress` spec to `draft` when a new open question surfaces (the only state that tolerates open questions), and `/{project}:elaborate` reverts a `done` spec to `in-progress` when a new scenario is added. The next pipeline command resumes from there — the spec evolves rather than spawning a new one.
+Each command enforces its pipeline gate — you cannot plan without a clarified spec, and you cannot implement without a plan. Two back-edges exist, both owned by `/{project}:ask`: recording an open question on a `clarified` / `planned` / `in-progress` spec reverts status to `draft` (the only state that tolerates open questions), and recording a scenario on a `done` spec reverts status to `in-progress`. The next pipeline command resumes from there — the spec evolves rather than spawning a new one.
 
 Three cycles are supported:
 
 - **Greenfield** — `/{project}:specify` → clarify → plan → implement, aiming for completeness up front.
-- **Brownfield** — `/{project}:capture` initializes a skeleton spec from what is known about an existing feature, then bug fixes and enhancements add precision over time.
-- **Reopen** — `/{project}:elaborate` adds a scenario to a `done` spec, reverting it to `in-progress` until the scenario's task ships.
+- **Brownfield** — `/{project}:specify` with a sparse description initializes a skeleton spec from what is known about an existing feature; sparse acceptance criteria are valid, and bug fixes and enhancements add precision over time.
+- **Reopen** — `/{project}:ask` records a scenario on a `done` spec, reverting it to `in-progress` until the scenario's task ships.
 
 ### Slash Commands
 
@@ -59,10 +59,8 @@ Three cycles are supported:
 | `/{project}:clarify` | Resolve open questions, advance `draft` → `clarified` |
 | `/{project}:plan` | Create technical plan and tasks, advance `clarified` → `planned` |
 | `/{project}:implement` | Walk through tasks step by step, advance `planned` → `done` |
-| `/{project}:validate` | Check artifacts for consistency and cross-spec alignment |
-| `/{project}:ask` | Append an open question to the targeted spec or scenario |
-| `/{project}:elaborate` | Add a scenario to elaborate a section of the targeted feature |
-| `/{project}:capture` | Initialize a skeleton spec for an existing feature |
+| `/{project}:analyze` | Audit artifacts against each other — spec, plan, tasks, scenarios, frontmatter, dependencies, rule IDs |
+| `/{project}:ask` | Add a question or a scenario to the targeted spec (classifier-driven) |
 | `/{project}:log` | Record a raw item to the inbox for later grooming |
 | `/{project}:groom` | Walk the inbox and route each item to its proper spec or scenario |
 | `/{project}:configure` | Configure permissions for common operations |

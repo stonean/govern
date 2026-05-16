@@ -4,7 +4,7 @@ Standards and conventions for spec-driven software development. This project def
 
 ## TL;DR
 
-`govern` adds a spec-driven pipeline that your AI agent walks for you. You describe a feature in plain English; the agent produces the spec, plan, and tasks in a consistent shape. The surface area you learn is small — a handful of verb-named slash commands (`/specify`, `/clarify`, `/plan`, `/implement`, `/review`, `/validate`) that map to things you already do: write a ticket, surface unknowns, sketch an approach, build it, audit it, check your work.
+`govern` adds a spec-driven pipeline that your AI agent walks for you. You describe a feature in plain English; the agent produces the spec, plan, and tasks in a consistent shape. The surface area you learn is small — a handful of verb-named slash commands (`/specify`, `/clarify`, `/plan`, `/implement`, `/review`, `/analyze`) that map to things you already do: write a ticket, surface unknowns, sketch an approach, build it, audit it, check your work.
 
 The payoff is that ambiguity gets caught upstream of code, and every feature lands with a written record of *why* it's built the way it is.
 
@@ -16,7 +16,7 @@ The payoff is that ambiguity gets caught upstream of code, and every feature lan
     - [security-backend.md](framework/rules/security-backend.md) — Enforceable backend security rules (RFC 2119)
     - [security-frontend.md](framework/rules/security-frontend.md) — Enforceable frontend security rules (RFC 2119)
   - [framework/templates/](framework/templates/) — Starter files customized per project, split by consumer
-    - `templates/spec/` — Templates consumed during the pipeline (spec, plan, tasks, data-model, research, scenario, spec-and-plan)
+    - `templates/spec/` — Templates consumed during the pipeline (spec, plan, tasks, data-model, research, scenario)
     - `templates/project/` — Project document templates consumed during adoption (agents.md, claude-md.md, system.md, errors.md, events.md, project-readme.md, gitignore, inbox.md)
   - [framework/commands/](framework/commands/) — Slash command sources for the operational commands
   - [framework/workflows/](framework/workflows/) — Tech-stack-specific workflow files (lint, test, format, migrate) plus `registry.json` mapping stack selections to workflows
@@ -98,13 +98,13 @@ Pre-built binaries are published for `aarch64-apple-darwin`, `x86_64-apple-darwi
 
 ### When to install
 
-Install if you adopt `govern` and run slash commands frequently — the wall-clock saving on `/gov:validate` and `/gov:implement` is significant. Skip if you only invoke the pipeline occasionally; the markdown-only path is faithful to the same semantics, just slower.
+Install if you adopt `govern` and run slash commands frequently — the wall-clock saving on `/gov:analyze` and `/gov:implement` is significant. Skip if you only invoke the pipeline occasionally; the markdown-only path is faithful to the same semantics, just slower.
 
 If a runtime process crashes mid-procedure, re-run the slash command — the runtime reads state from your markdown and resumes from the next incomplete step. State-modifying primitives use filesystem-atomic writes (tempfile + rename), so crashes leave coherent markdown. On Windows the rename semantics are weaker; clean up any orphaned tempfile in the spec directory with a manual `rm` if you observe one.
 
 ## Adopting in an Existing Project
 
-For brownfield projects, install the `govern` command and run it — no clone required. Once adopted, use `/capture` to initialize skeleton specs for existing features and let them gain precision incrementally through bug fixes, enhancements, and clarification.
+For brownfield projects, install the `govern` command and run it — no clone required. Once adopted, use `/specify` with a sparse description to initialize skeleton specs for existing features (sparse acceptance criteria are valid for brownfield use), and let them gain precision incrementally through bug fixes, enhancements, and clarification.
 
 `govern` operates a **live-on-main** model — the snippets below fetch the latest from `main`. Tagged releases (`v0.1.0`, etc.) mark milestones for changelogs and release notes, not pinning targets. Adopters who want to lock individual files they've customized use `.govern.toml` (see [Configuring `.govern.toml`](#configuring-governtoml) below).
 
@@ -134,31 +134,29 @@ The same `govern.md` supports every CLI listed above. Use whichever curl snippet
 
 ## Slash Commands
 
-Adoption installs a full set of slash commands that operationalize the pipeline. All commands are verb-named and session-aware — use `/target` to switch to an existing feature; `/specify` and `/capture` create a new feature and set it as the session target automatically.
+Adoption installs a full set of slash commands that operationalize the pipeline. All commands are verb-named and session-aware — use `/target` to switch to an existing feature; `/specify` creates a new feature and sets it as the session target automatically (accepting both greenfield-rich and brownfield-sparse input).
 
 ### Pipeline (advance state)
 
 | Command | Purpose |
 | --- | --- |
-| `/specify` | Create a new feature spec — asks qualifying questions to choose standard or lightweight track |
+| `/specify` | Create a new feature spec. Accepts both rich (greenfield) and sparse (brownfield) input — richness scales with the description |
 | `/clarify` | Resolve open questions in the current spec, advance status to `clarified` |
 | `/plan` | Create plan.md with technical decisions, affected files, and resolved questions |
 | `/implement` | Work through tasks, update spec status to `in-progress` then `done` |
-| `/review` | Run a code review covering reuse, quality, security, efficiency, and simplicity. Writes `review.md` and the spec's `review:` frontmatter block. Blocks `done` when MUST violations are present. `--all` reviews every `in-progress` or `done` feature. `--fix` applies conservative auto-fixes. Waive MUST findings with `--waive <rule-id> --reason "<text>"`. |
-| `/validate` | Audit spec, plan, tasks, and scenarios for completeness and consistency. `--all` scans every feature. `--fix` auto-corrects fixable checkbox mismatches. Composable: `--all --fix` |
+| `/review` | Audit code against rules — security, reuse, quality, efficiency, simplicity. Writes `review.md` and the spec's `review:` frontmatter block. Blocks `done` when MUST violations are present. `--all` reviews every `in-progress` or `done` feature. `--fix` applies conservative auto-fixes. Waive MUST findings with `--waive <rule-id> --reason "<text>"`. |
+| `/analyze` | Audit artifacts against each other — spec, plan, tasks, scenarios, frontmatter, dependencies, rule IDs. `--all` scans every feature. `--fix` auto-corrects fixable checkbox mismatches. Composable: `--all --fix` |
 
-### Elaborate (add precision)
+### Refine (add to a spec)
 
 | Command | Purpose |
 | --- | --- |
-| `/ask` | Append an open question to the targeted spec or scenario for resolution during clarify |
-| `/elaborate` | Add a scenario to elaborate a section of the targeted feature (bug fix, edge case, detailed behavior) |
+| `/ask` | Add a question or scenario to the targeted spec. The classifier routes the input; the user can `flip` the route at the approval gate. Owns both back-edges (`clarified` / `planned` / `in-progress` → `draft` on a question, `done` → `in-progress` on a scenario). |
 
 ### Brownfield (absorb existing reality)
 
 | Command | Purpose |
 | --- | --- |
-| `/capture` | Initialize a skeleton spec from a freeform description of an existing feature |
 | `/log` | Record a raw item to `specs/inbox.md` for later grooming |
 | `/groom` | Walk `specs/inbox.md` and route each item to its proper spec or scenario via the bug decision tree |
 
@@ -241,7 +239,7 @@ Write `specs/system.md` describing your architecture — server lifecycle, reque
 
 ### 6. Add your first feature spec
 
-Run `/specify` to create a numbered feature directory with a spec from template. The command asks qualifying questions to determine whether the feature uses the standard track (separate spec, plan, and tasks) or the lightweight track (combined spec-and-plan for small, single-module features).
+Run `/specify` to create a numbered feature directory with a spec from template. The command accepts both rich (greenfield) and sparse (brownfield) input — richness scales with the description. Every spec uses the same artifact set (`spec.md`, `plan.md`, `tasks.md`).
 
 Alternatively, create one manually:
 
@@ -260,7 +258,7 @@ Follow the pipeline defined in `constitution.md`:
 4. **Review** — run `/review` to audit the code against rules; resolve MUST violations or record waivers. The `done` transition is gated by `review.blocking: false`
 5. **Done** — `/implement` completes the `in-progress → done` transition when the review gate passes
 
-Run `/validate` any time to audit a feature's artifacts; it is not a pipeline gate, but it is the recommended check before starting `/implement` and before the final `/review`.
+Run `/analyze` any time to audit a feature's artifacts; it is not a pipeline gate, but it is the recommended check before starting `/implement` and before the final `/review`.
 
 ## Security Rules
 
@@ -278,12 +276,11 @@ Spec-pipeline templates (consumed by an agent during the pipeline):
 | Template | When to use |
 | --- | --- |
 | [spec.md](framework/templates/spec/spec.md) | Starting a new feature — requirements, acceptance criteria, open questions |
-| [spec-and-plan.md](framework/templates/spec/spec-and-plan.md) | Lightweight track — combined spec and plan for small, single-module features |
 | [plan.md](framework/templates/spec/plan.md) | Planning phase — technical decisions, affected files, resolved questions |
 | [tasks.md](framework/templates/spec/tasks.md) | Tasks phase — ordered work items derived from the plan |
 | [data-model.md](framework/templates/spec/data-model.md) | Plan phase — when the feature involves database persistence |
 | [research.md](framework/templates/spec/research.md) | Optional — background research, prior art, references |
-| [scenario.md](framework/templates/spec/scenario.md) | Brownfield/elaborate workflow — scenario capturing specific behavior, edge case, or bug fix |
+| [scenario.md](framework/templates/spec/scenario.md) | Scenario route of `/ask` — capturing specific behavior, edge case, or bug fix as a scenario file under the parent spec |
 
 Project-scaffolding templates (consumed once at adoption):
 

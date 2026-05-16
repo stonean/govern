@@ -199,6 +199,25 @@ If `.governance.toml` exists in the project root and `.govern.toml` does not, re
 
 If the project's `.gitignore` contains a `# Governance` line (the marker placed by `/govern`'s merge strategy) and does not already contain `# govern`, replace the first occurrence with `# govern`. Report `migrated .gitignore marker: # Governance → # govern` in the post-scaffolding output. The marker check used by the **.gitignore** merge step below uses the new spelling, so this rename keeps idempotency intact.
 
+### `spec-and-plan.md` → `spec.md` (lightweight-track sunset)
+
+The lightweight track was removed in spec 023. Adopters who scaffolded under the prior dual-template model may still have `spec-and-plan.md` files at any non-`done` status under `specs/`. Pipeline commands now look for `spec.md` only — those files would fail the "spec does not exist" gate on the next command.
+
+The migration check walks `specs/*/spec-and-plan.md` once per `/govern` run. For each match, prompt the user with the source path and the proposed destination (`specs/{NNN-feature}/spec.md`):
+
+```text
+Found legacy spec-and-plan.md: specs/{NNN-feature}/spec-and-plan.md
+Rename to specs/{NNN-feature}/spec.md? (Y/n)
+```
+
+On confirm, rename via `mv`. On decline, emit a warning and continue:
+
+```text
+warning: specs/{NNN-feature}/spec-and-plan.md kept; pipeline commands will fail on this feature until renamed manually.
+```
+
+Report `migrated N spec-and-plan.md files` in the post-scaffolding output when N > 0; omit the line when N = 0. The check is idempotent — finds nothing on second run. Files at `status: done` are also renamed (the rename is just a filename change; the body and frontmatter are unchanged, so the frozen-archaeology rule is preserved by the byte-for-byte identity of the file content).
+
 ## Project Configuration
 
 `.govern.toml` is the project's configuration and persisted-decisions store. If the file exists, read it before processing the file manifest. The file is optional — if it does not exist, use default behavior for every key. If the file exists but is malformed (TOML parse error), abort the run with a clear error rather than silently proceeding.
@@ -293,7 +312,6 @@ Exit before any modifications. Unrelated in-flight work outside `specs/` does no
 For each file matching one of:
 
 - `specs/**/spec.md`
-- `specs/**/spec-and-plan.md`
 - `specs/**/scenarios/*.md`
 
 Determine whether the file needs migration:
@@ -308,7 +326,7 @@ Skip files that appear in `.govern.toml` `pinned.files` with reason "pinned." Th
 
 For each file that needs migration:
 
-**Spec files** (`spec.md`, `spec-and-plan.md`):
+**Spec files** (`spec.md`):
 
 - Extract `**Status:** {value}` and `**Dependencies:** {value}` from the body.
 - For dependencies, parse the comma-separated slug list. The literal value `none` becomes an empty list (`[]`).
@@ -381,7 +399,6 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 | `framework/templates/spec/data-model.md` | `specs/templates/data-model.md` |
 | `framework/templates/spec/research.md` | `specs/templates/research.md` |
 | `framework/templates/spec/scenario.md` | `specs/templates/scenario.md` |
-| `framework/templates/spec/spec-and-plan.md` | `specs/templates/spec-and-plan.md` |
 | `framework/workflows/registry.json` | `workflows/registry.json` |
 
 ### Project-specific shared files (strategy: create)
@@ -430,7 +447,7 @@ If either condition fails, skip this section silently — no output, no finding,
 For each rule file that passed the trigger:
 
 1. Read the file from its destination path (`specs/security-backend.md` or `specs/security-frontend.md`).
-2. Apply the same integrity checks `/{project}:validate` uses for the security-rule check section: well-formed level-3 headings of the form `### {ID}`, the four required fields (Statement, Rationale, Verification, Source), an ID matching `{FE|BE}-{CATEGORY}-{NNN}`, and no duplicate IDs within the file.
+2. Apply the same integrity checks `/{project}:analyze` uses for the security-rule check section: well-formed level-3 headings of the form `### {ID}`, the four required fields (Statement, Rationale, Verification, Source), an ID matching `{FE|BE}-{CATEGORY}-{NNN}`, and no duplicate IDs within the file.
 3. If a file fails any integrity check, report `Security audit: {path} failed to load — {reason}; skipping audit for this file.` and continue with the other rule file (if applicable). Do not abort the surrounding `govern` run.
 
 This mirrors validate's posture — partial or guessed-at parsing produces unreliable findings, so an unloadable file is treated as absent for audit purposes.
@@ -439,7 +456,7 @@ This mirrors validate's posture — partial or guessed-at parsing produces unrel
 
 For each rule that loaded successfully:
 
-1. Identify the artifacts in scope: `specs/NNN-*/spec.md`, `specs/NNN-*/spec-and-plan.md`, `specs/NNN-*/plan.md`, and any `specs/NNN-*/scenarios/*.md`.
+1. Identify the artifacts in scope: `specs/NNN-*/spec.md`, `specs/NNN-*/plan.md`, and any `specs/NNN-*/scenarios/*.md`.
 2. Read the rule's **Verification** field. The field describes the trigger — what makes the rule applicable to a given artifact — and the commitment the artifact must include when triggered.
 3. For each artifact whose content fires the rule's trigger but does not include the required commitment, produce one finding.
 
@@ -476,9 +493,7 @@ Fetch each command template and copy it into `{config_dir}/commands/{project}/`.
 | Source Path | Destination Path |
 | --- | --- |
 | `framework/commands/ask.md` | `{config_dir}/commands/{project}/ask.md` |
-| `framework/commands/capture.md` | `{config_dir}/commands/{project}/capture.md` |
 | `framework/commands/clarify.md` | `{config_dir}/commands/{project}/clarify.md` |
-| `framework/commands/elaborate.md` | `{config_dir}/commands/{project}/elaborate.md` |
 | `framework/commands/groom.md` | `{config_dir}/commands/{project}/groom.md` |
 | `framework/commands/help.md` | `{config_dir}/commands/{project}/help.md` |
 | `framework/commands/implement.md` | `{config_dir}/commands/{project}/implement.md` |
@@ -488,7 +503,7 @@ Fetch each command template and copy it into `{config_dir}/commands/{project}/`.
 | `framework/commands/specify.md` | `{config_dir}/commands/{project}/specify.md` |
 | `framework/commands/status.md` | `{config_dir}/commands/{project}/status.md` |
 | `framework/commands/target.md` | `{config_dir}/commands/{project}/target.md` |
-| `framework/commands/validate.md` | `{config_dir}/commands/{project}/validate.md` |
+| `framework/commands/analyze.md` | `{config_dir}/commands/{project}/analyze.md` |
 | `framework/bootstrap/configure/{key}.md` | `{config_dir}/commands/{project}/configure.md` |
 
 The configure row uses the agent-specific source `framework/bootstrap/configure/{key}.md` and writes it as the canonical `configure.md` in the project's command directory.

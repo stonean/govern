@@ -21,15 +21,15 @@ Every feature moves through `spec → plan → tasks → implement`. No code is 
 draft ──/clarify──▶ clarified ──/plan──▶ planned ──/implement──▶ in-progress ──/implement──▶ done
 ```
 
-The status on each spec — `draft`, `clarified`, `planned`, `in-progress`, `done` — tracks where it is in the pipeline. Two back-edges exist: `/ask` reverts a `clarified`, `planned`, or `in-progress` spec to `draft` when a new open question surfaces (the only state that tolerates open questions), and `/elaborate` reverts a `done` spec to `in-progress` when a new scenario is added. The constitution defines what each transition requires.
+The status on each spec — `draft`, `clarified`, `planned`, `in-progress`, `done` — tracks where it is in the pipeline. Two back-edges exist, both owned by `/ask`: recording a new open question on a `clarified` / `planned` / `in-progress` spec reverts status to `draft` (the only state that tolerates open questions); recording a scenario on a `done` spec reverts status to `in-progress`. The constitution defines what each transition requires.
 
 ## The three cycles
 
 Every spec moves through one of three cycles:
 
 1. **Greenfield** — `/specify` → `/clarify` → `/plan` → `/implement` → `done`. New feature designed from scratch.
-2. **Brownfield** — `/capture` (sketch spec) → real work touches the area → `/elaborate` adds a scenario, or `/clarify` resolves open questions → `/implement` → `done`. Existing reality being absorbed into specs incrementally.
-3. **Reopen** — a `done` spec is revisited because a bug, edge case, or change request surfaces. `/elaborate` adds a scenario, the spec moves back to `in-progress`, and the next pipeline command resumes from there.
+2. **Brownfield** — `/specify` with a sparse description (sketch spec) → real work touches the area → `/ask` records a scenario, or `/clarify` resolves open questions → `/implement` → `done`. Existing reality being absorbed into specs incrementally.
+3. **Reopen** — a `done` spec is revisited because a bug, edge case, or change request surfaces. `/ask` records a scenario, the spec moves back to `in-progress`, and the next pipeline command resumes from there.
 
 All three converge on the same pipeline. What differs is where the spec enters and how precision accumulates.
 
@@ -61,9 +61,9 @@ The framework is operationalized through slash commands installed during adoptio
 
 | Cluster | Commands |
 | --- | --- |
-| Pipeline (advance state) | `/specify`, `/clarify`, `/plan`, `/implement`, `/validate` |
-| Elaborate (add precision) | `/ask`, `/elaborate` |
-| Brownfield (absorb existing reality) | `/capture`, `/log`, `/groom` |
+| Pipeline (advance state) | `/specify`, `/clarify`, `/plan`, `/implement`, `/review`, `/analyze` |
+| Refine (add to a spec) | `/ask` |
+| Brownfield (absorb existing reality) | `/log`, `/groom` |
 | Orient | `/target`, `/status`, `/help` |
 | Bootstrap | `/govern`, `/configure` |
 

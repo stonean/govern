@@ -1,5 +1,5 @@
 ---
-description: Check a feature's artifacts for consistency and cross-spec alignment.
+description: Audit artifacts against each other — spec, plan, tasks, scenarios, frontmatter, dependencies, rule IDs. Read-only.
 argument-hint: "[--all] [--fix] [feature]"
 parity:
   semantic-fields:
@@ -9,13 +9,15 @@ parity:
     - "findings[].severity"
 ---
 
-# Validate
+# Analyze
 
-Check a feature's artifacts for consistency and cross-spec alignment.
+Audit a feature's artifacts against each other and against the framework's rule set.
 
 ## Purpose
 
 Audit a feature's spec, plan, tasks, and data model for consistency. Read-only; reports issues without modifying files. Use this to catch problems before the next pipeline gate fires.
+
+Renamed from `/validate` in spec 023 to align with the emerging spec-driven-development standard (GitHub Spec Kit uses `/analyze` for the same artifact-vs-artifact audit role). Complementary to `/{project}:review`, which audits **code** against rules.
 
 ## Context
 
@@ -122,7 +124,7 @@ For each spec at `status: done`, read the spec's frontmatter `review:` block:
 - `review.last-run` is set to a non-null timestamp. If the `review:` block is **present** but `last-run` is missing or `null`, report `Review drift: done spec missing review — run /gov:review` (**blocking**)
 - `review.blocking` is `false`. If `true`, report `Review drift: done spec has unresolved MUST violations — see review.md` (**blocking**)
 
-**Grandfather rule.** A `done` spec whose frontmatter has no `review:` block at all is treated as pre-`/gov:review` and exempt from this check. The block is added by the spec template (so every newly-scaffolded spec ships with it) and by `/gov:review` on first run; its absence on a done spec means the spec reached done before `/gov:review` existed. Adopters who want retroactive review run `/gov:review` against the spec to populate the block, after which the spec is subject to the drift check on every subsequent validate.
+**Grandfather rule.** A `done` spec whose frontmatter has no `review:` block at all is treated as pre-`/gov:review` and exempt from this check. The block is added by the spec template (so every newly-scaffolded spec ships with it) and by `/gov:review` on first run; its absence on a done spec means the spec reached done before `/gov:review` existed. Adopters who want retroactive review run `/gov:review` against the spec to populate the block, after which the spec is subject to the drift check on every subsequent analyze.
 
 Specs not at `status: done` are silently exempt — the `review:` block is populated lazily on first `/gov:review` run, so its absence on `draft` / `clarified` / `planned` / `in-progress` specs is normal.
 
@@ -145,11 +147,11 @@ For each loaded rule file:
 - Every rule's ID matches the format declared in the rule file's introducing-spec data-model (`{BE|FE}-{CATEGORY}-{NNN}` for security files; `CFG-{CONST|ENV}-{NNN}` for configuration)
 - No two rules in the same file share an ID
 
-If any check above fails, the affected rule file is treated as unloadable for the remainder of this validate pass.
+If any check above fails, the affected rule file is treated as unloadable for the remainder of this analyze pass.
 
 ### Project-level consistency (advisory)
 
-These checks span the project's installed command set and constitution rather than the target feature. They catch drift in the framework files `govern` ships, surfaced per the Drift Prevention principles in `constitution.md` §drift-prevention. Run once per `/{project}:validate` invocation regardless of which feature is targeted; with `--all`, run once before per-feature output.
+These checks span the project's installed command set and constitution rather than the target feature. They catch drift in the framework files `govern` ships, surfaced per the Drift Prevention principles in `constitution.md` §drift-prevention. Run once per `/{project}:analyze` invocation regardless of which feature is targeted; with `--all`, run once before per-feature output.
 
 Read inputs:
 

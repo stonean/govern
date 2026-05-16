@@ -40,16 +40,15 @@ See [constitution.md](constitution.md) — guiding principles, development pipel
   - `events.md` -- Global event catalog
   - `errors.md` -- Error handling conventions and codes
   - `inbox.md` -- Temporary inbox for known issues not yet assigned to a spec
-  - `templates/` -- Starter files for spec, plan, tasks, data-model, research, scenario, and spec-and-plan
+  - `templates/` -- Starter files for spec, plan, tasks, data-model, research, scenario
   - `{NNN-feature-name}/`
-    - `spec.md` -- Requirements, contracts, acceptance criteria (standard track)
-    - `spec-and-plan.md` -- *(lightweight track)* Combined spec and plan for small, single-module features
+    - `spec.md` -- Requirements, contracts, acceptance criteria
     - `research.md` -- *(optional)* Background research, prior art, context
     - `plan.md` -- Implementation approach, technical decisions
     - `data-model.md` -- *(optional)* Generated during plan phase
     - `tasks.md` -- Discrete work items derived from the plan
     - `scenarios/` -- Bug fixes, edge cases, detailed behavior elaborations
-      - `{slug}.md` -- Individual scenario created via the elaborate command
+      - `{slug}.md` -- Individual scenario created via `/{project}:ask` (scenario route)
 
 <!-- Add project-specific directories below (e.g., src/, cmd/, modules/) -->
 

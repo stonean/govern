@@ -4,7 +4,15 @@ Cross-cutting decisions, conventions, and deferred work that span multiple featu
 
 ## Design Decisions
 
-- **Lightweight track detection** — the `specify` command determines whether a feature qualifies for lightweight track by prompting the user with qualifying questions (single module? no open questions? trivial data model? under 50 lines?). If all answers indicate "small and clear," it creates `spec-and-plan.md` from a combined template. Pipeline commands (`clarify`, `plan`) detect which file exists and adapt accordingly.
+(Past design decisions live in [Past Renames](#past-renames) below when they have been undone.)
+
+## Past Renames
+
+Historical command renames are recorded here so readers of `done` spec bodies that reference old command names can map them forward. Done specs are frozen archaeology per [§drift-prevention](../framework/constitution.md#drift-prevention) — their bodies are NOT rewritten when a command is renamed.
+
+- **`/validate` → `/analyze`** (spec 023, 2026-05-16) — renamed to align with the emerging spec-driven-development standard (GitHub Spec Kit uses `/analyze` for the same artifact-vs-artifact audit role). The command's purpose, scope boundaries, behavior, frontmatter `parity:` contract, and runtime primitive bindings are unchanged. Done-spec references to `/gov:validate` should be read as `/gov:analyze`.
+- **`/capture` → folded into `/specify`** (spec 023, 2026-05-16) — `/specify` now accepts both rich (greenfield) and sparse (brownfield) input. Done-spec references to `/gov:capture` should be read as `/gov:specify`.
+- **`/elaborate` → folded into `/ask`** (spec 023, 2026-05-16) — `/ask` now classifies input as a question or a scenario and routes to the matching path. Done-spec references to `/gov:elaborate` should be read as `/gov:ask` (scenario route).
 - **Templates live at the `govern` root** — all templates (spec, plan, system, errors, events, project scaffolding) live in `templates/` at the `govern` root. This is the source. The init command copies spec templates to `{project}/specs/templates/` and system spec templates to `{project}/specs/` during bootstrap. `govern` is the source, not an adopting project.
 
 ## Future Considerations

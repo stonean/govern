@@ -10,7 +10,7 @@
 #      inline bracketed list (`dependencies: [...]`) or a YAML block
 #      list (`dependencies:` followed by `- item` lines).
 #
-# Shape-only — not a full YAML parser. /gov:validate's hard-fail tier
+# Shape-only — not a full YAML parser. /gov:analyze's hard-fail tier
 # is the rigorous check; this lint is a CI-side smoke test.
 #
 # Source of truth: framework/constitution.md §runtime-boundary

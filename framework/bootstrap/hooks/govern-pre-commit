@@ -19,6 +19,6 @@ cd "$ROOT"
 scripts/gen-spec-deps.sh
 
 # Stage any generator-produced changes.
-for f in specs/[0-9][0-9][0-9]-*/spec.md specs/[0-9][0-9][0-9]-*/spec-and-plan.md; do
+for f in specs/[0-9][0-9][0-9]-*/spec.md; do
   git add "$f"
 done

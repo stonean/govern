@@ -4,7 +4,7 @@
 #
 # Marker pairs:
 #   <!-- generated:commands-pipeline:{start,end} -->
-#   <!-- generated:commands-elaborate:{start,end} -->
+#   <!-- generated:commands-refine:{start,end} -->
 #   <!-- generated:commands-brownfield:{start,end} -->
 #   <!-- generated:commands-orient:{start,end} -->
 #   <!-- generated:commands-bootstrap:{start,end} -->
@@ -94,18 +94,16 @@ pipeline_table="$(build_pipeline_table \
   '/{project}:plan'      'clarified → planned'                "$CMD_DIR/plan.md" \
   '/{project}:implement' 'planned → in-progress → done'       "$CMD_DIR/implement.md" \
   '/{project}:review'    'blocks `done` (MUST violations)'    "$CMD_DIR/review.md" \
-  '/{project}:validate'  '—'                                  "$CMD_DIR/validate.md" \
+  '/{project}:analyze'   '—'                                  "$CMD_DIR/analyze.md" \
 )"
 
-elaborate_table="$(build_two_col_table \
-  '/{project}:ask'       "$CMD_DIR/ask.md" \
-  '/{project}:elaborate' "$CMD_DIR/elaborate.md" \
+refine_table="$(build_two_col_table \
+  '/{project}:ask' "$CMD_DIR/ask.md" \
 )"
 
 brownfield_table="$(build_two_col_table \
-  '/{project}:capture' "$CMD_DIR/capture.md" \
-  '/{project}:log'     "$CMD_DIR/log.md" \
-  '/{project}:groom'   "$CMD_DIR/groom.md" \
+  '/{project}:log'   "$CMD_DIR/log.md" \
+  '/{project}:groom' "$CMD_DIR/groom.md" \
 )"
 
 orient_table="$(build_two_col_table \
@@ -163,14 +161,14 @@ write_table() {
 }
 
 p_file="$(write_table "$pipeline_table")"
-e_file="$(write_table "$elaborate_table")"
+r_file="$(write_table "$refine_table")"
 b_file="$(write_table "$brownfield_table")"
 o_file="$(write_table "$orient_table")"
 boot_file="$(write_table "$bootstrap_table")"
 
 for pair in \
   "commands-pipeline|$p_file" \
-  "commands-elaborate|$e_file" \
+  "commands-refine|$r_file" \
   "commands-brownfield|$b_file" \
   "commands-orient|$o_file" \
   "commands-bootstrap|$boot_file"
@@ -179,13 +177,13 @@ do
   table_file="${pair#*|}"
   next_tmp="$(mktemp)"
   if ! splice "$marker" "$table_file" "$tmp" > "$next_tmp"; then
-    rm "$tmp" "$next_tmp" "$p_file" "$e_file" "$b_file" "$o_file" "$boot_file"
+    rm "$tmp" "$next_tmp" "$p_file" "$r_file" "$b_file" "$o_file" "$boot_file"
     exit 5
   fi
   mv "$next_tmp" "$tmp"
 done
 
-rm "$p_file" "$e_file" "$b_file" "$o_file" "$boot_file"
+rm "$p_file" "$r_file" "$b_file" "$o_file" "$boot_file"
 
 if cmp -s "$HELP" "$tmp"; then
   rm "$tmp"
