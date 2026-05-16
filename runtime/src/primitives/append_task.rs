@@ -9,7 +9,8 @@ use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
 use crate::primitives::{
-    PrimitiveError, Result, parse_atx_heading, read_text, rel_path, split_frontmatter, write_atomic,
+    PrimitiveError, Result, iter_numbered_headings, parse_atx_heading, read_text, rel_path,
+    split_frontmatter, validate_no_traversal, write_atomic,
 };
 use crate::schema::primitives::{AppendTaskArgs, AppendTaskResult};
 
@@ -21,6 +22,7 @@ use crate::schema::primitives::{AppendTaskArgs, AppendTaskResult};
 /// directory does not exist, or [`PrimitiveError::Io`] for filesystem
 /// failures.
 pub fn run(args: &AppendTaskArgs, repo: &Path) -> Result<AppendTaskResult> {
+    validate_no_traversal(&args.feature_path)?;
     let feature_dir = repo.join(&args.feature_path);
     if !feature_dir.is_dir() {
         return Err(PrimitiveError::FeaturePathNotFound {
@@ -33,12 +35,12 @@ pub fn run(args: &AppendTaskArgs, repo: &Path) -> Result<AppendTaskResult> {
         Ok(text) => (text, false),
         Err(PrimitiveError::Io { source, .. }) if source.kind() == std::io::ErrorKind::NotFound => {
             let heading = derive_tasks_heading(&feature_dir);
-            (
-                format!(
-                    "{heading}\n\nTasks derived from the [plan](plan.md). Complete in order.\n"
-                ),
-                true,
-            )
+            let intro = if feature_dir.join("plan.md").exists() {
+                "Tasks derived from the [plan](plan.md). Complete in order."
+            } else {
+                "Tasks. Complete in order."
+            };
+            (format!("{heading}\n\n{intro}\n"), true)
         }
         Err(err) => return Err(err),
     };
@@ -55,41 +57,12 @@ pub fn run(args: &AppendTaskArgs, repo: &Path) -> Result<AppendTaskResult> {
     })
 }
 
-/// Walk `## N.` headings in `tasks.md` and return `max(existing) + 1`. Counts
-/// only ATX level-2 headings whose text starts with `<number>.`; ignores
-/// fenced code blocks. Returns `1` when no task headings are present.
+/// Return `max(existing-task-number) + 1` from the ATX-2 numbered headings
+/// in `tasks.md`. Delegates to the shared `iter_numbered_headings` helper so
+/// `read-tasks` and `append-task` agree on how to recognize task headings
+/// (including the fenced-block skip).
 fn next_task_number(content: &str) -> u32 {
-    let mut max: u32 = 0;
-    let mut in_fence = false;
-    for line in content.lines() {
-        let trimmed = line.trim_start();
-        if trimmed.starts_with("```") {
-            in_fence = !in_fence;
-            continue;
-        }
-        if in_fence {
-            continue;
-        }
-        if let Some((level, text)) = parse_atx_heading(line) {
-            if level != 2 {
-                continue;
-            }
-            if let Some(num) = leading_task_number(&text) {
-                max = max.max(num);
-            }
-        }
-    }
-    max + 1
-}
-
-/// Parse the leading `N.` task number from a heading like `1. Bootstrap`.
-fn leading_task_number(heading: &str) -> Option<u32> {
-    let dot = heading.find('.')?;
-    let num_part = &heading[..dot];
-    if num_part.is_empty() {
-        return None;
-    }
-    num_part.parse::<u32>().ok()
+    iter_numbered_headings(content).max().unwrap_or(0) + 1
 }
 
 /// Render the appended task block. Always preceded by a blank-line separator
@@ -307,5 +280,40 @@ mod tests {
             "ask-consolidation"
         );
         assert_eq!(slug_from_title("Bootstrap"), "bootstrap");
+    }
+
+    #[test]
+    fn refuses_when_feature_path_has_parent_component() {
+        let tmp = tempdir().unwrap();
+        let err = run(&args("specs/../target", "x", "done."), tmp.path()).unwrap_err();
+        assert!(matches!(err, PrimitiveError::InvalidPath { .. }));
+    }
+
+    #[test]
+    fn refuses_when_feature_path_is_absolute() {
+        let tmp = tempdir().unwrap();
+        let err = run(&args("/tmp/x", "x", "done."), tmp.path()).unwrap_err();
+        assert!(matches!(err, PrimitiveError::InvalidPath { .. }));
+    }
+
+    #[test]
+    fn newly_created_tasks_omits_plan_link_when_plan_missing() {
+        let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join("specs/042-foo")).unwrap();
+        // No spec.md, no plan.md — only the feature dir.
+        run(&args("specs/042-foo", "First", "done."), tmp.path()).unwrap();
+        let body = fs::read_to_string(tmp.path().join("specs/042-foo/tasks.md")).unwrap();
+        assert!(!body.contains("[plan](plan.md)"));
+        assert!(body.contains("Tasks. Complete in order."));
+    }
+
+    #[test]
+    fn newly_created_tasks_includes_plan_link_when_plan_present() {
+        let tmp = tempdir().unwrap();
+        make_feature_with_spec(tmp.path(), "specs/042-foo", "042 — Foo");
+        fs::write(tmp.path().join("specs/042-foo/plan.md"), "# Plan\n").unwrap();
+        run(&args("specs/042-foo", "First", "done."), tmp.path()).unwrap();
+        let body = fs::read_to_string(tmp.path().join("specs/042-foo/tasks.md")).unwrap();
+        assert!(body.contains("[plan](plan.md)"));
     }
 }

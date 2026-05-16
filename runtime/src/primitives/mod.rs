@@ -205,6 +205,23 @@ pub enum PrimitiveError {
         /// Caller-supplied feature path that did not resolve to a directory.
         path: PathBuf,
     },
+    /// Slug component supplied by a caller failed validation (path separator,
+    /// dot-prefix, or empty value).
+    #[error("invalid slug '{slug}': {reason}")]
+    InvalidSlug {
+        /// Slug that was rejected.
+        slug: String,
+        /// One-line reason describing the rejection.
+        reason: String,
+    },
+    /// Caller-supplied path failed traversal-safety validation.
+    #[error("invalid path '{path}': {reason}")]
+    InvalidPath {
+        /// Path that was rejected.
+        path: String,
+        /// One-line reason describing the rejection.
+        reason: String,
+    },
 }
 
 /// Convenience alias for primitive return values.
@@ -342,6 +359,90 @@ pub(crate) mod checkbox {
     }
 }
 
+/// Reject caller-supplied paths that contain parent-directory components
+/// (`..`) or absolute prefixes — the BE-INPUT-004 defense-in-depth check.
+/// Primitives that accept paths from the host or LLM call this before any
+/// filesystem operation to guarantee the resolved path stays inside the
+/// repo root.
+pub(crate) fn validate_no_traversal(path: &str) -> Result<()> {
+    if path.is_empty() {
+        return Err(PrimitiveError::InvalidPath {
+            path: path.into(),
+            reason: "path is empty".into(),
+        });
+    }
+    let p = Path::new(path);
+    if p.is_absolute() {
+        return Err(PrimitiveError::InvalidPath {
+            path: path.into(),
+            reason: "absolute path not permitted".into(),
+        });
+    }
+    for component in p.components() {
+        if matches!(component, std::path::Component::ParentDir) {
+            return Err(PrimitiveError::InvalidPath {
+                path: path.into(),
+                reason: "parent-directory component ('..') not permitted".into(),
+            });
+        }
+    }
+    Ok(())
+}
+
+/// Reject slugs that contain path separators, leading dots, or are empty.
+/// Used by primitives that embed a caller-supplied slug into a destination
+/// filename (e.g., `create-scenario` writes `scenarios/{slug}.md`).
+pub(crate) fn validate_slug(slug: &str) -> Result<()> {
+    if slug.is_empty() {
+        return Err(PrimitiveError::InvalidSlug {
+            slug: slug.into(),
+            reason: "slug is empty".into(),
+        });
+    }
+    if slug.contains('/') || slug.contains('\\') {
+        return Err(PrimitiveError::InvalidSlug {
+            slug: slug.into(),
+            reason: "slug must not contain path separators".into(),
+        });
+    }
+    if slug.starts_with('.') {
+        return Err(PrimitiveError::InvalidSlug {
+            slug: slug.into(),
+            reason: "slug must not start with '.'".into(),
+        });
+    }
+    Ok(())
+}
+
+/// Walk `content` line by line, yielding the numeric prefix of every ATX-2
+/// heading whose text begins with `N.` (where N is decimal digits). Skips
+/// headings inside fenced code blocks (`` ``` ``-delimited). Used by primitives
+/// that enumerate task numbers in `tasks.md` (`append-task` computes
+/// `max(N) + 1` from this iterator).
+pub(crate) fn iter_numbered_headings(content: &str) -> impl Iterator<Item = u32> + '_ {
+    let mut in_fence = false;
+    content.lines().filter_map(move |line| {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with("```") {
+            in_fence = !in_fence;
+            return None;
+        }
+        if in_fence {
+            return None;
+        }
+        let (level, text) = parse_atx_heading(line)?;
+        if level != 2 {
+            return None;
+        }
+        let dot = text.find('.')?;
+        let num_part = &text[..dot];
+        if num_part.is_empty() {
+            return None;
+        }
+        num_part.parse::<u32>().ok()
+    })
+}
+
 /// Parse an ATX heading line and return `(level, text)` when the line matches
 /// `# heading` through `###### heading`. Trims trailing `#` runs in the closed
 /// form (`## Foo ##`).
@@ -361,4 +462,122 @@ pub(crate) fn parse_atx_heading(line: &str) -> Option<(u8, String)> {
     }
     let heading = after.trim().trim_end_matches('#').trim().to_string();
     Some((level, heading))
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::unwrap_used, clippy::expect_used)]
+
+    use super::*;
+
+    #[test]
+    fn validate_slug_accepts_normal_slugs() {
+        validate_slug("retry-on-timeout").unwrap();
+        validate_slug("a").unwrap();
+        validate_slug("ask-consolidation").unwrap();
+    }
+
+    #[test]
+    fn validate_slug_rejects_empty() {
+        assert!(matches!(
+            validate_slug("").unwrap_err(),
+            PrimitiveError::InvalidSlug { .. }
+        ));
+    }
+
+    #[test]
+    fn validate_slug_rejects_path_separators() {
+        for bad in &["a/b", "a\\b", "../escape", "..\\escape"] {
+            assert!(
+                matches!(
+                    validate_slug(bad).unwrap_err(),
+                    PrimitiveError::InvalidSlug { .. }
+                ),
+                "expected rejection for {bad:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn validate_slug_rejects_dotfile_prefix() {
+        for bad in &[".hidden", "..", "."] {
+            assert!(
+                matches!(
+                    validate_slug(bad).unwrap_err(),
+                    PrimitiveError::InvalidSlug { .. }
+                ),
+                "expected rejection for {bad:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn validate_no_traversal_accepts_normal_paths() {
+        validate_no_traversal("specs/042-foo").unwrap();
+        validate_no_traversal("a/b/c").unwrap();
+        validate_no_traversal("specs/022-deterministic-runtime").unwrap();
+    }
+
+    #[test]
+    fn validate_no_traversal_rejects_empty() {
+        assert!(matches!(
+            validate_no_traversal("").unwrap_err(),
+            PrimitiveError::InvalidPath { .. }
+        ));
+    }
+
+    #[test]
+    fn validate_no_traversal_rejects_absolute_paths() {
+        for bad in &["/etc/passwd", "/tmp/x"] {
+            assert!(
+                matches!(
+                    validate_no_traversal(bad).unwrap_err(),
+                    PrimitiveError::InvalidPath { .. }
+                ),
+                "expected rejection for {bad:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn validate_no_traversal_rejects_parent_components() {
+        for bad in &["../foo", "specs/../target", "a/b/../c"] {
+            assert!(
+                matches!(
+                    validate_no_traversal(bad).unwrap_err(),
+                    PrimitiveError::InvalidPath { .. }
+                ),
+                "expected rejection for {bad:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn iter_numbered_headings_extracts_atx2_numbers() {
+        let content = "# Title\n\n## 1. First\n\n## 2. Second\n\n## 3. Third\n\nNot a heading.\n";
+        let nums: Vec<u32> = iter_numbered_headings(content).collect();
+        assert_eq!(nums, vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn iter_numbered_headings_skips_non_atx2() {
+        let content =
+            "# 99. Not counted\n\n## 1. Counted\n\n### 2. Not counted (level 3)\n\n## 2. Counted\n";
+        let nums: Vec<u32> = iter_numbered_headings(content).collect();
+        assert_eq!(nums, vec![1, 2]);
+    }
+
+    #[test]
+    fn iter_numbered_headings_skips_fenced_blocks() {
+        let content = "## 1. Real\n\n```text\n## 99. Fake\n```\n\n## 2. Real\n";
+        let nums: Vec<u32> = iter_numbered_headings(content).collect();
+        assert_eq!(nums, vec![1, 2]);
+    }
+
+    #[test]
+    fn iter_numbered_headings_handles_non_numeric_headings() {
+        let content = "## Setup\n\n## 1. First\n\n## Wrap-up\n\n## 7. Seventh\n";
+        let nums: Vec<u32> = iter_numbered_headings(content).collect();
+        assert_eq!(nums, vec![1, 7]);
+    }
 }

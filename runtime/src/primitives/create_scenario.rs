@@ -9,7 +9,9 @@
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
-use crate::primitives::{PrimitiveError, Result, rel_path, write_atomic};
+use crate::primitives::{
+    PrimitiveError, Result, rel_path, validate_no_traversal, validate_slug, write_atomic,
+};
 use crate::schema::primitives::{CreateScenarioArgs, CreateScenarioResult};
 
 /// Execute the `create-scenario` primitive.
@@ -26,6 +28,8 @@ use crate::schema::primitives::{CreateScenarioArgs, CreateScenarioResult};
 /// file already lives at the destination path, or [`PrimitiveError::Io`]
 /// for filesystem failures during the write.
 pub fn run(args: &CreateScenarioArgs, repo: &Path) -> Result<CreateScenarioResult> {
+    validate_no_traversal(&args.feature_path)?;
+    validate_slug(&args.slug)?;
     let feature_dir = repo.join(&args.feature_path);
     if !feature_dir.is_dir() {
         return Err(PrimitiveError::FeaturePathNotFound {
@@ -198,5 +202,29 @@ mod tests {
         assert_eq!(title_from_slug("ask-consolidation"), "Ask-consolidation");
         assert_eq!(title_from_slug("retry"), "Retry");
         assert_eq!(title_from_slug(""), "");
+    }
+
+    #[test]
+    fn refuses_when_slug_contains_path_separator() {
+        let tmp = tempdir().unwrap();
+        make_feature(tmp.path(), "specs/042-foo");
+        let err = run(&args("specs/042-foo", "../escape", None), tmp.path()).unwrap_err();
+        assert!(matches!(err, PrimitiveError::InvalidSlug { .. }));
+    }
+
+    #[test]
+    fn refuses_when_slug_starts_with_dot() {
+        let tmp = tempdir().unwrap();
+        make_feature(tmp.path(), "specs/042-foo");
+        let err = run(&args("specs/042-foo", ".hidden", None), tmp.path()).unwrap_err();
+        assert!(matches!(err, PrimitiveError::InvalidSlug { .. }));
+    }
+
+    #[test]
+    fn refuses_when_feature_path_has_parent_component() {
+        let tmp = tempdir().unwrap();
+        make_feature(tmp.path(), "specs/042-foo");
+        let err = run(&args("specs/../target", "x", None), tmp.path()).unwrap_err();
+        assert!(matches!(err, PrimitiveError::InvalidPath { .. }));
     }
 }
