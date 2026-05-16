@@ -64,9 +64,9 @@ Done when: release artifacts are downloadable; `gvrn --version` reports the new 
 
 ### 6. Close the spec 022 scenario
 
-- [ ] Run `/gov:implement` against the ask-consolidation scenario in spec 022 (the scenario task already appended in task 1); mark the linked task complete in 022's `tasks.md`.
-- [ ] Run `/gov:review` against spec 022 (if its review block has gone stale per the new primitives).
-- [ ] Confirm spec 022 returns `in-progress → done` via the standard pipeline gate.
+- [x] Run `/gov:implement` against the ask-consolidation scenario in spec 022 (the scenario task already appended in task 1); mark the linked task complete in 022's `tasks.md`.
+- [x] Run `/gov:review` against spec 022 (if its review block has gone stale per the new primitives).
+- [x] Confirm spec 022 returns `in-progress → done` via the standard pipeline gate.
 
 Done when: spec 022's status is `done` again with no blocking review findings.
 
