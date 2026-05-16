@@ -5,10 +5,14 @@
 # committed tree always has up-to-date generated artifacts.
 #
 # Generators run in a fixed order:
-#   1. gen-claude-commands.sh  — .claude/commands/gov/*.md from framework/commands/
-#   2. gen-readme-table.sh     — Feature Specs table in README.md
-#   3. gen-help-tables.sh      — five command tables in framework/commands/help.md
-#   4. gen-spec-deps.sh        — frontmatter dependencies from body inline links
+#   1. gen-configure-mcp.sh    — runtime-MCP-tool allow blocks in
+#                                framework/bootstrap/configure/{claude,auggie}.md
+#                                (runs before gen-claude-commands.sh so the
+#                                 regenerated configure.md picks up changes)
+#   2. gen-claude-commands.sh  — .claude/commands/gov/*.md from framework/commands/
+#   3. gen-readme-table.sh     — Feature Specs table in README.md
+#   4. gen-help-tables.sh      — five command tables in framework/commands/help.md
+#   5. gen-spec-deps.sh        — frontmatter dependencies from body inline links
 #
 # When staged files include anything under runtime/, this hook additionally
 # runs `cargo fmt --check`, `cargo clippy --all-targets --all-features
@@ -22,12 +26,14 @@ shopt -s nullglob
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
+scripts/gen-configure-mcp.sh
 scripts/gen-claude-commands.sh > /dev/null
 scripts/gen-readme-table.sh
 scripts/gen-help-tables.sh
 scripts/gen-spec-deps.sh
 
 # Stage any generator-produced changes to their known output paths.
+git add framework/bootstrap/configure/claude.md framework/bootstrap/configure/auggie.md
 git add .claude/commands/gov/ 2>/dev/null || true
 git add README.md
 git add framework/commands/help.md

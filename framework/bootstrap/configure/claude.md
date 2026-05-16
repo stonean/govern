@@ -22,6 +22,10 @@ Configure `{cli-config-dir}/settings.local.json` with the permissions needed for
    - `Edit`
    - `Write`
 
+   **Govern state files (no per-write confirmation):**
+   - `Edit({cli-config-dir}/{project}-session.json)`
+   - `Write({cli-config-dir}/{project}-session.json)`
+
    **Web access:**
    - `WebFetch`
    - `WebSearch`
@@ -73,6 +77,32 @@ Configure `{cli-config-dir}/settings.local.json` with the permissions needed for
    - `Bash(./scripts/gen-*.sh)`
    - `Bash(scripts/install-hooks.sh)`
    - `Bash(./scripts/install-hooks.sh)`
+
+   **Runtime MCP tools (`gov-rt:` namespace — generated from `framework/runtime-tools.txt`):**
+
+   <!-- generated:mcp-allow:start -->
+   - `mcp__gov-rt__read-spec`
+   - `mcp__gov-rt__read-tasks`
+   - `mcp__gov-rt__mark-task`
+   - `mcp__gov-rt__mark-criterion`
+   - `mcp__gov-rt__set-status`
+   - `mcp__gov-rt__derive-boundary`
+   - `mcp__gov-rt__check-stuck`
+   - `mcp__gov-rt__validate-frontmatter`
+   - `mcp__gov-rt__resolve-anchor`
+   - `mcp__gov-rt__traverse-deps`
+   - `mcp__gov-rt__check-rule-ids`
+   - `mcp__gov-rt__run-generator`
+   - `mcp__gov-rt__lint-markdown`
+   - `mcp__gov-rt__gate-confirm`
+   - `mcp__gov-rt__fetch-archive`
+   - `mcp__gov-rt__extract-archive`
+   - `mcp__gov-rt__substitute-templates`
+   - `mcp__gov-rt__merge-claude-md`
+   - `mcp__gov-rt__apply-manifest`
+   - `mcp__gov-rt__enforce-manifest`
+   - `mcp__gov-rt__merge-managed-block`
+   <!-- generated:mcp-allow:end -->
 
 3. Ensure the `permissions.deny` array contains **all** of the following entries. Add any that are missing:
 
