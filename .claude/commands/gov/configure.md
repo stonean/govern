@@ -102,6 +102,8 @@ Configure `.claude/settings.local.json` with the permissions needed for slash co
    - `mcp__gov-rt__apply-manifest`
    - `mcp__gov-rt__enforce-manifest`
    - `mcp__gov-rt__merge-managed-block`
+   - `mcp__gov-rt__create-scenario`
+   - `mcp__gov-rt__append-task`
    <!-- generated:mcp-allow:end -->
 
 3. Ensure the `permissions.deny` array contains **all** of the following entries. Add any that are missing:

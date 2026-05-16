@@ -83,6 +83,8 @@ Configure `{cli-config-dir}/settings.local.json` with the tool permissions neede
    - `{ "toolName": "mcp:gov-rt:apply-manifest", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gov-rt:enforce-manifest", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gov-rt:merge-managed-block", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gov-rt:create-scenario", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gov-rt:append-task", "permission": { "type": "allow" } }`
    <!-- generated:mcp-allow:end -->
 
    **Shell commands — denied (destructive):**

@@ -10,11 +10,11 @@ use std::io;
 use gvrn::mcp::server::GovRuntimeServer;
 use gvrn::primitives;
 use gvrn::schema::primitives::{
-    ApplyManifestArgs, CheckRuleIdsArgs, CheckStuckArgs, DeriveBoundaryArgs, EnforceManifestArgs,
-    ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs,
-    MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs, ReadSpecArgs, ReadTasksArgs,
-    ResolveAnchorArgs, RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs,
-    ValidateFrontmatterArgs,
+    AppendTaskArgs, ApplyManifestArgs, CheckRuleIdsArgs, CheckStuckArgs, CreateScenarioArgs,
+    DeriveBoundaryArgs, EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs,
+    LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs,
+    ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs, RunGeneratorArgs, SetStatusArgs,
+    SubstituteTemplatesArgs, TraverseDepsArgs, ValidateFrontmatterArgs,
 };
 
 #[derive(Parser, Debug)]
@@ -95,6 +95,10 @@ enum Command {
     MergeClaudeMd(MergeClaudeMdArgs),
     /// Idempotently merge a framework-managed block with configurable marker shape.
     MergeManagedBlock(MergeManagedBlockArgs),
+    /// Write a new scenarios/{slug}.md file under a feature with frontmatter and body.
+    CreateScenario(CreateScenarioArgs),
+    /// Append a numbered task block to a feature's tasks.md (atomic rewrite).
+    AppendTask(AppendTaskArgs),
     /// Emit a `gate-confirm` envelope on stdout and block for a response.
     GateConfirm(GateConfirmArgs),
 }
@@ -354,6 +358,10 @@ fn main() -> ExitCode {
         Command::MergeManagedBlock(args) => {
             emit_result(primitives::merge_managed_block::run(&args, &repo))
         }
+        Command::CreateScenario(args) => {
+            emit_result(primitives::create_scenario::run(&args, &repo))
+        }
+        Command::AppendTask(args) => emit_result(primitives::append_task::run(&args, &repo)),
         Command::GateConfirm(args) => {
             // The CLI binding is the subprocess-interpreter surface: emit the
             // gate-confirm envelope on stdout, then read one gate-response

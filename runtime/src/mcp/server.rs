@@ -22,11 +22,12 @@ use rmcp::{ServerHandler, tool, tool_handler, tool_router};
 use crate::primitives;
 use crate::primitives::gate_confirm::GatePromptPayload;
 use crate::schema::primitives::{
-    ApplyManifestArgs, ApplyManifestResult, CheckRuleIdsArgs, CheckRuleIdsResult, CheckStuckArgs,
-    CheckStuckResult, CheckboxToggleResult, DeriveBoundaryArgs, DeriveBoundaryResult,
-    EnforceManifestArgs, EnforceManifestResult, ExtractArchiveArgs, ExtractArchiveResult,
-    FetchArchiveArgs, FetchArchiveResult, GateConfirmArgs, LintMarkdownArgs, LintMarkdownResult,
-    MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeClaudeMdResult, MergeManagedBlockArgs,
+    AppendTaskArgs, AppendTaskResult, ApplyManifestArgs, ApplyManifestResult, CheckRuleIdsArgs,
+    CheckRuleIdsResult, CheckStuckArgs, CheckStuckResult, CheckboxToggleResult, CreateScenarioArgs,
+    CreateScenarioResult, DeriveBoundaryArgs, DeriveBoundaryResult, EnforceManifestArgs,
+    EnforceManifestResult, ExtractArchiveArgs, ExtractArchiveResult, FetchArchiveArgs,
+    FetchArchiveResult, GateConfirmArgs, LintMarkdownArgs, LintMarkdownResult, MarkCriterionArgs,
+    MarkTaskArgs, MergeClaudeMdArgs, MergeClaudeMdResult, MergeManagedBlockArgs,
     MergeManagedBlockResult, ReadSpecArgs, ReadSpecResult, ReadTasksArgs, ReadTasksResult,
     ResolveAnchorArgs, ResolveAnchorResult, RunGeneratorArgs, RunGeneratorResult, SetStatusArgs,
     SetStatusResult, SubstituteTemplatesArgs, SubstituteTemplatesResult, TraverseDepsArgs,
@@ -56,6 +57,8 @@ pub const TOOL_NAMES: &[&str] = &[
     "gov-rt:apply-manifest",
     "gov-rt:enforce-manifest",
     "gov-rt:merge-managed-block",
+    "gov-rt:create-scenario",
+    "gov-rt:append-task",
 ];
 
 /// MCP server. Cloned per request by `rmcp`, so all state lives behind
@@ -355,6 +358,32 @@ impl GovRuntimeServer {
         params: Parameters<MergeManagedBlockArgs>,
     ) -> Result<Json<MergeManagedBlockResult>, String> {
         primitives::merge_managed_block::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "gov-rt:create-scenario",
+        description = "Write a new scenarios/{slug}.md file under a feature with frontmatter and prose body."
+    )]
+    async fn create_scenario(
+        &self,
+        params: Parameters<CreateScenarioArgs>,
+    ) -> Result<Json<CreateScenarioResult>, String> {
+        primitives::create_scenario::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "gov-rt:append-task",
+        description = "Append a numbered task block to a feature's tasks.md (atomic rewrite)."
+    )]
+    async fn append_task(
+        &self,
+        params: Parameters<AppendTaskArgs>,
+    ) -> Result<Json<AppendTaskResult>, String> {
+        primitives::append_task::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
     }

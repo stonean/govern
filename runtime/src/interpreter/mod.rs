@@ -28,11 +28,11 @@ use crate::io::{read_envelope, write_envelope};
 use crate::primitives;
 use crate::schema::extensions::{self, ValidationError, WriteCodeResponse};
 use crate::schema::primitives::{
-    ApplyManifestArgs, CheckRuleIdsArgs, CheckStuckArgs, DeriveBoundaryArgs, EnforceManifestArgs,
-    ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs,
-    MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs, ReadSpecArgs, ReadTasksArgs,
-    ResolveAnchorArgs, RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs,
-    ValidateFrontmatterArgs,
+    AppendTaskArgs, ApplyManifestArgs, CheckRuleIdsArgs, CheckStuckArgs, CreateScenarioArgs,
+    DeriveBoundaryArgs, EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs,
+    LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs,
+    ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs, RunGeneratorArgs, SetStatusArgs,
+    SubstituteTemplatesArgs, TraverseDepsArgs, ValidateFrontmatterArgs,
 };
 use crate::schema::procedure::{Procedure, Step, StepNumber};
 use crate::schema::protocol::{ErrorLocation, ProtocolMessage};
@@ -481,6 +481,8 @@ fn dispatch_primitive(
         "apply-manifest" => call!(ApplyManifestArgs, apply_manifest),
         "enforce-manifest" => call!(EnforceManifestArgs, enforce_manifest),
         "merge-managed-block" => call!(MergeManagedBlockArgs, merge_managed_block),
+        "create-scenario" => call!(CreateScenarioArgs, create_scenario),
+        "append-task" => call!(AppendTaskArgs, append_task),
         "gate-confirm" => {
             // The interpreter-level gate handler emits gate-confirm via
             // its own path (see handle_gate). When a primitive named

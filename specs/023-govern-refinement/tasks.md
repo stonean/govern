@@ -33,21 +33,21 @@ Done when: scenario file exists, frontmatter `section` references spec 022's "Fo
 
 ### 3. Implement `create-scenario` primitive
 
-- [ ] Create `runtime/src/primitives/create_scenario.rs` implementing the primitive: args (feature path, scenario slug, section frontmatter value, body content); writes `scenarios/{slug}.md` atomically via tempfile + rename; creates the scenarios subdirectory if absent.
-- [ ] Register the primitive in `runtime/src/primitives/mod.rs`.
-- [ ] Expose as MCP tool `gov-rt:create-scenario` via the runtime's MCP registration.
-- [ ] Expose as CLI subcommand `runtime create-scenario` (or the equivalent existing primitive-CLI pattern).
-- [ ] Add fixture tests covering: happy path, scenarios directory absent, slug conflict (file already exists), atomic-write semantics on simulated crash mid-write.
+- [x] Create `runtime/src/primitives/create_scenario.rs` implementing the primitive: args (feature path, scenario slug, section frontmatter value, body content); writes `scenarios/{slug}.md` atomically via tempfile + rename; creates the scenarios subdirectory if absent.
+- [x] Register the primitive in `runtime/src/primitives/mod.rs`.
+- [x] Expose as MCP tool `gov-rt:create-scenario` via the runtime's MCP registration.
+- [x] Expose as CLI subcommand `runtime create-scenario` (or the equivalent existing primitive-CLI pattern).
+- [x] Add fixture tests covering: happy path, scenarios directory absent, slug conflict (file already exists), atomic-write semantics on simulated crash mid-write.
 
 Done when: `cargo test` passes; the MCP tool responds correctly under fixture invocation; the CLI subcommand exits 0 on success and non-zero on conflict.
 
 ### 4. Implement `append-task` primitive
 
-- [ ] Create `runtime/src/primitives/append_task.rs` implementing the primitive: args (feature path, task title, "done when" text); reads existing `tasks.md` to compute next task number; appends a new numbered task block atomically via tempfile + rename; creates `tasks.md` with a heading if it does not exist.
-- [ ] Register in `runtime/src/primitives/mod.rs`.
-- [ ] Expose as MCP tool `gov-rt:append-task`.
-- [ ] Expose as CLI subcommand.
-- [ ] Add fixture tests covering: empty `tasks.md`, existing tasks (number-1 increment), missing `tasks.md` (creates with heading), atomic-write semantics on simulated crash mid-write.
+- [x] Create `runtime/src/primitives/append_task.rs` implementing the primitive: args (feature path, task title, "done when" text); reads existing `tasks.md` to compute next task number; appends a new numbered task block atomically via tempfile + rename; creates `tasks.md` with a heading if it does not exist.
+- [x] Register in `runtime/src/primitives/mod.rs`.
+- [x] Expose as MCP tool `gov-rt:append-task`.
+- [x] Expose as CLI subcommand.
+- [x] Add fixture tests covering: empty `tasks.md`, existing tasks (number-1 increment), missing `tasks.md` (creates with heading), atomic-write semantics on simulated crash mid-write.
 
 Done when: `cargo test` passes; the MCP tool responds correctly under fixture invocation; the CLI subcommand exits 0 on success.
 

@@ -10,9 +10,11 @@
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
+pub mod append_task;
 pub mod apply_manifest;
 pub mod check_rule_ids;
 pub mod check_stuck;
+pub mod create_scenario;
 pub mod derive_boundary;
 pub mod enforce_manifest;
 pub mod extract_archive;
@@ -190,6 +192,18 @@ pub enum PrimitiveError {
     UnknownManifestStrategy {
         /// Strategy string as it appeared in the manifest entry.
         strategy: String,
+    },
+    /// `create-scenario` refused to overwrite an existing scenario file.
+    #[error("scenario already exists: {path}")]
+    ScenarioConflict {
+        /// Path of the existing scenario file the primitive refused to overwrite.
+        path: PathBuf,
+    },
+    /// Feature path supplied to a primitive does not exist.
+    #[error("feature path does not exist: {path}")]
+    FeaturePathNotFound {
+        /// Caller-supplied feature path that did not resolve to a directory.
+        path: PathBuf,
     },
 }
 

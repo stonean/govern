@@ -38,3 +38,5 @@ gov-rt:merge-claude-md
 gov-rt:apply-manifest
 gov-rt:enforce-manifest
 gov-rt:merge-managed-block
+gov-rt:create-scenario
+gov-rt:append-task

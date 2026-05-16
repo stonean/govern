@@ -868,6 +868,77 @@ pub struct GateConfirmResult {
     pub confirmed: bool,
 }
 
+// -- create-scenario ---------------------------------------------------------
+
+/// Args for `create-scenario`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct CreateScenarioArgs {
+    /// Repo-relative feature directory (e.g., `specs/042-foo`).
+    #[arg(long)]
+    pub feature_path: String,
+    /// Scenario slug (no extension; the filename becomes `{slug}.md`).
+    #[arg(long)]
+    pub slug: String,
+    /// Parent-spec section name written into the scenario frontmatter.
+    #[arg(long)]
+    pub section: String,
+    /// Body content for the `## Context` section.
+    #[arg(long)]
+    pub context: String,
+    /// Body content for the `## Behavior` section.
+    #[arg(long)]
+    pub behavior: String,
+    /// Optional body content for the `## Edge Cases` section. When omitted,
+    /// the section is left out of the rendered scenario file entirely.
+    #[arg(long)]
+    pub edge_cases: Option<String>,
+}
+
+/// Result for `create-scenario`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct CreateScenarioResult {
+    /// Repo-relative path of the newly-created scenario file.
+    pub created: String,
+}
+
+// -- append-task -------------------------------------------------------------
+
+/// Args for `append-task`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct AppendTaskArgs {
+    /// Repo-relative feature directory (e.g., `specs/042-foo`).
+    #[arg(long)]
+    pub feature_path: String,
+    /// Task title (the text after the `## N. ` heading prefix).
+    #[arg(long)]
+    pub title: String,
+    /// Body content for the task's `Done when:` clause.
+    #[arg(long)]
+    pub done_when: String,
+    /// Optional checkbox sub-items to render inside the task block. When
+    /// omitted, the primitive emits a single default
+    /// `- [ ] Implement the behavior described in scenarios/{slug}.md`
+    /// line derived from the title.
+    #[arg(long)]
+    pub body: Option<Vec<String>>,
+}
+
+/// Result for `append-task`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct AppendTaskResult {
+    /// Number assigned to the newly-appended task (`max(existing) + 1`).
+    pub task_number: u32,
+    /// Repo-relative path of the tasks file written.
+    pub path: String,
+    /// Whether `tasks.md` was created by this invocation. `false` when an
+    /// existing file was extended.
+    pub created: bool,
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]

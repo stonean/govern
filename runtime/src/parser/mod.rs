@@ -51,6 +51,8 @@ pub const PRIMITIVE_NAMES: &[&str] = &[
     "apply-manifest",
     "enforce-manifest",
     "merge-managed-block",
+    "create-scenario",
+    "append-task",
 ];
 
 /// Parse errors raised by [`parse`] and [`check`].
