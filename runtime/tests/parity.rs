@@ -68,8 +68,8 @@ fn target_basic_stream_matches_golden() {
 }
 
 #[test]
-fn validate_basic_stream_matches_golden() {
-    run_parity_case("validate", "validate-basic");
+fn analyze_basic_stream_matches_golden() {
+    run_parity_case("analyze", "analyze-basic");
 }
 
 #[test]
@@ -126,14 +126,9 @@ fn govern_basic_post_run_filesystem_state_matches_expectations() {
         .stderr(Stdio::piped())
         .spawn()
         .expect("spawn runtime");
-    {
-        let mut child_stdin = child.stdin.take().expect("stdin");
-        child_stdin
-            .write_all(
-                b"{\"type\":\"gate-response\",\"request-id\":\"req-1\",\"confirmed\":true}\n",
-            )
-            .expect("stdin write");
-    }
+    // The bootstrap procedure no longer has a confirmation gate — invoking
+    // `/govern` is itself the consent. Close stdin without writing.
+    drop(child.stdin.take());
     let output = child.wait_with_output().expect("wait");
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(

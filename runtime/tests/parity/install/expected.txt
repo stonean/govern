@@ -13,7 +13,8 @@ Capture recipe (maintainer-only, requires an LLM-driven host):
      can use `python3 -m http.server` from the staging tree's parent).
   4. Substitute `{MOCK_HTTP}` in the session JSON with the server URL.
   5. Run `/govern` (or `/install` for the fixture procedure) in the
-     LLM-driven host; confirm the install gate when prompted.
+     LLM-driven host. The bootstrap procedure no longer has a
+     confirmation gate — invoking the command is itself the consent.
   6. After the run, record:
      a. `<a-clean-tempdir>/project/framework/commands/specify.md` with
         `{project}` substituted to `anvil` (update strategy).

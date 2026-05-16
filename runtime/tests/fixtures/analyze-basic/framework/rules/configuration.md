@@ -1,6 +1,6 @@
 # Configuration Rules
 
-Fixture rule file used by the validate-basic parity test.
+Fixture rule file used by the analyze-basic parity test.
 
 ### CFG-CONST-001
 

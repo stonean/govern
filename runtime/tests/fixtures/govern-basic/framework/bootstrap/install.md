@@ -48,12 +48,10 @@ semantics directly.
 
 3. Invoke `extract-archive` to expand the verified tarball into the staging directory. Otherwise, fall back to `tar -xzf`.
 
-4. Ask the user to approve writing the framework files into the project before any destination-tree changes.
+4. Invoke `apply-manifest` to walk the entries list and write the framework files into the project tree. The host's manifest covers every strategy (update / create / skip-if-conflict), the pinned-list short-circuit, and a keep-literals entry for the `.claude/commands/govern.md` self-install.
 
-5. Invoke `apply-manifest` to walk the entries list and write the framework files into the project tree. The host's manifest covers every strategy (update / create / skip-if-conflict), the pinned-list short-circuit, and a keep-literals entry for the `.claude/commands/govern.md` self-install.
+5. Invoke `merge-managed-block` against `.gitignore` with `marker-style: "line-prefix"` to install or update the framework-managed block. First-run creates the file; subsequent runs update only the region between the `# govern` preamble and the next blank line.
 
-6. Invoke `merge-managed-block` against `.gitignore` with `marker-style: "line-prefix"` to install or update the framework-managed block. First-run creates the file; subsequent runs update only the region between the `# govern` preamble and the next blank line.
+6. Invoke `enforce-manifest` against the slash-command directory to remove any pre-seeded legacy files that aren't in the expected manifest. The fixture pre-seeds `project/framework/commands/legacy-cmd.md`; the enforce step prunes it.
 
-7. Invoke `enforce-manifest` against the slash-command directory to remove any pre-seeded legacy files that aren't in the expected manifest. The fixture pre-seeds `project/framework/commands/legacy-cmd.md`; the enforce step prunes it.
-
-8. Render the completion message (host responsibility): list the framework files installed and the next pipeline step.
+7. Render the completion message (host responsibility): list the framework files installed and the next pipeline step.

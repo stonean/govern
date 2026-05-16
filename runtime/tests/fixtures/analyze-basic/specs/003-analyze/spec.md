@@ -10,9 +10,9 @@ review:
   blocking: false
 ---
 
-# 003 — Validate Fixture
+# 003 — Analyze Fixture
 
-A minimal fixture for the `/gov:validate` parity test. Exercises every
+A minimal fixture for the `/gov:analyze` parity test. Exercises every
 mechanical primitive plus the assessSpecQuality extension point.
 
 <!-- §spec-phase -->
