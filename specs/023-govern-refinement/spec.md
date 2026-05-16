@@ -2,8 +2,8 @@
 status: in-progress
 dependencies: [022-deterministic-runtime]
 review:
-  last-run: null
-  reviewed-against: null
+  last-run: 2026-05-16T14:50:00Z
+  reviewed-against: 670a3181acbfefbf3dab31eb7df84f5442672e8a
   must-violations: 0
   should-violations: 0
   low-confidence: 0
@@ -96,38 +96,38 @@ The list is sourced from `framework/runtime-tools.txt` to avoid drift. Each tool
 
 ## Acceptance Criteria
 
-- [ ] `framework/templates/spec/spec-and-plan.md` is deleted.
-- [ ] `framework/constitution.md` no longer contains §lightweight-track and no longer references `spec-and-plan.md` in any section.
-- [ ] `framework/constitution.md` references no deleted verbs (`/capture`, `/elaborate`) anywhere in its body. Every prior mention is rewritten to the post-consolidation verb (`/specify` for `/capture`; `/ask` for `/elaborate`). Sections known to require sweeping: §spec-lifecycle (back-edge ownership), §three-cycles (Brownfield and Reopen cycles), §scenario-promotion, §brownfield-process (intro, Capture phase, Inbox integration), §runtime-boundary (semantic-judgment example list).
-- [ ] `framework/commands/capture.md` is deleted; `.claude/commands/gov/capture.md` is regenerated as deleted.
-- [ ] `framework/commands/elaborate.md` is deleted; `.claude/commands/gov/elaborate.md` is regenerated as deleted.
-- [ ] `framework/commands/specify.md` no longer prompts qualifying questions and always copies the `spec.md` template.
-- [ ] `framework/commands/ask.md` classifies input as question or scenario, routes scenario inputs through the decision tree formerly in `/elaborate`, creates `scenarios/{slug}.md`, and appends a linked task to `tasks.md` on the scenario branch.
-- [ ] `framework/commands/ask.md` documents the classification heuristic in its prose Instructions section (question signals, scenario signals, status tiebreaker) and surfaces the chosen route in the refinement-approval gate with a one-input override (`flip`) that redrafts under the alternate route.
-- [ ] `framework/commands/ask.md` owns both back-edges: `clarified|planned|in-progress → draft` (on question record) and `done → in-progress` (on scenario record).
-- [ ] No command source under `framework/commands/` retains the `spec.md`-then-`spec-and-plan.md` detection fallback on either the read or write side.
-- [ ] `framework/bootstrap/govern.md` performs a one-pass migration check on every run: lists any `spec-and-plan.md` files under `specs/` and offers to rename each to `spec.md`. The changelog accompanying this spec's release documents the rename.
-- [ ] `framework/bootstrap/configure/claude.md` includes explicit `Edit({cli-config-dir}/{project}-session.json)` and `Write({cli-config-dir}/{project}-session.json)` entries in the canonical `permissions.allow` array so pipeline commands do not prompt on session-file writes.
-- [ ] `framework/bootstrap/configure/auggie.md`'s existing bare `save-file` and `str-replace-editor` allows are confirmed to cover session-file writes; no Auggie-side addition required (verified at implementation time).
-- [ ] `framework/bootstrap/configure/claude.md` includes a Claude-format permission entry for every MCP tool listed in `framework/runtime-tools.txt`, added to the canonical `permissions.allow` array unconditionally (no runtime-presence detection).
-- [ ] `framework/bootstrap/configure/auggie.md` includes an Auggie-format permission entry for every MCP tool listed in `framework/runtime-tools.txt`, added to the canonical permission set unconditionally.
-- [ ] The two configure sources draw from `framework/runtime-tools.txt` such that adding a new MCP tool to that file flows through to both agents on the next bootstrap (no manual edit per agent). The drift detection mechanism is a plan-phase choice (inline list with a generator that syncs from `runtime-tools.txt`, or runtime read at configure time).
-- [ ] A new scenario at `specs/022-deterministic-runtime/scenarios/ask-consolidation.md` introduces two primitives — `create-scenario` (writes `scenarios/{slug}.md` atomically with section frontmatter and body) and `append-task` (appends a numbered task block to `tasks.md` atomically). The scenario is created via `/elaborate` (current verb), spec 022 reopens to `in-progress`, and 022 returns to `done` after the scenario's task is implemented.
-- [ ] The `gvrn` release that ships with this spec exposes `create-scenario` and `append-task` as both CLI subcommands and MCP tools under the `gov-rt:` namespace. `framework/runtime-tools.txt` is updated to include both names.
-- [ ] `framework/commands/ask.md` (the rewritten version) invokes `create-scenario` and `append-task` on the scenario branch and falls back to host-side prose execution when the runtime is absent (per spec 022's markdown-only-path discipline).
-- [ ] `framework/commands/validate.md` is renamed to `framework/commands/analyze.md`; the H1 reads "# Analyze".
-- [ ] Across `framework/`, `scripts/`, `.github/`, `docs/`, `README.md`, and `AGENTS.md`, no file contains a command-name reference to `/validate`, `/gov:validate`, `/{project}:validate`, or `validate.md`. `grep -rn '/validate\b\|validate\.md\|/gov:validate' framework/ scripts/ docs/ README.md AGENTS.md` returns hits only inside done-spec bodies under `specs/NNN-*/` (frozen archaeology) and inside spec 023's own body / plan / tasks.
-- [ ] `scripts/gen-help-tables.sh` builds the pipeline table from `analyze.md`.
-- [ ] `specs/README.md` carries a "Past Renames" note recording `/validate → /analyze` so historical references in done specs remain discoverable without rewriting their bodies.
-- [ ] `framework/commands/analyze.md`'s frontmatter `description:` reads exactly `Audit artifacts against each other — spec, plan, tasks, scenarios, frontmatter, dependencies, rule IDs. Read-only.`
-- [ ] `framework/commands/review.md`'s frontmatter `description:` reads exactly `Audit code against rules — security, reuse, quality, efficiency, simplicity. Writes review.md; blocks done on MUST violations.`
-- [ ] The "Audit artifacts" / "Audit code" parallelism is preserved verbatim — both descriptions begin with that exact phrase so the distinction is visible at first glance in `/help` tables and in any consumer that surfaces command descriptions.
-- [ ] `/gov:analyze` passes against this spec with no hard-fail or blocking findings (replacing the prior AC referencing `/gov:validate`).
-- [ ] `README.md`, `AGENTS.md`, `specs/README.md`, `framework/commands/help.md`, `docs/introduction.md`, `framework/templates/project/project-readme.md`, `framework/templates/project/agents.md`, `framework/bootstrap/govern.md`, and any other prose under `framework/`, `specs/`, and `docs/` no longer reference `/capture`, `/elaborate`, or the lightweight track. Help tables regenerate cleanly via `scripts/gen-help-tables.sh`.
-- [ ] `framework/constitution.md` §brownfield-process retains its three-phase structure ("Capture → incremental growth → promotion"); step 1 rewrites to point at `/specify` and explicitly notes sparse acceptance criteria are valid for brownfield use. The §brownfield-process anchor name is preserved (no cascading reference updates required).
-- [ ] The Status → next action tables in `framework/commands/target.md` and `framework/commands/status.md` point at `/ask` for the `done` row instead of `/elaborate`.
-- [ ] `scripts/lint-tool-coverage.sh` passes after the rewrites; the runtime's parseability check passes against the rewritten `framework/commands/specify.md` and `framework/commands/ask.md`.
-- [ ] The markdown-only CI workflow (`.github/workflows/markdown-only-pipeline.yml`) passes with the runtime absent from `PATH`; the runtime CI workflow continues to pass.
+- [x] `framework/templates/spec/spec-and-plan.md` is deleted.
+- [x] `framework/constitution.md` no longer contains §lightweight-track and no longer references `spec-and-plan.md` in any section.
+- [x] `framework/constitution.md` references no deleted verbs (`/capture`, `/elaborate`) anywhere in its body. Every prior mention is rewritten to the post-consolidation verb (`/specify` for `/capture`; `/ask` for `/elaborate`). Sections known to require sweeping: §spec-lifecycle (back-edge ownership), §three-cycles (Brownfield and Reopen cycles), §scenario-promotion, §brownfield-process (intro, Capture phase, Inbox integration), §runtime-boundary (semantic-judgment example list).
+- [x] `framework/commands/capture.md` is deleted; `.claude/commands/gov/capture.md` is regenerated as deleted.
+- [x] `framework/commands/elaborate.md` is deleted; `.claude/commands/gov/elaborate.md` is regenerated as deleted.
+- [x] `framework/commands/specify.md` no longer prompts qualifying questions and always copies the `spec.md` template.
+- [x] `framework/commands/ask.md` classifies input as question or scenario, routes scenario inputs through the decision tree formerly in `/elaborate`, creates `scenarios/{slug}.md`, and appends a linked task to `tasks.md` on the scenario branch.
+- [x] `framework/commands/ask.md` documents the classification heuristic in its prose Instructions section (question signals, scenario signals, status tiebreaker) and surfaces the chosen route in the refinement-approval gate with a one-input override (`flip`) that redrafts under the alternate route.
+- [x] `framework/commands/ask.md` owns both back-edges: `clarified|planned|in-progress → draft` (on question record) and `done → in-progress` (on scenario record).
+- [x] No command source under `framework/commands/` retains the `spec.md`-then-`spec-and-plan.md` detection fallback on either the read or write side.
+- [x] `framework/bootstrap/govern.md` performs a one-pass migration check on every run: lists any `spec-and-plan.md` files under `specs/` and offers to rename each to `spec.md`. The changelog accompanying this spec's release documents the rename.
+- [x] `framework/bootstrap/configure/claude.md` includes explicit `Edit({cli-config-dir}/{project}-session.json)` and `Write({cli-config-dir}/{project}-session.json)` entries in the canonical `permissions.allow` array so pipeline commands do not prompt on session-file writes.
+- [x] `framework/bootstrap/configure/auggie.md`'s existing bare `save-file` and `str-replace-editor` allows are confirmed to cover session-file writes; no Auggie-side addition required (verified at implementation time).
+- [x] `framework/bootstrap/configure/claude.md` includes a Claude-format permission entry for every MCP tool listed in `framework/runtime-tools.txt`, added to the canonical `permissions.allow` array unconditionally (no runtime-presence detection).
+- [x] `framework/bootstrap/configure/auggie.md` includes an Auggie-format permission entry for every MCP tool listed in `framework/runtime-tools.txt`, added to the canonical permission set unconditionally.
+- [x] The two configure sources draw from `framework/runtime-tools.txt` such that adding a new MCP tool to that file flows through to both agents on the next bootstrap (no manual edit per agent). The drift detection mechanism is a plan-phase choice (inline list with a generator that syncs from `runtime-tools.txt`, or runtime read at configure time).
+- [x] A new scenario at `specs/022-deterministic-runtime/scenarios/ask-consolidation.md` introduces two primitives — `create-scenario` (writes `scenarios/{slug}.md` atomically with section frontmatter and body) and `append-task` (appends a numbered task block to `tasks.md` atomically). The scenario is created via `/elaborate` (current verb), spec 022 reopens to `in-progress`, and 022 returns to `done` after the scenario's task is implemented.
+- [x] The `gvrn` release that ships with this spec exposes `create-scenario` and `append-task` as both CLI subcommands and MCP tools under the `gov-rt:` namespace. `framework/runtime-tools.txt` is updated to include both names.
+- [x] `framework/commands/ask.md` (the rewritten version) invokes `create-scenario` and `append-task` on the scenario branch and falls back to host-side prose execution when the runtime is absent (per spec 022's markdown-only-path discipline).
+- [x] `framework/commands/validate.md` is renamed to `framework/commands/analyze.md`; the H1 reads "# Analyze".
+- [x] Across `framework/`, `scripts/`, `.github/`, `docs/`, `README.md`, and `AGENTS.md`, no file contains a command-name reference to `/validate`, `/gov:validate`, `/{project}:validate`, or `validate.md`. `grep -rn '/validate\b\|validate\.md\|/gov:validate' framework/ scripts/ docs/ README.md AGENTS.md` returns hits only inside done-spec bodies under `specs/NNN-*/` (frozen archaeology) and inside spec 023's own body / plan / tasks.
+- [x] `scripts/gen-help-tables.sh` builds the pipeline table from `analyze.md`.
+- [x] `specs/README.md` carries a "Past Renames" note recording `/validate → /analyze` so historical references in done specs remain discoverable without rewriting their bodies.
+- [x] `framework/commands/analyze.md`'s frontmatter `description:` reads exactly `Audit artifacts against each other — spec, plan, tasks, scenarios, frontmatter, dependencies, rule IDs. Read-only.`
+- [x] `framework/commands/review.md`'s frontmatter `description:` reads exactly `Audit code against rules — security, reuse, quality, efficiency, simplicity. Writes review.md; blocks done on MUST violations.`
+- [x] The "Audit artifacts" / "Audit code" parallelism is preserved verbatim — both descriptions begin with that exact phrase so the distinction is visible at first glance in `/help` tables and in any consumer that surfaces command descriptions.
+- [x] `/gov:analyze` passes against this spec with no hard-fail or blocking findings (replacing the prior AC referencing `/gov:validate`).
+- [x] `README.md`, `AGENTS.md`, `specs/README.md`, `framework/commands/help.md`, `docs/introduction.md`, `framework/templates/project/project-readme.md`, `framework/templates/project/agents.md`, `framework/bootstrap/govern.md`, and any other prose under `framework/`, `specs/`, and `docs/` no longer reference `/capture`, `/elaborate`, or the lightweight track. Help tables regenerate cleanly via `scripts/gen-help-tables.sh`.
+- [x] `framework/constitution.md` §brownfield-process retains its three-phase structure ("Capture → incremental growth → promotion"); step 1 rewrites to point at `/specify` and explicitly notes sparse acceptance criteria are valid for brownfield use. The §brownfield-process anchor name is preserved (no cascading reference updates required).
+- [x] The Status → next action tables in `framework/commands/target.md` and `framework/commands/status.md` point at `/ask` for the `done` row instead of `/elaborate`.
+- [x] `scripts/lint-tool-coverage.sh` passes after the rewrites; the runtime's parseability check passes against the rewritten `framework/commands/specify.md` and `framework/commands/ask.md`.
+- [x] The markdown-only CI workflow (`.github/workflows/markdown-only-pipeline.yml`) passes with the runtime absent from `PATH`; the runtime CI workflow continues to pass.
 
 ## Open Questions
 

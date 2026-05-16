@@ -200,22 +200,22 @@ Done when: the four `grep` patterns return no hits outside the spec 023 director
 
 ### 16. Validation pass and pre-merge checks
 
-- [ ] Run `scripts/lint-tool-coverage.sh` → passes.
-- [ ] Run `scripts/gen-help-tables.sh --dry-run` → "in sync".
-- [ ] Run `scripts/gen-spec-deps.sh --dry-run` → "in sync".
-- [ ] Run `scripts/gen-readme-table.sh --dry-run` → "in sync".
-- [ ] Run `scripts/gen-configure-mcp.sh --dry-run` → "in sync".
-- [ ] Run `npx markdownlint-cli2 '**/*.md'` → passes.
-- [ ] Run runtime parseability check across all rewritten commands → passes.
-- [ ] Run `/gov:analyze` against spec 023 → no hard-fail or blocking findings.
-- [ ] Push to a branch and confirm CI passes — both `markdown-only-pipeline.yml` and `runtime.yml`.
+- [x] Run `scripts/lint-tool-coverage.sh` → passes.
+- [x] Run `scripts/gen-help-tables.sh --dry-run` → "in sync".
+- [x] Run `scripts/gen-spec-deps.sh --dry-run` → "in sync".
+- [x] Run `scripts/gen-readme-table.sh --dry-run` → "in sync".
+- [x] Run `scripts/gen-configure-mcp.sh --dry-run` → "in sync".
+- [x] Run `npx markdownlint-cli2 '**/*.md'` → passes.
+- [x] Run runtime parseability check across all rewritten commands → passes.
+- [x] Run `/gov:analyze` against spec 023 → no hard-fail or blocking findings.
+- [x] Push to a branch and confirm CI passes — both `markdown-only-pipeline.yml` and `runtime.yml`.
 
 Done when: every check in the list above passes locally; CI workflows report green on the PR branch.
 
 ### 17. Code review gate
 
-- [ ] Run `/gov:review` against spec 023.
-- [ ] Resolve any MUST violations or record waivers.
-- [ ] Confirm `review.blocking: false` in spec 023's frontmatter.
+- [x] Run `/gov:review` against spec 023.
+- [x] Resolve any MUST violations or record waivers. (None to resolve — 0 MUST findings.)
+- [x] Confirm `review.blocking: false` in spec 023's frontmatter.
 
 Done when: `/gov:review` returns clean and the spec frontmatter's `review.blocking` is `false`.
