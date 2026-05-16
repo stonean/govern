@@ -24,6 +24,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Run gen-configure-mcp
+        run: ./scripts/gen-configure-mcp.sh
+
       - name: Run gen-claude-commands
         run: ./scripts/gen-claude-commands.sh
 
