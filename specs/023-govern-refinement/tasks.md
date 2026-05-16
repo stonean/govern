@@ -74,10 +74,10 @@ Done when: spec 022's status is `done` again with no blocking review findings.
 
 ### 7. Constitution edits — lightweight track removal
 
-- [ ] Delete the §lightweight-track section from `framework/constitution.md`.
-- [ ] Remove every `spec-and-plan.md` mention in §spec-phase, §text-first-artifacts (frontmatter schema table, currently line ~369), and any other section. Use `grep -n 'spec-and-plan' framework/constitution.md` as the checklist.
-- [ ] Rewrite §brownfield-process step 1 to: "Run `/specify` with whatever description you have. Sparse acceptance criteria are expected and valid — the spec gains precision through subsequent bug fixes, scenarios, and clarifications."
-- [ ] Verify the anchor `§lightweight-track` is no longer referenced anywhere via `grep -rn '§lightweight-track' framework/ specs/ docs/`.
+- [x] Delete the §lightweight-track section from `framework/constitution.md`.
+- [x] Remove every `spec-and-plan.md` mention in §spec-phase, §text-first-artifacts (frontmatter schema table, currently line ~369), and any other section. Use `grep -n 'spec-and-plan' framework/constitution.md` as the checklist.
+- [x] Rewrite §brownfield-process step 1 to: "Run `/specify` with whatever description you have. Sparse acceptance criteria are expected and valid — the spec gains precision through subsequent bug fixes, scenarios, and clarifications."
+- [x] Verify the anchor `§lightweight-track` is no longer referenced anywhere via `grep -rn '§lightweight-track' framework/ specs/ docs/`.
 
 Done when: `grep -n 'spec-and-plan' framework/constitution.md` returns no hits; no command file or doc references `§lightweight-track`.
 
@@ -85,25 +85,25 @@ Done when: `grep -n 'spec-and-plan' framework/constitution.md` returns no hits; 
 
 Rewrite every reference to the deleted verbs (`/capture`, `/elaborate`) in `framework/constitution.md`. The plan's "Constitution slash-command sweep" table enumerates the eight known sites with the exact rewrite for each.
 
-- [ ] Edit §spec-lifecycle (line ~99): rewrite the `/elaborate` back-edge owner to `/ask`.
-- [ ] Edit §three-cycles Brownfield (line ~108): rewrite `/capture` → `/specify`; rewrite `/elaborate` → `/ask`.
-- [ ] Edit §three-cycles Reopen (line ~109): rewrite `/elaborate` → `/ask`.
-- [ ] Edit §scenario-promotion (line ~260): collapse "`/specify` (for new behavior) or `/capture` (for another existing feature)" to "`/specify` (covers both)".
-- [ ] Edit §brownfield-process intro (line ~335): rewrite "`/capture` command initializes a skeleton spec" to "`/specify` command initializes a skeleton spec; sparse acceptance criteria are valid for brownfield use".
-- [ ] Edit §brownfield-process Capture phase (line ~339): rewrite `/capture` → `/specify`.
-- [ ] Edit §brownfield-process Inbox integration (line ~350): rewrite the two `/capture` references to `/specify`.
-- [ ] Edit §runtime-boundary (line ~409, principle 2 example list): rewrite `/capture` sketching → `/specify` sketching.
-- [ ] Verify `grep -n '/capture\b\|/elaborate\b' framework/constitution.md` returns no hits.
-- [ ] Re-run `scripts/lint-tool-coverage.sh` — passes (no broken tool references introduced).
+- [x] Edit §spec-lifecycle (line ~99): rewrite the `/elaborate` back-edge owner to `/ask`.
+- [x] Edit §three-cycles Brownfield (line ~108): rewrite `/capture` → `/specify`; rewrite `/elaborate` → `/ask`.
+- [x] Edit §three-cycles Reopen (line ~109): rewrite `/elaborate` → `/ask`.
+- [x] Edit §scenario-promotion (line ~260): collapse "`/specify` (for new behavior) or `/capture` (for another existing feature)" to "`/specify` (covers both)".
+- [x] Edit §brownfield-process intro (line ~335): rewrite "`/capture` command initializes a skeleton spec" to "`/specify` command initializes a skeleton spec; sparse acceptance criteria are valid for brownfield use".
+- [x] Edit §brownfield-process Capture phase (line ~339): rewrite `/capture` → `/specify`.
+- [x] Edit §brownfield-process Inbox integration (line ~350): rewrite the two `/capture` references to `/specify`.
+- [x] Edit §runtime-boundary (line ~409, principle 2 example list): rewrite `/capture` sketching → `/specify` sketching.
+- [x] Verify `grep -n '/capture\b\|/elaborate\b' framework/constitution.md` returns no hits.
+- [x] Re-run `scripts/lint-tool-coverage.sh` — passes (no broken tool references introduced).
 
 Done when: the grep for `/capture\b` and `/elaborate\b` against `framework/constitution.md` returns zero hits; tool-coverage lint is clean.
 
 ### 8. Lightweight track — command source sweep
 
-- [ ] Delete `framework/templates/spec/spec-and-plan.md`.
-- [ ] Sweep each command source for `spec-and-plan.md` references and the dual-detection fallback. Files to edit: `clarify.md`, `plan.md`, `implement.md`, `review.md`, `validate.md`, `target.md`, `status.md`, `ask.md`. For each: replace "Check for `spec.md` first, then `spec-and-plan.md`. Use whichever exists. If neither exists, stop and report..." with "Read `spec.md`. If it does not exist, stop and report..." Drop any "If the spec file is `spec-and-plan.md` (lightweight track), [branch]" prose.
-- [ ] Verify `grep -rn 'spec-and-plan' framework/commands/` returns no hits.
-- [ ] Run the runtime parseability check against every edited command source and confirm pass.
+- [x] Delete `framework/templates/spec/spec-and-plan.md`.
+- [x] Sweep each command source for `spec-and-plan.md` references and the dual-detection fallback. Files to edit: `clarify.md`, `plan.md`, `implement.md`, `review.md`, `validate.md`, `target.md`, `status.md`, `ask.md`. For each: replace "Check for `spec.md` first, then `spec-and-plan.md`. Use whichever exists. If neither exists, stop and report..." with "Read `spec.md`. If it does not exist, stop and report..." Drop any "If the spec file is `spec-and-plan.md` (lightweight track), [branch]" prose.
+- [x] Verify `grep -rn 'spec-and-plan' framework/commands/` returns no hits. (Only `specify.md` and `elaborate.md` retain refs at this point — both are rewritten/deleted in Tasks 9 and 12 respectively; the final verification grep runs in Task 16.)
+- [x] Run the runtime parseability check against every edited command source and confirm pass.
 
 Done when: zero `spec-and-plan` hits under `framework/commands/`; parseability check is clean.
 

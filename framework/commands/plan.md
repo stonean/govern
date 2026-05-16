@@ -22,7 +22,7 @@ Use the session target from `{cli-config-dir}/{project}-session.json`. If `$ARGU
 
 ## Spec File Detection
 
-Check for `spec.md` first, then `spec-and-plan.md`. Use whichever exists. If neither exists, stop and report: "Spec does not exist. Run `/{project}:specify` first."
+Read `spec.md`. If it does not exist, stop and report: "Spec does not exist. Run `/{project}:specify` first."
 
 ## Gate
 
@@ -87,8 +87,6 @@ Before creating the plan, load only the cross-spec context this feature actually
 - **Do NOT read** plans, tasks, scenarios, or source code from other features.
 
 ### Create the plan
-
-If the spec file is `spec-and-plan.md` (lightweight track), the plan section is already in the combined document. Skip plan creation and proceed to tasks. Otherwise:
 
 1. **If the user picked "keep" in the existing-artifact prompt above**, skip the template copy — `plan.md` is already on disk and is the working artifact. Otherwise (no prior artifacts, or "replace"), copy `specs/templates/plan.md` into the feature directory as `plan.md`.
 2. Fill in (or, on the keep path, edit/extend the existing content):

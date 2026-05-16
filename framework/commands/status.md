@@ -15,7 +15,7 @@ Read-only overview of every feature's progress through the pipeline. Shows which
 ## Scope Boundaries
 
 - This is a read-only command. Do NOT modify any files.
-- For each feature, read only the spec file (`spec.md` or `spec-and-plan.md`) to extract `status`, `dependencies`, `tags`, and open question count. Do NOT read plans, tasks, scenarios, source code, or other artifact contents.
+- For each feature, read only the spec file (`spec.md`) to extract `status`, `dependencies`, `tags`, and open question count. Do NOT read plans, tasks, scenarios, source code, or other artifact contents.
 - Check file existence (`plan.md`, `tasks.md`, `data-model.md`, `scenarios/`) without reading them.
 - Reference: §text-first-artifacts (the schema is the authoritative source for which fields to read).
 

@@ -35,7 +35,7 @@ These are evaluation criteria, not implementation instructions. Use them to iden
 
 ### Cost levers
 
-Per-task token tracking and budget ceilings require a runtime `govern` does not have — that work belongs to the AI platform. `govern` contributes by offering cost-aware patterns the user can opt into. The current levers: the [Lightweight Track](#lightweight-track) skips the plan phase for small features; the stuck-detection step in `/{project}:implement` catches runaway loops before they compound spend; default-off autonomy keeps the human in the loop unless `--auto` is explicitly passed. For runtime cost controls, point the adopter at the platform's tooling — Claude Code's `/cost`, the Anthropic usage dashboard, Cursor's request limits, and equivalents.
+Per-task token tracking and budget ceilings require a runtime `govern` does not have — that work belongs to the AI platform. `govern` contributes by offering cost-aware patterns the user can opt into. The current levers: the stuck-detection step in `/{project}:implement` catches runaway loops before they compound spend; default-off autonomy keeps the human in the loop unless `--auto` is explicitly passed. For runtime cost controls, point the adopter at the platform's tooling — Claude Code's `/cost`, the Anthropic usage dashboard, Cursor's request limits, and equivalents.
 
 <!-- §pipeline -->
 
@@ -96,7 +96,7 @@ draft ──/clarify──▶ clarified ──/plan──▶ planned ──/impl
 Forward edges only — `/clarify` raises status to `clarified`, `/plan` to `planned`, `/implement` to `in-progress` and then to `done`. The `in-progress → done` transition is gated by `/review`: `/implement` MUST NOT write `status: done` while the spec's `review.last-run` is unset or `review.blocking` is `true`. `/review` is a gate, not a state transition — it records findings and updates the `review:` frontmatter block, but does not change `status`. The gate composes with `/validate` (which flags drifted `done` specs) and the shipped CI template (which fails PRs that bypass the local checks) per the **Design Principles** rule: never depend on human diligence. Two back-edges exist:
 
 - **Backward via new questions** — `clarified` / `planned` / `in-progress` → `draft` when `/ask` records a new open question; the next `/clarify` resolves the question and the spec advances forward again. `draft` is the only status that tolerates open questions, so it is the destination; `/ask` performs the status mutation in the same write that records the question.
-- **Backward via new scenario** — `done` → `in-progress` when `/elaborate` adds a scenario. The scenario's task is implemented and the spec returns to `done`.
+- **Backward via new scenario** — `done` → `in-progress` when `/ask` records a scenario. The scenario's task is implemented and the spec returns to `done`.
 
 This avoids spec proliferation; scenarios evolve the existing spec rather than spawning a new one.
 
@@ -105,8 +105,8 @@ This avoids spec proliferation; scenarios evolve the existing spec rather than s
 Every spec moves through one of three cycles depending on where it starts and whether new behavior surfaces:
 
 1. **Greenfield** — `/specify` → `/clarify` → `/plan` → `/implement` → `done`. A new feature designed from scratch.
-2. **Brownfield** — `/capture` (sketch spec) → real work touches the area → `/elaborate` to add a scenario, or `/clarify` to resolve open questions, or both → `/implement` → `done`. Existing reality being absorbed into specs incrementally.
-3. **Reopen** — a `done` spec is revisited because a bug, edge case, or change request surfaces. `/elaborate` adds a scenario, the spec moves back to `in-progress`, and the next pipeline command resumes from there.
+2. **Brownfield** — `/specify` (sketch spec — sparse acceptance criteria are valid) → real work touches the area → `/ask` to add a scenario, or `/clarify` to resolve open questions, or both → `/implement` → `done`. Existing reality being absorbed into specs incrementally.
+3. **Reopen** — a `done` spec is revisited because a bug, edge case, or change request surfaces. `/ask` records a scenario, the spec moves back to `in-progress`, and the next pipeline command resumes from there.
 
 All three converge on the same pipeline; what differs is where the spec enters and how precision accumulates.
 
@@ -178,21 +178,6 @@ See `framework/rules/configuration.md` (`CFG-CONST-NNN` rules) for the enforceab
 
 See `framework/rules/configuration.md` (`CFG-ENV-NNN` rules) for the enforceable rules covering env-var defaults backed by named constants, `.env.example` completeness, fail-fast startup validation, and unit suffixes for time-valued variables. `/{project}:validate` enforces these rules.
 
-<!-- §lightweight-track -->
-
-### Lightweight Track
-
-Not every feature needs the full pipeline. Small, well-understood changes with no open questions and no cross-module impact can use a combined `spec-and-plan.md` that merges the spec and plan phases into a single document, then move directly to tasks.
-
-Use the lightweight track when **all** of the following are true:
-
-- The feature touches a single module or package
-- There are no open questions — the approach is obvious
-- The data model change is trivial or nonexistent
-- The spec fits in under 50 lines
-
-If any of these conditions are not met, use the full pipeline.
-
 <!-- §bug-handling -->
 
 ## Bug Handling
@@ -257,7 +242,7 @@ Indicators that a scenario should be promoted:
 - The scenario has open questions unrelated to the parent spec's domain
 - Multiple scenarios in the same feature share overlapping concerns that would be better unified in their own spec
 
-To promote: the user runs `/specify` (for new behavior) or `/capture` (for another existing feature) to create the new spec, then replaces the original scenario with a dependency reference in the parent spec.
+To promote: the user runs `/specify` to create the new spec (whether the behavior is new or an existing feature being decomposed — `/specify` accepts both greenfield and brownfield input), then replaces the original scenario with a dependency reference in the parent spec.
 
 Promotion is a user decision, not automated. The framework provides the pattern; the user recognizes when decomposition is needed.
 
@@ -332,11 +317,11 @@ Inbox rules:
 
 ### Brownfield Process
 
-Brownfield projects adopt `govern` incrementally. The `/capture` command initializes a skeleton spec from freeform user input — no pressure to be comprehensive. Start broad; decompose through scenarios over time.
+Brownfield projects adopt `govern` incrementally. The `/specify` command initializes a skeleton spec from freeform user input — sparse acceptance criteria are expected and valid for brownfield use; no pressure to be comprehensive. Start broad; decompose through scenarios over time.
 
 #### Capture → incremental growth → promotion
 
-1. **Capture** — the user describes an existing feature in their own words. `/capture` drafts a skeleton spec at `draft` status with whatever behavior is known. Sparse acceptance criteria are expected and valid.
+1. **Capture** — the user runs `/specify` with whatever description they have. Sparse acceptance criteria are expected and valid — the spec gains precision through subsequent bug fixes, scenarios, and clarifications.
 2. **Incremental growth** — every subsequent touch on the feature adds precision:
    - A **bug fix** reveals missing behavior → adds an acceptance criterion or scenario
    - An **enhancement** adds new behavior → follows the normal pipeline (spec change before implementation)
@@ -347,7 +332,7 @@ Over time the spec converges on a complete description of the feature — not fr
 
 #### Inbox integration
 
-When a `/groom` pass encounters an item that does not map to any existing spec, `/groom` directs the user to run `/capture` to initialize a spec first, then return to process the item. The commands stay decoupled — `/log` records, `/groom` routes, `/capture` creates specs.
+When a `/groom` pass encounters an item that does not map to any existing spec, `/groom` directs the user to run `/specify` to initialize a spec first, then return to process the item. The commands stay decoupled — `/log` records, `/groom` routes, `/specify` creates specs.
 
 <!-- §text-first-artifacts -->
 
@@ -366,7 +351,7 @@ When a `/groom` pass encounters an item that does not map to any existing spec, 
 
 ### Frontmatter Schema
 
-The frontmatter schema applies to **spec files** (`spec.md`, `spec-and-plan.md`) and **scenario files** (`scenarios/{slug}.md`). Other `govern` artifacts (`system.md`, `errors.md`, `events.md`, `inbox.md`, plan files, tasks files, rule files, README files) MAY include frontmatter when a specific consumer benefits, but are not required to.
+The frontmatter schema applies to **spec files** (`spec.md`) and **scenario files** (`scenarios/{slug}.md`). Other `govern` artifacts (`system.md`, `errors.md`, `events.md`, `inbox.md`, plan files, tasks files, rule files, README files) MAY include frontmatter when a specific consumer benefits, but are not required to.
 
 #### Spec files
 
@@ -406,7 +391,7 @@ For non-frontmatter checks (spec integrity, artifact completeness, plan/task con
 #### Five principles
 
 1. **Markdown is source of truth** — the runtime MUST NOT own state the markdown cannot reconstruct. Runtime-owned data (caches, indexes, parsed graphs) is derived and gitignored, per the existing rule on structured derived views.
-2. **Determinism only** — the runtime MUST NOT call an LLM. Work requiring semantic judgment (content quality, `/clarify` resolution, `/capture` sketching, per-rule Verification reads, `/groom` routing) stays in slash commands.
+2. **Determinism only** — the runtime MUST NOT call an LLM. Work requiring semantic judgment (content quality, `/clarify` resolution, `/specify` sketching, per-rule Verification reads, `/groom` routing) stays in slash commands.
 3. **Opt-in for adopters** — the runtime MUST NOT be a prerequisite for any pipeline gate. A markdown-only adopter — agent + `Edit`, no binary on `PATH` — must complete every cycle (greenfield, brownfield, reopen) and reach `done` on every spec.
 4. **Schema follows the constitution** — the runtime MUST read frontmatter and artifact structure according to the schemas declared in this document. Schema changes ship through the constitution; the runtime MUST update to match. The constitution MUST NOT import runtime types.
 5. **MCP is the seam** — the runtime MUST expose its capabilities as MCP tools so slash commands can call them when they want determinism. This keeps the runtime accessible to any agent host and prevents `govern`-specific coupling.

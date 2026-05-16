@@ -16,7 +16,7 @@ Establishes which feature spec all subsequent `/gov:*` commands operate on. Opti
 
 ## Scope Boundaries
 
-- Read `constitution.md` once per session and the targeted feature's `spec.md` (or `spec-and-plan.md`) frontmatter and open-question count. Read the targeted scenario file only when one is specified.
+- Read `constitution.md` once per session and the targeted feature's `spec.md` frontmatter and open-question count. Read the targeted scenario file only when one is specified.
 - Do NOT read plan files, tasks, source code, test files, or unrelated specs' bodies.
 - Do NOT modify any spec, plan, scenario, or source file. The only file written is the session JSON. Status transitions belong to the pipeline commands (`/gov:clarify`, `/gov:plan`, `/gov:implement`) and to `/gov:elaborate` (the documented `done → in-progress` back-edge).
 - Reference: §spec-lifecycle, §scenarios, §concurrent-features, §text-first-artifacts.
@@ -39,7 +39,7 @@ Establishes which feature spec all subsequent `/gov:*` commands operate on. Opti
 
 7. Write the session JSON at its canonical path with the feature name, the repo-relative spec directory path, the scenario slug and scenario path when present (omit both fields when targeting a feature without a scenario — clears any previously set scenario), and the current ISO 8601 timestamp. The host applies tempfile + rename atomic-write semantics analogous to the runtime's write primitives. Otherwise (markdown-only path), the host writes through the same conventions directly.
 
-8. Display the resolved target: feature name and current status, scenario detail when present, the artifacts list (which of spec.md or spec-and-plan.md, plan.md, tasks.md, and data-model.md exist), the dependency status from step 4, the open-question count, and the next pipeline step per the Status → next action table below.
+8. Display the resolved target: feature name and current status, scenario detail when present, the artifacts list (which of spec.md, plan.md, tasks.md, and data-model.md exist), the dependency status from step 4, the open-question count, and the next pipeline step per the Status → next action table below.
 
 ## Status → next action
 

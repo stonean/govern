@@ -25,7 +25,7 @@ Read `.claude/gov-session.json`. If the session includes a `scenario` and `scena
 
 ### Spec File Detection
 
-Check for `spec.md` first, then `spec-and-plan.md`. Use whichever exists. If neither exists, stop and report: "Spec does not exist. Run `/gov:specify` first."
+Read `spec.md`. If it does not exist, stop and report: "Spec does not exist. Run `/gov:specify` first."
 
 ### Gate
 

@@ -19,7 +19,7 @@ Use the session target from `{cli-config-dir}/{project}-session.json`. If `$ARGU
 
 ## Target File Detection
 
-Read `{cli-config-dir}/{project}-session.json`. If the session includes a `scenario` and `scenarioPath`, the target artifact is the scenario file. Otherwise, the target artifact is the feature's spec file — check for `spec.md` first, then `spec-and-plan.md`. Use whichever exists. If neither exists, stop and report: "Spec does not exist. Run `/{project}:specify` first."
+Read `{cli-config-dir}/{project}-session.json`. If the session includes a `scenario` and `scenarioPath`, the target artifact is the scenario file. Otherwise, the target artifact is the feature's `spec.md`. If that file does not exist, stop and report: "Spec does not exist. Run `/{project}:specify` first."
 
 ## Scope Boundaries
 

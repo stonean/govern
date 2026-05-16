@@ -62,7 +62,7 @@ The full set of checks (frontmatter schema, spec integrity, artifact completenes
 
 ### Frontmatter schema (hard fail)
 
-For each spec file (`spec.md`, `spec-and-plan.md`):
+For each spec file (`spec.md`):
 
 - A YAML frontmatter block exists at the top of the file (delimited by `---` lines).
 - The frontmatter parses as valid YAML.
@@ -86,7 +86,7 @@ Reference: the schema is canonically declared in `framework/constitution.md` §t
 
 ### Artifact completeness (blocking)
 
-- If status is `planned` or later: plan.md exists (or spec-and-plan.md contains a plan section)
+- If status is `planned` or later: plan.md exists
 - If status is `planned` or later and feature introduces or modifies domain entities or data structures: data-model.md exists
 - If status is `planned` or later: tasks.md exists
 

@@ -24,8 +24,7 @@ advances to `done`.
   **SHOULD/SHOULD NOT** are advisory.
 - **Scope** — files referenced by the target's `plan.md` under `Affected Files`,
   plus any files modified since the spec advanced to `in-progress` (whichever
-  set is larger). Lightweight-track features use the `Affected Files` section
-  of `spec-and-plan.md`.
+  set is larger).
 - **Config** — `.govern.toml` `[review] tech-stack-verified` (boolean,
   default `false`): when `true`, the tech-stack alignment check (see
   Behavior step 1) is skipped on every run until the operator clears the

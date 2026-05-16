@@ -76,7 +76,7 @@ The full setup, walk-through, completion gate, and stuck-detection details are d
 
 - Read `.claude/gov-session.json` for the session target, including optional `scenario` and `scenarioPath` fields.
 - Read `specs/{feature}/tasks.md` for the ordered task list (primitive: `read-tasks`).
-- Read `specs/{feature}/plan.md` (or the plan section of `spec-and-plan.md`) for technical decisions and affected files.
+- Read `specs/{feature}/plan.md` for technical decisions and affected files.
 - Read the spec file for acceptance criteria and contracts.
 - If a scenario is targeted, read the scenario file for scenario-specific context, behavior, and edge cases. The scenario scopes which part of the feature is the primary focus for this implementation session.
 - **Recompute dependencies (safety net).** Run `scripts/gen-spec-deps.sh --dry-run` against the target spec; if it reports a diff, run it for real to sync `dependencies:` from body inline links.
