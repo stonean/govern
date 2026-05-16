@@ -53,12 +53,12 @@ Done when: `cargo test` passes; the MCP tool responds correctly under fixture in
 
 ### 5. Update `runtime-tools.txt` and tag release
 
-- [ ] Append `gov-rt:create-scenario` and `gov-rt:append-task` to `framework/runtime-tools.txt`.
-- [ ] Stage the change and commit. The pre-commit hook runs `gen-configure-mcp.sh` automatically; verify the commit includes updates to `framework/bootstrap/configure/claude.md` and `framework/bootstrap/configure/auggie.md` adding the two new entries to the managed block.
-- [ ] Run `scripts/lint-tool-coverage.sh` and confirm pass.
-- [ ] Bump `runtime/Cargo.toml` version (next minor — primitive additions are non-breaking).
-- [ ] Update `runtime/CHANGELOG.md` with the two new primitives and reference to spec 022 scenario.
-- [ ] Tag `gvrn-vX.Y.0` and confirm GitHub release artifacts publish.
+- [x] Append `gov-rt:create-scenario` and `gov-rt:append-task` to `framework/runtime-tools.txt`.
+- [x] Stage the change and commit. The pre-commit hook runs `gen-configure-mcp.sh` automatically; verify the commit includes updates to `framework/bootstrap/configure/claude.md` and `framework/bootstrap/configure/auggie.md` adding the two new entries to the managed block.
+- [x] Run `scripts/lint-tool-coverage.sh` and confirm pass.
+- [x] Bump `runtime/Cargo.toml` version (next minor — primitive additions are non-breaking).
+- [x] Update `runtime/CHANGELOG.md` with the two new primitives and reference to spec 022 scenario.
+- [x] Tag `gvrn-vX.Y.0` and confirm GitHub release artifacts publish.
 
 Done when: release artifacts are downloadable; `gvrn --version` reports the new version; `framework/bootstrap/configure/claude.md` and `framework/bootstrap/configure/auggie.md` both contain allow entries for `gov-rt:create-scenario` and `gov-rt:append-task`.
 
