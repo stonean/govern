@@ -2,7 +2,7 @@
 spec: 022-deterministic-runtime
 scenario: ask-consolidation
 reviewed-at: 2026-05-16T14:15:00Z
-reviewed-against: HEAD-post-0.4.1-fixes
+reviewed-against: c4cbebd4983bf736f148e99fed1bf0ed8fde1d16
 diff-base: 7283e2ca3af69039f08643fec77e6b3c4b6a93b4
 must-violations: 0
 should-violations: 0

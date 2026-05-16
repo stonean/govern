@@ -3,7 +3,7 @@ status: in-progress
 dependencies: [021-runtime-boundary]
 review:
   last-run: 2026-05-16T14:15:00Z
-  reviewed-against: HEAD-post-0.4.1-fixes
+  reviewed-against: c4cbebd4983bf736f148e99fed1bf0ed8fde1d16
   must-violations: 0
   should-violations: 0
   low-confidence: 1
