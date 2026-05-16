@@ -25,7 +25,7 @@ draft → clarified → planned → in-progress → done
 Two back-edges keep the lifecycle honest:
 
 - `/{project}:ask` reverts a `clarified`, `planned`, or `in-progress` spec to `draft` when a new open question surfaces — `draft` is the only status that tolerates open questions. The next `/{project}:clarify` resolves the question and the spec advances forward again.
-- `/{project}:elaborate` reverts a `done` spec to `in-progress` when a new scenario is added — the scenario captures the change, the spec evolves with it.
+- `/{project}:ask` reverts a `done` spec to `in-progress` when a new scenario is added (the scenario route) — the scenario captures the change, the spec evolves with it.
 
 Each feature lives in `specs/NNN-feature-name/` and progresses through these states by running the corresponding command.
 
@@ -52,8 +52,8 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 
 | Command | Description |
 | --- | --- |
-| `/{project}:ask` | Append an open question to the targeted spec or scenario. |
-| `/{project}:elaborate` | Add a scenario to elaborate a section of the targeted feature. |
+| `/{project}:ask` | Add a question or a scenario to the targeted spec (classifier-driven). |
+| `/{project}:elaborate` |  |
 
 <!-- generated:commands-elaborate:end -->
 
@@ -63,7 +63,7 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 
 | Command | Description |
 | --- | --- |
-| `/{project}:capture` | Create a skeleton spec for an existing feature in a brownfield project. |
+| `/{project}:capture` |  |
 | `/{project}:log` | Record a raw item to the inbox. |
 | `/{project}:groom` | Walk the inbox and route each item to its proper home. |
 

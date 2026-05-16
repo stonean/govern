@@ -14,9 +14,7 @@
 # real procedure, that's a win and the entry can be removed.
 
 framework/commands/ask.md
-framework/commands/capture.md
 framework/commands/clarify.md
-framework/commands/elaborate.md
 framework/commands/groom.md
 framework/commands/help.md
 framework/commands/log.md

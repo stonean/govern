@@ -37,7 +37,7 @@ Read the spec's frontmatter `status` field and count entries in the `## Open Que
 | `draft` | no | Verify acceptance criteria, then advance to `clarified` (existing hot path) |
 | `clarified` / `planned` / `in-progress` | no | Stop with: "Spec is already `{status}`. Run `/{project}:plan` to create the technical plan." for `clarified`, or "Run `/{project}:implement` to continue implementation." for `planned` / `in-progress`. |
 | `clarified` / `planned` / `in-progress` | yes | Run the **Recovery path** below. |
-| `done` | (any) | Stop with: "Spec is `done`. Run `/{project}:elaborate` to capture this as a scenario instead." Exit without mutation. |
+| `done` | (any) | Stop with: "Spec is `done`. Run `/{project}:ask` to capture this as a scenario instead." Exit without mutation. |
 
 The "already `{status}`" branch and the `done` branch never modify any file.
 

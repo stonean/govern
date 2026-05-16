@@ -16,7 +16,7 @@ Create a new feature spec.
 
 ## Purpose
 
-First step in the pipeline. Creates a new numbered feature directory with a spec from template. Automatically sets the new feature as the session target.
+First step in the pipeline. Creates a new numbered feature directory with a spec from template and sets it as the session target. Accepts both greenfield input (rich description with concrete acceptance criteria) and brownfield input (sparse description of an existing feature) — richness scales with the input. Sparse acceptance criteria are valid for brownfield use; the spec gains precision through subsequent bug fixes, scenarios, and clarifications.
 
 ## Context
 
@@ -28,15 +28,15 @@ If the constitution has not been loaded in this session (e.g., `/{project}:targe
 
 - This command creates spec artifacts only. Do NOT read or write source code, test files, or implementation files.
 - Read only what is needed: existing spec directory names (for numbering) and the spec template. Do NOT read other specs' bodies unless checking for naming conflicts.
-- Reference: §spec-phase, §spec-requirements, §lightweight-track, §numbering, §text-first-artifacts.
+- Reference: §spec-phase, §spec-requirements, §numbering, §text-first-artifacts, §brownfield-process.
 
 ## Instructions
 
 > **For agent runtimes**: backticked primitive names in this section map to MCP tools the optional [gvrn runtime](https://crates.io/crates/gvrn) registers as `gov-rt:<primitive>` (e.g., `gov-rt:lint-markdown`). When that MCP server is registered for your session, **call the `gov-rt:*` tool** for each step listed below — that is the deterministic path. When the server is not registered, walk the prose to produce the same result. The two paths share a contract; neither one wraps the other.
 
-1. The walker context carries the feature description, the resolved NNN-slug, and the chosen track (standard or lightweight). The host pre-computes these from `$ARGUMENTS` and the lightweight-track detection prompts before invoking the runtime; the runtime steps below assume the new feature's directory already exists with an empty spec file copied from the template.
+1. The walker context carries the feature description and the resolved NNN-slug. The host pre-computes these from `$ARGUMENTS` before invoking the runtime; the runtime steps below assume the new feature's directory already exists with an empty `spec.md` copied from the template.
 
-2. <!-- llm:writeSpecBody --> Fill the new spec body following §spec-requirements: a Motivation section, Acceptance Criteria with concrete and testable checkboxes, Open Questions, and any inline links to other specs that scripts/gen-spec-deps.sh will derive the frontmatter dependencies from. The host returns the markdown body for the new file; the walker forwards the response through the context. Otherwise, follow the markdown-only path: hand-write the spec body directly.
+2. <!-- llm:writeSpecBody --> Fill the new spec body following §spec-requirements: a Motivation section, Acceptance Criteria with concrete and testable checkboxes (sparse acceptance criteria are valid for brownfield use — leave the section with a comment noting criteria will emerge from real work), Open Questions, and any inline links to other specs that scripts/gen-spec-deps.sh will derive the frontmatter dependencies from. The host returns the markdown body for the new file; the walker forwards the response through the context. Otherwise, follow the markdown-only path: hand-write the spec body directly.
 
 3. Invoke `lint-markdown` (MCP: `gov-rt:lint-markdown`) against the new spec file to surface any markdown violations the LLM may have introduced. Otherwise, fall back to the markdown-only path.
 
@@ -44,7 +44,7 @@ If the constitution has not been loaded in this session (e.g., `/{project}:targe
 
 ## Markdown-only reference
 
-The full new-feature-creation procedure (track detection, directory creation, template copy, frontmatter conventions, session write, and next-step prompt) is documented below for the markdown-only path. The numbered steps above invoke the mechanical primitives plus the writeSpecBody extension that automate the deterministic phases.
+The full new-feature-creation procedure (directory creation, template copy, frontmatter conventions, session write, and next-step prompt) is documented below for the markdown-only path. The numbered steps above invoke the mechanical primitives plus the writeSpecBody extension that automate the deterministic phases.
 
 ### Resolve feature number and slug
 
@@ -52,23 +52,10 @@ The full new-feature-creation procedure (track detection, directory creation, te
 2. Determine the next available feature number by checking existing directories under `specs/` matching the NNN-feature pattern; the next number is the highest existing NNN plus one (zero-padded to three digits).
 3. Generate the slug from the feature description: lowercase, hyphenated, no whitespace, no punctuation beyond hyphens.
 
-### Lightweight track detection
-
-Ask the user the following qualifying questions:
-
-- Does this touch more than one module or package?
-- Are there open questions or unknowns about the approach?
-- Does it involve data model changes beyond trivial?
-- Will it be more than ~50 lines of spec?
-
-If all answers indicate "small and clear," this is a lightweight track feature. Otherwise, use the standard track. The track is encoded by filename (`spec.md` vs `spec-and-plan.md`) — there is no track frontmatter field.
-
 ### Create the feature directory
 
 1. Create `specs/{NNN-feature-name}/`.
-2. Copy the appropriate template:
-   - **Standard track**: copy `specs/templates/spec.md` into the directory as `spec.md`.
-   - **Lightweight track**: copy `specs/templates/spec-and-plan.md` into the directory as `spec-and-plan.md`.
+2. Copy `specs/templates/spec.md` into the directory as `spec.md`.
 
 ### Fill the spec body
 
@@ -77,7 +64,7 @@ Fill in the spec following `constitution.md` rules (§spec-requirements, §text-
 - Frontmatter `status` starts at `draft` (template default); `dependencies` starts at `[]` and is generator-managed (do not author by hand).
 - Describe behavior and contracts, not implementation.
 - No language-specific code, function signatures, or package paths.
-- Acceptance criteria must be concrete and testable.
+- Acceptance criteria must be concrete and testable when present. For brownfield use, sparse acceptance criteria are expected and valid — leave the section with a placeholder comment if no criteria are known yet; criteria emerge as real work touches the feature (§brownfield-process).
 - List all open questions in the spec body.
 - When the spec depends on other specs, link them inline in the body (e.g., `[NNN-feature](../NNN-feature/spec.md)`) — `scripts/gen-spec-deps.sh` (run by the pre-commit hook) derives the `dependencies:` frontmatter from those links on every commit.
 
@@ -91,7 +78,6 @@ Write `{cli-config-dir}/{project}-session.json` to set this feature as the sessi
 
 ### Display the next step
 
-- Standard track: "Run `/{project}:clarify` to resolve open questions and advance to clarified."
-- Lightweight track: "Run `/{project}:clarify` to review the combined spec-and-plan, then `/{project}:plan` to create tasks."
+Display: "Run `/{project}:clarify` to resolve open questions and advance to clarified."
 
 The `README.md` Feature Specs table is regenerated by `scripts/gen-readme-table.sh` (run by the pre-commit hook); this command does not edit it.

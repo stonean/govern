@@ -18,7 +18,7 @@ Establishes which feature spec all subsequent `/gov:*` commands operate on. Opti
 
 - Read `constitution.md` once per session and the targeted feature's `spec.md` frontmatter and open-question count. Read the targeted scenario file only when one is specified.
 - Do NOT read plan files, tasks, source code, test files, or unrelated specs' bodies.
-- Do NOT modify any spec, plan, scenario, or source file. The only file written is the session JSON. Status transitions belong to the pipeline commands (`/gov:clarify`, `/gov:plan`, `/gov:implement`) and to `/gov:elaborate` (the documented `done → in-progress` back-edge).
+- Do NOT modify any spec, plan, scenario, or source file. The only file written is the session JSON. Status transitions belong to the pipeline commands (`/gov:clarify`, `/gov:plan`, `/gov:implement`) and to `/gov:ask` (the documented back-edges: `clarified|planned|in-progress → draft` on a new question, and `done → in-progress` on a new scenario).
 - Reference: §spec-lifecycle, §scenarios, §concurrent-features, §text-first-artifacts.
 
 ## Instructions
@@ -49,6 +49,6 @@ Establishes which feature spec all subsequent `/gov:*` commands operate on. Opti
 | clarified | 0 | /gov:plan |
 | planned | 0 | /gov:implement |
 | in-progress | 0 | /gov:implement |
-| done | any | confirm complete; run /gov:elaborate to reopen via a scenario |
+| done | any | confirm complete; run /gov:ask to record a scenario and reopen |
 
 When the status is clarified, planned, or in-progress AND the open-question count is at least one, the next step is `/gov:clarify` (recovery). This state usually arises from a manual frontmatter edit; the normal back-edge via `/gov:ask` keeps status and open-question presence in sync.

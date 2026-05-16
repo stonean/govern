@@ -52,7 +52,7 @@ For each item in the inbox list:
    - If the existing spec does not cover the reported behavior clearly — recommend updating the spec directly. Offer to help update the spec section.
 
    **Step 4: Is the spec clear but needs a scenario?**
-   - If the spec covers the area but the specific behavior needs lower-level elaboration — create a scenario inline under the matching spec's `scenarios/` directory using the `specs/templates/scenario.md` template, then append a task to the spec's `tasks.md` referencing the new scenario. (`/gov:groom` keeps the inbox flow moving; for a deeper interactive walk through a single scenario, run `/gov:elaborate` separately.)
+   - If the spec covers the area but the specific behavior needs lower-level elaboration — create a scenario inline under the matching spec's `scenarios/` directory using the `specs/templates/scenario.md` template, then append a task to the spec's `tasks.md` referencing the new scenario. (`/gov:groom` keeps the inbox flow moving; for a deeper interactive walk through a single scenario, run `/gov:ask` against the parent spec — the classifier routes the input to the scenario branch.)
 
 3. After migrating or resolving the item, remove it from `specs/inbox.md`.
 4. **Wait for user confirmation before moving to the next item.** Do not proceed until the user approves.

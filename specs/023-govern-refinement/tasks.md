@@ -109,39 +109,39 @@ Done when: zero `spec-and-plan` hits under `framework/commands/`; parseability c
 
 ### 9. `/specify` rewrite and `/capture` delete
 
-- [ ] Edit `framework/commands/specify.md`: delete the "Lightweight track detection" section (the four qualifying questions). Simplify "Create the feature directory" to always copy `spec.md` from the template. Rewrite "Display the next step" to: "Run `/{project}:clarify` to resolve open questions and advance to clarified." (single line, no track-aware branch).
-- [ ] Update the brownfield path in `specify.md` to explicitly note that sparse acceptance criteria are valid for brownfield use; reference §brownfield-process.
-- [ ] Run the runtime parseability check against the rewritten `specify.md`.
-- [ ] Delete `framework/commands/capture.md`.
-- [ ] Run `scripts/gen-claude-commands.sh` and verify `.claude/commands/gov/capture.md` is pruned.
+- [x] Edit `framework/commands/specify.md`: delete the "Lightweight track detection" section (the four qualifying questions). Simplify "Create the feature directory" to always copy `spec.md` from the template. Rewrite "Display the next step" to: "Run `/{project}:clarify` to resolve open questions and advance to clarified." (single line, no track-aware branch).
+- [x] Update the brownfield path in `specify.md` to explicitly note that sparse acceptance criteria are valid for brownfield use; reference §brownfield-process.
+- [x] Run the runtime parseability check against the rewritten `specify.md`.
+- [x] Delete `framework/commands/capture.md`.
+- [x] Run `scripts/gen-claude-commands.sh` and verify `.claude/commands/gov/capture.md` is pruned.
 
 Done when: `specify.md` carries no qualifying questions; `capture.md` source no longer exists; the Claude-commands generator reports the prune.
 
 ### 10. `/ask` rewrite — classifier prose
 
-- [ ] Edit `framework/commands/ask.md`: under the existing "Refine the question" section (or an adjacent new "Classify the input" section before refinement), add prose naming the heuristic — question signals (terminal `?`; interrogative starters how/what/when/should/could/would/is/are/do/does/can; hedge words maybe/perhaps/not sure); scenario signals (declarative or imperative; concrete event/state language on/when/if/after; no terminal `?`); status tiebreaker (on a `done` spec, scenario is the default for mixed signals).
-- [ ] Update the existing user-approves-the-refined-form gate prose to display "Recording as [question|scenario] — preview drafted at [`## Open Questions` entry | `scenarios/{slug}.md`]" and accept `flip` as a standalone override that re-routes through the alternate path's drafting.
-- [ ] Run the parseability check.
+- [x] Edit `framework/commands/ask.md`: under the existing "Refine the question" section (or an adjacent new "Classify the input" section before refinement), add prose naming the heuristic — question signals (terminal `?`; interrogative starters how/what/when/should/could/would/is/are/do/does/can; hedge words maybe/perhaps/not sure); scenario signals (declarative or imperative; concrete event/state language on/when/if/after; no terminal `?`); status tiebreaker (on a `done` spec, scenario is the default for mixed signals).
+- [x] Update the existing user-approves-the-refined-form gate prose to display "Recording as [question|scenario] — preview drafted at [`## Open Questions` entry | `scenarios/{slug}.md`]" and accept `flip` as a standalone override that re-routes through the alternate path's drafting.
+- [x] Run the parseability check.
 
 Done when: the prose names the heuristic and override surface explicitly; parseability is clean.
 
 ### 11. `/ask` rewrite — scenario branch and back-edges
 
-- [ ] Add a "Scenario branch" subsection to `framework/commands/ask.md` covering: the decision tree (does a spec exist? is the spec ambiguous? is the behavior situational?); the invocation of `gov-rt:create-scenario` to write `scenarios/{slug}.md` from the scenario template; the invocation of `gov-rt:append-task` to add the linked task to `tasks.md`; the session-target update to point at the new scenario.
-- [ ] Update the gate logic in `ask.md`: the `done` spec refusal goes away. On a `done` spec, the input routes to the scenario branch by default; on confirmation, `gov-rt:set-status` flips `done → in-progress` before scenario creation.
-- [ ] Document the back-edge ownership update in the "Status mutation summary" table — both back-edges now belong to `/ask`.
-- [ ] Run the parseability check.
+- [x] Add a "Scenario branch" subsection to `framework/commands/ask.md` covering: the decision tree (does a spec exist? is the spec ambiguous? is the behavior situational?); the invocation of `gov-rt:create-scenario` to write `scenarios/{slug}.md` from the scenario template; the invocation of `gov-rt:append-task` to add the linked task to `tasks.md`; the session-target update to point at the new scenario.
+- [x] Update the gate logic in `ask.md`: the `done` spec refusal goes away. On a `done` spec, the input routes to the scenario branch by default; on confirmation, `gov-rt:set-status` flips `done → in-progress` before scenario creation.
+- [x] Document the back-edge ownership update in the "Status mutation summary" table — both back-edges now belong to `/ask`.
+- [x] Run the parseability check.
 
 Done when: scenario branch is fully described; both back-edges are documented; parseability is clean.
 
 ### 12. `/elaborate` delete and dependent prose update
 
-- [ ] Delete `framework/commands/elaborate.md`.
-- [ ] Update `framework/commands/groom.md`: replace the existing reference to running `/elaborate` separately for a deeper walk with the equivalent `/ask` reference.
-- [ ] Update `framework/commands/clarify.md`: the recovery-path gate currently mentions `/elaborate` on the `done` row — rewrite to reference `/ask`.
-- [ ] Update Status → next action tables in `framework/commands/target.md` and `framework/commands/status.md`: `done` row's next action becomes `/ask` (scenario branch) instead of `/elaborate`.
-- [ ] Run the parseability check against every edited command.
-- [ ] Run `scripts/gen-claude-commands.sh` and verify `.claude/commands/gov/elaborate.md` is pruned.
+- [x] Delete `framework/commands/elaborate.md`.
+- [x] Update `framework/commands/groom.md`: replace the existing reference to running `/elaborate` separately for a deeper walk with the equivalent `/ask` reference.
+- [x] Update `framework/commands/clarify.md`: the recovery-path gate currently mentions `/elaborate` on the `done` row — rewrite to reference `/ask`.
+- [x] Update Status → next action tables in `framework/commands/target.md` and `framework/commands/status.md`: `done` row's next action becomes `/ask` (scenario branch) instead of `/elaborate`. (target.md updated; status.md never carried an `/elaborate` reference.)
+- [x] Run the parseability check against every edited command.
+- [x] Run `scripts/gen-claude-commands.sh` and verify `.claude/commands/gov/elaborate.md` is pruned.
 
 Done when: `elaborate.md` source no longer exists; no command source references `/elaborate`; generators run clean.
 

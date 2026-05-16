@@ -27,7 +27,7 @@ review:
      in the body — do not edit it by hand.
 
      Scenarios: when a spec section needs lower-level elaboration (edge cases, bug fixes,
-     detailed behavior), run /{project}:elaborate to create a scenario file under
+     detailed behavior), run /{project}:ask to record a scenario file under
      specs/{NNN-feature-name}/scenarios/.
 -->
 
