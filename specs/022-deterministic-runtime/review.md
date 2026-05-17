@@ -1,58 +1,61 @@
 ---
 spec: 022-deterministic-runtime
-scenario: ask-consolidation
-reviewed-at: 2026-05-16T14:35:00Z
-reviewed-against: 27a0a7ec001694d540c30de33bb3a4bcdee89fe7
-diff-base: 7283e2ca3af69039f08643fec77e6b3c4b6a93b4
+scenario: runtime-primitive-structural-bugs
+reviewed-at: 2026-05-18T00:30:00Z
+reviewed-against: 7f9b121
+diff-base: c7fdf585b91a1f6f7d6e4f6e1f1f5b1a8e1f7a1b
 must-violations: 0
 should-violations: 0
-low-confidence: 1
+low-confidence: 0
 skipped-passes: []
 ---
 
-# Review — 022-deterministic-runtime (ask-consolidation scenario)
+# Review — 022-deterministic-runtime (runtime-primitive-structural-bugs scenario)
 
 ## Summary
 
-Final review of the `ask-consolidation` scenario after `gvrn 0.4.1` cleared the four SHOULDs from the initial 0.4.0 pass and `27a0a7e` updated the framework rule set (15 fixes + 25 new rules across `framework/rules/`). Re-walking the scope under the updated rule set: 0 MUST, 0 SHOULD, 1 low-confidence. Blocking: no.
+Final review of the `runtime-primitive-structural-bugs` scenario after the four-phase autonomous run landed `gvrn 0.5.1`. Stack: govern is text-first markdown + bash with an opt-in Rust runtime under `runtime/`. Loaded rule files: `configuration-cross.md` (no CFG-* triggers fire against the Rust changes — the diff introduces no env-var lookups, operator-tunable constants, or shared cross-module values). No security rule file applies to the runtime crate at the framework level. All five passes ran; 0 findings. `blocking: no`.
 
-**Scope.** `runtime/src/primitives/create_scenario.rs`, `runtime/src/primitives/append_task.rs`, helper additions in `runtime/src/primitives/mod.rs` (validators + shared `iter_numbered_headings` iterator), wiring across `parser/mod.rs`, `interpreter/mod.rs`, `mcp/server.rs`, `main.rs`, schema additions in `schema/primitives.rs`, plus `framework/runtime-tools.txt` and the CHANGELOG / Cargo.toml release metadata.
-
-**Rule coverage walked.** `framework/rules/security-backend.md` (70 rules, post-update), `framework/rules/configuration-cross.md` (11 rules). `framework/rules/security-frontend.md` not in scope — no frontend code touched.
-
-**Security pass.** BE-INPUT-004 (path canonicalization) is the only rule that fires structurally against the new primitives. The 0.4.1 fix wires `validate_no_traversal` against `feature_path` and `validate_slug` against `slug` before any filesystem operation. Defense-in-depth satisfied — caller-supplied path components are rejected before they reach `repo.join(...)`. The 25 new rules added in `27a0a7e` (MFA, JWT, OAuth/OIDC, CSPRNG, log injection, CSV injection, HTTP smuggling, GraphQL, LDAP, etc.) do not apply to gvrn's pure-filesystem primitives — no auth, no HTTP, no logging, no crypto in scope.
-
-**Reuse pass.** `iter_numbered_headings` is the canonical ATX-2 numbered-heading walker; `append-task::next_task_number` is now a one-line consumer. No remaining duplicate parsing logic in the new code. Future primitives walking `tasks.md` headings have the same helper available.
-
-**Quality pass.** Atomic writes via tempfile-in-parent + `persist` on every state-modifying operation. Conditional `[plan](plan.md)` link addressed (only emitted when `plan.md` exists at creation time). Fixture tests cover happy path + each failure mode for both primitives + the new validators + the shared iterator. 256 total tests passing.
-
-**Efficiency pass.** O(N) line walks for `tasks.md` parsing. No unbounded loops, no repeated work. Single-file atomic writes. No concerns.
-
-**Simplicity pass.** Helper functions appropriately scoped — `validate_slug`, `validate_no_traversal`, `iter_numbered_headings`, `title_from_slug`, `derive_tasks_heading`, `slug_from_title` each have a focused responsibility. No premature abstraction; no dead branches under the current spec.
-
-**Lints (verifiers).** `cargo fmt --check` clean, `cargo clippy --all-targets --all-features -- -D warnings` clean, `scripts/lint-tool-coverage.sh` passes, `scripts/lint-procedure-parseability.sh` passes, `scripts/lint-frontmatter.sh` passes, `npx markdownlint-cli2` clean on the 022 spec dir + CHANGELOG.
-
-**Release artifacts.** `gvrn-v0.4.0` and `gvrn-v0.4.1` both live on GitHub releases (5-leg matrix green for each) and crates.io.
+**Scope.** `runtime/src/primitives/append_task.rs`, `runtime/src/primitives/read_tasks.rs`, `runtime/src/primitives/check_stuck.rs`, helper additions to `runtime/src/primitives/mod.rs` (`TasksStructure`, `detect_tasks_structure`, `iter_task_numbers_at_levels`, `iter_phase_ranges`, `PhaseRange`, `MissingArgument`, `ParentHeadingNotFound`), schema additions to `runtime/src/schema/primitives.rs` (`AppendTaskArgs.slug`, `AppendTaskArgs.parent_heading`, `Task.phase`), CHANGELOG entry, `Cargo.toml`/`Cargo.lock` version bump, plus the cross-spec fix to `framework/commands/analyze.md` and its regenerated `.claude/commands/gov/analyze.md` mirror (the spec-016 step-10 parser-regression hit during the parity test sweep for Phase 1).
 
 ## MUST violations (blocking)
 
-*None.*
+_None._
 
 ## SHOULD violations (advisory)
 
-*None.*
+_None._
 
 ## Low-confidence findings
 
-### QUALITY (confidence 70): `derive_tasks_heading` may produce a heading that includes the entire H1 verbatim
-
-- **File**: `runtime/src/primitives/append_task.rs` (`derive_tasks_heading`)
-- **Finding**: `derive_tasks_heading` reads the feature's `spec.md`, finds the first ATX-1 heading, and emits `# {text} Tasks`. For a spec whose H1 is `"042 — Foo Bar"`, the derived heading becomes `"# 042 — Foo Bar Tasks"` — matches the existing convention across 22 prior specs. If a spec author wrote a verbose H1 like `"042 — Foo Bar (deprecated; superseded by 043)"`, the tasks-heading inherits the parenthetical noise. Low confidence because the convention has held in practice; flagged only because a single counter-example would surface as markdownlint MD024 (duplicate-heading) if "Tasks" already appeared in the H1 by coincidence. Not blocking.
+_None._
 
 ## Waived findings
 
-*None.*
+_None._
 
 ## Skipped passes
 
-*None.*
+_None._
+
+## Pass notes
+
+### Security
+
+No security rule file applies. The Rust changes do not introduce HTTP, authentication, persistence, or shell-out paths beyond the existing primitives (which were reviewed in their introducing scenarios). The new `MissingArgument` and `ParentHeadingNotFound` error variants are operational errors that surface caller-side mistakes; they do not change the primitive's trust boundary.
+
+### Reuse
+
+Strong reuse — the shared helpers in `primitives/mod` (`TasksStructure`, `detect_tasks_structure`, `iter_task_numbers_at_levels`, `iter_phase_ranges`) are explicitly designed to be consumed by both `append-task` (Phase 2) and `read-tasks` (Phase 3). The Phase 2 commit lands the helpers; Phase 3 consumes them without duplicating detection logic. The deprecated single-purpose `iter_numbered_headings` wrapper is removed cleanly — its only callers were tests, which were migrated to invoke `iter_task_numbers_at_levels(_, &[2])` directly. `heading_starts_with_number` is duplicated between `primitives/mod` and `primitives::read_tasks` — annotated in the latter as "kept module-local to avoid widening the crate-internal surface." A future refactor could promote the helper, but the duplication is one short function and the boundary is intentional; not a finding.
+
+### Quality
+
+26 new unit tests across `append_task`, `read_tasks`, and `check_stuck` cover the four bug fixes and their edge cases (scenario-listed edge cases: mixed structure, alternate phase label, parent-heading-not-found, reopen, mechanical sweeps, never-reopened baseline). All atomic-write semantics preserved (tempfile-in-parent + persist). Two clippy fixes during the Phase 2 commit (collapsed `if a {} else if b {}` blocks with identical bodies into `if a || b {}`; corrected doc-comment backticks). Cross-spec regression caught: spec 016's new step 10 in `framework/commands/analyze.md` placed `check-rule-ids` inside a backtick code span, which the runtime parser interpreted as a primitive dispatch — fix landed in the same Phase 1 commit (reword to "step 5" without the code span).
+
+### Efficiency
+
+N/A — markdown / Rust changes only. The new phased-structure detection adds one extra line-walk over `tasks.md` content per `append-task` / `read-tasks` call (O(n) where n = lines in the file, dominated by the existing parse). No new I/O or sync points.
+
+### Simplicity
+
+Each bug fix is a focused commit. Phase 4 in particular was scoped down once investigation showed the implementation was already correct — only regression tests landed rather than reimplementing already-working logic. The default-phase-heading logic was extended past the strict-letter reading of Q2 to also extend an existing `Phase X — Follow-on scenarios` phase (preventing letter explosion across successive follow-ons); the deviation from the Q2 wording is documented in the Phase 2 commit message and motivated by a test that surfaced the unintended pathological behavior under the strict reading.
