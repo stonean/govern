@@ -129,16 +129,16 @@ Informational; no separate confirmation prompt.
 **Question route:**
 
 1. Append the accepted question to the `## Open Questions` section of the target artifact. If the section does not exist, create it in the appropriate location per the template.
-2. If the target is a spec and its `status` is `clarified`, `planned`, or `in-progress`, update the frontmatter `status` field to `draft` in the same write (the back-edge). (For `draft` specs and scenario targets, no status mutation occurs.) Use the `set-status` primitive (MCP: `gov-rt:set-status`) when the runtime is registered; otherwise edit the frontmatter directly.
-3. Run `npx markdownlint-cli2` on the modified file (primitive: `lint-markdown`, MCP: `gov-rt:lint-markdown`).
+2. If the target is a spec and its `status` is `clarified`, `planned`, or `in-progress`, update the frontmatter `status` field to `draft` in the same write (the back-edge). (For `draft` specs and scenario targets, no status mutation occurs.) Use the `set-status` primitive (MCP: `set-status`) when the runtime is registered; otherwise edit the frontmatter directly.
+3. Run `npx markdownlint-cli2` on the modified file (primitive: `lint-markdown`, MCP: `lint-markdown`).
 
 **Scenario route:**
 
-1. Invoke `create-scenario` (MCP: `gov-rt:create-scenario`) to write `specs/{feature}/scenarios/{slug}.md` from the scenario template with the accepted `section`, Context, Behavior, and (optional) Edge Cases. The primitive creates the `scenarios/` subdirectory if absent and refuses on slug conflict. Otherwise, follow the markdown-only path: copy `specs/templates/spec/scenario.md` and substitute the fields by hand.
-2. Invoke `append-task` (MCP: `gov-rt:append-task`) to append a numbered task block to `specs/{feature}/tasks.md` referencing the new scenario. The default body is a single checkbox `- [ ] Implement the behavior described in scenarios/{slug}.md`; the done-when condition is "the scenario's described behavior is correctly implemented and tested." Otherwise, follow the markdown-only path: append the task block by hand, computing the next task number as `max(existing) + 1`.
-3. If the spec's `status` is `done`, invoke `set-status` (MCP: `gov-rt:set-status`) to flip `done → in-progress`. (For other spec statuses, no status mutation occurs.) Otherwise, edit the frontmatter directly.
+1. Invoke `create-scenario` (MCP: `create-scenario`) to write `specs/{feature}/scenarios/{slug}.md` from the scenario template with the accepted `section`, Context, Behavior, and (optional) Edge Cases. The primitive creates the `scenarios/` subdirectory if absent and refuses on slug conflict. Otherwise, follow the markdown-only path: copy `specs/templates/spec/scenario.md` and substitute the fields by hand.
+2. Invoke `append-task` (MCP: `append-task`) to append a numbered task block to `specs/{feature}/tasks.md` referencing the new scenario. The default body is a single checkbox `- [ ] Implement the behavior described in scenarios/{slug}.md`; the done-when condition is "the scenario's described behavior is correctly implemented and tested." Otherwise, follow the markdown-only path: append the task block by hand, computing the next task number as `max(existing) + 1`.
+3. If the spec's `status` is `done`, invoke `set-status` (MCP: `set-status`) to flip `done → in-progress`. (For other spec statuses, no status mutation occurs.) Otherwise, edit the frontmatter directly.
 4. Update `{cli-config-dir}/{project}-session.json` to set the new scenario as the session target (host responsibility — the runtime exposes no session-shaped primitive). Use tempfile + rename atomic-write semantics.
-5. Run `npx markdownlint-cli2` on every modified file (primitive: `lint-markdown`).
+5. Invoke `lint-markdown` (MCP: `lint-markdown`) on every modified file. Otherwise, follow the markdown-only path: run `npx markdownlint-cli2` directly.
 
 ### Status mutation summary
 

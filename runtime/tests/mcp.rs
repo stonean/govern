@@ -124,7 +124,7 @@ async fn read_spec_returns_structured_frontmatter() {
     let client = start_pair(fixture_repo()).await;
     let result = call_tool(
         &client,
-        "gov-rt:read-spec",
+        "read-spec",
         json!({"feature": "001-basic", "include-body": false}),
     )
     .await;
@@ -136,12 +136,7 @@ async fn read_spec_returns_structured_frontmatter() {
 #[tokio::test]
 async fn read_tasks_returns_task_list() {
     let client = start_pair(fixture_repo()).await;
-    let result = call_tool(
-        &client,
-        "gov-rt:read-tasks",
-        json!({"feature": "001-basic"}),
-    )
-    .await;
+    let result = call_tool(&client, "read-tasks", json!({"feature": "001-basic"})).await;
     let obj = structured_object(&result);
     let tasks = obj["tasks"].as_array().unwrap();
     assert_eq!(tasks.len(), 2);
@@ -153,7 +148,7 @@ async fn validate_frontmatter_reports_clean_fixture() {
     let client = start_pair(fixture_repo()).await;
     let result = call_tool(
         &client,
-        "gov-rt:validate-frontmatter",
+        "validate-frontmatter",
         json!({"path": "specs/001-basic/spec.md"}),
     )
     .await;
@@ -167,7 +162,7 @@ async fn resolve_anchor_returns_references() {
     let client = start_pair(fixture_repo()).await;
     let result = call_tool(
         &client,
-        "gov-rt:resolve-anchor",
+        "resolve-anchor",
         json!({"path": "framework/constitution.md"}),
     )
     .await;
@@ -180,7 +175,7 @@ async fn traverse_deps_returns_compatibility() {
     let client = start_pair(fixture_repo()).await;
     let result = call_tool(
         &client,
-        "gov-rt:traverse-deps",
+        "traverse-deps",
         json!({"feature": "002-dependent"}),
     )
     .await;
@@ -193,7 +188,7 @@ async fn check_rule_ids_returns_citations() {
     let client = start_pair(fixture_repo()).await;
     let result = call_tool(
         &client,
-        "gov-rt:check-rule-ids",
+        "check-rule-ids",
         json!({
             "path": "specs/001-basic/spec.md",
             "rule-files": ["framework/rules/security-backend.md"],
@@ -209,7 +204,7 @@ async fn gate_confirm_returns_prompt_payload_without_blocking() {
     let client = start_pair(fixture_repo()).await;
     let result = call_tool(
         &client,
-        "gov-rt:gate-confirm",
+        "gate-confirm",
         json!({"gate": "plan-finalize-status", "prompt": "Advance status?"}),
     )
     .await;
@@ -229,7 +224,7 @@ async fn mark_task_against_scratch_copy_flips_checkbox() {
     let client = start_pair(tmp.path().to_path_buf()).await;
     let result = call_tool(
         &client,
-        "gov-rt:mark-task",
+        "mark-task",
         json!({
             "feature": "001-basic",
             "task-number": "1",
@@ -251,7 +246,7 @@ async fn mark_criterion_against_scratch_copy_flips_checkbox() {
     let client = start_pair(tmp.path().to_path_buf()).await;
     let result = call_tool(
         &client,
-        "gov-rt:mark-criterion",
+        "mark-criterion",
         json!({
             "feature": "001-basic",
             "criterion-index": 0,
@@ -290,7 +285,7 @@ async fn check_stuck_returns_commit_count() {
     let client = start_pair(tmp.path().to_path_buf()).await;
     let result = call_tool(
         &client,
-        "gov-rt:check-stuck",
+        "check-stuck",
         json!({"feature": "001-basic", "threshold": 3}),
     )
     .await;
@@ -303,12 +298,7 @@ async fn check_stuck_returns_commit_count() {
 async fn derive_boundary_returns_diff_paths() {
     let tmp = init_git_fixture();
     let client = start_pair(tmp.path().to_path_buf()).await;
-    let result = call_tool(
-        &client,
-        "gov-rt:derive-boundary",
-        json!({"feature": "001-basic"}),
-    )
-    .await;
+    let result = call_tool(&client, "derive-boundary", json!({"feature": "001-basic"})).await;
     let obj = structured_object(&result);
     assert!(obj["boundary"].is_array());
     assert!(obj["first-commit"].is_string());
@@ -323,7 +313,7 @@ async fn run_generator_invokes_bash_script() {
     perms.set_mode(0o755);
     fs::set_permissions(&script, perms).unwrap();
     let client = start_pair(tmp.path().to_path_buf()).await;
-    let result = call_tool(&client, "gov-rt:run-generator", json!({"script": "gen.sh"})).await;
+    let result = call_tool(&client, "run-generator", json!({"script": "gen.sh"})).await;
     let obj = structured_object(&result);
     assert_eq!(obj["drift"], false);
     assert_eq!(obj["exit-code"], 0);
@@ -334,7 +324,7 @@ async fn lint_markdown_returns_violations_array() {
     let client = start_pair(fixture_repo()).await;
     let result = call_tool(
         &client,
-        "gov-rt:lint-markdown",
+        "lint-markdown",
         json!({"paths": ["specs/001-basic/spec.md"], "fix": false}),
     )
     .await;
@@ -353,7 +343,7 @@ async fn set_status_against_scratch_copy_updates_field() {
     let client = start_pair(tmp.path().to_path_buf()).await;
     let result = call_tool(
         &client,
-        "gov-rt:set-status",
+        "set-status",
         json!({
             "feature": "001-basic",
             "from": "clarified",

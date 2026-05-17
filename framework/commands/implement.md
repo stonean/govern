@@ -50,21 +50,21 @@ Default is unset — without the flag, the user confirms each task as today.
 
 ## Instructions
 
-> **For agent runtimes**: backticked primitive names in this section map to MCP tools the optional [gvrn runtime](https://crates.io/crates/gvrn) registers as `gov-rt:<primitive>` (e.g., `gov-rt:read-tasks`). When that MCP server is registered for your session, **call the `gov-rt:*` tool** for each step listed below — that is the deterministic path. When the server is not registered, walk the prose to produce the same result. The two paths share a contract; neither one wraps the other.
+> **For agent runtimes**: backticked primitive names in this section map to MCP tools the optional [gvrn runtime](https://crates.io/crates/gvrn) exposes under bare `<primitive>` names (e.g., `read-tasks`). Hosts wrap them with a server-name prefix taken from `.mcp.json` (Claude: `mcp__gvrn__read-tasks`; Auggie: `mcp:gvrn:read-tasks`). When the server is registered for your session, **call the corresponding tool** for each step listed below — that is the deterministic path. When the server is not registered, walk the prose to produce the same result. The two paths share a contract; neither one wraps the other.
 
-1. Invoke `read-tasks` (MCP: `gov-rt:read-tasks`) against the targeted feature to load the ordered task list and the per-task "done when" conditions. The walker also seeds the session target's feature, scenario fields, and writeCode arguments (task-number, subtask-index, checked, write-boundary, threshold) from the runtime context.
+1. Invoke `read-tasks` (MCP: `read-tasks`) against the targeted feature to load the ordered task list and the per-task "done when" conditions. The walker also seeds the session target's feature, scenario fields, and writeCode arguments (task-number, subtask-index, checked, write-boundary, threshold) from the runtime context.
 
-2. Invoke `derive-boundary` (MCP: `gov-rt:derive-boundary`) against the feature to compute the runtime write boundary from `git diff` against the spec dir's first commit; the result emits as a progress envelope and the host stores the boundary in context for the writeCode validator below. Otherwise, follow the markdown-only path: compute the same diff with the host's shell.
+2. Invoke `derive-boundary` (MCP: `derive-boundary`) against the feature to compute the runtime write boundary from `git diff` against the spec dir's first commit; the result emits as a progress envelope and the host stores the boundary in context for the writeCode validator below. Otherwise, follow the markdown-only path: compute the same diff with the host's shell.
 
-3. Invoke `check-stuck` (MCP: `gov-rt:check-stuck`) against the feature with a threshold of 3 to detect stuck cycles before starting work. When the result reports stuck, surface the cycle to the user and pause for direction before proceeding — auto mode does not power through cycles. Otherwise, follow the markdown-only path: count commits on `tasks.md` since the spec entered in-progress.
+3. Invoke `check-stuck` (MCP: `check-stuck`) against the feature with a threshold of 3 to detect stuck cycles before starting work. When the result reports stuck, surface the cycle to the user and pause for direction before proceeding — auto mode does not power through cycles. Otherwise, follow the markdown-only path: count commits on `tasks.md` since the spec entered in-progress.
 
 4. Ask the user to approve the transition from planned to in-progress before any code changes. On confirmation, continue to step 5; on denial, the walker exits cleanly without modifying the spec.
 
-5. Invoke `set-status` (MCP: `gov-rt:set-status`) to flip the spec frontmatter's status from planned to in-progress; the primitive guards against a stale "from" value so concurrent edits surface as an operational error rather than a silent overwrite.
+5. Invoke `set-status` (MCP: `set-status`) to flip the spec frontmatter's status from planned to in-progress; the primitive guards against a stale "from" value so concurrent edits surface as an operational error rather than a silent overwrite.
 
 6. <!-- llm:writeCode --> Implement the first incomplete task. The host receives the task description, plan-relevant files, the derived write boundary, and constitution excerpts; it returns an edits array plus a one-line summary. The walker validates every edit's path against the write boundary and emits an `out-of-boundary-edit` error envelope (halting the procedure) when any edit escapes the boundary. Otherwise, follow the markdown-only path: read the plan, write code, run tests.
 
-7. Invoke `mark-task` (MCP: `gov-rt:mark-task`) to flip the first incomplete subtask's checkbox from unchecked to checked in `tasks.md` (atomic write via tempfile + rename). The primitive returns the previous and current states; a previous value of `true` surfaces as a no-op result.
+7. Invoke `mark-task` (MCP: `mark-task`) to flip the first incomplete subtask's checkbox from unchecked to checked in `tasks.md` (atomic write via tempfile + rename). The primitive returns the previous and current states; a previous value of `true` surfaces as a no-op result.
 
 8. Render the completion summary (host responsibility): list the task processed, surface the cross-spec impact diff (any changes outside `specs/{feature}/`), remind the user to commit, and prompt for the next pipeline gate. The in-progress → done transition is its own invocation — re-run `/{project}:implement` after every task has been marked complete and review is clean.
 

@@ -1,7 +1,10 @@
 //! MCP server exposing every primitive as a tool.
 //!
-//! Naming convention is `gov-rt:<verb>-<noun>` per the resolved-questions
-//! section of the spec. Tools are async wrappers around the synchronous
+//! Tool names are bare `<verb>-<noun>` strings (e.g. `read-spec`).
+//! Server-level namespacing is supplied by the MCP server registration —
+//! the adopter registers this server as `gvrn` in `.mcp.json`, which
+//! makes the Claude Code-side wire identifier `mcp__gvrn__<verb>-<noun>`.
+//! Tools are async wrappers around the synchronous
 //! `primitives::<name>::run` functions; the server holds an `Arc<PathBuf>`
 //! to the repo root that every primitive operates on.
 //!
@@ -36,29 +39,29 @@ use crate::schema::primitives::{
 
 /// Canonical MCP tool names exposed by the server, in manifest order.
 pub const TOOL_NAMES: &[&str] = &[
-    "gov-rt:read-spec",
-    "gov-rt:read-tasks",
-    "gov-rt:mark-task",
-    "gov-rt:mark-criterion",
-    "gov-rt:set-status",
-    "gov-rt:derive-boundary",
-    "gov-rt:check-stuck",
-    "gov-rt:validate-frontmatter",
-    "gov-rt:resolve-anchor",
-    "gov-rt:traverse-deps",
-    "gov-rt:check-rule-ids",
-    "gov-rt:run-generator",
-    "gov-rt:lint-markdown",
-    "gov-rt:gate-confirm",
-    "gov-rt:fetch-archive",
-    "gov-rt:extract-archive",
-    "gov-rt:substitute-templates",
-    "gov-rt:merge-claude-md",
-    "gov-rt:apply-manifest",
-    "gov-rt:enforce-manifest",
-    "gov-rt:merge-managed-block",
-    "gov-rt:create-scenario",
-    "gov-rt:append-task",
+    "read-spec",
+    "read-tasks",
+    "mark-task",
+    "mark-criterion",
+    "set-status",
+    "derive-boundary",
+    "check-stuck",
+    "validate-frontmatter",
+    "resolve-anchor",
+    "traverse-deps",
+    "check-rule-ids",
+    "run-generator",
+    "lint-markdown",
+    "gate-confirm",
+    "fetch-archive",
+    "extract-archive",
+    "substitute-templates",
+    "merge-claude-md",
+    "apply-manifest",
+    "enforce-manifest",
+    "merge-managed-block",
+    "create-scenario",
+    "append-task",
 ];
 
 /// MCP server. Cloned per request by `rmcp`, so all state lives behind
@@ -88,7 +91,7 @@ impl GovRuntimeServer {
 #[tool_router]
 impl GovRuntimeServer {
     #[tool(
-        name = "gov-rt:read-spec",
+        name = "read-spec",
         description = "Parse spec frontmatter and body sections."
     )]
     async fn read_spec(
@@ -101,7 +104,7 @@ impl GovRuntimeServer {
     }
 
     #[tool(
-        name = "gov-rt:read-tasks",
+        name = "read-tasks",
         description = "Parse `tasks.md` into a structured task list."
     )]
     async fn read_tasks(
@@ -114,7 +117,7 @@ impl GovRuntimeServer {
     }
 
     #[tool(
-        name = "gov-rt:mark-task",
+        name = "mark-task",
         description = "Flip a single subtask checkbox in `tasks.md` (atomic rewrite)."
     )]
     async fn mark_task(
@@ -127,7 +130,7 @@ impl GovRuntimeServer {
     }
 
     #[tool(
-        name = "gov-rt:mark-criterion",
+        name = "mark-criterion",
         description = "Flip a single acceptance-criterion checkbox in `spec.md`."
     )]
     async fn mark_criterion(
@@ -140,7 +143,7 @@ impl GovRuntimeServer {
     }
 
     #[tool(
-        name = "gov-rt:set-status",
+        name = "set-status",
         description = "Update the `status:` field in spec frontmatter, guarded by `from`."
     )]
     async fn set_status(
@@ -153,7 +156,7 @@ impl GovRuntimeServer {
     }
 
     #[tool(
-        name = "gov-rt:derive-boundary",
+        name = "derive-boundary",
         description = "Derive the runtime write boundary from git history."
     )]
     async fn derive_boundary(
@@ -166,7 +169,7 @@ impl GovRuntimeServer {
     }
 
     #[tool(
-        name = "gov-rt:check-stuck",
+        name = "check-stuck",
         description = "Count `tasks.md` commits since status entered `in-progress`."
     )]
     async fn check_stuck(
@@ -179,7 +182,7 @@ impl GovRuntimeServer {
     }
 
     #[tool(
-        name = "gov-rt:validate-frontmatter",
+        name = "validate-frontmatter",
         description = "Validate frontmatter shape against the pipeline schema."
     )]
     async fn validate_frontmatter(
@@ -192,7 +195,7 @@ impl GovRuntimeServer {
     }
 
     #[tool(
-        name = "gov-rt:resolve-anchor",
+        name = "resolve-anchor",
         description = "Verify `§anchor` references resolve to `<!-- §anchor -->` markers."
     )]
     async fn resolve_anchor(
@@ -205,7 +208,7 @@ impl GovRuntimeServer {
     }
 
     #[tool(
-        name = "gov-rt:traverse-deps",
+        name = "traverse-deps",
         description = "Traverse spec dependencies and check status compatibility."
     )]
     async fn traverse_deps(
@@ -218,7 +221,7 @@ impl GovRuntimeServer {
     }
 
     #[tool(
-        name = "gov-rt:check-rule-ids",
+        name = "check-rule-ids",
         description = "Verify cited rule IDs exist in rule files and aren't deprecated."
     )]
     async fn check_rule_ids(
@@ -231,7 +234,7 @@ impl GovRuntimeServer {
     }
 
     #[tool(
-        name = "gov-rt:run-generator",
+        name = "run-generator",
         description = "Invoke a bash generator with `--dry-run`; non-zero exit is drift."
     )]
     async fn run_generator(
@@ -244,7 +247,7 @@ impl GovRuntimeServer {
     }
 
     #[tool(
-        name = "gov-rt:lint-markdown",
+        name = "lint-markdown",
         description = "Wrap `npx markdownlint-cli2` and surface violations."
     )]
     async fn lint_markdown(
@@ -257,7 +260,7 @@ impl GovRuntimeServer {
     }
 
     #[tool(
-        name = "gov-rt:gate-confirm",
+        name = "gate-confirm",
         description = "Return the gate prompt payload (non-blocking). The orchestrator routes the prompt to the user and supplies the confirmed decision out-of-band; this tool never blocks waiting for input."
     )]
     async fn gate_confirm(
@@ -272,7 +275,7 @@ impl GovRuntimeServer {
     }
 
     #[tool(
-        name = "gov-rt:fetch-archive",
+        name = "fetch-archive",
         description = "Download an archive plus its sha256 sidecar and verify the hash."
     )]
     async fn fetch_archive(
@@ -285,7 +288,7 @@ impl GovRuntimeServer {
     }
 
     #[tool(
-        name = "gov-rt:extract-archive",
+        name = "extract-archive",
         description = "Extract a local `.tar.gz` / `.zip` archive into a destination directory."
     )]
     async fn extract_archive(
@@ -298,7 +301,7 @@ impl GovRuntimeServer {
     }
 
     #[tool(
-        name = "gov-rt:substitute-templates",
+        name = "substitute-templates",
         description = "Walk a source tree, apply `{key}` substitutions, and write to a destination."
     )]
     async fn substitute_templates(
@@ -311,7 +314,7 @@ impl GovRuntimeServer {
     }
 
     #[tool(
-        name = "gov-rt:merge-claude-md",
+        name = "merge-claude-md",
         description = "Idempotently merge a framework-managed block into the adopter's CLAUDE.md."
     )]
     async fn merge_claude_md(
@@ -324,7 +327,7 @@ impl GovRuntimeServer {
     }
 
     #[tool(
-        name = "gov-rt:apply-manifest",
+        name = "apply-manifest",
         description = "Strategy-aware bulk substitute + write driven by a manifest."
     )]
     async fn apply_manifest(
@@ -337,7 +340,7 @@ impl GovRuntimeServer {
     }
 
     #[tool(
-        name = "gov-rt:enforce-manifest",
+        name = "enforce-manifest",
         description = "Remove files in a directory that are not in the expected manifest."
     )]
     async fn enforce_manifest(
@@ -350,7 +353,7 @@ impl GovRuntimeServer {
     }
 
     #[tool(
-        name = "gov-rt:merge-managed-block",
+        name = "merge-managed-block",
         description = "Idempotently merge a framework-managed block with configurable marker shape."
     )]
     async fn merge_managed_block(
@@ -363,7 +366,7 @@ impl GovRuntimeServer {
     }
 
     #[tool(
-        name = "gov-rt:create-scenario",
+        name = "create-scenario",
         description = "Write a new scenarios/{slug}.md file under a feature with frontmatter and prose body."
     )]
     async fn create_scenario(
@@ -376,7 +379,7 @@ impl GovRuntimeServer {
     }
 
     #[tool(
-        name = "gov-rt:append-task",
+        name = "append-task",
         description = "Append a numbered task block to a feature's tasks.md (atomic rewrite)."
     )]
     async fn append_task(

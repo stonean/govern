@@ -8,6 +8,10 @@
 # markdown-only path. The proximity scan trades false-positive risk for a
 # fully derived check — no author-supplied markers required.
 #
+# Tool references inside the `## Markdown-only reference` section of a
+# command file are skipped — that section *is* the fallback, so any
+# mention there does not require a paired fallback marker.
+#
 # Source of truth: framework/constitution.md §runtime-boundary
 # Consumed by: .github/workflows/markdown-only-pipeline.yml
 
@@ -37,11 +41,14 @@ if [ ! -f "$MANIFEST" ]; then
 fi
 
 # Load tool names: skip blank lines and lines starting with '#'.
+# Strip a full run of leading/trailing whitespace (spaces or tabs) so a
+# stray indent in the manifest can't slip through with embedded
+# whitespace that would silently fail to match in prose.
 tools=()
 while IFS= read -r raw; do
   line="${raw%%#*}"
-  line="${line## }"
-  line="${line%% }"
+  line="${line#"${line%%[![:space:]]*}"}"
+  line="${line%"${line##*[![:space:]]}"}"
   [ -z "$line" ] && continue
   tools+=("$line")
 done < "$MANIFEST"
@@ -53,9 +60,16 @@ fi
 shopt -s nullglob
 errors=0
 for cmd in "$ROOT"/framework/commands/*.md; do
+  # Find the line of the `## Markdown-only reference` heading, if any. Any
+  # tool reference at or after that line is itself part of the fallback
+  # path and does not need a paired fallback marker.
+  md_only_start="$(grep -n '^## Markdown-only reference' "$cmd" | head -n1 | cut -d: -f1 || true)"
   for tool in "${tools[@]}"; do
     while IFS=: read -r lineno _; do
       [ -z "$lineno" ] && continue
+      if [ -n "$md_only_start" ] && [ "$lineno" -ge "$md_only_start" ]; then
+        continue
+      fi
       end=$((lineno + WINDOW))
       window="$(sed -n "${lineno},${end}p" "$cmd")"
       if ! printf '%s\n' "$window" | grep -qiE 'Otherwise|Fallback|If unavailable|markdown-only path'; then

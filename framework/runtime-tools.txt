@@ -11,32 +11,32 @@
 #                                                  are wrapped in a graceful
 #                                                  fallback)
 #
-# Tool names are case-sensitive exact-match strings. The `gov-rt:`
-# namespace prefix is per spec 022's MCP naming-convention resolution —
-# the colon disambiguates primitives from slash commands (`gov:<cmd>`)
-# and guarantees no collision with PATH-visible binaries on stock
-# runners.
+# Tool names are case-sensitive exact-match strings. Names are bare
+# `<verb>-<noun>` strings — server-level namespacing (`gvrn`) is
+# supplied by the MCP server registration in `.mcp.json`, which makes the
+# Claude Code-side wire identifier `mcp__gvrn__<verb>-<noun>`. The
+# bare names are also the `gvrn <name>` subcommand identifiers.
 
-gov-rt:read-spec
-gov-rt:read-tasks
-gov-rt:mark-task
-gov-rt:mark-criterion
-gov-rt:set-status
-gov-rt:derive-boundary
-gov-rt:check-stuck
-gov-rt:validate-frontmatter
-gov-rt:resolve-anchor
-gov-rt:traverse-deps
-gov-rt:check-rule-ids
-gov-rt:run-generator
-gov-rt:lint-markdown
-gov-rt:gate-confirm
-gov-rt:fetch-archive
-gov-rt:extract-archive
-gov-rt:substitute-templates
-gov-rt:merge-claude-md
-gov-rt:apply-manifest
-gov-rt:enforce-manifest
-gov-rt:merge-managed-block
-gov-rt:create-scenario
-gov-rt:append-task
+read-spec
+read-tasks
+mark-task
+mark-criterion
+set-status
+derive-boundary
+check-stuck
+validate-frontmatter
+resolve-anchor
+traverse-deps
+check-rule-ids
+run-generator
+lint-markdown
+gate-confirm
+fetch-archive
+extract-archive
+substitute-templates
+merge-claude-md
+apply-manifest
+enforce-manifest
+merge-managed-block
+create-scenario
+append-task

@@ -4,19 +4,21 @@
 # framework/bootstrap/configure/auggie.md from the canonical tool list
 # in framework/runtime-tools.txt.
 #
-# Establishes the invariant: every `gov-rt:*` tool listed in
-# runtime-tools.txt has a permission entry in both agents' configure
-# sources. Adding or removing a tool in runtime-tools.txt flows through
-# to both files on the next commit via the pre-commit hook.
+# Establishes the invariant: every tool listed in runtime-tools.txt has
+# a permission entry in both agents' configure sources. Adding or
+# removing a tool in runtime-tools.txt flows through to both files on
+# the next commit via the pre-commit hook.
 #
 # Marker pair (both files):
 #   <!-- generated:mcp-allow:start -->
 #   <!-- generated:mcp-allow:end -->
 #
-# Per-host mapping (deterministic; no host-presence detection):
-#   gov-rt:<verb>-<noun>  →  Claude:  mcp__gov-rt__<verb>-<noun>
-#                         →  Auggie:  toolName "mcp:gov-rt:<verb>-<noun>",
-#                                     permission { type: "allow" }
+# Per-host mapping (deterministic; no host-presence detection). The
+# `gvrn` server-name prefix comes from the adopter's `.mcp.json`
+# registration; tool names in this list are bare `<verb>-<noun>`.
+#   <verb>-<noun>  →  Claude:  mcp__gvrn__<verb>-<noun>
+#                  →  Auggie:  toolName "mcp:gvrn:<verb>-<noun>",
+#                              permission { type: "allow" }
 #
 # Exits non-zero if either marker is missing in either source file.
 
@@ -25,6 +27,12 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TOOLS="$ROOT/framework/runtime-tools.txt"
 CLAUDE_SRC="$ROOT/framework/bootstrap/configure/claude.md"
 AUGGIE_SRC="$ROOT/framework/bootstrap/configure/auggie.md"
+
+# Track every mktemp we create so early-exit paths (set -e, signals,
+# splice failures) don't leak temp files into $TMPDIR.
+cleanup_files=()
+cleanup() { [ "${#cleanup_files[@]}" -gt 0 ] && rm -f "${cleanup_files[@]}"; }
+trap cleanup EXIT
 
 dry_run=0
 for arg in "$@"; do
@@ -47,10 +55,10 @@ if [ ! -f "$TOOLS" ]; then
 fi
 
 # Build the Claude block content (3-space indent matches sibling sub-sections
-# in claude.md's allow-list). Stripping the gov-rt: prefix; Claude uses
-# double-underscore separator.
-claude_block_file="$(mktemp)"
-auggie_block_file="$(mktemp)"
+# in claude.md's allow-list). Each tool name from runtime-tools.txt is a
+# bare `<verb>-<noun>`; the `gvrn` server-name prefix is added per host.
+claude_block_file="$(mktemp)"; cleanup_files+=("$claude_block_file")
+auggie_block_file="$(mktemp)"; cleanup_files+=("$auggie_block_file")
 
 tool_count=0
 while IFS= read -r tool; do
@@ -60,15 +68,13 @@ while IFS= read -r tool; do
   # Trim trailing whitespace.
   tool="${tool%"${tool##*[![:space:]]}"}"
   [ -z "$tool" ] && continue
-  short="${tool#gov-rt:}"
-  printf '   - `mcp__gov-rt__%s`\n' "$short" >> "$claude_block_file"
-  printf '   - `{ "toolName": "mcp:gov-rt:%s", "permission": { "type": "allow" } }`\n' "$short" >> "$auggie_block_file"
+  printf '   - `mcp__gvrn__%s`\n' "$tool" >> "$claude_block_file"
+  printf '   - `{ "toolName": "mcp:gvrn:%s", "permission": { "type": "allow" } }`\n' "$tool" >> "$auggie_block_file"
   tool_count=$((tool_count + 1))
 done < "$TOOLS"
 
 if [ "$tool_count" -eq 0 ]; then
   echo "No tools found in $TOOLS" >&2
-  rm -f "$claude_block_file" "$auggie_block_file"
   exit 4
 fi
 
@@ -103,22 +109,22 @@ splice() {
 }
 
 # Process each file. Compare against the source; rewrite or report.
+# `out` is mktemp'd and registered for trap cleanup; the happy path
+# either `mv`s it onto $file (consuming the temp) or leaves it to the
+# trap.
 process() {
-  local label="$1"
-  local file="$2"
-  local block_file="$3"
+  local file="$1"
+  local block_file="$2"
   local out
   out="$(mktemp)"
+  cleanup_files+=("$out")
   if ! splice "$file" "$block_file" > "$out"; then
-    rm -f "$out"
     return 5
   fi
   if cmp -s "$file" "$out"; then
-    rm -f "$out"
     return 0
   fi
   if [ "$dry_run" -eq 1 ]; then
-    rm -f "$out"
     echo "Would update $file"
     return 1
   fi
@@ -128,10 +134,8 @@ process() {
 }
 
 rc=0
-process "claude" "$CLAUDE_SRC" "$claude_block_file" || rc=$?
-process "auggie" "$AUGGIE_SRC" "$auggie_block_file" || rc=$?
-
-rm -f "$claude_block_file" "$auggie_block_file"
+process "$CLAUDE_SRC" "$claude_block_file" || rc=$?
+process "$AUGGIE_SRC" "$auggie_block_file" || rc=$?
 
 if [ "$rc" -ne 0 ] && [ "$dry_run" -eq 1 ]; then
   exit 1

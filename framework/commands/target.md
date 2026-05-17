@@ -23,7 +23,7 @@ Establishes which feature spec all subsequent `/{project}:*` commands operate on
 
 ## Instructions
 
-> **For agent runtimes**: backticked primitive names in this section map to MCP tools the optional [gvrn runtime](https://crates.io/crates/gvrn) registers as `gov-rt:<primitive>` (e.g., `gov-rt:read-spec`). When that MCP server is registered for your session, **call the `gov-rt:*` tool** for each step listed below — that is the deterministic path. When the server is not registered, walk the prose to produce the same result. The two paths share a contract; neither one wraps the other.
+> **For agent runtimes**: backticked primitive names in this section map to MCP tools the optional [gvrn runtime](https://crates.io/crates/gvrn) exposes under bare `<primitive>` names (e.g., `read-spec`). Hosts wrap them with a server-name prefix taken from `.mcp.json` (Claude: `mcp__gvrn__read-spec`; Auggie: `mcp:gvrn:read-spec`). When the server is registered for your session, **call the corresponding tool** for each step listed below — that is the deterministic path. When the server is not registered, walk the prose to produce the same result. The two paths share a contract; neither one wraps the other.
 
 1. When the invocation has no argument (whitespace or empty), read the session JSON to display the current target. If the file is empty or absent, report no target set; otherwise display the feature name and status, the scenario detail when one is targeted (scenario name, the section field or legacy spec-ref field, and the context summary), and the artifacts list. Then stop — the steps below only apply when an argument is supplied. Treat `0`, `00`, or any other non-whitespace string as a valid feature identifier.
 
@@ -33,7 +33,7 @@ Establishes which feature spec all subsequent `/{project}:*` commands operate on
 
 4. Recompute dependencies as a safety net by running scripts/gen-spec-deps.sh as a dry run; if the dry run reports a diff, run it for real to sync the frontmatter dependencies from body inline links. The pre-commit hook normally keeps this in sync; this step catches uncommitted body edits. (Host responsibility today; the runtime exposes an equivalent procedural wrapper used by other commands. Otherwise, follow the markdown-only path.)
 
-5. Invoke `read-spec` (MCP: `gov-rt:read-spec`) against the resolved feature to load frontmatter, sections, and the open-question count from the body. The frontmatter status is one of draft, clarified, planned, in-progress, or done.
+5. Invoke `read-spec` (MCP: `read-spec`) against the resolved feature to load frontmatter, sections, and the open-question count from the body. The frontmatter status is one of draft, clarified, planned, in-progress, or done.
 
 6. When a scenario was provided, locate the scenario file under the feature's scenarios subdirectory and read it: extract the section field from frontmatter (or the legacy spec-ref field for pre-017 scenarios) and capture the context summary from the body. If the scenario does not exist, list available scenarios and ask the user to choose. (Host responsibility — the runtime does not expose a scenario primitive; otherwise, fall back to the markdown-only path.)
 

@@ -28,7 +28,7 @@ use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 use crate::schema::procedure::{Procedure, SourceRange, Step, StepNumber};
 
 /// Closed set of primitive names recognized by the parser. Mirrors the
-/// MCP tool list without the `gov-rt:` prefix.
+/// MCP tool list in [`crate::mcp::server::TOOL_NAMES`].
 pub const PRIMITIVE_NAMES: &[&str] = &[
     "read-spec",
     "read-tasks",
