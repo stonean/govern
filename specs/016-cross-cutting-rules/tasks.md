@@ -60,6 +60,6 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 9. Implement scenario: applicable-rules-consistency-check
 
-- [ ] - [ ] Implement the behavior described in [`scenarios/applicable-rules-consistency-check.md`](scenarios/applicable-rules-consistency-check.md).
+- [x] - [ ] Implement the behavior described in [`scenarios/applicable-rules-consistency-check.md`](scenarios/applicable-rules-consistency-check.md).
 
 - **Done when**: `/gov:analyze` emits a finding for every rule cited under a spec's `## Applicable Rules` section whose Verification trigger does NOT fire against the spec's content. Severity (blocking vs advisory) is resolved during the scenario's `/gov:clarify` walk and implemented per that decision.

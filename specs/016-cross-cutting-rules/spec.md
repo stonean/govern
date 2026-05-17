@@ -1,11 +1,11 @@
 ---
 title: "016-cross-cutting-rules — spec"
-status: in-progress
+status: done
 dependencies: [006-bug-workflow, 008-security-rules]
 tags: [format, process, pipeline]
 review:
-  last-run: 2026-05-10T00:00:00Z
-  reviewed-against: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
+  last-run: 2026-05-17T23:25:00Z
+  reviewed-against: ef96450
   must-violations: 0
   should-violations: 0
   low-confidence: 0

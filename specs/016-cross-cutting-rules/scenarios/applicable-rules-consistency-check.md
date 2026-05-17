@@ -32,8 +32,8 @@ Implementation notes (resolved during plan, not here):
 
 ## Open Questions
 
-- **Severity: blocking or advisory?** Strict reading: blocking (a stale citation is wrong, and stale citations rot once they're tolerated). Pragmatic reading: advisory in v1 (citations may anticipate future behavior the spec hasn't yet implemented; blocking would punish forward-thinking authors). Lean: advisory in v1, with a clear path to promote to blocking if stale citations become a recurring drift source. Resolve during clarify with a concrete criterion for the eventual promotion (e.g., "promote when `/gov:analyze` runs find more than N stale citations across the repo in any single run").
+*None — all resolved.*
 
 ## Resolved Questions
 
-*None yet.*
+- **Severity: blocking or advisory?** **Advisory** in v1. Promotion criterion: promote to blocking when a single `/gov:analyze --all` run reports 5 or more stale citations across the repo, with the threshold met on two consecutive runs (the second run guards against transient mid-implement states where citations land before the AC that exercises them). Rationale: forward-looking citations are a useful planning signal, blocking them would push citations to land only after implementation when they're least useful; we have no baseline distribution to calibrate a blocking threshold against; symmetric with the existing "rule fires but not cited" direction, which is also advisory. The two-run guard intentionally puts the operational signal in the hands of someone running `/gov:analyze --all` regularly (CI or maintainer cadence) — if no one runs `--all`, the drift is invisible and the promotion criterion is moot, which is the right behavior since this is a maintainer concern.
