@@ -2,6 +2,25 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.5.1] — 2026-05-17
+
+### Fixed
+
+Four structural bugs in `tasks.md` primitives surfaced during spec 023's living-specs work, resolved by the `runtime-primitive-structural-bugs` scenario on spec 022:
+
+- **`append-task`'s default body line used the title as the slug** — a title like `Implement scenarios/living-specs.md` produced `scenarios/scenarios/living-specs.md.md`, doubled prefix and extension. Resolution: new explicit `slug` argument (`AppendTaskArgs.slug: Option<String>`). When `body` is omitted, `slug` is required; the primitive refuses with the new `PrimitiveError::MissingArgument` variant if both are omitted. When `body` is supplied, `slug` is ignored. The buggy heuristic that derived the slug from the title is removed entirely.
+- **`append-task` numbering hardcoded to `## N.` top-level** — on phased `tasks.md` files (`## Phase A — … / ### N. Task` shape), the primitive found no `## N.` matches and fell back to `## 1.` at the file's bottom, colliding with the existing `### 1.` task and breaking the file's H3 convention. Resolution: new `TasksStructure` enum (`Flat` / `Phased`) detected by presence of any `### N.` heading. New `AppendTaskArgs.parent_heading: Option<String>` lets the caller name the phase to extend; refuses with the new `PrimitiveError::ParentHeadingNotFound` variant when the supplied heading does not match. When `parent_heading` is omitted, the primitive extends an existing `Phase X — Follow-on scenarios` phase if one is present, otherwise creates `Phase {next-letter} — Follow-on scenarios` with the auto-computed next letter. Phase containers explicitly exclude `## N.` numeric headings, so mixed-structure files keep their phase set clean.
+- **`read-tasks` returned empty on phased files** — the parser only matched `## N.` level-2 headings and blinded `/gov:implement` on every phased spec. Resolution: structure-aware task-level dispatch — phased files walk `### N.` at level 3, flat files keep walking `## N.` at level 2. New `Task.phase: Option<String>` carries the heading text of the containing phase for phased tasks; the field is absent from JSON output for flat tasks (`skip_serializing_if = "Option::is_none"`) so pre-existing consumers parse unchanged. Mixed-structure files walk only the phased layer per the scenario's edge case.
+- **`check-stuck` reopen regression coverage** — investigation showed the topological-reverse revwalk already tracked the most-recent `in-progress` transition correctly (the bug had been resolved in earlier 022 work without closing the scenario task). Added three regression tests under `primitives::check_stuck::tests` to lock the correct behavior in place: `reopen_measures_from_most_recent_in_progress_transition`, `first_in_progress_works_when_never_reopened`, and `mechanical_sweeps_do_not_disturb_since_sha`.
+
+### Changed
+
+- New shared helpers in `primitives::mod`: `TasksStructure`, `detect_tasks_structure`, `iter_task_numbers_at_levels`, `iter_phase_ranges`, `PhaseRange`. Used by both `append-task` (Phase 2) and `read-tasks` (Phase 3) to keep phased-structure detection in one place. The deprecated single-purpose `iter_numbered_headings` wrapper is removed; callers in tests now invoke `iter_task_numbers_at_levels(content, &[2])` directly.
+
+### Tests
+
+- 26 new unit tests across `append_task`, `read_tasks`, and `check_stuck` covering the four bug fixes and their edge cases. Total lib tests: 235 → 238; full crate suite: 269 passing.
+
 ## [0.5.0] — 2026-05-17
 
 ### Changed (breaking)

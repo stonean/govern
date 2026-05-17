@@ -258,6 +258,6 @@ Adds two new primitives — `create-scenario` and `append-task` — that the `/a
 
 ## 29. Implement scenario: runtime-primitive-structural-bugs
 
-- [ ] - [ ] Implement the behavior described in [`scenarios/runtime-primitive-structural-bugs.md`](scenarios/runtime-primitive-structural-bugs.md).
+- [x] - [ ] Implement the behavior described in [`scenarios/runtime-primitive-structural-bugs.md`](scenarios/runtime-primitive-structural-bugs.md).
 
 - **Done when**: All four primitive bug fixes ship: `append-task` accepts an explicit `slug` argument and detects phased vs. flat tasks.md structure; `read-tasks` parses phased tasks.md correctly and returns the flattened list with phase metadata; `check-stuck` measures from the most recent `in-progress` transition, not the first. Each fix has fixture-based unit tests plus a parity-test entry; `gvrn` ships a new patch or minor version.
