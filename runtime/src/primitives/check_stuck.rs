@@ -251,4 +251,154 @@ mod tests {
         assert!(!result.stuck);
         assert!(result.since_sha.is_empty());
     }
+
+    /// Reopen regression test: a spec that went
+    /// `planned → in-progress → done → in-progress` must measure
+    /// `commit_count` from the SECOND `in-progress` transition, not the
+    /// first. The original 022 implementation captured the first
+    /// transition, causing 023's first commit attempt on the living-specs
+    /// task to fire `stuck: true` with `commit-count: 8` because the
+    /// initial implementation window's commits still counted toward the
+    /// reopen's count.
+    #[test]
+    fn reopen_measures_from_most_recent_in_progress_transition() {
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = Repository::init(tmp.path()).unwrap();
+        let spec_path = tmp.path().join("specs/010-demo/spec.md");
+        let tasks_path = tmp.path().join("specs/010-demo/tasks.md");
+
+        // Original implementation window: planned → in-progress, plus
+        // several tasks.md commits during the work.
+        write(&spec_path, &spec("planned"));
+        write(&tasks_path, "# Tasks\n\n## 1. Bootstrap\n");
+        commit_all(&repo, "feat: plan");
+
+        write(&spec_path, &spec("in-progress"));
+        commit_all(&repo, "chore: begin original implementation"); // first transition
+
+        for i in 1..=5 {
+            write(&tasks_path, &format!("# Tasks v{i}\n\n## 1. Bootstrap\n"));
+            commit_all(&repo, &format!("wip: pass {i}"));
+        }
+
+        // Close out: in-progress → done.
+        write(&spec_path, &spec("done"));
+        commit_all(&repo, "feat: ship");
+
+        // Reopen: done → in-progress via /gov:ask's back-edge. The new
+        // task starts fresh.
+        write(&spec_path, &spec("in-progress"));
+        commit_all(&repo, "chore: reopen for follow-on"); // second transition (this is `since`)
+
+        // One tasks.md commit during the reopen window.
+        write(
+            &tasks_path,
+            "# Tasks v6\n\n## 1. Bootstrap\n\n## 2. Follow-on\n",
+        );
+        commit_all(&repo, "wip: start follow-on");
+
+        let result = run(
+            &CheckStuckArgs {
+                feature: "010-demo".into(),
+                threshold: 3,
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        // Count must be 1 (only the reopen-window tasks.md commit), not 6
+        // (the original-window commits plus the reopen commit). And not
+        // stuck — threshold is 3.
+        assert_eq!(
+            result.commit_count, 1,
+            "expected count from most-recent in-progress, got {} (likely measured from first transition)",
+            result.commit_count
+        );
+        assert!(!result.stuck);
+        assert!(!result.since_sha.is_empty());
+
+        // Sanity: walking by the captured since_sha should land at the
+        // reopen commit, not the original begin commit.
+        let repo2 = Repository::open(tmp.path()).unwrap();
+        let oid = git2::Oid::from_str(&result.since_sha).unwrap();
+        let commit = repo2.find_commit(oid).unwrap();
+        assert_eq!(
+            commit.message().unwrap(),
+            "chore: reopen for follow-on",
+            "since_sha should point at the reopen commit, not the original begin"
+        );
+    }
+
+    /// Counterpart to the reopen test: a spec that has NEVER been
+    /// `done` (no reopen has occurred) must still produce the correct
+    /// count from its single `in-progress` transition. The fix to the
+    /// reopen case must not break this routine path.
+    #[test]
+    fn first_in_progress_works_when_never_reopened() {
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = Repository::init(tmp.path()).unwrap();
+        let spec_path = tmp.path().join("specs/010-demo/spec.md");
+        let tasks_path = tmp.path().join("specs/010-demo/tasks.md");
+        write(&spec_path, &spec("planned"));
+        write(&tasks_path, "# Tasks\n");
+        commit_all(&repo, "feat: plan");
+        write(&spec_path, &spec("in-progress"));
+        commit_all(&repo, "chore: begin");
+        for i in 1..=2 {
+            write(&tasks_path, &format!("# Tasks v{i}\n"));
+            commit_all(&repo, &format!("wip: pass {i}"));
+        }
+        let result = run(
+            &CheckStuckArgs {
+                feature: "010-demo".into(),
+                threshold: 3,
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert_eq!(result.commit_count, 2);
+        assert!(!result.stuck);
+    }
+
+    /// Mechanical sweep commits between the most-recent `in-progress`
+    /// transition and HEAD touch `spec.md` but do NOT change the
+    /// `status:` line. They must not register as new in-progress
+    /// transitions (which would skip past them to the older, wrong
+    /// transition).
+    #[test]
+    fn mechanical_sweeps_do_not_disturb_since_sha() {
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = Repository::init(tmp.path()).unwrap();
+        let spec_path = tmp.path().join("specs/010-demo/spec.md");
+        let tasks_path = tmp.path().join("specs/010-demo/tasks.md");
+
+        write(&spec_path, &spec("planned"));
+        write(&tasks_path, "# Tasks\n");
+        commit_all(&repo, "feat: plan");
+        write(&spec_path, &spec("in-progress"));
+        commit_all(&repo, "chore: begin");
+
+        // Mechanical sweep on spec.md (e.g., rename pass) — same status
+        // value, different body content.
+        let mut sweeped = spec("in-progress");
+        sweeped.push_str("\nMechanical sweep added this line.\n");
+        write(&spec_path, &sweeped);
+        commit_all(&repo, "chore: rename sweep across specs");
+
+        // One legitimate tasks.md commit after the sweep.
+        write(&tasks_path, "# Tasks v2\n");
+        commit_all(&repo, "wip: pass 1");
+
+        let result = run(
+            &CheckStuckArgs {
+                feature: "010-demo".into(),
+                threshold: 3,
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        // Count is just the tasks.md commit (1). The sweep commit doesn't
+        // touch tasks.md so it doesn't count toward stuck.
+        assert_eq!(result.commit_count, 1);
+        assert!(!result.stuck);
+    }
 }
