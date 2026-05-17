@@ -1,0 +1,66 @@
+---
+status: draft
+dependencies: [023-govern-refinement]
+review:
+  last-run: null
+  reviewed-against: null
+  must-violations: 0
+  should-violations: 0
+  low-confidence: 0
+  blocking: false
+---
+
+# 024 — Stack-aware rule-file loader for `/gov:review`
+
+Generalize `/gov:review`'s rule-file selection so the set of `framework/rules/*.md` files loaded for any given run is derived from each file's declared surface and the project's detected tech stack — not from a hardcoded list of filenames in [`framework/commands/review.md`](../../framework/commands/review.md). Removes the per-rule-file maintenance bottleneck and removes the author-discipline failure mode created by the current "reference it from AGENTS.md to opt in" fallback.
+
+## Motivation
+
+Today, [`/gov:review`](../../framework/commands/review.md) selects rule files in two ways:
+
+1. **Hardcoded** — `security-backend.md` is loaded for backend stacks; `security-frontend.md` is loaded for frontend stacks; full-stack loads both. The filenames are baked into `framework/commands/review.md` step 5 of §Behavior.
+2. **Opt-in** — any other `framework/rules/*.md` file is loaded only when referenced from `AGENTS.md` (`framework/commands/review.md` §Notes for adopters).
+
+Three new rule files have just landed — [`api-backend.md`](../../framework/rules/api-backend.md), [`accessibility-frontend.md`](../../framework/rules/accessibility-frontend.md), [`performance-frontend.md`](../../framework/rules/performance-frontend.md) — and neither path is right for them. Hardcoding three more filenames invites the same problem the fourth, fifth, and sixth rule file will reintroduce. The "reference it from `AGENTS.md`" path means an adopter ships an HTTP API that exposes no OpenAPI schema because the author didn't think to add `api-backend.md` to `AGENTS.md` — exactly the silent author-discipline failure mode AGENTS.md:58 ("Never design framework features that depend on human diligence") exists to prevent.
+
+The fix: derive rule-file selection from observable signals. Each rule file declares which surface it applies to via its filename suffix (the convention `security-backend.md`, `security-frontend.md` already established). `/gov:review` matches the file's surface against the stack the tech-stack-alignment check already produces (see [`framework/commands/review.md`](../../framework/commands/review.md) §Behavior step 4). No author discipline; no command-source edits when a new shipped rule file is added; the `AGENTS.md` fallback survives only for adopter-local rule files that live outside `framework/rules/`.
+
+## Acceptance Criteria
+
+- [ ] Filename suffix is the surface signal: `*-backend.md` means the file applies to backend stacks; `*-frontend.md` means frontend stacks; any other `framework/rules/*.md` name (no recognized suffix) applies to all stacks (cross-cutting). The convention is documented in `framework/constitution.md` alongside the §rules anchor.
+- [ ] `/gov:review` rule-file selection is rewritten to iterate `framework/rules/*.md`, read each file's suffix, and load it when the suffix matches the project's detected stack (or the file is cross-cutting). The hardcoded names `security-backend.md` and `security-frontend.md` no longer appear in `framework/commands/review.md` as selection criteria — they are loaded by the same derivation as every other file.
+- [ ] The three new rule files (`api-backend.md`, `accessibility-frontend.md`, `performance-frontend.md`) load automatically under the new derivation when their respective stacks are present — no `AGENTS.md` edit required.
+- [ ] [`configuration.md`](../../framework/rules/configuration.md) loads for every stack (cross-cutting; its body already declares this).
+- [ ] The "load anything in `framework/rules/` referenced from `AGENTS.md`" fallback survives but narrows to its real purpose: project-local rule files placed outside `framework/rules/` (e.g., `docs/rules/internal-api.md`) that the framework cannot discover by directory walk. Files inside `framework/rules/` no longer need an `AGENTS.md` reference to be loaded.
+- [ ] A rule file with an unrecognized suffix (e.g., `framework/rules/database.md` — neither `-backend`, `-frontend`, nor a documented cross-cutting name) loads for every stack. The default is "load," not "skip" — silent skipping would reintroduce the author-discipline failure mode.
+- [ ] `/gov:review` emits a one-line `loading rule files: <list>` notice on stdout at the start of each run so adopters can see what was selected. The notice is the discoverability surface.
+- [ ] `framework/commands/review.md` §Notes for adopters is updated to reflect the new selection algorithm; specifically, the line "`/gov:review` automatically loads anything in `framework/rules/` that's referenced from `AGENTS.md`" is rewritten to describe the new derivation and clarify the residual role of the `AGENTS.md` fallback.
+- [ ] `framework/commands/analyze.md` is updated symmetrically if it also loads rule files for its own audits (verify during plan phase).
+
+## Non-goals
+
+- **A `surface:` frontmatter field on rule files.** Filename suffix is sufficient and visible at directory-listing time. Adding frontmatter would duplicate the signal and create a "what if they disagree?" problem.
+- **A new surface taxonomy beyond backend / frontend / cross-cutting.** Mobile-specific rules are not in scope; if mobile rules are added later, this spec's pattern extends with a `-mobile.md` suffix and a corresponding stack-detection update (a separate spec).
+- **The opt-out mechanism for excluding a specific rule file.** That is **spec 025 — rule-file opt-out** (sibling spec, listed as a forward reference, not a dependency — 025 depends on this spec, not the other way around) — 024 ships the auto-load; 025 ships the override.
+- **Editing done specs that reference the old hardcoded behavior.** Per [§drift-prevention](../../framework/constitution.md#drift-prevention), `specs/020-code-review/` is frozen archaeology. The current behavior of `/gov:review` is what `framework/commands/review.md` says today; that file is the live artifact this spec edits.
+
+## Affected files
+
+| File | Change | Strategy |
+| --- | --- | --- |
+| `framework/commands/review.md` | edit — §Behavior step 5 and §Load rules rewritten to derive selection from filename suffix; §Notes for adopters rewritten to describe the new contract | update |
+| `framework/commands/analyze.md` | edit — apply the same derivation if/where it loads rule files (verify during plan) | update |
+| `framework/constitution.md` | edit — under §rules, document the filename-suffix convention as the framework-level naming rule | update |
+| `framework/rules/security-backend.md` | none — file is already correctly suffixed | n/a |
+| `framework/rules/security-frontend.md` | none — file is already correctly suffixed | n/a |
+| `framework/rules/configuration.md` | none — file is correctly named for cross-cutting | n/a |
+| `framework/rules/api-backend.md` | none — file is correctly suffixed | n/a |
+| `framework/rules/accessibility-frontend.md` | none — file is correctly suffixed | n/a |
+| `framework/rules/performance-frontend.md` | none — file is correctly suffixed | n/a |
+| `scripts/lint-rule-filenames.sh` (or equivalent) | optional — a lint that fails CI if a `framework/rules/*.md` file does not match the documented suffix convention | new |
+
+## Open Questions
+
+- Should a CI lint enforce the filename convention (a file named `framework/rules/database.md` could be a typo for `database-backend.md`), or is the "default to load-everywhere" behavior tolerant enough to make the lint unnecessary? Lean: ship the spec without the lint; add later if drift surfaces.
+- Does `/gov:analyze` also need an update, or is it agnostic to the rule-file set? `/gov:analyze` audits artifacts against each other (per [spec 023](../023-govern-refinement/spec.md) §4) and reads rule IDs from rule files when verifying citations; the loader pattern may need the same generalization. Confirm during plan.
+- How does the new loader interact with adopter-customized `framework/rules/` files? Adopters who add `framework/rules/security-mobile.md` (hypothetical) get it loaded for "mobile" stacks — but stack detection today only recognizes backend/frontend. Until stack-detection extends, mobile-suffixed files load only when the adopter declares mobile in `AGENTS.md` Tech Stack (relying on the existing inference). Confirm whether to document this as a known limitation or defer.
