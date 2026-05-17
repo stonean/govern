@@ -6,9 +6,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Phased structure — 
 
 ### 1. Scaffold `framework/commands/audit.md` skeleton
 
-- [ ] Create `framework/commands/audit.md` with frontmatter (`description`, no `argument-hint`, no `parity:` yet) and an empty Instructions section. The full procedure body lands in task 4 after the family scripts exist.
-- [ ] Add frontmatter description: `Audit framework artifacts for cross-doc, cross-manifest, cross-registry drift. Maintainer-only.`
-- [ ] Run `scripts/gen-claude-commands.sh` to regenerate `.claude/commands/gov/audit.md`. Verify the mirror exists and matches the source.
+- [x] Create `framework/commands/audit.md` with frontmatter (`description`, no `argument-hint`, no `parity:` yet) and an empty Instructions section. The full procedure body lands in task 4 after the family scripts exist.
+- [x] Add frontmatter description: `Audit framework artifacts for cross-doc, cross-manifest, cross-registry drift. Maintainer-only.`
+- [x] Run `scripts/gen-claude-commands.sh` to regenerate `.claude/commands/gov/audit.md`. Verify the mirror exists and matches the source.
 
 - **Done when**: `framework/commands/audit.md` exists with frontmatter + H1 + empty Instructions section; `.claude/commands/gov/audit.md` regenerates without error.
 
