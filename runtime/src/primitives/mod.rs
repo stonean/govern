@@ -222,6 +222,19 @@ pub enum PrimitiveError {
         /// One-line reason describing the rejection.
         reason: String,
     },
+    /// A required argument was omitted by the caller. Distinct from
+    /// `InvalidSlug` / `InvalidPath` — the value was never supplied, not
+    /// supplied-and-rejected.
+    #[error("{primitive}: '{argument}' is required ({reason})")]
+    MissingArgument {
+        /// Primitive name (e.g., `append-task`).
+        primitive: String,
+        /// Argument name that was omitted.
+        argument: String,
+        /// One-line reason explaining why the argument is required in
+        /// this context.
+        reason: String,
+    },
 }
 
 /// Convenience alias for primitive return values.

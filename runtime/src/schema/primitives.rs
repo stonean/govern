@@ -921,9 +921,19 @@ pub struct AppendTaskArgs {
     /// Optional checkbox sub-items to render inside the task block. When
     /// omitted, the primitive emits a single default
     /// `- [ ] Implement the behavior described in scenarios/{slug}.md`
-    /// line derived from the title.
+    /// line using the explicit `slug` argument below.
     #[arg(long)]
     pub body: Option<Vec<String>>,
+    /// Scenario slug used by the default-body line. Required when `body`
+    /// is omitted (the default body needs a slug to fill
+    /// `scenarios/{slug}.md`). Ignored when `body` is supplied — the
+    /// caller has provided the full body, so no slug is needed. Pairs
+    /// with the slug previously passed to `create-scenario` when both
+    /// primitives are invoked together by the scenario branch of
+    /// `/gov:ask`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[arg(long)]
+    pub slug: Option<String>,
 }
 
 /// Result for `append-task`.

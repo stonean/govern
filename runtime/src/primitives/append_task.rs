@@ -23,6 +23,18 @@ use crate::schema::primitives::{AppendTaskArgs, AppendTaskResult};
 /// failures.
 pub fn run(args: &AppendTaskArgs, repo: &Path) -> Result<AppendTaskResult> {
     validate_no_traversal(&args.feature_path)?;
+    // Q1 resolution: when body is omitted, slug is required. Refuse cleanly
+    // rather than silently doubling the slug from the title (the bug the
+    // 022/runtime-primitive-structural-bugs scenario closed).
+    if args.body.is_none() && args.slug.is_none() {
+        return Err(PrimitiveError::MissingArgument {
+            primitive: "append-task".into(),
+            argument: "slug".into(),
+            reason:
+                "the default body needs a slug to fill scenarios/{slug}.md; pass either 'slug' or an explicit 'body'"
+                    .into(),
+        });
+    }
     let feature_dir = repo.join(&args.feature_path);
     if !feature_dir.is_dir() {
         return Err(PrimitiveError::FeaturePathNotFound {
@@ -74,30 +86,21 @@ fn render_task_block(number: u32, args: &AppendTaskArgs) -> String {
         for item in items {
             let _ = writeln!(out, "- [ ] {}", item.trim());
         }
-    } else {
+    } else if let Some(slug) = &args.slug {
         // Default single sub-item. The "scenarios/{slug}.md" pointer mirrors
-        // the convention `/elaborate` uses today; `{slug}` is derived from
-        // the task title by lowercasing and hyphenating.
-        let slug = slug_from_title(&args.title);
+        // the convention `/gov:ask`'s scenario branch uses; `slug` comes from
+        // the explicit argument (required when body is omitted; see Q1).
         let _ = writeln!(
             out,
             "- [ ] Implement the behavior described in `scenarios/{slug}.md`"
         );
     }
+    // The `(None, None)` branch is unreachable — run() refuses that
+    // combination before calling this function. No `else` arm here so the
+    // invariant is enforced by the caller, not by a panic in render code.
     out.push('\n');
     let _ = writeln!(out, "- **Done when**: {}", args.done_when.trim());
     out
-}
-
-/// Convert a title like "Implement scenario: retry-on-timeout" to the slug
-/// form expected by `scenarios/{slug}.md` pointers. Used only for the default
-/// body line when no explicit `body` items are supplied.
-fn slug_from_title(title: &str) -> String {
-    title
-        .split([':', ' '])
-        .rfind(|part| !part.is_empty())
-        .unwrap_or("scenario")
-        .to_lowercase()
 }
 
 /// Append `block` to `existing`, ensuring exactly one blank line of
@@ -145,7 +148,21 @@ mod tests {
             title: title.into(),
             done_when: done_when.into(),
             body: None,
+            // Explicit slug is required when body is None; tests that
+            // exercise default-body behavior pass a clean slug here.
+            slug: Some(slug_default_for(title)),
         }
+    }
+
+    /// Test helper: produce a sensible default slug for the test's title so
+    /// the default-body assertions remain readable. Production callers pass
+    /// `slug` explicitly; this helper is only for compactness in tests.
+    fn slug_default_for(title: &str) -> String {
+        title
+            .split([':', ' '])
+            .rfind(|part| !part.is_empty())
+            .unwrap_or("scenario")
+            .to_lowercase()
     }
 
     fn make_feature_with_spec(tmp: &Path, feature_path: &str, h1: &str) {
@@ -229,11 +246,60 @@ mod tests {
         make_feature_with_spec(tmp.path(), "specs/042-foo", "042 — Foo");
         let mut a = args("specs/042-foo", "Manual", "done.");
         a.body = Some(vec!["Sub-item one".into(), "Sub-item two".into()]);
+        // When body is supplied, slug is ignored.
+        a.slug = None;
         run(&a, tmp.path()).unwrap();
         let body = fs::read_to_string(tmp.path().join("specs/042-foo/tasks.md")).unwrap();
         assert!(body.contains("- [ ] Sub-item one"));
         assert!(body.contains("- [ ] Sub-item two"));
         assert!(!body.contains("- [ ] Implement the behavior"));
+    }
+
+    #[test]
+    fn refuses_when_body_and_slug_both_omitted() {
+        let tmp = tempdir().unwrap();
+        make_feature_with_spec(tmp.path(), "specs/042-foo", "042 — Foo");
+        let mut a = args("specs/042-foo", "Implement scenario: retry", "done.");
+        a.slug = None;
+        a.body = None;
+        let err = run(&a, tmp.path()).unwrap_err();
+        assert!(
+            matches!(&err, PrimitiveError::MissingArgument { primitive, argument, .. }
+                if primitive == "append-task" && argument == "slug"),
+            "expected MissingArgument for slug, got: {err:?}"
+        );
+    }
+
+    #[test]
+    fn explicit_slug_drives_default_body_not_title() {
+        let tmp = tempdir().unwrap();
+        make_feature_with_spec(tmp.path(), "specs/042-foo", "042 — Foo");
+        let mut a = args(
+            "specs/042-foo",
+            "Implement scenarios/living-specs.md",
+            "done.",
+        );
+        // The title carries scenarios/...md text; under the old bug the
+        // primitive would derive a broken slug from it ("scenarios/living-specs.md"
+        // → doubled prefix/extension). With the explicit slug arg, the body
+        // points at the canonical scenarios/{slug}.md path.
+        a.slug = Some("living-specs".into());
+        a.body = None;
+        run(&a, tmp.path()).unwrap();
+        let body = fs::read_to_string(tmp.path().join("specs/042-foo/tasks.md")).unwrap();
+        assert!(
+            body.contains("- [ ] Implement the behavior described in `scenarios/living-specs.md`"),
+            "expected clean scenarios/living-specs.md pointer, got:\n{body}"
+        );
+        // No doubled prefix or extension.
+        assert!(
+            !body.contains("scenarios/scenarios/"),
+            "doubled prefix slipped in"
+        );
+        assert!(
+            !body.contains(".md.md"),
+            "doubled extension slipped in: {body}"
+        );
     }
 
     #[test]
@@ -271,15 +337,6 @@ mod tests {
             tf.write_all(b"INTERRUPTED").unwrap();
         }
         assert_eq!(original, fs::read_to_string(&tasks_path).unwrap());
-    }
-
-    #[test]
-    fn slug_from_title_extracts_trailing_token() {
-        assert_eq!(
-            slug_from_title("Implement scenario: ask-consolidation"),
-            "ask-consolidation"
-        );
-        assert_eq!(slug_from_title("Bootstrap"), "bootstrap");
     }
 
     #[test]
