@@ -50,9 +50,9 @@ The primitive computes `since-sha` from the *first* time the spec entered `in-pr
 
 ## Open Questions
 
-- **`append-task` slug derivation when no slug is supplied.** If the caller omits `slug` AND omits `body`, can the primitive derive the slug from the most-recently-created scenario file in the same feature directory? That coupling between two primitives feels fragile. Lean: require explicit `slug` when `body` is omitted, refuse with a clean operational error otherwise. Resolve during clarify.
-- **Phase-default heading text.** When `append-task` creates the default follow-on phase (no `parent-heading` argument, phased structure detected), what label does it use? Existing precedent in 023 is `## Phase C — Follow-on scenarios`. Should the primitive hardcode `Follow-on` or accept a label argument? Lean: hardcode `Follow-on scenarios`, override with the argument. Resolve during clarify.
+*None — all resolved.*
 
 ## Resolved Questions
 
-*None yet.*
+- **`append-task` slug derivation when no slug is supplied.** When `body` is omitted, `slug` is required; refuse with a clean operational error if both are omitted (`append-task: 'slug' is required when 'body' is omitted (the default body needs a slug to fill scenarios/{slug}.md)`). When `body` is supplied, `slug` is optional and ignored. Rationale: deriving the slug from the most-recently-created scenario introduces temporal coupling between `create-scenario` and `append-task` that breaks idempotence, referential transparency, and parallel safety — silent magic that fails the §design-principles rule. Explicit `slug` matches the paired-call reality (the `/gov:ask` scenario branch knows the slug it just used in `create-scenario`).
+- **Phase-default heading text.** The primitive hardcodes the default phase heading as `## Phase {next-letter} — Follow-on scenarios`, where `{next-letter}` is the next alphabetical letter after existing `## Phase X —` headers (A → B → C, etc.). When no existing phase headers are found, default to `## Phase A — Follow-on scenarios`. The `parent-heading` argument remains the override for callers who want a custom phase label. Rationale: the scenario already pins the label form to "Follow-on scenarios" (matching 023's precedent); auto-computing the letter is the minimal addition that avoids collision with existing phases and keeps the primitive's behavior a pure function of file shape, no caller state required. Flat tasks.md files are not auto-promoted to phased — promotion happens only when the caller passes `parent-heading` explicitly.
