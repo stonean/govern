@@ -22,7 +22,7 @@ See [spec 026](../../specs/026-framework-self-audit/spec.md) for the design and 
 
 ## Instructions
 
-> **For agent runtimes**: backticked primitive names in this section map to MCP tools the optional [gvrn runtime](https://crates.io/crates/gvrn) exposes under bare `<primitive>` names (e.g., `run-generator`). Hosts wrap them with a server-name prefix taken from `.mcp.json` (Claude: `mcp__gvrn__run-generator`; Auggie: `mcp:gvrn:run-generator`). When the server is registered for your session, **call the corresponding tool** for each step listed below — that is the deterministic path. When the server is not registered, walk the markdown-only reference below to produce the same result.
+> **For agent runtimes**: backticked primitive names in this section map to MCP tools the optional [gvrn runtime](https://crates.io/crates/gvrn) exposes under bare `<primitive>` names (e.g., `run-generator`). Hosts wrap them with a server-name prefix taken from `.mcp.json` (Claude: `mcp__gvrn__run-generator`; Auggie: `mcp:gvrn:run-generator`). When the server is registered for your session, **call the corresponding tool** for each step listed below — that is the deterministic path. Otherwise, walk the markdown-only path below to produce the same result.
 
 <!-- Procedure body lands in Phase C (task 11) once the family scripts under scripts/audit/ exist. See specs/026-framework-self-audit/tasks.md. -->
 

@@ -14,9 +14,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Phased structure — 
 
 ### 2. Create `scripts/audit/` directory and `check-zero.sh` orchestrator
 
-- [ ] Create `scripts/audit/` directory with an explanatory `README.md` describing the per-family contract (stdout findings, exit 0/1, read-only, idempotent).
-- [ ] Create `scripts/audit/check-zero.sh` that invokes the 9 generators/lints in plan order. Print a `check-zero` finding per failing script to stdout. Exit 1 on any failure; exit 0 only when all pass.
-- [ ] Smoke-test `scripts/audit/check-zero.sh` locally — confirm it exits 0 against the current repo state.
+- [x] Create `scripts/audit/` directory with an explanatory `README.md` describing the per-family contract (stdout findings, exit 0/1, read-only, idempotent).
+- [x] Create `scripts/audit/check-zero.sh` that invokes the 9 generators/lints in plan order. Print a `check-zero` finding per failing script to stdout. Exit 1 on any failure; exit 0 only when all pass.
+- [x] Smoke-test `scripts/audit/check-zero.sh` locally — confirm it exits 0 against the current repo state.
 
 - **Done when**: `scripts/audit/check-zero.sh` exists, runs cleanly against a clean repo, and prints findings against a deliberately broken state (manually re-introduce drift in one file as a smoke test).
 
