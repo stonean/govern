@@ -143,6 +143,13 @@ pub struct Task {
     /// `Done when:` clause, if present.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub done_when: Option<String>,
+    /// Phase container heading text, when the task lives under a `## …`
+    /// phase (e.g., `Phase A — Refactor`). `None` for flat-structure tasks
+    /// declared directly at level 2 (`## N. Title`). Absent from the JSON
+    /// output when `None`, so existing consumers that don't know about
+    /// phased structure still parse correctly.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub phase: Option<String>,
 }
 
 /// Result for `read-tasks`.
@@ -1040,16 +1047,40 @@ mod tests {
                     checked: true,
                 }],
                 done_when: Some("cargo build succeeds".into()),
+                phase: None,
             }],
             path: "specs/022-deterministic-runtime/tasks.md".into(),
         };
         let value: serde_json::Value = serde_json::to_value(&result).unwrap();
         assert_eq!(value["tasks"][0]["done-when"], "cargo build succeeds");
+        // `phase: None` must not surface in the JSON — backward-compat for
+        // existing consumers that pre-date the phased read-tasks fix.
+        assert!(
+            !value["tasks"][0].as_object().unwrap().contains_key("phase"),
+            "phase: None should serialize as absent, not null"
+        );
         assert_eq!(round_trip(&result), result);
         let args = ReadTasksArgs {
             feature: "022-deterministic-runtime".into(),
         };
         assert_eq!(round_trip(&args), args);
+    }
+
+    #[test]
+    fn read_tasks_phased_task_carries_phase_metadata() {
+        let result = ReadTasksResult {
+            tasks: vec![Task {
+                number: "1".into(),
+                heading: "Wire up".into(),
+                subtasks: vec![],
+                done_when: None,
+                phase: Some("Phase A — Bootstrap".into()),
+            }],
+            path: "specs/022-deterministic-runtime/tasks.md".into(),
+        };
+        let value: serde_json::Value = serde_json::to_value(&result).unwrap();
+        assert_eq!(value["tasks"][0]["phase"], "Phase A — Bootstrap");
+        assert_eq!(round_trip(&result), result);
     }
 
     #[test]

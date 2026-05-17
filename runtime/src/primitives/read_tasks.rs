@@ -1,8 +1,26 @@
 //! `read-tasks` — parse `tasks.md` into a structured task list.
+//!
+//! Handles both file shapes:
+//!
+//! - **Flat** — task headings are `## N. Title` at level 2. No phase
+//!   containers. Tasks return with `phase: None`.
+//! - **Phased** — task headings are `### N. Title` at level 3, nested
+//!   under `## …` phase containers (e.g., 023's
+//!   `## Phase A — Refactor` containing a `### 1. Task`). Each task
+//!   returns with `phase` set to the heading text of its containing
+//!   phase. Detection matches the
+//!   [scenario][runtime-primitive-structural-bugs] edge case: any
+//!   `### N.` heading anywhere in the file signals phased structure,
+//!   even when mixed with `## N.` flat headings.
+//!
+//! [runtime-primitive-structural-bugs]: <https://github.com/stonean/govern/blob/main/specs/022-deterministic-runtime/scenarios/runtime-primitive-structural-bugs.md>
 
 use std::path::Path;
 
-use crate::primitives::{PrimitiveError, Result, parse_atx_heading, read_text, rel_path};
+use crate::primitives::{
+    PrimitiveError, Result, TasksStructure, detect_tasks_structure, parse_atx_heading, read_text,
+    rel_path,
+};
 use crate::schema::primitives::{ReadTasksArgs, ReadTasksResult, Subtask, Task};
 
 const DONE_WHEN_PREFIX: &str = "**Done when**";
@@ -23,12 +41,56 @@ pub fn run(args: &ReadTasksArgs, repo: &Path) -> Result<ReadTasksResult> {
     let tasks_path = feature_dir.join("tasks.md");
     let content = read_text(&tasks_path)?;
 
+    let task_level = match detect_tasks_structure(&content) {
+        TasksStructure::Flat => 2,
+        TasksStructure::Phased => 3,
+    };
+
     let mut tasks: Vec<Task> = Vec::new();
     let mut current: Option<Task> = None;
+    // Phase tracking: any non-numeric `## …` heading sets the current
+    // phase context. Numeric `## N.` headings in a phased file are
+    // ignored (they're flat-task remnants in a mixed file; the phased
+    // task-level is 3, so they don't open a new task here).
+    let mut current_phase: Option<String> = None;
+    let mut in_fence = false;
 
     for line in content.lines() {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with("```") {
+            in_fence = !in_fence;
+            continue;
+        }
+        if in_fence {
+            continue;
+        }
         if let Some((level, heading)) = parse_atx_heading(line) {
-            if level == 2 {
+            // Level 1 ends the previous task (and resets phase context for
+            // the unusual case of multiple H1s in one file).
+            if level == 1 {
+                if let Some(task) = current.take() {
+                    tasks.push(task);
+                }
+                current = None;
+                current_phase = None;
+                continue;
+            }
+            // Phased mode: level-2 non-numeric headings open new phases.
+            // Level-2 numeric headings (`## N.`) are flat remnants and
+            // ignored as task openers, though their content (subtasks /
+            // done-when below) won't attach to anything either.
+            if level == 2 && task_level == 3 {
+                if let Some(task) = current.take() {
+                    tasks.push(task);
+                }
+                current = None;
+                if !heading_starts_with_number(&heading) {
+                    current_phase = Some(heading);
+                }
+                continue;
+            }
+            // Task heading at the structure's task level.
+            if level == task_level {
                 if let Some(task) = current.take() {
                     tasks.push(task);
                 }
@@ -38,17 +100,13 @@ pub fn run(args: &ReadTasksArgs, repo: &Path) -> Result<ReadTasksResult> {
                         heading: title,
                         subtasks: Vec::new(),
                         done_when: None,
+                        phase: current_phase.clone(),
                     });
                 }
                 continue;
             }
-            if level == 1 {
-                if let Some(task) = current.take() {
-                    tasks.push(task);
-                }
-                current = None;
-                continue;
-            }
+            // Any other heading level is informational; skip.
+            continue;
         }
         let Some(task) = current.as_mut() else {
             continue;
@@ -72,6 +130,18 @@ pub fn run(args: &ReadTasksArgs, repo: &Path) -> Result<ReadTasksResult> {
         tasks,
         path: rel_path(&tasks_path, repo),
     })
+}
+
+/// `true` when `heading` begins with `N.` (decimal digits, then a literal
+/// dot). Mirrors the helper in `primitives::mod` but kept module-local to
+/// avoid widening the crate-internal surface.
+fn heading_starts_with_number(heading: &str) -> bool {
+    let bytes = heading.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() && bytes[i].is_ascii_digit() {
+        i += 1;
+    }
+    i > 0 && i < bytes.len() && bytes[i] == b'.'
 }
 
 fn split_numbered_heading(heading: &str) -> Option<(String, String)> {
@@ -170,5 +240,137 @@ mod tests {
             Some(("3".into(), "Wire CLI".into()))
         );
         assert_eq!(split_numbered_heading("Not numbered"), None);
+    }
+
+    // --- phased-structure tests -----------------------------------------------
+
+    use std::fs;
+    use tempfile::tempdir;
+
+    fn make_phased_fixture(repo: &Path, feature: &str, content: &str) {
+        let dir = repo.join("specs").join(feature);
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join("tasks.md"), content).unwrap();
+    }
+
+    #[test]
+    fn parses_phased_tasks_with_phase_metadata() {
+        let tmp = tempdir().unwrap();
+        let content = "# Foo\n\n\
+                       ## Phase A — Bootstrap\n\n\
+                       ### 1. Wire crate\n\n\
+                       - [x] Create Cargo.toml\n- [ ] Create lib.rs\n\n\
+                       - **Done when**: cargo build succeeds.\n\n\
+                       ### 2. Add CI\n\n\
+                       - [x] Workflow file\n\n\
+                       - **Done when**: CI is green.\n\n\
+                       ## Phase B — Implementation\n\n\
+                       ### 3. Build the thing\n\n\
+                       - [ ] Code it up\n";
+        make_phased_fixture(tmp.path(), "001-phased", content);
+        let result = run(
+            &ReadTasksArgs {
+                feature: "001-phased".into(),
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        // Critical: phased file with 3 tasks must not return tasks: [].
+        assert_eq!(result.tasks.len(), 3, "phased file returned empty list");
+        assert_eq!(result.tasks[0].number, "1");
+        assert_eq!(result.tasks[0].heading, "Wire crate");
+        assert_eq!(
+            result.tasks[0].phase.as_deref(),
+            Some("Phase A — Bootstrap")
+        );
+        assert_eq!(result.tasks[0].subtasks.len(), 2);
+        assert!(result.tasks[0].subtasks[0].checked);
+        assert!(!result.tasks[0].subtasks[1].checked);
+        assert_eq!(
+            result.tasks[0].done_when.as_deref(),
+            Some("cargo build succeeds.")
+        );
+        assert_eq!(
+            result.tasks[1].phase.as_deref(),
+            Some("Phase A — Bootstrap")
+        );
+        assert_eq!(
+            result.tasks[2].phase.as_deref(),
+            Some("Phase B — Implementation")
+        );
+    }
+
+    #[test]
+    fn parses_flat_tasks_with_no_phase_metadata() {
+        let tmp = tempdir().unwrap();
+        let content = "# Foo\n\n\
+                       ## 1. First\n\n\
+                       - [x] sub one\n\n\
+                       - **Done when**: done.\n\n\
+                       ## 2. Second\n\n\
+                       - [ ] sub two\n";
+        make_phased_fixture(tmp.path(), "001-flat", content);
+        let result = run(
+            &ReadTasksArgs {
+                feature: "001-flat".into(),
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert_eq!(result.tasks.len(), 2);
+        assert!(result.tasks.iter().all(|t| t.phase.is_none()));
+    }
+
+    #[test]
+    fn parses_mixed_structure_as_phased() {
+        // The scenario's edge case: mixed `## N.` + `### N.` is phased.
+        // The `## 1.` flat-task remnant is skipped (we only walk task_level=3),
+        // so it does not appear in the result. The phased tasks return.
+        let tmp = tempdir().unwrap();
+        let content = "# Foo\n\n\
+                       ## 1. Legacy flat\n\n\
+                       - [x] orphaned subtask\n\n\
+                       ## Phase A — New work\n\n\
+                       ### 2. Real task\n\n\
+                       - [x] sub\n\n\
+                       - **Done when**: done.\n";
+        make_phased_fixture(tmp.path(), "001-mixed", content);
+        let result = run(
+            &ReadTasksArgs {
+                feature: "001-mixed".into(),
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        // Phased mode: task_level=3 only. ## 1. is not returned.
+        assert_eq!(result.tasks.len(), 1);
+        assert_eq!(result.tasks[0].number, "2");
+        assert_eq!(result.tasks[0].phase.as_deref(), Some("Phase A — New work"));
+    }
+
+    #[test]
+    fn alternate_phase_label_still_recognized_as_phase_container() {
+        // The scenario's edge case: any `## …` heading above the first
+        // `### N.` task qualifies as a phase container. Stage 1 instead of
+        // Phase A should still attach the right phase metadata.
+        let tmp = tempdir().unwrap();
+        let content = "# Foo\n\n\
+                       ## Stage 1 — Bootstrap\n\n\
+                       ### 1. Wire up\n\n\
+                       - [x] subtask\n\n\
+                       - **Done when**: done.\n";
+        make_phased_fixture(tmp.path(), "001-stage", content);
+        let result = run(
+            &ReadTasksArgs {
+                feature: "001-stage".into(),
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert_eq!(result.tasks.len(), 1);
+        assert_eq!(
+            result.tasks[0].phase.as_deref(),
+            Some("Stage 1 — Bootstrap")
+        );
     }
 }
