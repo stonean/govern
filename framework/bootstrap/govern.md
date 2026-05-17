@@ -241,7 +241,7 @@ Report `migrated specs/configuration.md → specs/configuration-cross.md` in the
 
 `.govern.toml` is the project's configuration and persisted-decisions store. If the file exists, read it before processing the file manifest. The file is optional — if it does not exist, use default behavior for every key. If the file exists but is malformed (TOML parse error), abort the run with a clear error rather than silently proceeding.
 
-The file is a flat collection of top-level sections. There is no umbrella namespace; each section is keyed to the thing it governs. The two sections `/govern` reads today:
+The file is a flat collection of top-level sections. There is no umbrella namespace; each section is keyed to the thing it governs. The sections that may appear in `.govern.toml`:
 
 ```toml
 [pinned]
@@ -259,11 +259,27 @@ files = [
 # Code Review, Deployment). Created lazily by /govern when the user picks
 # "Skip and don't ask again" at the prompt.
 declined_categories = ["Linting", "Formatting"]
+
+# Consumed by /gov:review (not /govern itself). Excludes rule files from
+# /gov:review's selection regardless of stack detection. The `reason` field
+# is mandatory (trimmed length ≥ 16 Unicode codepoints) and is the audit
+# trail for the override. Listed here for schema reference; uncomment and
+# edit to use.
+#
+# [[review.disabled-rule-files]]
+# file = "accessibility-frontend.md"
+# reason = "Internal admin UI — WCAG AA enforcement deferred to Q3"
+#
+# [[review.disabled-rule-files]]
+# file = "api-backend.md"
+# reason = "Pre-OpenAPI; revisit after schema lands (PROJ-1234)"
 ```
 
 `pinned.files` — any file listed that would normally use `update` strategy is treated as `skip` instead. Report pinned files in the post-scaffolding summary.
 
 `workflows.declined_categories` — categories listed here suppress the per-category workflow recommendation prompt entirely (see the **Workflow recommendation** flow below). Entries that don't match any canonical category name are reported once each in the post-scaffolding summary as `unrecognized workflow decline: "{value}" (in .govern.toml)` but do not abort the run.
+
+`review.disabled-rule-files` — array-of-tables consumed by `/gov:review` at rule-file selection time (see [`framework/commands/review.md`](../commands/review.md) §Inputs and §Behavior step 5). `/govern` does not read this key; it is documented here so adopters see the full `.govern.toml` schema in one place.
 
 The full schema (allowed values, case-insensitive matching, empty-section behavior, future-section guidance) is declared in [`specs/019-config-decisions/data-model.md`](../../specs/019-config-decisions/data-model.md).
 

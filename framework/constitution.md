@@ -294,6 +294,10 @@ The suffix is the surface signal `/{project}:review` and `/{project}:analyze` us
 
 Enforcement is two-layered. In `govern`'s own repository, `scripts/lint-rule-filenames.sh` fails CI on any file that violates the closed-suffix policy. In adopter repositories — where the lint does not run — a rule file with an unrecognized suffix loads for every stack and emits a one-line stdout warning (`rule file <name> has unrecognized suffix — loading for all stacks; rename to -backend.md, -frontend.md, or -cross.md`). The default is "load + warn," never "silent skip."
 
+#### Project-level opt-out
+
+A project may exclude a stack-selected rule file from `/{project}:review` by listing it in `.govern.toml` `[[review.disabled-rule-files]]` with a mandatory `reason` — the reason is the audit trail for the override, surfaced on stdout at the start of every run. The opt-out is project-wide and applies to whole files; per-`(rule, file)` exceptions remain the job of `/{project}:review --waive`. Schema and behavior are documented in [`framework/commands/review.md`](commands/review.md).
+
 #### Lifecycle
 
 - Rule IDs are permanent. Once assigned, an ID is never renumbered, even if the rule moves within the file or is edited.

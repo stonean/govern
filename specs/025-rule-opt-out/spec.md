@@ -1,5 +1,5 @@
 ---
-status: draft
+status: in-progress
 dependencies: [020-code-review, 024-rule-loader]
 review:
   last-run: null
@@ -30,23 +30,31 @@ The fix: a deliberate, recorded, file-level opt-out. `.govern.toml` already hous
 
 ## Acceptance Criteria
 
-- [ ] `.govern.toml` accepts `[[review.disabled-rule-files]]` as an array-of-tables. Each entry has two required fields:
-  - `file` — the basename of a file in `framework/rules/` (e.g., `"accessibility-frontend.md"`)
-  - `reason` — a free-text justification (non-empty; trimmed length ≥ 16 characters to discourage placeholder text)
-- [ ] `/gov:review` reads `[[review.disabled-rule-files]]` during rule-file selection and skips any listed file regardless of stack detection. Skipped files emit a one-line stdout notice at the start of the run:
+- [x] `.govern.toml` accepts `[[review.disabled-rule-files]]` as an array-of-tables. Each entry has two required fields:
+  - `file` — the **basename** of a file in `framework/rules/` (e.g., `"accessibility-frontend.md"`). Values containing path components (e.g., `"framework/rules/accessibility-frontend.md"` or `"rules/accessibility-frontend.md"`) are NOT special-cased — they fall through to the unknown-file warning (next AC) because no such basename exists in `framework/rules/`.
+  - `reason` — a free-text justification (non-empty; trimmed length ≥ 16 **Unicode codepoints** — counted as scalar values, not bytes, so non-ASCII reasons like `"WCAG懸念 → Q3まで保留"` are evaluated by their visible length). The failure mode is self-correcting: entries that fail the length check warn and skip (next AC), leaving the rule file enforced — same outcome as omitting the entry — so the threshold can never be the cause of a missed enforcement.
+- [x] `/gov:review` reads `[[review.disabled-rule-files]]` during rule-file selection and skips any listed file regardless of stack detection. Skipped files emit a one-line stdout notice at the start of the run:
 
   ```text
   disabled-rule-file: <filename> — <reason> (.govern.toml)
   ```
 
-  The notice is the point: silent skipping is forbidden.
-- [ ] An entry whose `file` does not exist in `framework/rules/` produces a one-line warning (`unknown disabled-rule-file: <filename> (no such file in framework/rules/)`) but is not a fatal error — operators may temporarily list a file that has been renamed or moved.
-- [ ] An entry missing `file` or `reason`, or whose `reason` fails the minimum-length check, is **skipped with a warning** (same pattern as malformed waivers, per [`framework/commands/review.md`](../../framework/commands/review.md) §Malformed and duplicate waivers). The entry is NOT auto-removed; the operator must clean it up. Same reasoning the existing waiver design uses: malformed entries are operator-authored state, not garbage for the framework to collect.
-- [ ] Duplicate entries (same `file` listed twice) emit a warning and only the first applies — same pattern as duplicate waivers.
-- [ ] `/gov:status` surfaces the disabled list (when present) in the pipeline dashboard, so the override is visible at-a-glance and doesn't hide in `.govern.toml`.
-- [ ] `/gov:analyze` does NOT error on the new key. The key is a `.govern.toml` extension owned by this spec, not a spec-frontmatter change.
-- [ ] The mechanism is uniform across all rule files. Adopters CAN disable [`security-backend.md`](../../framework/rules/security-backend.md) or [`security-frontend.md`](../../framework/rules/security-frontend.md) — the reason field is the audit trail. The framework does not enforce a "security files cannot be disabled" carve-out: enforcing it would require a hardcoded list of "real security" files that drifts from reality, and dropping security rules is a high-stakes decision that the reason field already makes visible. PR review and the operator's own policy are the safeguards, not the framework.
-- [ ] Documentation: the `[review]` section schema in the relevant config-decisions spec (or its successor) is updated to describe the new key. Reference: AGENTS.md line 42 — `.govern.toml` keys are documented in the spec that owns them, not retro-added to earlier specs.
+  The notice is the point: silent skipping is forbidden. Internal whitespace in `reason` (including newlines from TOML multi-line strings) is collapsed to single spaces in the notice — operators may use multi-line TOML strings for readability without breaking the one-line format.
+
+  If a listed file would NOT have been selected by stack detection anyway, the entry is still processed and a distinct one-line notice fires:
+
+  ```text
+  disabled-rule-file (no-op): <filename> not selected by stack detection
+  ```
+
+  This is honest about state — the entry is currently a no-op, but becomes load-bearing if the project's stack changes later. It is not an error; operators may pre-list files for documentation purposes.
+- [x] An entry whose `file` does not exist in `framework/rules/` produces a one-line warning (`unknown disabled-rule-file: <filename> (no such file in framework/rules/)`) but is not a fatal error — operators may temporarily list a file that has been renamed or moved.
+- [x] An entry missing `file` or `reason`, or whose `reason` fails the minimum-length check, is **skipped with a warning** (same pattern as malformed waivers, per [`framework/commands/review.md`](../../framework/commands/review.md) §Malformed and duplicate waivers). The entry is NOT auto-removed; the operator must clean it up. Same reasoning the existing waiver design uses: malformed entries are operator-authored state, not garbage for the framework to collect. Warnings do NOT taint the exit code — `/gov:review`'s exit status is driven exclusively by MUST violations, so a `blocking: true` result unambiguously means "a MUST rule was violated", not "your `.govern.toml` is malformed". `.govern.toml` hygiene belongs to `scripts/lint-govern-toml.sh` (single-purpose tool), not to the review gate.
+- [x] Duplicate entries (same `file` listed twice) emit a warning and only the first applies — same pattern as duplicate waivers.
+- [x] `/gov:status` surfaces the disabled list (when present) in the pipeline dashboard, so the override is visible at-a-glance and doesn't hide in `.govern.toml`.
+- [x] `/gov:analyze` does NOT error on the new key. The key is a `.govern.toml` extension owned by this spec, not a spec-frontmatter change.
+- [x] The mechanism is uniform across all rule files. Adopters CAN disable [`security-backend.md`](../../framework/rules/security-backend.md) or [`security-frontend.md`](../../framework/rules/security-frontend.md) — the reason field is the audit trail. The framework does not enforce a "security files cannot be disabled" carve-out: enforcing it would require a hardcoded list of "real security" files that drifts from reality, and dropping security rules is a high-stakes decision that the reason field already makes visible. PR review and the operator's own policy are the safeguards, not the framework.
+- [x] Documentation: the new `[[review.disabled-rule-files]]` schema is documented in this spec's body and reflected in `framework/commands/review.md` (per AGENTS.md line 42 — `.govern.toml` keys are documented in the spec that owns them and in the embedded command artifact, NOT retro-added to spec 019 or any earlier config spec). Spec 020 established this precedent for `[review] tech-stack-verified`; spec 025 follows the same pattern.
 
 ## Non-goals
 
@@ -54,6 +62,7 @@ The fix: a deliberate, recorded, file-level opt-out. `.govern.toml` already hous
 - **Per-spec exemption (e.g., "skip `accessibility-frontend.md` for spec 042").** Defeats the gate's purpose — a rule that doesn't apply to spec 042 also doesn't apply to spec 043 next sprint. Project-wide disablement is honest; per-spec is laundering.
 - **A "until-date" auto-expire.** Tempting but failure-mode-asymmetric — if the date is in the past, does `/gov:review` re-enable enforcement silently (breaks a build the team wasn't expecting) or warn-only (everyone learns to ignore the warning)? Both options reintroduce the disciplines this spec is trying to remove. Operators who want a sunset commitment write it into the `reason` and remove the entry when ready. PR review enforces it.
 - **Encoding "approval" or "second-author" requirements.** Same reasoning as the waiver design ([spec 020](../020-code-review/spec.md) Resolved questions): govern has no runtime that can verify a second person approved; encoding it in the toml would be performative. Adopters whose policy requires co-authorization layer their own fields onto the entry — the §text-first-artifacts open-schema rule guarantees `/gov:review` will not error on unknown fields.
+- **A CLI shortcut for adding disabled entries (`/gov:review --disable …`).** Frequency-asymmetric with `--waive`: waivers are added dozens of times across a project's life; a disabled-rule-file entry one to three times total. A shortcut for an action invoked twice doesn't earn its surface-area cost. Editing `.govern.toml` directly is also the right path because it forces the operator to *see* the existing list at the moment of addition — the context where peer entries matter most. `/gov:status` (AC) surfaces the list outside the CLI flow, so visibility is handled. Symmetry with `--waive` is not a sufficient reason on its own; the waiver design itself avoids gratuitous symmetry (no `--unwaive`, no `--list-waivers`). If real demand emerges, a follow-up spec adds it.
 
 ## Affected files
 
@@ -68,7 +77,11 @@ The fix: a deliberate, recorded, file-level opt-out. `.govern.toml` already hous
 
 ## Open Questions
 
-- The 16-character minimum on `reason` is arbitrary — long enough to discourage `"todo"` or `"later"`, short enough to not block a legitimate `"WCAG deferred to Q3"`. Confirm during `/gov:clarify` whether this is the right threshold or whether the framework should be looser (just non-empty) and let PR review enforce quality.
-- Does this key go under `[review]` (matching the existing `[review] tech-stack-verified`) or under a new `[rules]` section? `[review]` keeps the related keys together; `[rules]` is more semantically accurate but fragments adopter-side state. Lean: `[review]`.
-- Should `/gov:review` exit non-zero if any disabled file lists `reason: ""` or fails the minimum check, even when the rest of the run is clean? Lean: no — warnings stay warnings, only MUST violations block. Matches the waiver malformed-entry behavior.
-- Should there be a CLI shortcut for adding a disabled entry (e.g., `/gov:review --disable accessibility-frontend.md --reason "..."`)? Symmetric with `--waive`, but the use case is rarer and editing `.govern.toml` directly is fine. Defer to a follow-up spec if demand emerges.
+*None — all resolved.*
+
+## Resolved Questions
+
+- **Minimum length for `reason`.** Keep the 16-character minimum. "Just non-empty" leaves the door open to `"x"`, `"todo"`, etc.; once those land in production they're political to remove. Real justifications (`"WCAG deferred to Q3"`, `"Internal admin UI"`, `"Migrating from foo"`) all clear the bar. PR review is a backstop, not a substitute — the framework is already explicit elsewhere (mandatory `reason`), so being explicit about minimum quality is consistent. The threshold is also self-correcting: malformed entries warn and skip (the next AC), so an adopter who needs `"PoC only"` (8 chars) gets exactly the same outcome as omitting the entry — the rule file stays enforced. AC updated to state this failure mode explicitly so future readers don't relitigate the number.
+- **Section placement: `[review]` vs `[rules]`.** Use `[review]`. The only consumer is `/gov:review`, so adopters answer "what affects `/gov:review`?" by reading one section. A `[rules]` section would be empty except for this single key — premature structure for hypothetical content. The existing `[review] tech-stack-verified` precedent matters: keys that govern `/gov:review` behavior live in `[review]`; follow the established pattern. From the adopter's perspective they're disabling enforcement *by the review gate*, not "rules" in the abstract — which matches the `[review]` framing. AC already uses `[[review.disabled-rule-files]]`; no body changes needed.
+- **Exit code for malformed disabled entries.** Warnings stay warnings. `/gov:review`'s exit status is driven exclusively by MUST violations — overloading it with config-hygiene problems means `blocking: true` no longer unambiguously means "a MUST rule was violated", and that ambiguity defeats the single-purpose exit code. Symmetric with the existing malformed-waiver behavior, so the mental model stays uniform. The failure mode is also self-correcting: a malformed disabled entry leaves the rule file enforced, so an operator who fat-fingers the reason gets a louder signal (actual review findings), not a quieter one. `.govern.toml` hygiene belongs to `scripts/lint-govern-toml.sh` as a CI-side concern, not to the review gate. AC updated to state the exit-code invariant explicitly.
+- **CLI shortcut for adding disabled entries.** No shortcut. Moved to Non-goals so the decision is visible to future readers rather than left as a perpetual open question. Rationale captured in that section.

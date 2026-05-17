@@ -25,11 +25,20 @@ advances to `done`.
 - **Scope** — files referenced by the target's `plan.md` under `Affected Files`,
   plus any files modified since the spec advanced to `in-progress` (whichever
   set is larger).
-- **Config** — `.govern.toml` `[review] tech-stack-verified` (boolean,
-  default `false`): when `true`, the tech-stack alignment check (see
-  Behavior step 1) is skipped on every run until the operator clears the
-  key. Set automatically (with operator confirmation) on the first
-  successful alignment check.
+- **Config** — two `.govern.toml` keys influence this command:
+  - `[review] tech-stack-verified` (boolean, default `false`): when
+    `true`, the tech-stack alignment check (see Behavior step 1) is
+    skipped on every run until the operator clears the key. Set
+    automatically (with operator confirmation) on the first successful
+    alignment check.
+  - `[[review.disabled-rule-files]]` (array-of-tables, default empty):
+    each entry has a required `file` field (basename of a file in
+    `framework/rules/`, e.g., `"accessibility-frontend.md"`) and a
+    required `reason` field (free-text justification; trimmed length
+    ≥ 16 Unicode codepoints). Files listed here are excluded from
+    rule-file selection regardless of stack detection. Consulted in
+    Behavior step 5. Reason is mandatory — it is the audit trail for
+    the override.
 
 ## Flags
 
@@ -100,13 +109,78 @@ For each targeted feature, in order:
 
    Filter the recognized set by the detected stack from step 4 (keep the
    matching surface, keep every `*-cross.md`); keep every unrecognized
-   file unconditionally. Then emit a single stdout line naming what was
-   selected:
+   file unconditionally.
+
+   Then apply the **disabled-rule-files filter**. Read `.govern.toml`
+   `[[review.disabled-rule-files]]` (see [Inputs](#inputs)). For each
+   entry, in list order:
+
+   - **Drop + notice (stack-selected match).** `file` matches the
+     basename of a file currently in the post-stack-filter set. Remove
+     it from the set and emit one line:
+
+     ```text
+     disabled-rule-file: <filename> — <reason> (.govern.toml)
+     ```
+
+     Collapse internal whitespace in `reason` (including newlines from
+     TOML multi-line strings) to single spaces before emitting — the
+     notice is single-line by contract.
+
+   - **No-op notice (non-stack-selected match).** `file` matches a
+     basename in `framework/rules/` but the file was NOT in the
+     post-stack-filter set (different surface). Emit one line and
+     change nothing:
+
+     ```text
+     disabled-rule-file (no-op): <filename> not selected by stack detection
+     ```
+
+     This is honest about state — the entry is currently a no-op,
+     becomes load-bearing if the project's stack changes later.
+
+   - **Unknown warning.** `file` does not match any basename in
+     `framework/rules/`. Emit one line and change nothing:
+
+     ```text
+     unknown disabled-rule-file: <filename> (no such file in framework/rules/)
+     ```
+
+     This covers renamed/moved files; not a fatal error.
+
+   - **Malformed warning.** Entry is missing `file` or `reason`, or
+     `reason`'s trimmed length is < 16 Unicode codepoints. Skip the
+     entry (no file is dropped) and emit one line naming the offending
+     index (same pattern as §Malformed and duplicate waivers below):
+
+     ```text
+     malformed disabled-rule-file at review.disabled-rule-files[N]: <reason>
+     ```
+
+     The entry is NOT auto-removed; the operator cleans it up.
+
+   - **Duplicate warning.** Same `file` listed twice. Only the first
+     entry applies; each subsequent duplicate emits one line and is
+     not auto-pruned:
+
+     ```text
+     duplicate disabled-rule-file: <filename> — entry [N] ignored
+     ```
+
+   All four warning forms emit to stdout and **do not affect the exit
+   code**. `/gov:review`'s exit status is driven exclusively by MUST
+   violations (see [Output](#output)). `.govern.toml` hygiene is a
+   separate concern.
+
+   Finally, emit a single stdout line naming what was selected:
 
    ```text
    loading rule files: <comma-separated basenames>
    ```
 
+   Disabled files are excluded from this list. The notice fires AFTER
+   all disabled-rule-file lines, so a normal run reads top-down as:
+   any `disabled-rule-file: …` notices, then `loading rule files: …`.
    This is the discoverability surface — adopters can confirm which
    files were considered without parsing the report.
 
@@ -454,5 +528,15 @@ never of session state.
   is "load + warn," never "silent skip." Rename to one of the closed
   suffixes — `-backend.md`, `-frontend.md`, `-cross.md` — to silence
   the warning.
+- A rule file can be explicitly excluded from a given project's review
+  via `.govern.toml` `[[review.disabled-rule-files]]` (see
+  [Inputs](#inputs) for the schema and §Behavior step 5 for the
+  filter behavior). The override is project-wide and requires a
+  mandatory `reason` — the reason is the audit trail. Use this when
+  the stack-derived selection is correct (the rule file applies) but
+  the team is not yet ready to enforce that file's rules (e.g., an
+  internal admin UI that has not adopted full WCAG AA). Waivers
+  remain the right tool for individual `(rule, file)` exceptions; the
+  opt-out is for whole-file deferrals.
 - The five-dimension model is fixed. Domain-specific concerns (accessibility,
   i18n, licensing) belong in additional rule files, not new passes.
