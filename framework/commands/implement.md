@@ -46,7 +46,7 @@ Default is unset — without the flag, the user confirms each task as today.
 - The runtime write boundary is derived in step 2 from git history; the plan's **Affected Files** section is a planning aid, not authoritative.
 - Do NOT read or modify files belonging to other features' spec directories.
 - Do NOT read source code speculatively — only read files relevant to the current task.
-- Reference: §implement-phase, §pipeline-boundaries, §text-first-artifacts, plus `framework/rules/configuration.md` for constants and env-vars (constitution loaded by `/{project}:target` — do not re-read).
+- Reference: §implement-phase, §pipeline-boundaries, §text-first-artifacts, plus `framework/rules/configuration-cross.md` for constants and env-vars (constitution loaded by `/{project}:target` — do not re-read).
 
 ## Instructions
 

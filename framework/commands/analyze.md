@@ -132,13 +132,21 @@ When `--fix` is set, this check additionally reverts affected specs from `done` 
 
 ### Rules (blocking and advisory)
 
-Rules are the cross-cutting tier of the framework's three-tier requirement model (see §rules in `constitution.md`). Load each rule file in the project's rule-file list. The list currently consists of:
+Rules are the cross-cutting tier of the framework's three-tier requirement model (see §rules in `constitution.md`). Discover rule files by directory walk: list every `*.md` file in the project's rule-file directory and classify each by basename suffix per the closed-suffix policy declared in `constitution.md` §rules — `*-backend.md`, `*-frontend.md`, `*-cross.md`, or unrecognized. `/{project}:analyze` loads **every** discovered file regardless of detected stack — citation verification spans surfaces, so a backend project that cites `FE-XSS-001` in a scenario covering HTML output still needs that citation verified.
 
-- `specs/security-backend.md`
-- `specs/security-frontend.md`
-- `specs/configuration.md`
+For each file with an unrecognized suffix, emit one stdout line:
 
-Each file is independently optional — only the files that exist in the project are loaded. New rule files are introduced via their own feature spec; when a new rule file ships, the rule-file list above is updated in the same change.
+```text
+rule file <name> has unrecognized suffix — loading for all stacks; rename to -backend.md, -frontend.md, or -cross.md
+```
+
+Then emit a single stdout line naming what was selected:
+
+```text
+loading rule files: <comma-separated basenames>
+```
+
+New rule files are introduced via their own feature spec; the suffix governs which stacks see them at `/{project}:review` time, but `/{project}:analyze` loads them all unconditionally.
 
 For each loaded rule file:
 

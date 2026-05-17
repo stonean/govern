@@ -218,6 +218,25 @@ warning: specs/{NNN-feature}/spec-and-plan.md kept; pipeline commands will fail 
 
 Report `migrated N spec-and-plan.md files` in the post-scaffolding output when N > 0; omit the line when N = 0. The check is idempotent — finds nothing on second run. Files at `status: done` are also renamed (the rename is just a filename change; the body and frontmatter are unchanged, so the frozen-archaeology rule is preserved by the byte-for-byte identity of the file content).
 
+### `configuration.md` → `configuration-cross.md` (rule-file closed-suffix migration)
+
+Spec 024 introduced the closed-suffix policy for rule files: every `framework/rules/*.md` (and its adopter-installed equivalent under `specs/`) must end in `-backend.md`, `-frontend.md`, or `-cross.md`. The configuration rule file was renamed in govern's source from `framework/rules/configuration.md` to `framework/rules/configuration-cross.md`; the bootstrap destination tracks the rename. Adopters scaffolded before this change have `specs/configuration.md` on disk, which `/{project}:review` and `/{project}:analyze` would load with an unrecognized-suffix warning on every run.
+
+The migration check looks for `specs/configuration.md` once per `/govern` run. If present, prompt the user with the source path and the proposed destination:
+
+```text
+Found legacy specs/configuration.md (no closed suffix).
+Rename to specs/configuration-cross.md? (Y/n)
+```
+
+On confirm, rename via `mv`. On decline, emit a warning and continue:
+
+```text
+warning: specs/configuration.md kept; /{project}:review and /{project}:analyze will emit the unrecognized-suffix warning until renamed manually.
+```
+
+Report `migrated specs/configuration.md → specs/configuration-cross.md` in the post-scaffolding output when the rename runs; omit the line otherwise. The check is idempotent — finds nothing on second run. Rule IDs (`CFG-CONST-*`, `CFG-ENV-*`) are content-anchored and unchanged by the rename; every existing citation continues to resolve.
+
 ## Project Configuration
 
 `.govern.toml` is the project's configuration and persisted-decisions store. If the file exists, read it before processing the file manifest. The file is optional — if it does not exist, use default behavior for every key. If the file exists but is malformed (TOML parse error), abort the run with a clear error rather than silently proceeding.
@@ -390,7 +409,7 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 | `framework/constitution.md` | `constitution.md` |
 | `framework/rules/security-backend.md` | `specs/security-backend.md` |
 | `framework/rules/security-frontend.md` | `specs/security-frontend.md` |
-| `framework/rules/configuration.md` | `specs/configuration.md` |
+| `framework/rules/configuration-cross.md` | `specs/configuration-cross.md` |
 | `framework/bootstrap/hooks/govern-pre-commit` | `.githooks/govern-pre-commit` |
 | `.markdownlint-cli2.jsonc` | `.markdownlint-cli2.jsonc` |
 | `framework/templates/spec/spec.md` | `specs/templates/spec.md` |

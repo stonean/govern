@@ -18,8 +18,8 @@ advances to `done`.
 
 - **Target** — the current `/gov:target` feature, or every feature with
   status `in-progress` or `done` when invoked with `--all`.
-- **Rules** — `framework/rules/security-backend.md` and
-  `framework/rules/security-frontend.md` are loaded by reference. RFC 2119
+- **Rules** — every file under `framework/rules/` selected by the
+  suffix-based discovery in §Behavior step 5, loaded by reference. RFC 2119
   language is authoritative: **MUST/MUST NOT** are blocking violations,
   **SHOULD/SHOULD NOT** are advisory.
 - **Scope** — files referenced by the target's `plan.md` under `Affected Files`,
@@ -85,17 +85,38 @@ For each targeted feature, in order:
      `.govern.toml`. On `n` or skip, the check runs again on the next
      invocation. To re-run the check after a stack change, the operator
      removes the line manually — `/gov:review` does not auto-reset.
-5. Select rule files per the (now-verified) tech stack: load
-   `security-backend.md` for backend stacks, `security-frontend.md` for
-   frontend, and both for full-stack projects.
+5. Discover rule files by suffix. List `framework/rules/*.md` (or the
+   installed equivalent in adopter projects). For each file, classify by
+   basename suffix:
+   - `*-backend.md` → backend surface
+   - `*-frontend.md` → frontend surface
+   - `*-cross.md` → cross-cutting (applies to every stack)
+   - anything else → unrecognized — load for every stack and emit one
+     stdout line per file:
+
+     ```text
+     rule file <name> has unrecognized suffix — loading for all stacks; rename to -backend.md, -frontend.md, or -cross.md
+     ```
+
+   Filter the recognized set by the detected stack from step 4 (keep the
+   matching surface, keep every `*-cross.md`); keep every unrecognized
+   file unconditionally. Then emit a single stdout line naming what was
+   selected:
+
+   ```text
+   loading rule files: <comma-separated basenames>
+   ```
+
+   This is the discoverability surface — adopters can confirm which
+   files were considered without parsing the report.
 
 ### 2. Load rules
 
-Load these files inline as the authoritative review criteria:
+Load these inputs inline as the authoritative review criteria:
 
-- `framework/rules/security-backend.md` (if backend stack present)
-- `framework/rules/security-frontend.md` (if frontend stack present)
-- Any other `framework/rules/*.md` referenced from `AGENTS.md`
+- Every rule file selected by the suffix-based discovery in step 5
+- Any rule file outside `framework/rules/` (e.g., `docs/rules/internal-api.md`)
+  referenced from `AGENTS.md` — see [Notes for adopters](#notes-for-adopters)
 - `AGENTS.md` `Code Style`, `Testing`, `Gotchas`, and `Boundaries` sections
 - The target spec's acceptance criteria and any `scenarios/*.md` files
 
@@ -414,13 +435,24 @@ never of session state.
 
 ## Notes for adopters
 
-- Projects that customize `framework/rules/security-{backend,frontend}.md`
-  pin them in `.govern.toml` `[pinned] files` to prevent `/govern` from
-  overwriting their additions. `/gov:review` reads whatever is on disk —
-  pinned or not.
-- Projects on a stack not covered by the shipped rule files should add
-  their own at `framework/rules/<domain>.md` and reference them from
-  `AGENTS.md`. `/gov:review` automatically loads anything in
-  `framework/rules/` that's referenced from `AGENTS.md`.
+- Projects that customize shipped rule files (e.g.,
+  `framework/rules/security-backend.md`) pin them in `.govern.toml`
+  `[pinned] files` to prevent `/govern` from overwriting their additions.
+  `/gov:review` reads whatever is on disk — pinned or not.
+- Files inside `framework/rules/` are auto-discovered by directory walk
+  (see §Behavior step 5). No `AGENTS.md` reference is required. Adding
+  a new file at `framework/rules/<domain>-{backend,frontend,cross}.md`
+  with a recognized suffix is the only step needed; the suffix selects
+  which stacks load it.
+- The `AGENTS.md` rule-file reference survives strictly for adopter-local
+  rule files placed **outside** `framework/rules/` — e.g.,
+  `docs/rules/internal-api.md`. The framework cannot directory-walk
+  arbitrary adopter paths, so an explicit `AGENTS.md` reference is the
+  discovery signal for these files.
+- A rule file with an unrecognized suffix loads for every stack and
+  emits a one-line stdout warning (see §Behavior step 5). The default
+  is "load + warn," never "silent skip." Rename to one of the closed
+  suffixes — `-backend.md`, `-frontend.md`, `-cross.md` — to silence
+  the warning.
 - The five-dimension model is fixed. Domain-specific concerns (accessibility,
   i18n, licensing) belong in additional rule files, not new passes.

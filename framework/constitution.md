@@ -170,13 +170,13 @@ Write code, tests, and migrations. Implementation follows the tasks list.
 
 #### Constants and configuration
 
-See `framework/rules/configuration.md` (`CFG-CONST-NNN` rules) for the enforceable rules covering centralized shared constants, module-local constants, and the no-bare-literals requirement for operator-tunable values. `/{project}:analyze` enforces these rules.
+See `framework/rules/configuration-cross.md` (`CFG-CONST-NNN` rules) for the enforceable rules covering centralized shared constants, module-local constants, and the no-bare-literals requirement for operator-tunable values. `/{project}:analyze` enforces these rules.
 
 <!-- §env-vars -->
 
 #### Environment variables
 
-See `framework/rules/configuration.md` (`CFG-ENV-NNN` rules) for the enforceable rules covering env-var defaults backed by named constants, `.env.example` completeness, fail-fast startup validation, and unit suffixes for time-valued variables. `/{project}:analyze` enforces these rules.
+See `framework/rules/configuration-cross.md` (`CFG-ENV-NNN` rules) for the enforceable rules covering env-var defaults backed by named constants, `.env.example` completeness, fail-fast startup validation, and unit suffixes for time-valued variables. `/{project}:analyze` enforces these rules.
 
 <!-- §bug-handling -->
 
@@ -281,6 +281,18 @@ Indicators are evaluative, not mechanical. The same judgment discipline applies 
 - The concern is **situational** (specific condition, concrete behavior) → write a scenario under the affected spec.
 - The concern is **feature-wide** (one feature, broad property) → add an acceptance criterion or section to that spec.
 - An existing rule already covers the concern → cite the existing rule from the spec rather than creating a new one.
+
+#### Filename suffix
+
+Rule filenames signal the surface a rule applies to via a closed-suffix convention. Every `framework/rules/*.md` file MUST end in exactly one of:
+
+- `-backend.md` — loaded for backend stacks
+- `-frontend.md` — loaded for frontend stacks
+- `-cross.md` — loaded for all stacks (cross-cutting)
+
+The suffix is the surface signal `/{project}:review` and `/{project}:analyze` use to derive rule-file selection without a hardcoded allowlist. `/{project}:review` filters discovered files by the project's detected stack; `/{project}:analyze` loads every discovered file regardless of stack (citation verification spans surfaces).
+
+Enforcement is two-layered. In `govern`'s own repository, `scripts/lint-rule-filenames.sh` fails CI on any file that violates the closed-suffix policy. In adopter repositories — where the lint does not run — a rule file with an unrecognized suffix loads for every stack and emits a one-line stdout warning (`rule file <name> has unrecognized suffix — loading for all stacks; rename to -backend.md, -frontend.md, or -cross.md`). The default is "load + warn," never "silent skip."
 
 #### Lifecycle
 

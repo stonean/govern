@@ -64,6 +64,9 @@ jobs:
       - name: (e) Frontmatter integrity
         run: bash scripts/lint-frontmatter.sh
 
+      - name: (g) Rule filename suffix lint
+        run: bash scripts/lint-rule-filenames.sh
+
       # Step (f) builds a workflow-private copy of the runtime binary at
       # runtime/target/release/gvrn and invokes it via a *relative
       # path* — never adding it to PATH. The opt-in invariant from step
