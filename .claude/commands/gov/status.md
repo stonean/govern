@@ -21,13 +21,13 @@ Read-only overview of every feature's progress through the pipeline. Shows which
 
 ## Instructions
 
-> **For agent runtimes**: backticked primitive names in this section map to MCP tools the optional [gvrn runtime](https://crates.io/crates/gvrn) registers as `gov-rt:<primitive>` (e.g., `gov-rt:read-spec`). When that MCP server is registered for your session, **call the `gov-rt:*` tool** for each step listed below — that is the deterministic path. When the server is not registered, walk the prose to produce the same result. The two paths share a contract; neither one wraps the other.
+> **For agent runtimes**: backticked primitive names in this section map to MCP tools the optional [gvrn runtime](https://crates.io/crates/gvrn) exposes under bare `<primitive>` names (e.g., `read-spec`). Hosts wrap them with a server-name prefix taken from `.mcp.json` (Claude: `mcp__gvrn__read-spec`; Auggie: `mcp:gvrn:read-spec`). When the server is registered for your session, **call the corresponding tool** for each step listed below — that is the deterministic path. When the server is not registered, walk the prose to produce the same result. The two paths share a contract; neither one wraps the other.
 
 Steps 1–2 must complete before any other work. Do NOT read spec directories, list files, or perform any dashboard work until step 2 resolves.
 
 1. The walker context already contains the session target's feature field when `.claude/gov-session.json` exists — the runtime exec subcommand seeds it from that file automatically. In the markdown-only path, read the session file directly to learn the current target (and any scenario it carries).
 
-2. When the session target names a feature, invoke `read-spec` (MCP: `gov-rt:read-spec`) against the targeted feature to load frontmatter, sections, and the open-question count from the body. Route on the loaded status (one of draft, clarified, planned, in-progress, done):
+2. When the session target names a feature, invoke `read-spec` (MCP: `read-spec`) against the targeted feature to load frontmatter, sections, and the open-question count from the body. Route on the loaded status (one of draft, clarified, planned, in-progress, done):
    1. When the status is anything other than done, display the target feature name and status. If a scenario is targeted, also read the scenario file and display the scenario name, the section field (or the legacy spec-ref field for pre-017 scenarios), the context summary, and its open-question count. Then prompt the next pipeline command per the Status → next action table below, and stop. Do not build the full dashboard.
    2. When the status is done, continue to step 3 to build the full dashboard.
 

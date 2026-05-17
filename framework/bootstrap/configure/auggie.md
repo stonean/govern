@@ -59,32 +59,32 @@ Configure `{cli-config-dir}/settings.local.json` with the tool permissions neede
    - `{ "toolName": "launch-process", "shellInputRegex": "^\\./?scripts/gen-.*\\.sh", "permission": { "type": "allow" } }`
    - `{ "toolName": "launch-process", "shellInputRegex": "^\\./?scripts/install-hooks\\.sh", "permission": { "type": "allow" } }`
 
-   **Runtime MCP tools (`gov-rt:` namespace — generated from `framework/runtime-tools.txt`):**
+   **Runtime MCP tools (`mcp:gvrn:*` — generated from `framework/runtime-tools.txt`):**
 
    <!-- generated:mcp-allow:start -->
-   - `{ "toolName": "mcp:gov-rt:read-spec", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gov-rt:read-tasks", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gov-rt:mark-task", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gov-rt:mark-criterion", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gov-rt:set-status", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gov-rt:derive-boundary", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gov-rt:check-stuck", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gov-rt:validate-frontmatter", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gov-rt:resolve-anchor", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gov-rt:traverse-deps", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gov-rt:check-rule-ids", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gov-rt:run-generator", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gov-rt:lint-markdown", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gov-rt:gate-confirm", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gov-rt:fetch-archive", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gov-rt:extract-archive", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gov-rt:substitute-templates", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gov-rt:merge-claude-md", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gov-rt:apply-manifest", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gov-rt:enforce-manifest", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gov-rt:merge-managed-block", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gov-rt:create-scenario", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gov-rt:append-task", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:read-spec", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:read-tasks", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:mark-task", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:mark-criterion", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:set-status", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:derive-boundary", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:check-stuck", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:validate-frontmatter", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:resolve-anchor", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:traverse-deps", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:check-rule-ids", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:run-generator", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:lint-markdown", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:gate-confirm", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:fetch-archive", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:extract-archive", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:substitute-templates", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:merge-claude-md", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:apply-manifest", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:enforce-manifest", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:merge-managed-block", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:create-scenario", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:append-task", "permission": { "type": "allow" } }`
    <!-- generated:mcp-allow:end -->
 
    **Shell commands — denied (destructive):**

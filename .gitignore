@@ -1,3 +1,5 @@
 # Claude Code local settings (keep commands tracked for project-wide access)
 .claude/*
 !.claude/commands/
+
+.mcp.json
