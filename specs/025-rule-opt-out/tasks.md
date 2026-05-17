@@ -52,5 +52,5 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 9. Run `/gov:review`
 
-- [ ] After the spec advances to `in-progress` and tasks 1–7 are complete, run `/gov:review` to populate `spec.md`'s `review` frontmatter block and produce `review.md`.
-- [ ] Done when: `review.md` exists, `must-violations: 0` (or all surfaced findings are resolved/waived), and `review.blocking: false`.
+- [x] After the spec advances to `in-progress` and tasks 1–7 are complete, run `/gov:review` to populate `spec.md`'s `review` frontmatter block and produce `review.md`.
+- [x] Done when: `review.md` exists, `must-violations: 0` (or all surfaced findings are resolved/waived), and `review.blocking: false`.

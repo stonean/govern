@@ -60,7 +60,7 @@ See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred 
 | [022-deterministic-runtime](specs/022-deterministic-runtime/spec.md) | done | 021 | The runtime is the deterministic execution layer for govern. |
 | [023-govern-refinement](specs/023-govern-refinement/spec.md) | done | 022 | Consolidate the slash command surface so the pipeline feels less like a framework and more like a natural flow. |
 | [024-rule-loader](specs/024-rule-loader/spec.md) | done | 020, 023 | Generalize `/gov:review`'s rule-file selection so the set of `framework/rules/*.md` files loaded for any given run is derived from each file's declared surface and the project's detected tech stack — not from a hardcoded list of filenames in [`framework/commands/review.md`](../../framework/commands/review.md). |
-| [025-rule-opt-out](specs/025-rule-opt-out/spec.md) | in-progress | 020, 024 | Add a narrow `.govern.toml` `[[review.disabled-rule-files]]` opt-out so an adopter whose stack matches a rule file's surface — but whose project is not yet ready to enforce that file's rules — can exclude the file from `/gov:review` loading with a recorded reason. |
+| [025-rule-opt-out](specs/025-rule-opt-out/spec.md) | done | 020, 024 | Add a narrow `.govern.toml` `[[review.disabled-rule-files]]` opt-out so an adopter whose stack matches a rule file's surface — but whose project is not yet ready to enforce that file's rules — can exclude the file from `/gov:review` loading with a recorded reason. |
 
 <!-- generated:feature-specs:end -->
 
