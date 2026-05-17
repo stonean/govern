@@ -16,7 +16,7 @@ The post-record step in `framework/commands/ask.md` is rewritten from a passive 
 
 - `draft` → no mutation (existing behavior preserved).
 - `clarified` / `planned` / `in-progress` → mutate `status` to `draft` in the same write that appends the question.
-- `done` → refuse the entire recording (no question added) and redirect the user to `/{project}:elaborate`.
+- `done` → refuse the entire recording (no question added) and redirect the user to `/{project}:ask`.
 
 The mutation fires after the user accepts the refined question. The existing refinement loop is the consent point — adding a separate yes/no prompt at status-change time was rejected during clarify (see the spec's Resolved Questions) because it duplicates that consent.
 
@@ -47,7 +47,7 @@ The Gate subsection in `framework/commands/clarify.md` is replaced. Instead of b
 | `draft` | no | Verify acceptance criteria, advance to `clarified` (existing) |
 | `clarified` / `planned` / `in-progress` | no | Stop with the existing "already `{status}`" message, lightly tightened |
 | `clarified` / `planned` / `in-progress` | yes | Recovery path (below) |
-| `done` | (any) | Stop with "Spec is `done`. Run `/{project}:elaborate` to capture this as a scenario instead." |
+| `done` | (any) | Stop with "Spec is `done`. Run `/{project}:ask` to capture this as a scenario instead." |
 
 ### `/clarify` recovery path
 

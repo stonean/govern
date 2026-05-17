@@ -18,7 +18,7 @@ A formalized process for initializing and incrementally building out specs in br
 
 > **Note:** the `/inbox` command this spec introduces was subsequently renamed to `/{project}:groom`. The artifact remains `specs/inbox.md`. References below to `/inbox` reflect the original design.
 >
-> **Note:** the `/scenario` command referenced below was renamed to `/{project}:elaborate` (see [006-bug-workflow](../006-bug-workflow/spec.md)). References below to `/scenario` reflect the original design.
+> **Note:** the `/scenario` command referenced below was renamed to `/{project}:ask` (see [006-bug-workflow](../006-bug-workflow/spec.md)). References below to `/scenario` reflect the original design.
 
 ## Problem
 

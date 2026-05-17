@@ -14,9 +14,9 @@ review:
 
 # 003 — Bootstrap Automation
 
-Governance slash commands that dogfood the same pipeline commands adopting projects use (`/gov:about`, `/gov:target`, `/gov:status`, `/gov:setup`, `/gov:specify`, `/gov:clarify`, `/gov:plan`, `/gov:implement`, `/gov:validate`, `/gov:next`), plus a governance-specific `/gov:init` that scaffolds new projects from templates.
+Governance slash commands that dogfood the same pipeline commands adopting projects use (`/gov:about`, `/gov:target`, `/gov:status`, `/gov:setup`, `/gov:specify`, `/gov:clarify`, `/gov:plan`, `/gov:implement`, `/gov:analyze`, `/gov:next`), plus a governance-specific `/gov:init` that scaffolds new projects from templates.
 
-> **Note:** the command set evolved after this spec shipped. `/gov:about` is now `/gov:help`, `/gov:setup` is now `/gov:configure` (renamed by [012-multi-agent-govern](../012-multi-agent-govern/spec.md)), and `/gov:next` was retired — pipeline next-step suggestions are surfaced by `/gov:status` and `/gov:target` instead. The brownfield commands (`/gov:capture`, `/gov:log`, `/gov:groom`) and elaborate commands (`/gov:ask`, `/gov:elaborate`) were added by later specs and are scaffolded alongside the original set.
+> **Note:** the command set evolved after this spec shipped. `/gov:about` is now `/gov:help`, `/gov:setup` is now `/gov:configure` (renamed by [012-multi-agent-govern](../012-multi-agent-govern/spec.md)), and `/gov:next` was retired — pipeline next-step suggestions are surfaced by `/gov:status` and `/gov:target` instead. The brownfield commands (`/gov:specify`, `/gov:log`, `/gov:groom`) and elaborate commands (`/gov:ask`, `/gov:ask`) were added by later specs and are scaffolded alongside the original set.
 >
 > **Note:** path references below (`commands/`) reflect the original layout. The repository was later reorganized so command sources live in `framework/commands/`; the generator script `scripts/gen-claude-commands.sh` produces `.claude/commands/gov/` from those sources. Adopting projects' destination paths did not change.
 
@@ -40,7 +40,7 @@ Copy all ten command templates from `commands/` into `.claude/commands/gov/`, re
 - `/gov:clarify` — resolve open questions (draft → clarified)
 - `/gov:plan` — create plan and tasks (clarified → planned)
 - `/gov:implement` — execute tasks (planned → done)
-- `/gov:validate` — audit artifacts for consistency
+- `/gov:analyze` — audit artifacts for consistency
 - `/gov:next` — auto-advance to next phase
 
 These commands enforce the same pipeline gates, dependency checks (via AGENTS.md boundaries), and conventions that adopting projects follow.

@@ -21,19 +21,19 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] Verify the file passes `npx markdownlint-cli2`.
 - **Done when**: a `done` transition halts when `review.last-run` is missing or `review.blocking: true`, with the blocking messages from [spec.md](spec.md) §Blocking message.
 
-## 3. Edit `framework/commands/validate.md` — review-drift check
+## 3. Edit `framework/commands/analyze.md` — review-drift check
 
-- [x] Add a **Review drift** check to the audit section: for each spec at `status: done`, record a violation when `review.last-run` is missing or `review.blocking: true`. Use the messages from the embedded `framework/commands/validate.md` edits in [spec.md](spec.md).
-- [x] Wire `/gov:validate --fix` to revert affected specs from `done` → `in-progress` and emit a one-line notice per spec (never silent). Re-running `/gov:review` is left to the operator.
+- [x] Add a **Review drift** check to the audit section: for each spec at `status: done`, record a violation when `review.last-run` is missing or `review.blocking: true`. Use the messages from the embedded `framework/commands/analyze.md` edits in [spec.md](spec.md).
+- [x] Wire `/gov:analyze --fix` to revert affected specs from `done` → `in-progress` and emit a one-line notice per spec (never silent). Re-running `/gov:review` is left to the operator.
 - [x] Verify the file passes `npx markdownlint-cli2`.
-- [x] (Scope addition during implement) Added `--fix` to validate.md's `argument-hint` — it was documented in the 000-slash-commands `validate-fix-mode` scenario but absent from the command file's frontmatter, a pre-existing documentation drift that this task surfaces and fixes.
-- **Done when**: `/gov:validate` flags drifted `done` specs; `/gov:validate --fix` reverts and notices each one.
+- [x] (Scope addition during implement) Added `--fix` to analyze.md's `argument-hint` — it was documented in the 000-slash-commands `validate-fix-mode` scenario but absent from the command file's frontmatter, a pre-existing documentation drift that this task surfaces and fixes.
+- **Done when**: `/gov:analyze` flags drifted `done` specs; `/gov:analyze --fix` reverts and notices each one.
 
 ## 4. Edit `framework/templates/spec/spec.md` — add `review:` block
 
 - [x] Add the `review:` frontmatter block from [data-model.md](data-model.md) §"Spec frontmatter `review:` block" with safe defaults (`last-run: null`, `reviewed-against: null`, all counts `0`, `blocking: false`, no `waivers` field).
 - [x] Verify the file passes `npx markdownlint-cli2`.
-- [x] (Scope addition during implement) Updated implement.md and validate.md checks to treat `null` and missing as equivalent — the template's safe default is `null`, and a `done` spec with `null` means "no review actually ran" (same blocking condition as missing).
+- [x] (Scope addition during implement) Updated implement.md and analyze.md checks to treat `null` and missing as equivalent — the template's safe default is `null`, and a `done` spec with `null` means "no review actually ran" (same blocking condition as missing).
 - **Done when**: a freshly-scaffolded spec ships with the `review:` block at its safe defaults.
 
 ## 5. Edit `framework/templates/spec/spec-and-plan.md` — add `review:` block
@@ -81,10 +81,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] Verify the file passes `npx markdownlint-cli2`.
 - **Done when**: the scenario file documents each of the four edge cases with the expected outcome (drop waiver / keep waiver / re-block).
 
-## 11. Run `/gov:validate --all` against the govern repo
+## 11. Run `/gov:analyze --all` against the govern repo
 
-- [x] After all prior tasks land, run `/gov:validate --all` to confirm no existing `govern` specs broke. Specifically: `done` specs in `govern` itself will not yet have `review.last-run`, so the new drift check will flag them. Decide per spec whether to backfill (run `/gov:review` against each, accept any findings) or waive on adoption.
+- [x] After all prior tasks land, run `/gov:analyze --all` to confirm no existing `govern` specs broke. Specifically: `done` specs in `govern` itself will not yet have `review.last-run`, so the new drift check will flag them. Decide per spec whether to backfill (run `/gov:review` against each, accept any findings) or waive on adoption.
 - [x] Capture decisions in this task's notes; commit any frontmatter updates that result.
 - [x] **Resolution: introduced a grandfather rule during this task.** The validate review-drift check and the CI gate exempt `done` specs whose frontmatter has no `review:` block at all — these predate `/gov:review` and require no backfill. Specs that have the block but `last-run: null` are still flagged (operator has signaled opt-in but hasn't reviewed). Verified the gate exits clean against the current repo (20 existing `done` specs grandfathered; in-progress 020 silently exempt by status).
-- [x] Updated `framework/commands/validate.md` (Review state drift section) and `framework/templates/ci/adopter-generators.yml` (Review-blocking gate step) with the grandfather logic.
-- **Done when**: `/gov:validate --all` exits clean, or every flagged spec has a documented disposition (review run + clean, or waiver recorded).
+- [x] Updated `framework/commands/analyze.md` (Review state drift section) and `framework/templates/ci/adopter-generators.yml` (Review-blocking gate step) with the grandfather logic.
+- **Done when**: `/gov:analyze --all` exits clean, or every flagged spec has a documented disposition (review run + clean, or waiver recorded).

@@ -63,7 +63,7 @@ Same approach as the init command: fetch from `https://raw.githubusercontent.com
 | `commands/next.md` | Modify | Replace `.claude/` with `{cli-config-dir}/` |
 | `commands/target.md` | Modify | Replace `.claude/` with `{cli-config-dir}/` |
 | `commands/setup.md` | Modify | Replace `.claude/` with `{cli-config-dir}/` |
-| `commands/validate.md` | Modify | Replace `.claude/` with `{cli-config-dir}/` |
+| `commands/analyze.md` | Modify | Replace `.claude/` with `{cli-config-dir}/` |
 | `commands/scenario.md` | Modify | Replace `.claude/` with `{cli-config-dir}/` |
 | `commands/triage.md` | Modify | Replace `.claude/` with `{cli-config-dir}/` |
 | `commands/commit-push.md` | Modify | Replace `.claude/` with `{cli-config-dir}/` (if it references CLI paths) |

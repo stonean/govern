@@ -13,7 +13,7 @@ skipped-passes: []
 
 ## Summary
 
-The `/gov:review` command itself: `framework/commands/review.md`, three reinforcing edits to `implement.md` / `validate.md` / `adopter-generators.yml` that implement the three-mechanism blocking gate, frontmatter schema additions to two templates, `waiver-expiry` scenario, and `data-model.md`. Self-review — `/gov:review` is the command being defined here. All five passes ran; no findings. `blocking: no`.
+The `/gov:review` command itself: `framework/commands/review.md`, three reinforcing edits to `implement.md` / `analyze.md` / `adopter-generators.yml` that implement the three-mechanism blocking gate, frontmatter schema additions to two templates, `waiver-expiry` scenario, and `data-model.md`. Self-review — `/gov:review` is the command being defined here. All five passes ran; no findings. `blocking: no`.
 
 This re-run regenerates the review.md that was first produced at the bootstrap of 020 (precedent review file dated 2026-05-10T22:31:48Z). Per the idempotency invariant, the body content is identical to that bootstrap review modulo `reviewed-at` and `reviewed-against`. The earlier review noted that `AGENTS.md` had no `Tech Stack` section and the alignment check was bypassed by inspection; that section now exists (added 2026-05-10) so the alignment check succeeds normally on this run.
 
@@ -45,7 +45,7 @@ No security-sensitive code introduced. The bash steps in `framework/templates/ci
 
 ### Reuse
 
-Implementation reuses existing patterns: frontmatter schema (per spec 013), `.govern.toml` adopter-side storage (per spec 019), command-file structure (matching `/gov:validate`, `/gov:plan`, et al.), and the three-mechanism gate composability (each mechanism reads the same `review:` block rather than maintaining parallel state).
+Implementation reuses existing patterns: frontmatter schema (per spec 013), `.govern.toml` adopter-side storage (per spec 019), command-file structure (matching `/gov:analyze`, `/gov:plan`, et al.), and the three-mechanism gate composability (each mechanism reads the same `review:` block rather than maintaining parallel state).
 
 ### Quality
 

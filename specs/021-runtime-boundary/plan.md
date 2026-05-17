@@ -71,7 +71,7 @@ This trades false-positive risk (a fallback that exists but doesn't match the ke
 - The `status:` field is one of `draft`, `clarified`, `planned`, `in-progress`, `done` (when present; scenario files don't have status).
 - The `dependencies:` field is present (when applicable) and parses as a bracketed list — verified by checking the line starts with `dependencies: [` and ends with `]`, or starts with `dependencies:` followed by a YAML block list on subsequent lines.
 
-This is intentionally less rigorous than a real YAML parser would be — it catches the *shape* errors `/gov:validate`'s hard-fail tier would also flag, but cheaply. If false negatives become an issue in practice, the natural upgrade path is to swap the bash check for `yq` in CI; the lint's contract stays the same.
+This is intentionally less rigorous than a real YAML parser would be — it catches the *shape* errors `/gov:analyze`'s hard-fail tier would also flag, but cheaply. If false negatives become an issue in practice, the natural upgrade path is to swap the bash check for `yq` in CI; the lint's contract stays the same.
 
 ### Anchor placement convention
 
@@ -83,7 +83,7 @@ The amendment introduces no domain entities. The runtime-tools manifest is a fla
 
 ### Order of work
 
-The tasks order is: (1) constitution amendment → (2) runtime-tools manifest stub → (3) tool-coverage lint script → (4) frontmatter lint script → (5) workflow file → (6) `/gov:validate` against this spec → (7) markdownlint pass. The workflow lands last so it can be exercised against the completed amendment and lint scripts in the same PR.
+The tasks order is: (1) constitution amendment → (2) runtime-tools manifest stub → (3) tool-coverage lint script → (4) frontmatter lint script → (5) workflow file → (6) `/gov:analyze` against this spec → (7) markdownlint pass. The workflow lands last so it can be exercised against the completed amendment and lint scripts in the same PR.
 
 ## Affected Files
 
@@ -111,6 +111,6 @@ The tasks order is: (1) constitution amendment → (2) runtime-tools manifest st
 ### Known limitations
 
 - The tool-coverage lint's 20-line proximity window is a heuristic. False positives occur when a real fallback uses synonyms outside the accepted token list (`Otherwise`, `Fallback`, `If unavailable`, `markdown-only path`). Resolution is paraphrasing — author cost is low. The window can be tuned when spec 022 introduces real tool references and the heuristic is empirically tested.
-- The frontmatter lint is shape-only, not a real YAML parser. Adversarial frontmatter (deeply nested, multi-line strings with `---` inside) can defeat it. `/gov:validate`'s hard-fail tier remains the rigorous check; this lint is a CI-side smoke test.
+- The frontmatter lint is shape-only, not a real YAML parser. Adversarial frontmatter (deeply nested, multi-line strings with `---` inside) can defeat it. `/gov:analyze`'s hard-fail tier remains the rigorous check; this lint is a CI-side smoke test.
 - The CI workflow asserts the runtime binary is absent, but only knows binary names from `framework/runtime-tools.txt`. A binary using a different name than is in the manifest could slip past. Mitigated by treating the manifest as the canonical list spec 022 must populate; deviations are caught at PR review of 022.
 - The workflow does not exercise LLM-driven slash commands. By design — see spec's Q2 resolution. A separate scheduled smoke-test job exercising the LLM path is out of scope for 021.

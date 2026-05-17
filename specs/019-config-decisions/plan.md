@@ -60,7 +60,7 @@ Add a brief `data-model.md` declaring the `.govern.toml` schema additions. The f
 
 - It's the canonical source for the schema (the README is for adopters; `data-model.md` is for the framework's internal cross-reference).
 - Future specs that extend `.govern.toml` (e.g., the deferred `[agents]` domain) can reference this file to confirm shape conventions.
-- `/gov:validate` will pick it up if rules are added later.
+- `/gov:analyze` will pick it up if rules are added later.
 
 ### TOML editing without a parser
 
@@ -75,7 +75,7 @@ Today the workflow prompt uses `AskUserQuestion` with two options. The change is
 ### What is intentionally NOT in scope
 
 - **No `[agents]` section, `[cleanup]` section, or any non-workflow domain.** Deferred per Q4 to follow-on specs.
-- **No commit hook or `/gov:validate` rule for `.govern.toml`.** The summary-line surface is the only enforcement layer, by Q9.
+- **No commit hook or `/gov:analyze` rule for `.govern.toml`.** The summary-line surface is the only enforcement layer, by Q9.
 - **No CLI tooling to add/remove declines.** The third prompt option is the add-path; manual editing is the remove-path.
 - **No telemetry, version-tagging, or expiration logic.** Permanent until manually edited, by Q3.
 

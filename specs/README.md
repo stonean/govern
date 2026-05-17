@@ -4,17 +4,9 @@ Cross-cutting decisions, conventions, and deferred work that span multiple featu
 
 ## Design Decisions
 
-(Past design decisions live in [Past Renames](#past-renames) below when they have been undone.)
-
-## Past Renames
-
-Historical command renames are recorded here so readers of `done` spec bodies that reference old command names can map them forward. Done specs are frozen archaeology per [§drift-prevention](../framework/constitution.md#drift-prevention) — their bodies are NOT rewritten when a command is renamed.
-
-- **`/validate` → `/analyze`** (spec 023, 2026-05-16) — renamed to align with the emerging spec-driven-development standard (GitHub Spec Kit uses `/analyze` for the same artifact-vs-artifact audit role). The command's purpose, scope boundaries, behavior, frontmatter `parity:` contract, and runtime primitive bindings are unchanged. Done-spec references to `/gov:validate` should be read as `/gov:analyze`.
-- **`/capture` → folded into `/specify`** (spec 023, 2026-05-16) — `/specify` now accepts both rich (greenfield) and sparse (brownfield) input. Done-spec references to `/gov:capture` should be read as `/gov:specify`.
-- **`/elaborate` → folded into `/ask`** (spec 023, 2026-05-16) — `/ask` now classifies input as a question or a scenario and routes to the matching path. Done-spec references to `/gov:elaborate` should be read as `/gov:ask` (scenario route).
-- **`configuration.md` → `configuration-cross.md`** (spec 024, 2026-05-17) — renamed to conform to the closed-suffix rule-file naming policy (`-backend.md`, `-frontend.md`, `-cross.md`) introduced by spec 024. Rule IDs (`CFG-CONST-*`, `CFG-ENV-*`) are content-anchored and unchanged. Done-spec references to `configuration.md` should be read as `configuration-cross.md`.
 - **Templates live at the `govern` root** — all templates (spec, plan, system, errors, events, project scaffolding) live in `templates/` at the `govern` root. This is the source. The init command copies spec templates to `{project}/specs/templates/` and system spec templates to `{project}/specs/` during bootstrap. `govern` is the source, not an adopting project.
+
+Historical renames (e.g., `/validate` → `/analyze`, `/capture` → `/specify`, `/elaborate` → `/ask`, `configuration-cross.md` → `configuration-cross.md`) are recorded in git history. Spec bodies are kept current via the mechanical-sweep rule in [`AGENTS.md`](../AGENTS.md) (the "no dead references in live artifacts" entry); the sweep updates every live artifact in a single uniform-substitution commit and does not reopen done specs. See [§spec-lifecycle](../framework/constitution.md#spec-lifecycle) for the mechanical-vs-meaningful boundary.
 
 ## Future Considerations
 

@@ -8,7 +8,7 @@ Implements [020 — `/gov:review` code review command with blocking gate](spec.m
 
 ## Overview
 
-`/gov:review` ships as a new markdown slash-command file (`framework/commands/review.md`) following the same shape as `/gov:validate`, `/gov:plan`, and the other pipeline commands — no new code, no new runtime. Each invocation is interpreted by the AI agent against the loaded rules. The blocking gate is enforced by three lightweight, mutually reinforcing edits to `framework/commands/implement.md`, `framework/commands/validate.md`, and `framework/templates/ci/adopter-generators.yml`. Templates and the constitution are updated alongside so newly-created specs ship with the `review:` frontmatter block and the gate is documented in the pipeline section. The scenario file at `scenarios/waiver-expiry.md` captures the subtlest behavior (rule/file-anchored waiver expiry) at the situational tier.
+`/gov:review` ships as a new markdown slash-command file (`framework/commands/review.md`) following the same shape as `/gov:analyze`, `/gov:plan`, and the other pipeline commands — no new code, no new runtime. Each invocation is interpreted by the AI agent against the loaded rules. The blocking gate is enforced by three lightweight, mutually reinforcing edits to `framework/commands/implement.md`, `framework/commands/analyze.md`, and `framework/templates/ci/adopter-generators.yml`. Templates and the constitution are updated alongside so newly-created specs ship with the `review:` frontmatter block and the gate is documented in the pipeline section. The scenario file at `scenarios/waiver-expiry.md` captures the subtlest behavior (rule/file-anchored waiver expiry) at the situational tier.
 
 The clarify pass added three behaviors that this plan must propagate: tech-stack alignment as a hard pre-flight gate (with `.govern.toml [review] tech-stack-verified` opt-out), an empty-scope short-circuit, and cross-pass dedupe. These all live in the embedded `framework/commands/review.md` artifact in the spec; the plan's job is to ensure each shipped file picks them up correctly.
 
@@ -20,10 +20,10 @@ The clarify pass added three behaviors that this plan must propagate: tech-stack
 
 ### Three-mechanism gate composes
 
-The gate fires in three places — `/gov:implement` halt, `/gov:validate` drift check, CI template — because each closes a different failure window:
+The gate fires in three places — `/gov:implement` halt, `/gov:analyze` drift check, CI template — because each closes a different failure window:
 
 - **`/gov:implement` halt** catches the local case (operator forgot to run `/gov:review` before completing).
-- **`/gov:validate` drift check** catches the desync case (frontmatter says `done` but `review.blocking: true`, or `review.last-run` is missing entirely on a `done` spec).
+- **`/gov:analyze` drift check** catches the desync case (frontmatter says `done` but `review.blocking: true`, or `review.last-run` is missing entirely on a `done` spec).
 - **CI template** catches the bypass case (someone edited frontmatter directly to set `done` without running either of the above).
 
 Each mechanism is small and reads the same `review:` frontmatter block — adding a fourth would not strengthen the gate and would multiply maintenance.
@@ -38,7 +38,7 @@ Per AGENTS.md (Workflow): `.govern.toml` is shared adopter-side state, not a sch
 
 ### Frontmatter `review:` block ships in templates
 
-The block is added to both `framework/templates/spec/spec.md` and `framework/templates/spec/spec-and-plan.md` so every newly-created spec ships with the field shapes pre-populated to safe defaults (`last-run: null`, `must-violations: 0`, `blocking: false`). Existing specs in adopter projects will not have the block until `/gov:review` runs on them; this is intentional — the field is created lazily on first review, and `/gov:validate`'s drift check tolerates `review.last-run: null` until the spec reaches `status: done`.
+The block is added to both `framework/templates/spec/spec.md` and `framework/templates/spec/spec-and-plan.md` so every newly-created spec ships with the field shapes pre-populated to safe defaults (`last-run: null`, `must-violations: 0`, `blocking: false`). Existing specs in adopter projects will not have the block until `/gov:review` runs on them; this is intentional — the field is created lazily on first review, and `/gov:analyze`'s drift check tolerates `review.last-run: null` until the spec reaches `status: done`.
 
 ### Idempotency invariant is a property of inputs, not state
 
@@ -58,7 +58,7 @@ Of the 13 acceptance criteria, AC 8's waiver auto-expiry has the subtlest behavi
 | --- | --- | --- |
 | `framework/commands/review.md` | Create | Source for `/gov:review`; embedded artifact in spec.md is the canonical content |
 | `framework/commands/implement.md` | Edit | Pre-`done` review gate (halts when `review.blocking: true` or `review.last-run` missing) |
-| `framework/commands/validate.md` | Edit | Add review-drift check on `done` specs; integrate `--fix` to revert to `in-progress` with notice |
+| `framework/commands/analyze.md` | Edit | Add review-drift check on `done` specs; integrate `--fix` to revert to `in-progress` with notice |
 | `framework/templates/spec/spec.md` | Edit | Add `review:` block to frontmatter schema |
 | `framework/templates/spec/spec-and-plan.md` | Edit | Add `review:` block to frontmatter schema |
 | `framework/templates/ci/adopter-generators.yml` | Edit | Add a step that fails when any `done` spec has `review.blocking: true` or missing `review.last-run` |
@@ -83,5 +83,5 @@ Of the 13 acceptance criteria, AC 8's waiver auto-expiry has the subtlest behavi
 
 - The agent-judgment tech-stack alignment will occasionally misfire on polyglot or vendored repos. Bypass via `.govern.toml [review] tech-stack-verified = true` is the documented path; documented in the blocking-error message.
 - `/gov:review`'s output quality is the agent's output quality. There is no deterministic linter substitute. Mitigated by the loaded rule files being the authoritative source — the agent's judgment is bounded by the rules, not free-form.
-- Existing `done` specs in adopter projects (pre-`/gov:review`) lack `review.last-run` entirely. The first `/gov:validate` run after adoption will flag them. This is the intended behavior — adopters re-review or waive on adoption.
+- Existing `done` specs in adopter projects (pre-`/gov:review`) lack `review.last-run` entirely. The first `/gov:analyze` run after adoption will flag them. This is the intended behavior — adopters re-review or waive on adoption.
 - CI gate uses awk-parsed YAML; will be replaced by a deterministic runtime check in v2 (see [§runtime-boundary](../../framework/constitution.md#runtime-boundary) once landed).

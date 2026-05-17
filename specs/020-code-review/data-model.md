@@ -28,7 +28,7 @@ review:
 | `must-violations` | integer ≥ 0 | yes | Count after waivers applied. |
 | `should-violations` | integer ≥ 0 | yes | Advisory severity count. |
 | `low-confidence` | integer ≥ 0 | yes | Quality-pass findings below 80 confidence. Excluded from `must-violations`. |
-| `blocking` | boolean | yes | MUST equal `must-violations > 0`. Read by `/gov:implement`, `/gov:validate`, CI template. |
+| `blocking` | boolean | yes | MUST equal `must-violations > 0`. Read by `/gov:implement`, `/gov:analyze`, CI template. |
 | `waivers` | list of waiver records | no | Omitted entirely when empty. Schema below is open per §text-first-artifacts. |
 
 ### Validation severity
@@ -56,7 +56,7 @@ One entry per waived MUST violation. Lives under `review.waivers` in spec frontm
 | `reason` | string | yes | Free-text justification. Empty string is invalid. |
 | `waived-at` | ISO 8601 timestamp | yes | Set by `/gov:review --waive`. |
 | `waived-by` | string (email) | yes | Sourced from `git config user.email`. |
-| (additional fields) | any | no | Open-schema; ignored by `/gov:review` and `/gov:validate`. |
+| (additional fields) | any | no | Open-schema; ignored by `/gov:review` and `/gov:analyze`. |
 
 ### Expiry rule
 

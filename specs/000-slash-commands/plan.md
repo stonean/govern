@@ -65,7 +65,7 @@ The validate command runs `npx markdownlint-cli2` on all `.md` files in the feat
 | `commands/clarify.md` | Create | Resolve open questions, advance to clarified |
 | `commands/plan.md` | Create | Create plan and tasks, advance to planned |
 | `commands/implement.md` | Create | Execute tasks, advance to done |
-| `commands/validate.md` | Create | Audit artifacts for consistency |
+| `commands/analyze.md` | Create | Audit artifacts for consistency |
 | `commands/next.md` | Create | Auto-advance to next pipeline phase |
 
 ## Trade-offs

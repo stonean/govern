@@ -51,13 +51,13 @@ The README feature table is updated with the correct status for 006-bug-workflow
 | `commands/about.md` | Modify | Add `/scenario` and `/triage` to command tables, add scenario concepts |
 | `commands/status.md` | Modify | Add scenario counts per spec to dashboard |
 | `commands/next.md` | Modify | Add `/scenario` as a suggested next action |
-| `commands/validate.md` | Modify | Add scenario-linked task completeness check |
+| `commands/analyze.md` | Modify | Add scenario-linked task completeness check |
 | `.claude/commands/gov/scenario.md` | Create | Governance-specific copy with `gov` replacing `{project}` |
 | `.claude/commands/gov/triage.md` | Create | Governance-specific copy with `gov` replacing `{project}` |
 | `.claude/commands/gov/about.md` | Modify | Re-derive from updated template |
 | `.claude/commands/gov/status.md` | Modify | Re-derive from updated template |
 | `.claude/commands/gov/next.md` | Modify | Re-derive from updated template |
-| `.claude/commands/gov/validate.md` | Modify | Re-derive from updated template |
+| `.claude/commands/gov/analyze.md` | Modify | Re-derive from updated template |
 | `README.md` | Modify | Document bug workflow and scenario conventions |
 
 ## Trade-offs

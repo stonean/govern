@@ -96,7 +96,7 @@ The trade-off: validate's accuracy depends on the rule author's Verification phr
 
 ### Edge case behaviors are encoded as a dedicated check section in validate
 
-`framework/commands/validate.md` gains a new check section, **Security rules**, slotted after **Cross-spec references (advisory)** and before **Markdown lint (advisory)**. The section codifies all 7 edge cases from the spec — block on malformed/unknown/duplicate; warn on missing files / deprecated references; silent on contextually-inert rules.
+`framework/commands/analyze.md` gains a new check section, **Security rules**, slotted after **Cross-spec references (advisory)** and before **Markdown lint (advisory)**. The section codifies all 7 edge cases from the spec — block on malformed/unknown/duplicate; warn on missing files / deprecated references; silent on contextually-inert rules.
 
 Each edge case maps directly to a checkbox in validate's check list, so violations show up grouped under the standard hard-fail/blocking/advisory headers in validate's report.
 
@@ -139,7 +139,7 @@ Like 005's registry, the rule entry is structured data even though it lives in m
 | `framework/rules/security-backend.md` | Create | Starter set of backend security rules |
 | `framework/rules/security-frontend.md` | Create | Starter set of frontend security rules |
 | `framework/bootstrap/govern.md` | Modify | Add 2 rows to **Governance-owned shared files (strategy: update)** mapping `framework/rules/security-{backend,frontend}.md` → `specs/security-{backend,frontend}.md`. Add a new **Security audit (brownfield)** section after **Shared Files** and before **Per-Agent Scaffolding**, plus an audit-summary line in **Post-Scaffolding Output**. |
-| `framework/commands/validate.md` | Modify | Add **Security rules** check section codifying the 7 edge cases and the contextual matching rule |
+| `framework/commands/analyze.md` | Modify | Add **Security rules** check section codifying the 7 edge cases and the contextual matching rule |
 | `framework/constitution.md` | Modify | Append the rule-files reference to the "Secure" principle |
 | `specs/008-security-rules/data-model.md` | Create | Schema for rule entries (fields, ID format, category enum, Verification phrasing convention) |
 

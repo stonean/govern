@@ -2,11 +2,11 @@
 status: done
 dependencies: [022-deterministic-runtime]
 review:
-  last-run: 2026-05-17T14:15:00Z
-  reviewed-against: 8e0cee93e9a6714caba98e7bf6b48f5932d36e79
+  last-run: 2026-05-17T21:30:00Z
+  reviewed-against: 9393114a3cb2bc9c2c7594c4e294c42cf3ee011f
   must-violations: 0
-  should-violations: 0
-  low-confidence: 0
+  should-violations: 2
+  low-confidence: 1
   blocking: false
 ---
 
@@ -116,9 +116,9 @@ The list is sourced from `framework/runtime-tools.txt` to avoid drift. Each tool
 - [x] The `gvrn` release that ships with this spec exposes `create-scenario` and `append-task` as both CLI subcommands and MCP tools under the `gov-rt:` namespace. `framework/runtime-tools.txt` is updated to include both names.
 - [x] `framework/commands/ask.md` (the rewritten version) invokes `create-scenario` and `append-task` on the scenario branch and falls back to host-side prose execution when the runtime is absent (per spec 022's markdown-only-path discipline).
 - [x] `framework/commands/validate.md` is renamed to `framework/commands/analyze.md`; the H1 reads "# Analyze".
-- [x] Across `framework/`, `scripts/`, `.github/`, `docs/`, `README.md`, and `AGENTS.md`, no file contains a command-name reference to `/validate`, `/gov:validate`, `/{project}:validate`, or `validate.md`. `grep -rn '/validate\b\|validate\.md\|/gov:validate' framework/ scripts/ docs/ README.md AGENTS.md` returns hits only inside done-spec bodies under `specs/NNN-*/` (frozen archaeology) and inside spec 023's own body / plan / tasks.
+- [x] Across `framework/`, `scripts/`, `.github/`, `docs/`, `README.md`, `AGENTS.md`, and `specs/NNN-*/` (now uniformly live per the `living-specs` follow-on scenario), no file contains a current-usage reference to the old names `/validate`, `/gov:validate`, `/{project}:validate`, or `validate.md`. All current-usage references have been swept to the new names (`/analyze`, `/gov:analyze`, `/{project}:analyze`, `analyze.md`). Spec bodies of *introducing* specs (this one plus a few earlier ones tracked in the inbox) retain references to old names solely as historical-action descriptions in their own prose — these are accurate-as-of-then descriptions, not stale current-usage refs.
 - [x] `scripts/gen-help-tables.sh` builds the pipeline table from `analyze.md`.
-- [x] `specs/README.md` carries a "Past Renames" note recording `/validate → /analyze` so historical references in done specs remain discoverable without rewriting their bodies.
+- [x] `specs/README.md` recorded `/validate → /analyze` under "Past Renames" at this spec's merge time so historical references in done specs were discoverable. The §Past Renames section was later deleted by the `living-specs` follow-on scenario, which removed the frozen-archaeology carve-out and brought done-spec bodies into the live-artifacts set; rename history now lives in git log.
 - [x] `framework/commands/analyze.md`'s frontmatter `description:` reads exactly `Audit artifacts against each other — spec, plan, tasks, scenarios, frontmatter, dependencies, rule IDs. Read-only.`
 - [x] `framework/commands/review.md`'s frontmatter `description:` reads exactly `Audit code against rules — security, reuse, quality, efficiency, simplicity. Writes review.md; blocks done on MUST violations.`
 - [x] The "Audit artifacts" / "Audit code" parallelism is preserved verbatim — both descriptions begin with that exact phrase so the distinction is visible at first glance in `/help` tables and in any consumer that surfaces command descriptions.

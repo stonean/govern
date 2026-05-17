@@ -49,7 +49,7 @@ Templates establish the reusable command shape that subsequent specs follow (des
 
 ### Quality
 
-Command behaviors are described as instructions to an AI agent; correctness is a property of those instructions, not of executable code. The pipeline state transitions described here are cross-checked by `/gov:validate` against actual spec frontmatter; no contract violations.
+Command behaviors are described as instructions to an AI agent; correctness is a property of those instructions, not of executable code. The pipeline state transitions described here are cross-checked by `/gov:analyze` against actual spec frontmatter; no contract violations.
 
 ### Efficiency
 

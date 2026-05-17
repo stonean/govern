@@ -43,7 +43,7 @@ Done when: both command files exist, `/gov:triage` processes triage items and mi
 - [x] Update `commands/about.md` to document `/scenario`, `/triage`, scenario conventions, and bug workflow
 - [x] Update `commands/status.md` to display scenario counts per spec
 - [x] Update `commands/next.md` to suggest `/scenario` as a next action when appropriate
-- [x] Update `commands/validate.md` to check that scenario-linked tasks are complete
+- [x] Update `commands/analyze.md` to check that scenario-linked tasks are complete
 
 Done when: all four command templates include the new functionality.
 
@@ -52,7 +52,7 @@ Done when: all four command templates include the new functionality.
 - [x] Re-derive `.claude/commands/gov/about.md` from updated `commands/about.md` (replace `{project}` with `gov`)
 - [x] Re-derive `.claude/commands/gov/status.md` from updated `commands/status.md`
 - [x] Re-derive `.claude/commands/gov/next.md` from updated `commands/next.md`
-- [x] Re-derive `.claude/commands/gov/validate.md` from updated `commands/validate.md`
+- [x] Re-derive `.claude/commands/gov/analyze.md` from updated `commands/analyze.md`
 
 Done when: all four governance copies match their templates with `{project}` replaced by `gov`.
 

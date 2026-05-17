@@ -101,7 +101,7 @@ Add a new top-level **Security audit (brownfield)** section to `framework/bootst
 
 ## 5. Extend validate with the security rule check section
 
-Modify `framework/commands/validate.md` to add a new **Security rules** check section that codifies the spec's edge-case behaviors. Place it after **Cross-spec references (advisory)** and before **Markdown lint (advisory)**.
+Modify `framework/commands/analyze.md` to add a new **Security rules** check section that codifies the spec's edge-case behaviors. Place it after **Cross-spec references (advisory)** and before **Markdown lint (advisory)**.
 
 - [x] Add **Security rules (blocking and advisory)** section
 - [x] Section opens by reading `specs/security-backend.md` and `specs/security-frontend.md` (each independently optional — only the present files are loaded)
@@ -115,7 +115,7 @@ Modify `framework/commands/validate.md` to add a new **Security rules** check se
 - [x] Section reports a **blocking** error when a project artifact references a rule ID that does not exist in the loaded files (`Spec at {path} references unknown rule {ID}`)
 - [x] Section reports an **advisory** warning when a project artifact references a `DEPRECATED` rule ID (`Spec at {path} references deprecated rule {ID}; targeted for removal in {version}`)
 - [x] Findings are surfaced under the existing severity sections (Hard fail / Blocking / Advisory) in validate's report
-- [x] `framework/commands/validate.md` passes `npx markdownlint-cli2`
+- [x] `framework/commands/analyze.md` passes `npx markdownlint-cli2`
 
 **Done when:** validate's check list includes the security rule section with all 7 edge-case behaviors, and the file passes markdownlint.
 
@@ -133,7 +133,7 @@ Append the rule-files reference to the "Secure" guiding principle in `framework/
 
 Run all structural and lint checks; verify each acceptance criterion is satisfied by the produced artifacts.
 
-- [x] `npx markdownlint-cli2` passes on all created/modified files: `framework/rules/security-backend.md`, `framework/rules/security-frontend.md`, `framework/bootstrap/govern.md`, `framework/commands/validate.md`, `framework/constitution.md`, and the feature directory (`spec.md`, `plan.md`, `tasks.md`, `data-model.md`)
+- [x] `npx markdownlint-cli2` passes on all created/modified files: `framework/rules/security-backend.md`, `framework/rules/security-frontend.md`, `framework/bootstrap/govern.md`, `framework/commands/analyze.md`, `framework/constitution.md`, and the feature directory (`spec.md`, `plan.md`, `tasks.md`, `data-model.md`)
 - [x] Every rule ID in both files matches the `{surface}-{category}-{NNN}` format
 - [x] No duplicate rule IDs within either file (check via `grep '^### ' framework/rules/security-*.md | sort | uniq -d`)
 - [x] Every rule has Statement, Rationale, and Verification fields present

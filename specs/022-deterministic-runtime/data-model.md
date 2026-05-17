@@ -409,7 +409,7 @@ The three single-shot extension points. Each has request and response payload sc
 
 ### `assessSpecQuality`
 
-Used by `/gov:validate`'s per-rule Verification reads.
+Used by `/gov:analyze`'s per-rule Verification reads.
 
 Request payload:
 

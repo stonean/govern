@@ -89,7 +89,7 @@ Adopters are not expected to author future sections by hand. Each future section
 - `[pinned] files` — entries that don't match a known manifest path are silently no-op (today's behavior, unchanged).
 - `[workflows] declined_categories` — entries that don't match a registry-derived category name are surfaced in the post-scaffolding summary (per this spec).
 
-There is no commit hook or `/gov:validate` rule for `.govern.toml`. The post-scaffolding summary is the only enforcement layer, by design.
+There is no commit hook or `/gov:analyze` rule for `.govern.toml`. The post-scaffolding summary is the only enforcement layer, by design.
 
 ## Backwards compatibility
 

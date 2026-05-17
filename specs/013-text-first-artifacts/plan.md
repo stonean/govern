@@ -113,7 +113,7 @@ Phases 2 and 3 can run in parallel within the same session; everything else is s
 | `framework/commands/implement.md` | Modify | Read frontmatter status; write status on advance |
 | `framework/commands/status.md` | Modify | Parse frontmatter for status, dependencies, tags in dashboard |
 | `framework/commands/target.md` | Modify | Read frontmatter status when displaying target detail |
-| `framework/commands/validate.md` | Modify | Implement strict/advisory split per data-model schema |
+| `framework/commands/analyze.md` | Modify | Implement strict/advisory split per data-model schema |
 | `framework/commands/capture.md` | Modify | Write frontmatter for new sketch specs |
 | `framework/commands/groom.md` | Audit/Modify | Update only if it reads spec metadata for routing |
 | `framework/commands/elaborate.md` | Audit/Modify | Update only if it touches scenario metadata (will: scenarios now use frontmatter `spec-ref`) |

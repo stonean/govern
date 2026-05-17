@@ -43,7 +43,7 @@ _None._
 
 ### Reuse
 
-`lint-*.sh` reuses the convention established by `gen-*.sh` (017): single-purpose bash script, `--help` flag, structured exit codes. The frontmatter integrity check is intentionally shape-only — the rigorous parser is `/gov:validate`'s hard-fail tier; this lint is a CI smoke test, not a duplicate.
+`lint-*.sh` reuses the convention established by `gen-*.sh` (017): single-purpose bash script, `--help` flag, structured exit codes. The frontmatter integrity check is intentionally shape-only — the rigorous parser is `/gov:analyze`'s hard-fail tier; this lint is a CI smoke test, not a duplicate.
 
 ### Quality
 

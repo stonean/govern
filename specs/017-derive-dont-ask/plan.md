@@ -4,7 +4,7 @@ Implements [017 — Derive, Don't Ask](spec.md).
 
 ## Overview
 
-Discipline-cleanup pass across templates, commands, constitution, validate, and the bootstrap installer. Adds three new generators (`gen-readme-table.sh`, `gen-help-tables.sh`, `gen-spec-deps.sh`), one new pre-commit hook (`.githooks/pre-commit`), one new install script (`scripts/install-hooks.sh`), one new rule file (`framework/rules/configuration.md`), and one new adopter hook surface under `framework/bootstrap/hooks/`. Migrates existing dogfood specs only insofar as adding inline links to spec bodies for any frontmatter dependency not already linked (so the new `gen-spec-deps.sh` generator does not strip them on first run). Frontmatter field deletions are not retroactively migrated — done specs are frozen archaeology per the constitution. Collapses the twin constitutions to a single canonical file at `framework/constitution.md` and deletes root `constitution.md`.
+Discipline-cleanup pass across templates, commands, constitution, validate, and the bootstrap installer. Adds three new generators (`gen-readme-table.sh`, `gen-help-tables.sh`, `gen-spec-deps.sh`), one new pre-commit hook (`.githooks/pre-commit`), one new install script (`scripts/install-hooks.sh`), one new rule file (`framework/rules/configuration-cross.md`), and one new adopter hook surface under `framework/bootstrap/hooks/`. Migrates existing dogfood specs only insofar as adding inline links to spec bodies for any frontmatter dependency not already linked (so the new `gen-spec-deps.sh` generator does not strip them on first run). Frontmatter field deletions are not retroactively migrated — done specs are frozen archaeology per the constitution. Collapses the twin constitutions to a single canonical file at `framework/constitution.md` and deletes root `constitution.md`.
 
 The work is intentionally additive in mechanism (add generators and hooks) and subtractive in surface (remove fields, sections, and `--fix` mode). No new agent-facing concepts are introduced.
 
@@ -95,7 +95,7 @@ Validate check changes:
 
 ### Configuration rule file
 
-Per spec Q5/Q6: a single file at `framework/rules/configuration.md` with `CFG-` prefix and `CONST`/`ENV` categories. Format `CFG-{CONST|ENV}-{NNN}`. Initial rule set:
+Per spec Q5/Q6: a single file at `framework/rules/configuration-cross.md` with `CFG-` prefix and `CONST`/`ENV` categories. Format `CFG-{CONST|ENV}-{NNN}`. Initial rule set:
 
 - `CFG-CONST-001` — Shared constants live in a centralized location
 - `CFG-CONST-002` — Module-local constants live in the module's own constants file
@@ -146,7 +146,7 @@ A second workflow file (`.github/workflows/adopter-generators.yml`) ships as a t
 | `framework/commands/implement.md` | Modify | Remove `[simple]` marker reading; replace Affected Files boundary with `git diff` derivation; add cross-spec scan; add deps recompute on entry |
 | `framework/commands/elaborate.md` | Modify | Remove title placeholder; change `spec-ref` to `section`; add deps recompute on entry |
 | `framework/commands/groom.md` | Modify | Remove `[promote-to-rule]` prefix instruction; specify "always re-walk every item not migrated on next pass" |
-| `framework/commands/validate.md` | Modify | Remove Fix Mode section; remove PKM title check; remove tags advisory; rename `spec-ref` check to `section`; change help-equivalence to dry-run-of-generator check; add body-link-vs-deps advisory; add configuration rule file to rule-file list |
+| `framework/commands/analyze.md` | Modify | Remove Fix Mode section; remove PKM title check; remove tags advisory; rename `spec-ref` check to `section`; change help-equivalence to dry-run-of-generator check; add body-link-vs-deps advisory; add configuration rule file to rule-file list |
 | `framework/commands/ask.md` | Modify | Add deps recompute on entry |
 | `framework/commands/target.md` | Modify | Remove `tags` from frontmatter parse; add deps recompute on entry |
 | `framework/commands/help.md` | Modify | Add HTML marker comments around the five command tables; tables become generator output |
@@ -157,7 +157,7 @@ A second workflow file (`.github/workflows/adopter-generators.yml`) ships as a t
 
 | File | Action | Purpose |
 | --- | --- | --- |
-| `framework/constitution.md` | Modify | Remove `tags` from frontmatter schema; remove "Starter Tag Vocabulary" table; remove `[simple]` marker bullet from §cost-levers; replace §constants and §env-vars with one-line pointer to `framework/rules/configuration.md` |
+| `framework/constitution.md` | Modify | Remove `tags` from frontmatter schema; remove "Starter Tag Vocabulary" table; remove `[simple]` marker bullet from §cost-levers; replace §constants and §env-vars with one-line pointer to `framework/rules/configuration-cross.md` |
 | `constitution.md` (root) | Delete | Collapse to single canonical at `framework/constitution.md` |
 
 ### Project root files
@@ -189,13 +189,13 @@ A second workflow file (`.github/workflows/adopter-generators.yml`) ships as a t
 
 | File | Action | Purpose |
 | --- | --- | --- |
-| `framework/rules/configuration.md` | Create | `CFG-CONST-NNN` and `CFG-ENV-NNN` rules with Statement / Rationale / Verification / Source per data-model |
+| `framework/rules/configuration-cross.md` | Create | `CFG-CONST-NNN` and `CFG-ENV-NNN` rules with Statement / Rationale / Verification / Source per data-model |
 
 ### Bootstrap installer
 
 | File | Action | Purpose |
 | --- | --- | --- |
-| `framework/bootstrap/govern.md` | Modify | Add Hook Installation section; add `framework/rules/configuration.md` to Shared Files (update strategy); add `framework/bootstrap/hooks/pre-commit` and `scripts/gen-spec-deps.sh` to Shared Files (create strategy for the script, update for the hook); add `framework/bootstrap/hooks/install.sh` to per-agent scaffolding logic |
+| `framework/bootstrap/govern.md` | Modify | Add Hook Installation section; add `framework/rules/configuration-cross.md` to Shared Files (update strategy); add `framework/bootstrap/hooks/pre-commit` and `scripts/gen-spec-deps.sh` to Shared Files (create strategy for the script, update for the hook); add `framework/bootstrap/hooks/install.sh` to per-agent scaffolding logic |
 | `framework/bootstrap/configure/claude.md` | Modify | Add Bash permissions for hook install/run paths (`Bash(git config *)`, `Bash(.githooks/*)`, `Bash(scripts/gen-*)`) |
 | `framework/bootstrap/configure/auggie.md` | Modify | Same permission additions in Auggie's format |
 

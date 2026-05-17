@@ -43,7 +43,7 @@ No HTTP, persistence, auth, or DOM patterns in scope — the templates document 
 
 ### Reuse
 
-Templates establish the canonical structure for `system.md`, `errors.md`, and `events.md` across adopted projects; the framework itself references these shapes from `framework/commands/validate.md` audit logic.
+Templates establish the canonical structure for `system.md`, `errors.md`, and `events.md` across adopted projects; the framework itself references these shapes from `framework/commands/analyze.md` audit logic.
 
 ### Quality
 

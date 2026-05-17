@@ -65,15 +65,15 @@ These tasks may proceed in parallel within a session. Each command file is touch
 - [x] Update `framework/commands/target.md` to read the spec status from frontmatter when displaying the target detail view.
 - [x] **Done when:** instructions reference frontmatter; file lints clean.
 
-### 9. Update `/gov:validate`
+### 9. Update `/gov:analyze`
 
-- [x] Update `framework/commands/validate.md` with the strict/advisory split per `data-model.md`'s severity table.
+- [x] Update `framework/commands/analyze.md` with the strict/advisory split per `data-model.md`'s severity table.
 - [x] Hard-fail conditions: missing/malformed frontmatter, missing/invalid `status`, missing/invalid `dependencies`, missing `spec-ref` on scenarios.
 - [x] Advisory: empty `tags`, unknown fields (informational), existing checkbox/cross-reference checks.
 - [x] The command's report format clearly separates hard fails, blocking, advisory, and informational findings.
 - [x] **Done when:** instructions describe the split; file lints clean.
 
-### 10. Update `/gov:capture`
+### 10. Update `/gov:specify`
 
 - [x] Update `framework/commands/capture.md` to write frontmatter for new sketch specs (with `status: draft`, `dependencies: []`, `tags: []`).
 - [x] **Done when:** instructions reference frontmatter; file lints clean.
@@ -84,7 +84,7 @@ These tasks may proceed in parallel within a session. Each command file is touch
 - [x] Audit conclusion: groom does not read or write spec metadata fields. No edit needed.
 - [x] **Done when:** audit complete; any required updates lint clean.
 
-### 12. Audit and update `/gov:elaborate`
+### 12. Audit and update `/gov:ask`
 
 - [x] Read `framework/commands/elaborate.md` and check whether it writes scenario `spec-ref` or otherwise touches scenario metadata.
 - [x] Updated the "Update spec status" section to read/write the frontmatter `status` field. (Scenario creation uses the scenario template, which already emits frontmatter from Task 2.)
@@ -155,7 +155,7 @@ These tasks may proceed in parallel within a session. Each command file is touch
 ### 20. Lint and validate
 
 - [x] Ran `npx markdownlint-cli2 "**/*.md" "!CLAUDE.md"` across the repo: 100 files, 0 errors.
-- [x] Walked through the validate prose against representative migrated specs (013, 000) — hard-fail checks pass for all, advisory triggers correctly on empty `tags` for migrated specs, and informational unknown-field rule does not raise spurious findings. The strict/advisory split functions as designed in `framework/commands/validate.md`.
+- [x] Walked through the validate prose against representative migrated specs (013, 000) — hard-fail checks pass for all, advisory triggers correctly on empty `tags` for migrated specs, and informational unknown-field rule does not raise spurious findings. The strict/advisory split functions as designed in `framework/commands/analyze.md`.
 - [x] **Done when:** lint clean across the repo, validate behaves per the strict/advisory split, all specs report as valid.
 
 ### 21. Final acceptance-criteria sweep

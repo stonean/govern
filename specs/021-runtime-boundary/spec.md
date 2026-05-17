@@ -18,7 +18,7 @@ Establish the constitutional scope, eligibility criteria, and opt-in invariant f
 
 `govern`'s constitution declares text-first artifacts load-bearing: "adopting `govern` requires no bootstrap tooling beyond the AI agent itself" (§text-first-artifacts). That principle is correct as stated for the markdown framework but forecloses an emerging need: deterministic execution of mechanical checks and fixes that today are LLM-executed at meaningful token cost and probabilistic reliability.
 
-The motivating evidence is concrete. [020-code-review](../020-code-review/plan.md)'s plan acknowledges directly: "we cannot bolt on a deterministic linter without changing the framework's shape." The CI gate it ships uses `awk`-based YAML parsing because no binary exists; the same blocking check is implemented three times (in `/gov:implement`, in `/gov:validate`, and in CI bash) because there is no single deterministic enforcer; cross-pass dedupe and idempotency hashing are punted to LLM judgment despite being purely mechanical.
+The motivating evidence is concrete. [020-code-review](../020-code-review/plan.md)'s plan acknowledges directly: "we cannot bolt on a deterministic linter without changing the framework's shape." The CI gate it ships uses `awk`-based YAML parsing because no binary exists; the same blocking check is implemented three times (in `/gov:implement`, in `/gov:analyze`, and in CI bash) because there is no single deterministic enforcer; cross-pass dedupe and idempotency hashing are punted to LLM judgment despite being purely mechanical.
 
 This spec changes the constitution's shape — deliberately, with bounded scope — to permit an optional runtime that absorbs deterministic work while preserving the load-bearing properties: markdown is source of truth, the agent's write path stays simple, PRs review glanceably, and adopters who install nothing still complete every pipeline cycle.
 
@@ -62,18 +62,18 @@ A row is added to the canonical sources table in §drift-prevention naming §run
 - [x] `framework/constitution.md` contains a new `§runtime-boundary` subsection with the five principles, the three eligibility criteria, the opt-in invariant, the versioning rule, the non-scope list, and a one-line forward pointer to spec 022.
 - [x] The five principles use RFC 2119 keywords (MUST / MUST NOT) consistent with the rule format declared in §rules.
 - [x] The non-scope list uses MUST NOT for each excluded item, in the same RFC 2119 register as the five principles.
-- [x] An anchor marker `<!-- §runtime-boundary -->` exists at the new subsection so `/gov:validate`'s anchor-resolution check resolves references to it.
+- [x] An anchor marker `<!-- §runtime-boundary -->` exists at the new subsection so `/gov:analyze`'s anchor-resolution check resolves references to it.
 - [x] `framework/constitution.md` §drift-prevention canonical sources table contains a row whose Fact column names "Runtime contract / boundary," pointing at `framework/constitution.md` §runtime-boundary.
 - [x] A CI workflow exists in this repo that asserts: (a) no runtime binary on `PATH`, (b) all bash generator scripts (`gen-spec-deps.sh`, `gen-readme-table.sh`, `gen-help-tables.sh`) run clean in `--dry-run`, (c) `npx markdownlint-cli2` passes, (d) a tool-coverage lint scans `framework/commands/*.md` and verifies every reference to a runtime tool is wrapped in a graceful-fallback pattern, and (e) frontmatter integrity (status enum and dependencies-list shape) holds across all spec and scenario files.
 - [x] The CI workflow above runs on every PR that modifies `framework/`, `specs/`, or `.claude/commands/`.
 - [x] The existing principle bullets in §text-first-artifacts (markdown by default, frontmatter for metadata, relative links not wiki-links, derived views gitignored, exceptions require amendment) are unchanged — only the opening paragraph is edited.
-- [x] `/gov:validate` against this spec passes (no hard-fail or blocking findings) once acceptance criteria are met.
+- [x] `/gov:analyze` against this spec passes (no hard-fail or blocking findings) once acceptance criteria are met.
 - [x] `npx markdownlint-cli2` against `framework/constitution.md` and the new spec files passes after the edits.
 
 ## Non-Goals
 
 - Building the runtime binary — deferred to spec 022.
-- Moving any existing `/gov:validate` deterministic checks into a runtime — deferred to spec 022.
+- Moving any existing `/gov:analyze` deterministic checks into a runtime — deferred to spec 022.
 - Defining MCP tool schemas — deferred to spec 022.
 - Choosing the runtime's implementation language (Rust, Go, etc.) — project-level decision, not constitutional.
 - Release engineering, distribution, or version-coordination tooling for the binary — project-level.

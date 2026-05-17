@@ -43,7 +43,7 @@ No security surface. Scenario files are spec elaborations consumed by AI agents.
 
 ### Reuse
 
-The scenario file shape is reused by every subsequent spec elaborating against a section (009, 010, 011, 012, 020). The triage/inbox convention threads through `/gov:groom`, `/gov:capture`, and `/gov:log`.
+The scenario file shape is reused by every subsequent spec elaborating against a section (009, 010, 011, 012, 020). The triage/inbox convention threads through `/gov:groom`, `/gov:specify`, and `/gov:log`.
 
 ### Quality
 

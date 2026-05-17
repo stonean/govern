@@ -26,9 +26,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] Body is an HTML comment explaining when to cite rule IDs (e.g., `BE-AUTHN-001`), with one or two example IDs and a note that the section can be deleted if no rules apply.
 - [x] **Done when:** the template renders under `npx markdownlint-cli2` and a freshly-copied template still produces a passing spec without manual cleanup beyond the existing comment-prompts.
 
-## 4. Generalize validate.md from "Security rules" to "Rules"
+## 4. Generalize analyze.md from "Security rules" to "Rules"
 
-- [x] Edit `framework/commands/validate.md`. Rename the `### Security rules (blocking and advisory)` heading to `### Rules (blocking and advisory)`.
+- [x] Edit `framework/commands/analyze.md`. Rename the `### Security rules (blocking and advisory)` heading to `### Rules (blocking and advisory)`.
 - [x] Rewrite the loading prose to be parameterized: "Load each rule file in the rule-file list (currently `specs/security-backend.md` and `specs/security-frontend.md`) if present in the project. Each file is independently optional."
 - [x] Replace remaining security-specific phrasing in the section (e.g., "security rule file," "security checks") with generic equivalents ("rule file," "rule checks") where the meaning is unchanged. Keep the security examples in skip messages where they serve as concrete illustration.
 - [x] **Done when:** the section reads as generic rule loading without security-specific framing, the loading prose is parameterized, and `npx markdownlint-cli2` passes.
@@ -49,11 +49,11 @@ Tasks derived from the [plan](plan.md). Complete in order.
 ## 7. Regenerate Claude command mirrors [simple]
 
 - [x] Run `./scripts/gen-claude-commands.sh` from the repo root.
-- [x] Verify `.claude/commands/gov/validate.md` and `.claude/commands/gov/groom.md` reflect the source edits (renamed sections, new decision-tree step, parameterized loading prose).
+- [x] Verify `.claude/commands/gov/analyze.md` and `.claude/commands/gov/groom.md` reflect the source edits (renamed sections, new decision-tree step, parameterized loading prose).
 - [x] **Done when:** the generator runs without errors and the two generated files are in sync with their `framework/commands/` sources.
 
 ## 8. Lint and validate end-to-end [simple]
 
-- [x] Run `npx markdownlint-cli2` against all modified files (constitution, validate.md, groom.md, spec template, 008 spec, 016 plan/tasks).
-- [x] Run `/gov:validate --all` against the govern repo. Confirm no new findings introduced by the spec/template/validate changes themselves (specifically: no new "unknown rule reference" findings on existing specs; no template-rule-alignment findings against the new "Applicable Rules" section).
-- [x] **Done when:** markdownlint reports zero errors across all modified files and `/gov:validate --all` passes (or its findings are pre-existing and unrelated to 016).
+- [x] Run `npx markdownlint-cli2` against all modified files (constitution, analyze.md, groom.md, spec template, 008 spec, 016 plan/tasks).
+- [x] Run `/gov:analyze --all` against the govern repo. Confirm no new findings introduced by the spec/template/validate changes themselves (specifically: no new "unknown rule reference" findings on existing specs; no template-rule-alignment findings against the new "Applicable Rules" section).
+- [x] **Done when:** markdownlint reports zero errors across all modified files and `/gov:analyze --all` passes (or its findings are pre-existing and unrelated to 016).

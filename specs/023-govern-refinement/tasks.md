@@ -219,3 +219,11 @@ Done when: every check in the list above passes locally; CI workflows report gre
 - [x] Confirm `review.blocking: false` in spec 023's frontmatter.
 
 Done when: `/gov:review` returns clean and the spec frontmatter's `review.blocking` is `false`.
+
+## Phase C — Follow-on scenarios
+
+### 18. Implement scenario: living-specs
+
+- [x] Implement the behavior described in [`scenarios/living-specs.md`](scenarios/living-specs.md).
+
+- **Done when**: `framework/constitution.md` §drift-prevention no longer carries the "frozen archaeology" exception; `AGENTS.md` line 42's rename rule no longer carves out `specs/NNN-*/`; `specs/README.md` §Past Renames is deleted; the done specs identified during clarify/planning have been swept clean of dead references; this spec passes `/gov:review` with no MUST violations.

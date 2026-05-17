@@ -21,17 +21,17 @@ Add `/gov:review`, a comprehensive code review slash command covering reuse,
 quality, security, efficiency, and simplicity. Reviews are written as
 `review.md` artifacts alongside the spec they audit. MUST violations block
 the spec from advancing to `done` via three reinforcing mechanisms
-(`/gov:implement` halt, `/gov:validate` drift detection, optional CI gate),
+(`/gov:implement` halt, `/gov:analyze` drift detection, optional CI gate),
 consistent with the constitution's quality standards and the **Design
 Principles** rule that framework features must not depend on human diligence.
 
 `/gov:review` audits **code against rules**. It is complementary to
-`/gov:validate`, which audits **artifacts against each other**.
+`/gov:analyze`, which audits **artifacts against each other**.
 
 ## Motivation
 
 The constitution references quality standards but no command enforces them on
-implementation code. `/gov:validate` ensures spec/plan/tasks artifacts are
+implementation code. `/gov:analyze` ensures spec/plan/tasks artifacts are
 internally consistent; nothing checks whether the code that landed actually
 satisfies the spec, the security rules added in spec 008, or basic quality
 expectations. Adopters currently have to remember to run external review
@@ -39,13 +39,13 @@ tools — a discipline dependency the framework should remove.
 
 ## Acceptance criteria
 
-- [x] `/gov:review` exists as a verb-named slash command in the same shape as `/gov:validate`, distributed through the standard `framework/commands/` → `.claude/commands/gov/` regeneration pipeline.
+- [x] `/gov:review` exists as a verb-named slash command in the same shape as `/gov:analyze`, distributed through the standard `framework/commands/` → `.claude/commands/gov/` regeneration pipeline.
 - [x] Running `/gov:review` against an `in-progress` target produces `specs/NNN-feature/review.md` with findings categorized into MUST, SHOULD, and low-confidence sections.
 - [x] The command loads `framework/rules/security-backend.md` and `framework/rules/security-frontend.md` as authoritative security criteria. The five-dimension review model (security, reuse, quality, efficiency, simplicity) is applied to every targeted feature.
 - [x] Spec frontmatter gains a `review:` block populated by the command: `last-run`, `must-violations`, `should-violations`, `blocking`, optional `waivers`.
 - [x] **Blocking gate**: a spec with `review.blocking: true` cannot reach `done`.
   - `/gov:implement` halts before marking `done` and emits the blocking message.
-  - `/gov:validate` reports a violation when a spec at `status: done` has `review.blocking: true` or is missing `review.last-run`.
+  - `/gov:analyze` reports a violation when a spec at `status: done` has `review.blocking: true` or is missing `review.last-run`.
   - The shipped CI template includes a check that fails PRs in the same conditions.
 - [x] Re-running `/gov:review` against unchanged code produces identical `review.md` content modulo timestamp and SHA fields (idempotency invariant).
 - [x] `--fix` applies only conservative auto-fixes per the scope rules in the command file. Behavior-changing fixes are never auto-applied.
@@ -58,7 +58,7 @@ tools — a discipline dependency the framework should remove.
 
 ## Non-goals
 
-- Replacing `/gov:validate`. The two commands target different artifacts.
+- Replacing `/gov:analyze`. The two commands target different artifacts.
 - Making `/gov:review` a pipeline-advance command in its own right. It is a
   gate, not a state transition.
 - Shipping language- or framework-specific rule packs beyond the existing
@@ -70,7 +70,7 @@ tools — a discipline dependency the framework should remove.
 | --- | --- | --- |
 | `framework/commands/review.md` | **create** — full command file (see [Embedded artifacts](#embedded-artifacts)) | update |
 | `framework/commands/implement.md` | edit — add blocking check before `status: done` transition | update |
-| `framework/commands/validate.md` | edit — add review-drift check, integrate with `--fix` | update |
+| `framework/commands/analyze.md` | edit — add review-drift check, integrate with `--fix` | update |
 | `framework/templates/spec/spec.md` | edit — add `review:` block to frontmatter schema | update |
 | `framework/templates/spec/spec-and-plan.md` | edit — same `review:` block addition | update |
 | `framework/templates/ci/adopter-generators.yml` | edit — add review-blocking check | update |
@@ -87,7 +87,7 @@ tools — a discipline dependency the framework should remove.
    `review.last-run` is missing entirely), halt with the message specified
    in the [Blocking message](#blocking-message) section below and exit
    without modifying status.
-3. Edit `framework/commands/validate.md`: extend the audit to flag any spec
+3. Edit `framework/commands/analyze.md`: extend the audit to flag any spec
    at `status: done` with `review.blocking: true` or missing `review.last-run`
    as a validation failure. Wire `--fix` to revert affected specs from
    `done` → `in-progress` and emit a notice (never silent).
@@ -103,7 +103,7 @@ tools — a discipline dependency the framework should remove.
    state) table; add a short Waivers subsection under Slash Commands; update
    any pipeline diagrams.
 8. Run the regeneration script to produce `.claude/commands/gov/review.md`.
-9. Run `/gov:validate --all` against the govern repo itself to confirm
+9. Run `/gov:analyze --all` against the govern repo itself to confirm
    nothing in govern's own specs broke.
 10. Add a scenario at `specs/020-code-review/scenarios/waiver-expiry.md`
     capturing the waiver auto-expiry behavior — this is the subtlest
@@ -125,7 +125,7 @@ tools — a discipline dependency the framework should remove.
   and human code review applies org policy. Adopters whose policy does
   require two-author waivers can layer fields like `co-waived-by` onto the
   `review.waivers` entries — the §text-first-artifacts open-schema rule
-  guarantees `/gov:review` and `/gov:validate` will not error on unknown
+  guarantees `/gov:review` and `/gov:analyze` will not error on unknown
   fields — and gate them in their own CI.
 - **Stack detection source** — `/gov:review` continues to read `AGENTS.md`
   `Tech Stack` to choose between `security-backend.md` and
@@ -146,7 +146,7 @@ tools — a discipline dependency the framework should remove.
 - **`--all` scope** — `--all` reviews every feature whose status is
   `in-progress` or `done`. Excluding `done` would make the blocking gate
   retroactively blind to new MUST rules added after a feature shipped: the
-  existing `/gov:validate` drift check only fires when `review.blocking` is
+  existing `/gov:analyze` drift check only fires when `review.blocking` is
   already `true` or `review.last-run` is missing, so rules introduced after
   the last review never re-flip the flag on shipped code. The §drift-prevention
   "done specs are frozen archaeology" rule applies to the spec body, not to
@@ -190,7 +190,7 @@ resolve the violations and re-run /gov:review,
 or run /gov:review --waive <rule-id> --reason "..." for each waivable finding.
 ```
 
-Emitted by `/gov:validate` when it detects drift:
+Emitted by `/gov:analyze` when it detects drift:
 
 ```text
 review-drift: spec NNN at status=done with review.blocking=true
@@ -231,7 +231,7 @@ covering reuse, quality, security, efficiency, and simplicity. Produces a
 `review.md` artifact alongside the spec. **Blocks the spec from reaching `done`
 when MUST violations are present.**
 
-`/gov:review` audits **code against rules**. It is complementary to `/gov:validate`,
+`/gov:review` audits **code against rules**. It is complementary to `/gov:analyze`,
 which audits **artifacts against each other**. Both should pass before a spec
 advances to `done`.
 
@@ -272,7 +272,7 @@ advances to `done`.
 can advance to `done`. The recommended sequence is:
 
 ```
-/gov:implement   →   /gov:review   →   /gov:validate   →   spec status: done
+/gov:implement   →   /gov:review   →   /gov:analyze   →   spec status: done
 ```
 
 `/gov:implement` MUST NOT mark a spec `done` while the target's `review.md`
@@ -468,10 +468,10 @@ records `review.blocking: true`. This is enforced as follows:
    resolve the violations and re-run /gov:review, or waive with /gov:review --waive
    ```
 
-2. **`/gov:validate`** — adds a check to its existing audit: if the spec's
+2. **`/gov:analyze`** — adds a check to its existing audit: if the spec's
    status is `done` but `review.blocking` is `true` or `review.last-run` is
    missing, this is a validation failure. Composable with `--fix`:
-   `/gov:validate --fix` reverts `done` → `in-progress` and emits a notice
+   `/gov:analyze --fix` reverts `done` → `in-progress` and emits a notice
    (it never silently downgrades; the notice is the point).
 
 3. **CI hook** — the shipped GHA template at
@@ -573,7 +573,7 @@ At the start of every `/gov:review` run, before counting findings into
 The `review.waivers` list follows the §text-first-artifacts open-schema
 rule. Adopters MAY add fields (e.g., `co-waived-by`, `approved-by-team`,
 `ticket`) to enforce org-specific waiver policy in their own CI; `/gov:review`
-and `/gov:validate` will not error on unknown fields.
+and `/gov:analyze` will not error on unknown fields.
 
 ## Auto-fix scope
 
@@ -680,7 +680,7 @@ This gate runs after all tasks are complete but before status changes — the
 spec stays at `in-progress` until review is clean.
 ````
 
-### `framework/commands/validate.md` — required edits
+### `framework/commands/analyze.md` — required edits
 
 In the audit section that walks each spec, add a check:
 

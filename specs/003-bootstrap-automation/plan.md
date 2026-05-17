@@ -42,7 +42,7 @@ Standard commands reference `.claude/gov-session.json` for session state, consis
 | `.claude/commands/gov/clarify.md` | Create | Resolve questions (from template) |
 | `.claude/commands/gov/plan.md` | Create | Create plan and tasks (from template) |
 | `.claude/commands/gov/implement.md` | Create | Execute tasks (from template) |
-| `.claude/commands/gov/validate.md` | Create | Audit artifacts (from template) |
+| `.claude/commands/gov/analyze.md` | Create | Audit artifacts (from template) |
 | `.claude/commands/gov/next.md` | Create | Auto-advance phase (from template) |
 | `.claude/commands/gov/init.md` | Create | Scaffold new projects (governance-specific) |
 

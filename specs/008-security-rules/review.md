@@ -13,7 +13,7 @@ skipped-passes: []
 
 ## Summary
 
-The rule files themselves (`framework/rules/security-backend.md`, `framework/rules/security-frontend.md`) plus `govern.md`, `validate.md`, and `constitution.md` edits that wire them into the pipeline. These are the rules that `/gov:review` loads — meta-review applies, but the rule prose is what gets loaded, not interpreted code. All five passes ran; no findings. `blocking: no`.
+The rule files themselves (`framework/rules/security-backend.md`, `framework/rules/security-frontend.md`) plus `govern.md`, `analyze.md`, and `constitution.md` edits that wire them into the pipeline. These are the rules that `/gov:review` loads — meta-review applies, but the rule prose is what gets loaded, not interpreted code. All five passes ran; no findings. `blocking: no`.
 
 ## MUST violations (blocking)
 
@@ -43,7 +43,7 @@ The artifact under review *is* the security rule set. Each rule has Statement / 
 
 ### Reuse
 
-Rule entry shape is reused unchanged by `framework/rules/configuration.md` (017) and by any future domain rule files. The 7 edge cases codified in `validate.md`'s "Security rules" check are the canonical loader logic, later generalized by 016 to "Rules".
+Rule entry shape is reused unchanged by `framework/rules/configuration-cross.md` (017) and by any future domain rule files. The 7 edge cases codified in `analyze.md`'s "Security rules" check are the canonical loader logic, later generalized by 016 to "Rules".
 
 ### Quality
 

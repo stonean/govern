@@ -93,12 +93,13 @@ specs/
 draft ──/clarify──▶ clarified ──/plan──▶ planned ──/implement──▶ in-progress ──[/review gate]──▶ done
 ```
 
-Forward edges only — `/clarify` raises status to `clarified`, `/plan` to `planned`, `/implement` to `in-progress` and then to `done`. The `in-progress → done` transition is gated by `/review`: `/implement` MUST NOT write `status: done` while the spec's `review.last-run` is unset or `review.blocking` is `true`. `/review` is a gate, not a state transition — it records findings and updates the `review:` frontmatter block, but does not change `status`. The gate composes with `/analyze` (which flags drifted `done` specs) and the shipped CI template (which fails PRs that bypass the local checks) per the **Design Principles** rule: never depend on human diligence. Two back-edges exist:
+Forward edges only — `/clarify` raises status to `clarified`, `/plan` to `planned`, `/implement` to `in-progress` and then to `done`. The `in-progress → done` transition is gated by `/review`: `/implement` MUST NOT write `status: done` while the spec's `review.last-run` is unset or `review.blocking` is `true`. `/review` is a gate, not a state transition — it records findings and updates the `review:` frontmatter block, but does not change `status`. The gate composes with `/analyze` (which flags drifted `done` specs) and the shipped CI template (which fails PRs that bypass the local checks) per the **Design Principles** rule: never depend on human diligence. Three back-edges exist:
 
 - **Backward via new questions** — `clarified` / `planned` / `in-progress` → `draft` when `/ask` records a new open question; the next `/clarify` resolves the question and the spec advances forward again. `draft` is the only status that tolerates open questions, so it is the destination; `/ask` performs the status mutation in the same write that records the question.
 - **Backward via new scenario** — `done` → `in-progress` when `/ask` records a scenario. The scenario's task is implemented and the spec returns to `done`.
+- **Backward via meaningful body edit** — `done` → `in-progress` when any artifact under `specs/{feature}/` is edited *meaningfully*. An edit is **mechanical** (no back-edge) iff every change in the diff is the same find-and-replace token substitution, applied uniformly across all live artifacts per the `AGENTS.md` rename rule's scope, and the substitution maps a deprecated label (slug, capability, command, identifier, parenthetical descriptor) to its current label. Anything else — new scope, changed semantics, factual corrections, restructuring, edits scoped to a single spec — is a **meaningful edit** and triggers the back-edge via the same `/ask` flow used for scenarios. The distinction is determinable from the diff alone, so the rule does not depend on author judgment.
 
-This avoids spec proliferation; scenarios evolve the existing spec rather than spawning a new one.
+This avoids spec proliferation; scenarios evolve the existing spec rather than spawning a new one. Spec bodies are living documents that represent current state — git history is the historical record of what was written when.
 
 #### The three cycles
 
@@ -487,12 +488,6 @@ When multiple commands distribute or reference the same set of files (e.g., `/go
 - As a registry both commands read.
 
 Two commands that copy-paste the same manifest into their own bodies are guaranteed to drift over time. Consolidate or accept that drift is the rule, not the exception.
-
-### Done specs are frozen archaeology
-
-`done` specs reflect the world at merge time. The framework will continue to evolve; done specs will not be rewritten to match. Drift between a done spec's body and the current framework is expected — handle it with **signposts at the top of the spec**, not by rewriting the body. Plan and tasks files in done-spec directories follow the same rule.
-
-A signpost names what changed and points readers at the current source of truth. It does not edit history.
 
 <!-- §pipeline-boundaries -->
 

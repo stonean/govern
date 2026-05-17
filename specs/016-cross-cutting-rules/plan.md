@@ -8,7 +8,7 @@ Implements [016 — Cross-Cutting Rules](spec.md).
 
 ## Overview
 
-016 promotes rules to a first-class artifact tier without changing rule semantics, validate enforcement logic, or the rule-file format. The work is concentrated in five files: the constitution gains a §rules section and a fourth decision-tree route; the spec template gains an optional "Applicable Rules" prompt; `validate.md` and `groom.md` are reframed from security-specific to general; and 008's spec gets a top-of-file signpost. After source edits, the generated `.claude/commands/gov/*.md` mirrors are regenerated.
+016 promotes rules to a first-class artifact tier without changing rule semantics, validate enforcement logic, or the rule-file format. The work is concentrated in five files: the constitution gains a §rules section and a fourth decision-tree route; the spec template gains an optional "Applicable Rules" prompt; `analyze.md` and `groom.md` are reframed from security-specific to general; and 008's spec gets a top-of-file signpost. After source edits, the generated `.claude/commands/gov/*.md` mirrors are regenerated.
 
 The governing constraint is **canonical-source discipline**: the constitution carries the *concept* of rules (definition, lifecycle, promotion checklist), and 008's `data-model.md` remains the *canonical schema*. The constitution back-links rather than restating, except for a short summary that lets a constitution reader understand the artifact without context-switching.
 
@@ -48,16 +48,16 @@ The link from the constitution to 008's data-model is a relative markdown link. 
 
 ### Validate generalization: prose-only, list still hardcoded
 
-Today's `framework/commands/validate.md` "Security rules" section names the two security files explicitly:
+Today's `framework/commands/analyze.md` "Security rules" section names the two security files explicitly:
 
 > Load `specs/security-backend.md` and `specs/security-frontend.md` if either is present in the project.
 
-The generalization renames the section heading to "Rules" and rewrites the loading prose to be parameterized: "Load each rule file in the rule-file list (currently `specs/security-backend.md` and `specs/security-frontend.md`) if present in the project." The list itself remains hardcoded in validate.md.
+The generalization renames the section heading to "Rules" and rewrites the loading prose to be parameterized: "Load each rule file in the rule-file list (currently `specs/security-backend.md` and `specs/security-frontend.md`) if present in the project." The list itself remains hardcoded in analyze.md.
 
 This is *prose-only* generalization. The list does not move to the manifest, nor is shared infrastructure introduced for cross-command list reuse. Reasoning:
 
 - Adding a new rule file is already a per-spec event (see 008 as precedent — the rule files were added to the manifest *and* to validate as part of 008's work). The discipline of "update both lists in the same change" is a small invariant.
-- The cleaner factoring (single source-of-truth list shared between `framework/bootstrap/govern.md`'s manifest and `framework/commands/validate.md`'s loader) is exactly the kind of cross-doc invariant the deferred `/audit` command (already in the inbox) is meant to mechanize. Doing it here would expand 016's scope.
+- The cleaner factoring (single source-of-truth list shared between `framework/bootstrap/govern.md`'s manifest and `framework/commands/analyze.md`'s loader) is exactly the kind of cross-doc invariant the deferred `/audit` command (already in the inbox) is meant to mechanize. Doing it here would expand 016's scope.
 - Validate's per-rule integrity check, reference check, severity behavior, and brownfield-audit hook are unchanged.
 
 The references to the rule-file schema location (currently "canonically declared in `specs/008-security-rules/data-model.md`") remain — that's still where the schema lives.
@@ -66,7 +66,7 @@ The references to the rule-file schema location (currently "canonically declared
 
 The current `framework/templates/spec/spec.md` has the body order: `{Section}` placeholder, `## Acceptance Criteria`, `## Open Questions`. The new `## Applicable Rules` section sits between `## Acceptance Criteria` and `## Open Questions` — close enough to the AC section to read together (rules constrain the same surface as ACs), but not interrupting the open-questions / clarify flow.
 
-The section is comment-prompt only. The body is an HTML comment listing example IDs and explaining when to use it. Authors who skip the section delete the comment along with the section header; the markdownlint config allows but does not require the heading. Verified that `## Applicable Rules` headings would not collide with any existing required-heading check in `validate.md` — the section is purely additive.
+The section is comment-prompt only. The body is an HTML comment listing example IDs and explaining when to use it. Authors who skip the section delete the comment along with the section header; the markdownlint config allows but does not require the heading. Verified that `## Applicable Rules` headings would not collide with any existing required-heading check in `analyze.md` — the section is purely additive.
 
 ### Groom decision-tree update: add rule-promotion step before existing steps
 
@@ -82,22 +82,22 @@ The existing Steps 1–3 become 2–4 with no other changes. Groom still creates
 
 > **Signpost:** 008 defines the *security instance* of the general rules tier later formalized in [016 — Cross-Cutting Rules](../016-cross-cutting-rules/spec.md). The rule-file format, ID conventions, and validate enforcement defined here remain authoritative for security rules and serve as the canonical reference for any future rule file. See [§rules](../../framework/constitution.md) in the constitution for the general framing.
 
-This pattern (signpost note for evolved framing) is consistent with how 006 already handles renamed commands ("`/gov:scenario` is now `/gov:elaborate`," etc.) — a top-of-file note rather than body rewrites.
+This pattern (signpost note for evolved framing) is consistent with how 006 already handles renamed commands ("`/gov:scenario` is now `/gov:ask`," etc.) — a top-of-file note rather than body rewrites.
 
 ### Generated Claude commands: regenerate via scripts/gen-claude-commands.sh
 
-CLAUDE.md is explicit: `.claude/commands/gov/*.md` is generated from `framework/commands/`. After editing `validate.md` and `groom.md` sources, the generator must run. The generator substitutes `{project}` → `gov` and `{cli-config-dir}` → `.claude`. No manual edits to the generated files.
+CLAUDE.md is explicit: `.claude/commands/gov/*.md` is generated from `framework/commands/`. After editing `analyze.md` and `groom.md` sources, the generator must run. The generator substitutes `{project}` → `gov` and `{cli-config-dir}` → `.claude`. No manual edits to the generated files.
 
 ## Affected Files
 
 | File | Action | Purpose |
 | --- | --- | --- |
 | `framework/constitution.md` | Modify | Add `<!-- §rules -->` section between §scenario-promotion and §brownfield-inbox; update §bug-handling intro and decision tree (4 steps); add row to canonical-sources table |
-| `framework/commands/validate.md` | Modify | Rename "Security rules" section heading to "Rules"; rewrite loading prose to parameterize over rule-file list (list itself unchanged) |
+| `framework/commands/analyze.md` | Modify | Rename "Security rules" section heading to "Rules"; rewrite loading prose to parameterize over rule-file list (list itself unchanged) |
 | `framework/commands/groom.md` | Modify | Insert new Step 1 (rule-promotion check) into decision-tree walk; renumber existing 1–3 to 2–4 |
 | `framework/templates/spec/spec.md` | Modify | Insert optional `## Applicable Rules` comment-prompt section between Acceptance Criteria and Open Questions |
 | `specs/008-security-rules/spec.md` | Modify | Add top-of-file signpost noting 008 is the security instance of the general rules tier defined in 016; body untouched |
-| `.claude/commands/gov/validate.md` | Generate | Regenerate from `framework/commands/validate.md` via `scripts/gen-claude-commands.sh` |
+| `.claude/commands/gov/analyze.md` | Generate | Regenerate from `framework/commands/analyze.md` via `scripts/gen-claude-commands.sh` |
 | `.claude/commands/gov/groom.md` | Generate | Regenerate from `framework/commands/groom.md` via `scripts/gen-claude-commands.sh` |
 | `specs/016-cross-cutting-rules/plan.md` | Create | This file |
 | `specs/016-cross-cutting-rules/tasks.md` | Create | Task breakdown |

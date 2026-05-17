@@ -126,7 +126,7 @@ The spec's acceptance criterion "produces output consistent with the LLM-driven 
 
 - **`/gov:status`** — strict byte-equality on the dashboard output.
 - **`/gov:target`** — strict byte-equality on `.claude/gov-session.json` after the run.
-- **`/gov:validate`** — set-equality on the list of findings (each finding's rule ID, severity, file, line), but not on the per-finding prose (semantic extension point varies wording).
+- **`/gov:analyze`** — set-equality on the list of findings (each finding's rule ID, severity, file, line), but not on the per-finding prose (semantic extension point varies wording).
 - **`/gov:implement`** — set-equality on the set of files modified per task; checkbox state strict-equal; code content is the LLM extension point's responsibility, not the runtime's.
 - **`/gov:plan`** — frontmatter status transition strict-equal; plan/tasks body content is semantic (extension point).
 - **`/gov:specify`** — new feature directory created at the right path; spec frontmatter strict-equal; spec body is semantic.
@@ -141,7 +141,7 @@ Order matches the spec's resolved Initial Scope:
 
 1. `/gov:status` first — smallest surface, 100% deterministic, validates the architecture end-to-end.
 2. `/gov:target` next — exercises session-file write and constitution loading.
-3. `/gov:validate` — first command with a real extension point (`assessSpecQuality`).
+3. `/gov:analyze` — first command with a real extension point (`assessSpecQuality`).
 4. `/gov:implement` — largest behavioral surface, exercises `writeCode` extension point and atomic write primitives in anger.
 5. `/gov:plan` — exercises `writeSpecBody`.
 6. `/gov:specify` — second `writeSpecBody` user; validates the extension point against two callers.
@@ -277,7 +277,7 @@ Considered and rejected:
 - **`pulldown-cmark` edge cases**: certain markdown extensions (tables, footnotes, definition lists) are off by default in `pulldown-cmark`. The procedure parser opts into tables; other extensions are off. If a slash command body relies on an extension we don't opt into, the parser will silently misread it. Mitigation: the parseability check on every PR catches this at the earliest opportunity.
 - **Windows atomic-write semantics**: weaker than POSIX. A crash on Windows between write and rename can leave a partial tempfile in the parent directory (not the target file, which is unchanged). Cleanup is a manual `rm` operation; documented in the README.
 - **Fixture maintenance cost**: every command rewrite needs a fixture under `runtime/tests/fixtures/`. The first fixture (for `/gov:status`) costs the most to build; subsequent fixtures fork from it. The cost is bounded but real.
-- **Parity captures are manual**: the LLM-output captures under `runtime/tests/parity/` are taken once per command by a maintainer and committed. If the LLM-driven path's output changes (because constitution updates change what `/gov:validate` flags, for instance), the captures must be re-taken. There is no automatic regeneration; that would require an LLM in CI, which the spec rules out.
+- **Parity captures are manual**: the LLM-output captures under `runtime/tests/parity/` are taken once per command by a maintainer and committed. If the LLM-driven path's output changes (because constitution updates change what `/gov:analyze` flags, for instance), the captures must be re-taken. There is no automatic regeneration; that would require an LLM in CI, which the spec rules out.
 
 ## Affected Files
 
@@ -303,7 +303,7 @@ Considered and rejected:
 | `framework/runtime-tools.txt` | Edit | Populate with the 14 MCP tool names |
 | `framework/commands/status.md` | Edit | Rewrite Instructions to parseable conventions |
 | `framework/commands/target.md` | Edit | Rewrite Instructions to parseable conventions |
-| `framework/commands/validate.md` | Edit | Rewrite Instructions to parseable conventions; add `assessSpecQuality` extension point marker |
+| `framework/commands/analyze.md` | Edit | Rewrite Instructions to parseable conventions; add `assessSpecQuality` extension point marker |
 | `framework/commands/implement.md` | Edit | Rewrite Instructions to parseable conventions; add `writeCode` extension point marker |
 | `framework/commands/plan.md` | Edit | Rewrite Instructions to parseable conventions; add `writeSpecBody` extension point marker |
 | `framework/commands/specify.md` | Edit | Rewrite Instructions to parseable conventions; add `writeSpecBody` extension point marker |

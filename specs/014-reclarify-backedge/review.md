@@ -47,7 +47,7 @@ Status-mutation branching is the same shape later reused by `/gov:review`'s pre-
 
 ### Quality
 
-The `done` refusal path is explicit: once a spec is `done`, neither `/gov:ask` nor `/gov:clarify` can mutate status without an explicit reopen. This composes correctly with 020's blocking gate (a `done` spec with a review violation has to round-trip back to `in-progress` via `/gov:validate --fix`).
+The `done` refusal path is explicit: once a spec is `done`, neither `/gov:ask` nor `/gov:clarify` can mutate status without an explicit reopen. This composes correctly with 020's blocking gate (a `done` spec with a review violation has to round-trip back to `in-progress` via `/gov:analyze --fix`).
 
 ### Efficiency
 

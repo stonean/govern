@@ -52,7 +52,7 @@ This mirrors `/elaborate`, which owns the `done → in-progress` back-edge. The 
 | --- | --- |
 | `draft` | Refine question; append to `## Open Questions`. No status change. (Existing behavior.) |
 | `clarified` / `planned` / `in-progress` | Refine question; append to `## Open Questions`; revert status to `draft`. Display impact: prior status, plan artifacts that exist (with timestamps), scenario files. |
-| `done` | Refuse. Report: "Spec is `done`. Run `/{project}:elaborate` to capture this as a scenario instead." A question on a `done` spec means either the behavior needs lower-level elaboration (a scenario) or the spec is wrong (manual revision); `/ask`'s back-edge does not cover either. |
+| `done` | Refuse. Report: "Spec is `done`. Run `/{project}:ask` to capture this as a scenario instead." A question on a `done` spec means either the behavior needs lower-level elaboration (a scenario) or the spec is wrong (manual revision); `/ask`'s back-edge does not cover either. |
 
 When `/ask` mutates status, it does so after the user accepts the refined question — that acceptance is the explicit consent for the mutation. A separate yes/no prompt at status-change time would be redundant friction.
 
@@ -70,7 +70,7 @@ With `/ask` owning the back-edge, `/clarify`'s gate becomes simple:
 | `draft` | no | Verify acceptance criteria; advance to `clarified` (existing) |
 | `clarified` / `planned` / `in-progress` | yes | **Recovery path** — see below |
 | `clarified` / `planned` / `in-progress` | no | Stop with "Spec is already `{status}`. Run `/{project}:plan`/`/{project}:implement` to advance." (existing message, lightly tightened) |
-| `done` | (any) | Stop with "Spec is `done`. Run `/{project}:elaborate` to capture this as a scenario instead." |
+| `done` | (any) | Stop with "Spec is `done`. Run `/{project}:ask` to capture this as a scenario instead." |
 
 ### `/clarify` recovery path
 
@@ -121,7 +121,7 @@ Both back-edges then read as command-owned, status-mutating actions triggered by
 
 - [x] `framework/commands/ask.md` reverts spec status to `draft` after appending an open question to a spec at `clarified`, `planned`, or `in-progress`
 - [x] On a `draft` spec, `/ask` records the question without status mutation (existing behavior preserved)
-- [x] On a `done` spec, `/ask` refuses and reports: "Spec is `done`. Run `/{project}:elaborate` to capture this as a scenario instead." No question is recorded; no status mutation occurs
+- [x] On a `done` spec, `/ask` refuses and reports: "Spec is `done`. Run `/{project}:ask` to capture this as a scenario instead." No question is recorded; no status mutation occurs
 - [x] When `/ask` mutates status, it displays the prior status, plan artifacts that exist (with last-modified timestamps), and scenario files — so the user can see what may need re-review
 - [x] `/ask` does not prompt for separate yes/no confirmation before mutating status — the user's acceptance of the refined question is the consent
 - [x] When `/ask` targets a scenario (per spec 009), it appends to the scenario's `## Open Questions` and does not mutate any spec or scenario status (scenarios have no status field)
@@ -132,7 +132,7 @@ Both back-edges then read as command-owned, status-mutating actions triggered by
 - [x] `framework/commands/clarify.md` Gate branches on the spec's open-question count, not on a flag
 - [x] On a `draft` spec (with or without open questions), the existing behavior is preserved — walk questions if present, verify ACs, advance to `clarified`
 - [x] On a `clarified` / `planned` / `in-progress` spec with no open questions, the command stops with the existing "Spec is already `{status}`" message (lightly tightened to mention the next pipeline command)
-- [x] On a `done` spec (any open-question count), the command stops with "Spec is `done`. Run `/{project}:elaborate` to capture this as a scenario instead." and exits without mutation
+- [x] On a `done` spec (any open-question count), the command stops with "Spec is `done`. Run `/{project}:ask` to capture this as a scenario instead." and exits without mutation
 - [x] No downstream artifacts (`plan.md`, `tasks.md`, `data-model.md`, scenario files) are deleted or rewritten by `/clarify`
 
 ### `/clarify` recovery path

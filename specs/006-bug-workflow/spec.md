@@ -18,7 +18,7 @@ Bugs are unwritten scenarios. Rather than tracking defects in a separate system,
 
 Most projects adopting governance are not greenfield — they have existing code, existing bugs, and incomplete specifications. Scenarios are the primary mechanism for incrementally bringing brownfield projects under governance. Every bug fix, edge case discovery, or behavior clarification produces a scenario that makes the specs more precise over time.
 
-> **Note:** several commands introduced here were renamed by later specs. `/gov:scenario` is now `/gov:elaborate`, `/gov:triage` is now `/gov:groom` (operating on `specs/inbox.md` — see [011-brownfield-process](../011-brownfield-process/spec.md)), and `/gov:next` was retired. References to the original names appear below as historical context.
+> **Note:** several commands introduced here were renamed by later specs. `/gov:scenario` is now `/gov:ask`, `/gov:triage` is now `/gov:groom` (operating on `specs/inbox.md` — see [011-brownfield-process](../011-brownfield-process/spec.md)), and `/gov:next` was retired. References to the original names appear below as historical context.
 >
 > **Note:** path references below (`templates/scenario.md`, `templates/triage.md`, `templates/spec.md`) reflect the original layout. The repository was later reorganized so spec templates live in `framework/templates/spec/` and project-scaffolding templates in `framework/templates/project/`. The `triage.md` template was renamed to `inbox.md` by [011-brownfield-process](../011-brownfield-process/spec.md) (current path: `framework/templates/project/inbox.md`). The acceptance criteria below were satisfied at merge time under the original paths and names.
 
@@ -116,7 +116,7 @@ This feature produces the following changes to the governance framework:
 - **Updated command:** `/gov:about` — documents `/gov:scenario`, `/gov:triage`, scenario conventions, and bug workflow
 - **Updated command:** `/gov:status` — displays scenario counts per spec in the pipeline dashboard
 - **Updated command:** `/gov:next` — suggests `/gov:scenario` as a next action when appropriate (e.g., bug reported, spec is `in-progress`)
-- **Updated command:** `/gov:validate` — checks that scenario-linked tasks are complete during validation
+- **Updated command:** `/gov:analyze` — checks that scenario-linked tasks are complete during validation
 - **Updated document:** `README.md` — documents bug workflow and scenario convention
 
 ## Acceptance Criteria
@@ -137,7 +137,7 @@ This feature produces the following changes to the governance framework:
 - [x] `/gov:scenario` appends a task to the parent spec's `tasks.md` referencing the new scenario
 - [x] `/gov:status` displays scenario counts per spec in the pipeline dashboard
 - [x] `/gov:next` suggests `/gov:scenario` as a next action when context warrants it
-- [x] `/gov:validate` checks that scenario-linked tasks in `tasks.md` are complete
+- [x] `/gov:analyze` checks that scenario-linked tasks in `tasks.md` are complete
 - [x] `README.md` documents the bug workflow and scenario conventions
 - [x] All new and modified markdown files pass `npx markdownlint-cli2`
 

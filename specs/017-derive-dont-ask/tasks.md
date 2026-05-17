@@ -6,13 +6,13 @@ The work is grouped into seven phases. Each phase ends with a natural commit bou
 
 ## Phase 1 — New rule file
 
-### 1. Create `framework/rules/configuration.md`
+### 1. Create `framework/rules/configuration-cross.md`
 
 - [x] Author the file with the seven initial rules from `data-model.md` (`CFG-CONST-001..003`, `CFG-ENV-001..004`)
 - [x] Each rule has Statement (RFC 2119), Rationale, Verification, optional Source
 - [x] Lint passes
 
-Done when: `framework/rules/configuration.md` exists, `npx markdownlint-cli2` passes, and the rule format matches `data-model.md`.
+Done when: `framework/rules/configuration-cross.md` exists, `npx markdownlint-cli2` passes, and the rule format matches `data-model.md`.
 
 ## Phase 2 — Constitution and project root
 
@@ -22,8 +22,8 @@ Done when: `framework/rules/configuration.md` exists, `npx markdownlint-cli2` pa
 - [x] Remove `tags` row from the Scenario files frontmatter table
 - [x] Remove the entire "Starter Tag Vocabulary" subsection
 - [x] Remove the `[simple]` marker bullet from §cost-levers
-- [x] Replace the §constants section body with a one-line pointer: "See `framework/rules/configuration.md` (CFG-CONST-NNN rules)."
-- [x] Replace the §env-vars section body with a one-line pointer: "See `framework/rules/configuration.md` (CFG-ENV-NNN rules)."
+- [x] Replace the §constants section body with a one-line pointer: "See `framework/rules/configuration-cross.md` (CFG-CONST-NNN rules)."
+- [x] Replace the §env-vars section body with a one-line pointer: "See `framework/rules/configuration-cross.md` (CFG-ENV-NNN rules)."
 - [x] Update §text-first-artifacts to declare `section` as the scenario hard-fail field (replacing `spec-ref`); add the canonical-source row for configuration rules to the §drift-prevention table; do not list `tags` as advisory anymore
 - [x] Lint passes
 
@@ -212,7 +212,7 @@ Done when: the template exists and documents adopter usage. ✓
 - [x] Add cross-spec scan step at Completion (step 1)
 - [x] Add "Recompute dependencies" step at Setup (step 6)
 - [x] Renumber Setup steps; fix --auto references to step numbers
-- [x] Replace constants/env-vars constitution refs with `framework/rules/configuration.md`
+- [x] Replace constants/env-vars constitution refs with `framework/rules/configuration-cross.md`
 - [x] Lint passes
 
 ### 21. Update `framework/commands/elaborate.md`
@@ -226,16 +226,16 @@ Done when: the template exists and documents adopter usage. ✓
 
 - [x] Remove the `[promote-to-rule]` prefix instruction
 - [x] Replace with "leave in inbox unmodified — next groom pass re-walks every unmigrated item"
-- [x] Add `specs/configuration.md` to the rule-file examples
+- [x] Add `specs/configuration-cross.md` to the rule-file examples
 - [x] Lint passes
 
-### 23. Update `framework/commands/validate.md`
+### 23. Update `framework/commands/analyze.md`
 
 - [x] Remove the entire "PKM title field (advisory)" section
 - [x] Remove the entire "Frontmatter schema (advisory)" section (only contained tags)
 - [x] Rename the `spec-ref` check to `section`
 - [x] Add new "Generator drift (advisory)" section running gen-spec-deps/gen-readme-table/gen-help-tables in dry-run
-- [x] Add `framework/rules/configuration.md` to the rule-file list; cite 017's data-model alongside 008's
+- [x] Add `framework/rules/configuration-cross.md` to the rule-file list; cite 017's data-model alongside 008's
 - [x] Remove the entire "Fix Mode" section
 - [x] Remove `--fix` from frontmatter `argument-hint` and Context flag parsing
 - [x] Update Scope Boundaries to remove `--fix` write permission and add dry-run script invocation permission
@@ -264,7 +264,7 @@ Done when: the template exists and documents adopter usage. ✓
 - [x] Add new top-level section "Hook Installation" before "Placeholder Substitution"
 - [x] Document seven detection states + actions (already-wired, custom hooksPath, husky, pre-commit-py, lefthook, govern-managed, none)
 - [x] Sentinel-based detection of govern-managed hooks via `# managed-by: govern` comment
-- [x] Add `framework/rules/configuration.md` → `specs/configuration.md` to update-strategy manifest
+- [x] Add `framework/rules/configuration-cross.md` → `specs/configuration-cross.md` to update-strategy manifest
 - [x] Add `framework/bootstrap/hooks/pre-commit` → `.githooks/pre-commit` to update-strategy manifest (subject to detection)
 - [x] Add `scripts/gen-spec-deps.sh` → `scripts/gen-spec-deps.sh` to create-strategy manifest
 - [x] Document manual integration snippet for adopters with existing hook systems
@@ -309,7 +309,7 @@ Done when: working tree is clean after running every generator a second time. �
 
 ### 31. Verify `/validate` runs cleanly on every existing spec
 
-- [x] Confirmed via manual scripted sanity check (proxy for `/gov:validate --all`):
+- [x] Confirmed via manual scripted sanity check (proxy for `/gov:analyze --all`):
   - Every scenario has either `section` (new) or `spec-ref` (legacy) — no hard-fails
   - Every spec has required `status` and `dependencies` fields
   - `gen-spec-deps.sh --dry-run` reports no drift across all 18 specs

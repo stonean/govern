@@ -89,7 +89,7 @@ Same as security rules. Once an ID is assigned, the rule retains that ID for lif
 
 ## Initial rule set
 
-The first version of `framework/rules/configuration.md` ships with the following rules. Numbering is assigned at creation and is permanent.
+The first version of `framework/rules/configuration-cross.md` ships with the following rules. Numbering is assigned at creation and is permanent.
 
 ### CFG-CONST namespace (Constants category)
 

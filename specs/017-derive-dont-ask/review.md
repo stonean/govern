@@ -13,7 +13,7 @@ skipped-passes: []
 
 ## Summary
 
-Largest cross-cutting change in the project: removes discipline-dependent frontmatter (`title`, `tags`, `[simple]`), introduces four `scripts/gen-*.sh` generators (`gen-readme-table`, `gen-help-tables`, `gen-spec-deps`, `install-hooks`), `.githooks/pre-commit` hook orchestration, the `framework/rules/configuration.md` rule file, CI workflow (`generators.yml`), and migration of dogfood specs. The generator scripts and CI workflow constitute the only "real code" in govern; all were audited globally. All five passes ran; no findings. `blocking: no`.
+Largest cross-cutting change in the project: removes discipline-dependent frontmatter (`title`, `tags`, `[simple]`), introduces four `scripts/gen-*.sh` generators (`gen-readme-table`, `gen-help-tables`, `gen-spec-deps`, `install-hooks`), `.githooks/pre-commit` hook orchestration, the `framework/rules/configuration-cross.md` rule file, CI workflow (`generators.yml`), and migration of dogfood specs. The generator scripts and CI workflow constitute the only "real code" in govern; all were audited globally. All five passes ran; no findings. `blocking: no`.
 
 ## MUST violations (blocking)
 

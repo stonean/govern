@@ -116,9 +116,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 - [x] Fixture under `runtime/tests/fixtures/target-basic/`; golden + parity captures.
 - **Done when**: parseability + integration + parity green for `/gov:target`; tool-coverage lint green.
 
-## 14. Rewrite `/gov:validate`
+## 14. Rewrite `/gov:analyze`
 
-- [x] Rewrite `framework/commands/validate.md` to invoke the mechanical primitives (`validate-frontmatter`, `resolve-anchor`, `traverse-deps`, `check-rule-ids`, `run-generator`, `lint-markdown`) for the deterministic checks, and an `<!-- llm:assessSpecQuality -->` marker on the per-rule Verification step.
+- [x] Rewrite `framework/commands/analyze.md` to invoke the mechanical primitives (`validate-frontmatter`, `resolve-anchor`, `traverse-deps`, `check-rule-ids`, `run-generator`, `lint-markdown`) for the deterministic checks, and an `<!-- llm:assessSpecQuality -->` marker on the per-rule Verification step.
 - [x] `parity: { semantic-fields: ["findings[].message"], strict-fields: ["findings[].rule-id", "findings[].severity"] }`.
 - [x] Fixture under `runtime/tests/fixtures/validate-basic/`; golden stream + parity capture.
 - [x] The fixture exercises at least one MUST-tier finding and one SHOULD-tier finding so the extension point's response routing is covered.
@@ -190,12 +190,12 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 > Confirmed 2026-05-11: no `§cross-spec-impact` action triggered. 020 and 021 are referenced read-only; no sibling spec body cites 022. Constitution `§runtime-boundary` anchor resolves at line 400.
 
-## 24. Run `/gov:validate` against this spec and fix findings
+## 24. Run `/gov:analyze` against this spec and fix findings
 
-- [x] Run `/gov:validate` targeted at `022-deterministic-runtime` and resolve any hard-fail or blocking findings on spec, plan, tasks, and data-model files.
+- [x] Run `/gov:analyze` targeted at `022-deterministic-runtime` and resolve any hard-fail or blocking findings on spec, plan, tasks, and data-model files.
 - [x] Confirm anchor resolution: `§runtime-boundary` references in this spec resolve to the marker in `framework/constitution.md`.
 - [x] Confirm dependency status: `021-runtime-boundary` is `done`.
-- **Done when**: `/gov:validate` reports no hard-fail and no blocking findings.
+- **Done when**: `/gov:analyze` reports no hard-fail and no blocking findings.
 
 > Confirmed 2026-05-11: validate-frontmatter clean; traverse-deps compatible (021 at `done`); `§runtime-boundary` resolves to 2 markers in `framework/constitution.md`; gen-spec-deps reports no drift; markdownlint-cli2 over `specs/022-deterministic-runtime/` reports 0 errors. Advisory anchor mismatches in `spec.md` (`§LLM`, `§The`, `§runtime-boundary`, `§text-first-artifacts`) are pre-existing cross-file or multi-word references the primitive's regex doesn't span; they are advisory, not blocking.
 

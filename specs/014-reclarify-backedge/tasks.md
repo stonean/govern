@@ -9,7 +9,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 ## 1. Update `/ask` source for back-edge ownership
 
 - [x] In `framework/commands/ask.md`, remove the "Status warning" subsection (informational-only)
-- [x] Add a "Status mutation" subsection that branches on the spec's current status: `draft` → no mutation; `clarified` / `planned` / `in-progress` → revert frontmatter `status` to `draft` in the same write that appends the question; `done` → refuse the recording (no question added, no mutation) and redirect to `/{project}:elaborate` with the spec's exact message
+- [x] Add a "Status mutation" subsection that branches on the spec's current status: `draft` → no mutation; `clarified` / `planned` / `in-progress` → revert frontmatter `status` to `draft` in the same write that appends the question; `done` → refuse the recording (no question added, no mutation) and redirect to `/{project}:ask` with the spec's exact message
 - [x] Add an "Impact display" step that runs only on a non-`draft`, non-`done` mutation: prior status, plan-artifact list with last-modified timestamps, scenario-file list, and a one-line dependency note when this spec is named in any other spec's frontmatter `dependencies` field
 - [x] Update the "Refine the question" step to detect when the refined form matches an existing `## Open Questions` entry (normalized whitespace) and prompt skip-or-refine; on skip, exit without recording or mutating
 - [x] Update the next-step hint after a recorded question to "Question recorded. Run `/{project}:clarify` to resolve it." in every case where a question is recorded; on `done` the hint is the elaborate redirect message instead
@@ -22,7 +22,7 @@ Done when: the source file describes the new ownership rules end-to-end and expl
 - [x] In `framework/commands/clarify.md`, replace the Gate subsection with a branch on `(status, open-question count)` per the spec's table
 - [x] Preserve the existing draft hot path verbatim (walk questions if any, verify acceptance criteria, advance to `clarified`)
 - [x] Add a "Recovery path" subsection that triggers when status is `clarified` / `planned` / `in-progress` and `## Open Questions` has at least one entry: display status, open-question titles, plan-artifact list with timestamps, and scenario-file list, then prompt with the wording in the spec's recovery-path acceptance criterion; on confirm, revert frontmatter `status` to `draft` and run the standard walk; on decline, exit with no file modifications
-- [x] Add the explicit `done` branch: stop with "Spec is `done`. Run `/{project}:elaborate` to capture this as a scenario instead." and exit without mutation
+- [x] Add the explicit `done` branch: stop with "Spec is `done`. Run `/{project}:ask` to capture this as a scenario instead." and exit without mutation
 - [x] Lightly tighten the existing "already `{status}`" message to mention the next pipeline command per the spec's table
 - [x] Confirm the scenario-targeted clarify section is unchanged, including that `## Resolved Questions` is never re-walked
 - [x] Confirm the existing dependency-readiness check still runs on the post-revert walk

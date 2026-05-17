@@ -46,11 +46,11 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] Each step has a `name:` that names the corresponding spec check (a/b/c/d/e) so failures map directly to spec acceptance criteria.
 - **Done when**: the workflow file passes `actionlint` (if installed) or `yq` parse; pushing a branch with the file triggers the job (verified via GitHub Actions UI on PR).
 
-## 8. Run `/gov:validate` against this spec
+## 8. Run `/gov:analyze` against this spec
 
-- [x] Run `/gov:validate` targeted at `021-runtime-boundary` and resolve any hard-fail or blocking findings.
+- [x] Run `/gov:analyze` targeted at `021-runtime-boundary` and resolve any hard-fail or blocking findings.
 - [x] Anchor-resolution check passes for `§runtime-boundary` references.
-- **Done when**: `/gov:validate` reports no hard-fail and no blocking findings on this spec.
+- **Done when**: `/gov:analyze` reports no hard-fail and no blocking findings on this spec.
 
 ## 9. Run `npx markdownlint-cli2` across all touched files
 

@@ -56,7 +56,7 @@ Done when: implement command enforces the gate, walks tasks in order, and verifi
 
 ## 7. Create the validate and next commands
 
-- [x] Write `commands/validate.md` — read session target, run all checks (spec integrity, artifact completeness, plan consistency, task consistency, dependencies, cross-spec references, markdownlint)
+- [x] Write `commands/analyze.md` — read session target, run all checks (spec integrity, artifact completeness, plan consistency, task consistency, dependencies, cross-spec references, markdownlint)
 - [x] Write `commands/next.md` — read session target, determine current status, run the appropriate pipeline command
 
 Done when: validate reports PASS/FAIL for all checks including markdownlint, and next correctly maps status to the right command.

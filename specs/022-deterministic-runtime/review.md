@@ -18,7 +18,7 @@ Final review of the `ask-consolidation` scenario after `gvrn 0.4.1` cleared the 
 
 **Scope.** `runtime/src/primitives/create_scenario.rs`, `runtime/src/primitives/append_task.rs`, helper additions in `runtime/src/primitives/mod.rs` (validators + shared `iter_numbered_headings` iterator), wiring across `parser/mod.rs`, `interpreter/mod.rs`, `mcp/server.rs`, `main.rs`, schema additions in `schema/primitives.rs`, plus `framework/runtime-tools.txt` and the CHANGELOG / Cargo.toml release metadata.
 
-**Rule coverage walked.** `framework/rules/security-backend.md` (70 rules, post-update), `framework/rules/configuration.md` (11 rules). `framework/rules/security-frontend.md` not in scope — no frontend code touched.
+**Rule coverage walked.** `framework/rules/security-backend.md` (70 rules, post-update), `framework/rules/configuration-cross.md` (11 rules). `framework/rules/security-frontend.md` not in scope — no frontend code touched.
 
 **Security pass.** BE-INPUT-004 (path canonicalization) is the only rule that fires structurally against the new primitives. The 0.4.1 fix wires `validate_no_traversal` against `feature_path` and `validate_slug` against `slug` before any filesystem operation. Defense-in-depth satisfied — caller-supplied path components are rejected before they reach `repo.join(...)`. The 25 new rules added in `27a0a7e` (MFA, JWT, OAuth/OIDC, CSPRNG, log injection, CSV injection, HTTP smuggling, GraphQL, LDAP, etc.) do not apply to gvrn's pure-filesystem primitives — no auth, no HTTP, no logging, no crypto in scope.
 
