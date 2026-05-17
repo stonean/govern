@@ -26,7 +26,7 @@ A separate problem surfaced 2026-05-17 when [024](../024-rule-loader/spec.md) an
 
 ### Check families
 
-The seven families below are the v1 scope. Each is described by what it checks, where it reads, and what a finding looks like.
+The eight families below are the v1 scope. Each is described by what it checks, where it reads, and what a finding looks like.
 
 #### 1. Cross-doc claim consistency
 
