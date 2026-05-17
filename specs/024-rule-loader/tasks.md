@@ -81,6 +81,6 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 12. Run `/gov:analyze` and `/gov:review` against this spec
 
-- [ ] `/gov:analyze` against `024-rule-loader` — no blocking findings; the new discovery loads every `framework/rules/*.md` file under the closed-suffix policy
-- [ ] `/gov:review` against `024-rule-loader` — `review.md` records 0 MUST violations; the `loading rule files:` notice lists every file in `framework/rules/` (govern is a full-stack repo for review purposes)
-- [ ] Done when both commands complete with `blocking: false` and no MUST violations
+- [x] `/gov:analyze` against `024-rule-loader` — no blocking findings; the new discovery loads every `framework/rules/*.md` file under the closed-suffix policy
+- [x] `/gov:review` against `024-rule-loader` — `review.md` records 0 MUST violations; the `loading rule files:` notice lists every file in `framework/rules/` (govern is a full-stack repo for review purposes)
+- [x] Done when both commands complete with `blocking: false` and no MUST violations
