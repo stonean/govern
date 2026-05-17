@@ -934,6 +934,25 @@ pub struct AppendTaskArgs {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[arg(long)]
     pub slug: Option<String>,
+    /// Heading of an existing `## …` phase container under which the new
+    /// task should be appended (e.g., `Phase B — Implementation`). Only
+    /// consulted when the target `tasks.md` is phased — i.e., contains
+    /// at least one `### N.` heading. In a flat file the argument is
+    /// ignored and the task is appended at file bottom as `## N. …`.
+    ///
+    /// When phased and `parent-heading` is omitted, the primitive
+    /// creates a default follow-on phase using the auto-computed letter:
+    /// `## Phase {next-letter} — Follow-on scenarios`, where
+    /// `{next-letter}` is the next alphabetical letter after existing
+    /// `Phase X` labels (defaulting to `A` when none are present).
+    ///
+    /// When phased and the supplied heading does not match any existing
+    /// phase, the primitive refuses with
+    /// `PrimitiveError::ParentHeadingNotFound` rather than silently
+    /// creating a new phase or appending at file bottom.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[arg(long)]
+    pub parent_heading: Option<String>,
 }
 
 /// Result for `append-task`.

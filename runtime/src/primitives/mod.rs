@@ -235,6 +235,18 @@ pub enum PrimitiveError {
         /// this context.
         reason: String,
     },
+    /// `append-task` was called with a `parent-heading` argument that does
+    /// not match any `## …` phase container in the target `tasks.md`.
+    #[error(
+        "append-task: parent-heading '{heading}' not found in tasks.md (available: {available})"
+    )]
+    ParentHeadingNotFound {
+        /// Caller-supplied heading text that didn't match.
+        heading: String,
+        /// Comma-separated list of available phase headings (for the
+        /// operator to choose from when retrying).
+        available: String,
+    },
 }
 
 /// Convenience alias for primitive return values.
@@ -427,12 +439,16 @@ pub(crate) fn validate_slug(slug: &str) -> Result<()> {
     Ok(())
 }
 
-/// Walk `content` line by line, yielding the numeric prefix of every ATX-2
-/// heading whose text begins with `N.` (where N is decimal digits). Skips
-/// headings inside fenced code blocks (`` ``` ``-delimited). Used by primitives
-/// that enumerate task numbers in `tasks.md` (`append-task` computes
-/// `max(N) + 1` from this iterator).
-pub(crate) fn iter_numbered_headings(content: &str) -> impl Iterator<Item = u32> + '_ {
+/// Walk `content` line by line, yielding the numeric prefix of every ATX
+/// heading at any of the given `levels` whose text begins with `N.`. Skips
+/// headings inside fenced code blocks. Used by `tasks.md` primitives to
+/// compute the next task number in both flat (`## N.`) and phased
+/// (`### N.` under `## Phase X`) structures — passing `&[2, 3]` produces
+/// the union across both shapes.
+pub(crate) fn iter_task_numbers_at_levels<'a>(
+    content: &'a str,
+    levels: &'a [u8],
+) -> impl Iterator<Item = u32> + 'a {
     let mut in_fence = false;
     content.lines().filter_map(move |line| {
         let trimmed = line.trim_start();
@@ -444,7 +460,7 @@ pub(crate) fn iter_numbered_headings(content: &str) -> impl Iterator<Item = u32>
             return None;
         }
         let (level, text) = parse_atx_heading(line)?;
-        if level != 2 {
+        if !levels.contains(&level) {
             return None;
         }
         let dot = text.find('.')?;
@@ -454,6 +470,110 @@ pub(crate) fn iter_numbered_headings(content: &str) -> impl Iterator<Item = u32>
         }
         num_part.parse::<u32>().ok()
     })
+}
+
+/// Phased vs flat structure of a `tasks.md` file.
+///
+/// A file is **phased** when it contains at least one `### N.` heading
+/// outside of fenced blocks — meaning task entries live at level 3 under
+/// `## …` phase containers (e.g., 023's `## Phase A — Refactor / ### 1.
+/// Task`). Otherwise it is **flat** — task entries are `## N.` at level 2
+/// (the original `tasks.md` shape).
+///
+/// Detection matches the [scenario][runtime-primitive-structural-bugs]
+/// edge case "mixed structure → treat as phased": any `### N.` heading
+/// anywhere in the file signals phased structure, even if `## N.` headings
+/// are also present.
+///
+/// [runtime-primitive-structural-bugs]: <https://github.com/stonean/govern/blob/main/specs/022-deterministic-runtime/scenarios/runtime-primitive-structural-bugs.md>
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum TasksStructure {
+    /// No `### N.` headings present; task entries are flat (`## N.`).
+    Flat,
+    /// At least one `### N.` heading present; task entries live under
+    /// `## …` phase containers.
+    Phased,
+}
+
+/// Detect a `tasks.md` file's structure. Used by `append-task` (to choose
+/// flat-append vs phase-append) and `read-tasks` (to walk the appropriate
+/// heading levels).
+pub(crate) fn detect_tasks_structure(content: &str) -> TasksStructure {
+    if iter_task_numbers_at_levels(content, &[3]).next().is_some() {
+        TasksStructure::Phased
+    } else {
+        TasksStructure::Flat
+    }
+}
+
+/// One `## …` phase container in a phased `tasks.md`. `start_line` and
+/// `end_line` are 1-based line numbers from the file's `lines()` iterator;
+/// `end_line` is the last content line that belongs to this phase (the
+/// line before the next `## …` heading, or the last line of the file
+/// when this is the final phase).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct PhaseRange {
+    /// Full heading text (without the leading `## ` prefix), e.g.,
+    /// "Phase A — Refactor" or "Phase C — Follow-on scenarios".
+    pub heading: String,
+    /// 1-based line number of the `## …` heading line itself.
+    pub start_line: usize,
+    /// 1-based line number of the last content line that belongs to this
+    /// phase (inclusive).
+    pub end_line: usize,
+}
+
+/// Walk a phased `tasks.md` body and yield each `## …` phase container's
+/// heading text plus the line range it covers. `## N.` headings (numeric
+/// flat-task remnants in a mixed-structure file) are NOT treated as
+/// phase containers — only `## …` headings with non-numeric text qualify.
+/// Behavior on a non-phased file is informational; callers should gate
+/// on [`detect_tasks_structure`] before consuming this iterator.
+pub(crate) fn iter_phase_ranges(content: &str) -> Vec<PhaseRange> {
+    let mut phases: Vec<PhaseRange> = Vec::new();
+    let mut in_fence = false;
+    let lines: Vec<&str> = content.lines().collect();
+    for (idx, line) in lines.iter().enumerate() {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with("```") {
+            in_fence = !in_fence;
+            continue;
+        }
+        if in_fence {
+            continue;
+        }
+        if let Some((2, heading)) = parse_atx_heading(line) {
+            // Skip numeric flat-task remnants: a heading whose text begins
+            // with "N." (decimal digits, then dot) is a flat task, not a
+            // phase container. Mixed files keep their phase set clean.
+            if heading_starts_with_number(&heading) {
+                continue;
+            }
+            // 1-based line numbers; close out the previous phase before
+            // opening the next.
+            let one_based = idx + 1;
+            if let Some(prev) = phases.last_mut() {
+                prev.end_line = one_based.saturating_sub(1);
+            }
+            phases.push(PhaseRange {
+                heading,
+                start_line: one_based,
+                end_line: lines.len(), // closed below or left at EOF
+            });
+        }
+    }
+    phases
+}
+
+/// `true` when `heading` begins with `N.` (decimal digits, then a literal
+/// dot). Used to filter numeric task headings from phase containers.
+fn heading_starts_with_number(heading: &str) -> bool {
+    let bytes = heading.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() && bytes[i].is_ascii_digit() {
+        i += 1;
+    }
+    i > 0 && i < bytes.len() && bytes[i] == b'.'
 }
 
 /// Parse an ATX heading line and return `(level, text)` when the line matches
@@ -568,7 +688,7 @@ mod tests {
     #[test]
     fn iter_numbered_headings_extracts_atx2_numbers() {
         let content = "# Title\n\n## 1. First\n\n## 2. Second\n\n## 3. Third\n\nNot a heading.\n";
-        let nums: Vec<u32> = iter_numbered_headings(content).collect();
+        let nums: Vec<u32> = iter_task_numbers_at_levels(content, &[2]).collect();
         assert_eq!(nums, vec![1, 2, 3]);
     }
 
@@ -576,21 +696,21 @@ mod tests {
     fn iter_numbered_headings_skips_non_atx2() {
         let content =
             "# 99. Not counted\n\n## 1. Counted\n\n### 2. Not counted (level 3)\n\n## 2. Counted\n";
-        let nums: Vec<u32> = iter_numbered_headings(content).collect();
+        let nums: Vec<u32> = iter_task_numbers_at_levels(content, &[2]).collect();
         assert_eq!(nums, vec![1, 2]);
     }
 
     #[test]
     fn iter_numbered_headings_skips_fenced_blocks() {
         let content = "## 1. Real\n\n```text\n## 99. Fake\n```\n\n## 2. Real\n";
-        let nums: Vec<u32> = iter_numbered_headings(content).collect();
+        let nums: Vec<u32> = iter_task_numbers_at_levels(content, &[2]).collect();
         assert_eq!(nums, vec![1, 2]);
     }
 
     #[test]
     fn iter_numbered_headings_handles_non_numeric_headings() {
         let content = "## Setup\n\n## 1. First\n\n## Wrap-up\n\n## 7. Seventh\n";
-        let nums: Vec<u32> = iter_numbered_headings(content).collect();
+        let nums: Vec<u32> = iter_task_numbers_at_levels(content, &[2]).collect();
         assert_eq!(nums, vec![1, 7]);
     }
 }
