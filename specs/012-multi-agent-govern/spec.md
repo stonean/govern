@@ -1,11 +1,11 @@
 ---
 title: "012-multi-agent-govern — spec"
-status: in-progress
+status: done
 dependencies: [007-govern-workflow]
 tags: [bootstrap, agent]
 review:
-  last-run: 2026-05-10T00:00:00Z
-  reviewed-against: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
+  last-run: 2026-05-17T22:30:00Z
+  reviewed-against: d904430
   must-violations: 0
   should-violations: 0
   low-confidence: 0

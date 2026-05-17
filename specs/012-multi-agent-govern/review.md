@@ -1,7 +1,7 @@
 ---
 spec: 012-multi-agent-govern
-reviewed-at: 2026-05-10T00:00:00Z
-reviewed-against: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
+reviewed-at: 2026-05-17T22:30:00Z
+reviewed-against: d904430
 diff-base: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
 must-violations: 0
 should-violations: 0
@@ -13,7 +13,7 @@ skipped-passes: []
 
 ## Summary
 
-Unified `/govern` installer (replacing per-CLI `govern.md` / `govern-auggie.md`), agent registry, and `commands/setup/{claude,auggie}.md` split. Pure markdown — security rules do not apply at the framework-source level. The bootstrap installer itself is interpreted by an AI agent at adoption time; fetch semantics audited in spec 015. All five passes ran; no findings. `blocking: no`.
+Unified `/govern` installer plus the post-task-10 audit of `settings_template` Bash patterns: both Agent Registry rows now cover `Bash(git status *)`, `Bash(git config *)`, `Bash(chmod *)`, and `Bash(awk *)` (Claude format) and the mirrored `launch-process` regexes (Auggie format). The change is pure data in markdown table cells — no application code added. Tech-stack alignment skipped via `.govern.toml` `[review] tech-stack-verified = true`. Loaded rule files: `configuration-cross.md` (the only file whose suffix selects for govern's text-first stack — no backend/frontend code). All five passes ran; no findings. `blocking: no`.
 
 ## MUST violations (blocking)
 
@@ -39,20 +39,20 @@ _None._
 
 ### Security
 
-The unified `govern.md` operates within the constitutional §text-first invariant. Per-agent settings_template values are hardcoded paths within the framework tarball (no operator input). The Agent Registry is data, not code.
+The added Bash patterns follow the scenario's narrow-pattern guidance — `Bash(git status *)` and `Bash(git config *)` instead of `Bash(git *)` so risky operations (`git push`, `git reset --hard`) remain outside the bootstrap allowlist. `Bash(chmod *)` and `Bash(awk *)` are broad but consistent with the pre-existing `Bash(curl *)` / `Bash(tar *)` convention and scoped to the bootstrap permission set only — the full permission set is applied later by `/{project}:configure`. No security rule files apply at this scope (no backend/frontend code).
 
 ### Reuse
 
-The single-installer model collapses two parallel installer files into one source of truth. `data-model.md` documents the registry schema as the canonical reference.
+The change uses the existing canonical `settings_template` JSON field on each row; no parallel structure introduced.
 
 ### Quality
 
-The signpost added to 007's spec correctly points readers to 012 for the current installer shape; the resolved-note refresh in `specs/spec.md` keeps the cross-cutting decisions doc consistent.
+JSON validity verified on both rows (`node -e JSON.parse(...)` parses cleanly — 14 entries in Claude's `permissions.allow`, 8 in Auggie's `toolPermissions`). Parity verified: every new Claude `Bash(X *)` pattern has a matching Auggie `^X␣` (trailing-space) regex with identical command-token granularity. The scenario's parity contract holds.
 
 ### Efficiency
 
-N/A.
+N/A — static configuration data.
 
 ### Simplicity
 
-Unification reduces duplicate maintenance surface and was a precondition for later per-agent additions to live in one place.
+Could the four new entries be consolidated into a broader pattern? Explicitly no — the scenario's "Pattern over-broadness" edge case rejects `Bash(git *)` and the same reasoning applies to other broad patterns. The four narrow entries are the simplest form that satisfies the audit contract without granting unintended commands.
