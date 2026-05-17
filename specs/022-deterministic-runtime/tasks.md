@@ -255,3 +255,9 @@ Adds two new primitives — `create-scenario` and `append-task` — that the `/a
 
   > Confirmed 2026-05-16: tag `gvrn-v0.4.0` pushed; release run 25962899207 reports all 5 matrix legs green (aarch64/x86_64 macOS, x86_64/aarch64 Linux, x86_64 Windows). Release at <https://github.com/stonean/govern/releases/tag/gvrn-v0.4.0> ships 5 archives + 5 sha256 sidecars. `cargo publish` from `runtime/` uploaded `gvrn 0.4.0` to crates.io.
 - **Done when**: the scenario's described behavior is correctly implemented and tested; `gvrn-v0.4.0` is live on GitHub releases and crates.io; spec 023's Phase B can begin (the `framework/commands/ask.md` rewrite calls the new primitives).
+
+## 29. Implement scenario: runtime-primitive-structural-bugs
+
+- [ ] - [ ] Implement the behavior described in [`scenarios/runtime-primitive-structural-bugs.md`](scenarios/runtime-primitive-structural-bugs.md).
+
+- **Done when**: All four primitive bug fixes ship: `append-task` accepts an explicit `slug` argument and detects phased vs. flat tasks.md structure; `read-tasks` parses phased tasks.md correctly and returns the flattened list with phase metadata; `check-stuck` measures from the most recent `in-progress` transition, not the first. Each fix has fixture-based unit tests plus a parity-test entry; `gvrn` ships a new patch or minor version.

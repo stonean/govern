@@ -74,3 +74,9 @@ Done when: markdownlint reports zero errors and every acceptance criterion is ve
 - [x] After the user confirms the acceptance criteria are met, set `specs/012-multi-agent-govern/spec.md` status to `done`.
 
 Done when: the spec status is `done` and the change is committed.
+
+## 10. Implement scenario: settings-template-bash-allowlist
+
+- [ ] - [ ] Implement the behavior described in [`scenarios/settings-template-bash-allowlist.md`](scenarios/settings-template-bash-allowlist.md).
+
+- **Done when**: Both agent rows' `settings_template` in `framework/bootstrap/govern.md` include every Bash pattern a routine `/govern` run invokes (audit pass complete); the additions are mirrored in Auggie's native format; an end-to-end `/govern` smoke test produces no Bash-permission prompts during routine bootstrap.
