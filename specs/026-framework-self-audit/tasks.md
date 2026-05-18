@@ -24,10 +24,10 @@ Tasks derived from the [plan](plan.md). Complete in order. Phased structure — 
 
 ### 3. Implement Family 1 — `scripts/audit/cross-doc-consistency.sh`
 
-- [ ] Sub-check 1a: invoke `scripts/gen-readme-table.sh --check`. Surface non-zero exit as a finding pointing at `README.md`.
-- [ ] Sub-check 1b: extract the pipeline-diagram block (delimited by the canonical `draft → clarified → planned → in-progress → done` line and surrounding whitespace) from `framework/constitution.md` §spec-lifecycle, `docs/introduction.md`, and `framework/templates/project/project-readme.md`. Diff pairwise; finding per divergence.
-- [ ] Sub-check 1c: extract back-edge sentences from `framework/constitution.md` §spec-lifecycle. Compare against references in `framework/commands/ask.md` and `framework/commands/target.md`'s Status→next-action table. Finding per wording divergence.
-- [ ] Unit-test by running against the current repo (should exit 0) and against a deliberately-modified copy with one altered line in `docs/introduction.md` (should exit 1 with one finding).
+- [x] Sub-check 1a: invoke `scripts/gen-readme-table.sh --check`. Surface non-zero exit as a finding pointing at `README.md`.
+- [x] Sub-check 1b: extract the pipeline-diagram block (delimited by the canonical `draft → clarified → planned → in-progress → done` line and surrounding whitespace) from `framework/constitution.md` §spec-lifecycle, `docs/introduction.md`, and `framework/templates/project/project-readme.md`. Diff pairwise; finding per divergence.
+- [x] Sub-check 1c: extract back-edge sentences from `framework/constitution.md` §spec-lifecycle. Compare against references in `framework/commands/ask.md` and `framework/commands/target.md`'s Status→next-action table. Finding per wording divergence.
+- [x] Unit-test by running against the current repo (should exit 0) and against a deliberately-modified copy with one altered line in `docs/introduction.md` (should exit 1 with one finding).
 
 - **Done when**: script runs, exits 0 on clean state, exits 1 with structured findings on injected drift.
 
