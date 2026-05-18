@@ -62,7 +62,6 @@ See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred 
 | [024-rule-loader](specs/024-rule-loader/spec.md) | done | 020, 023 | Generalize `/gov:review`'s rule-file selection so the set of `framework/rules/*.md` files loaded for any given run is derived from each file's declared surface and the project's detected tech stack — not from a hardcoded list of filenames in [`framework/commands/review.md`](../../framework/commands/review.md). |
 | [025-rule-opt-out](specs/025-rule-opt-out/spec.md) | done | 020, 024 | Add a narrow `.govern.toml` `[[review.disabled-rule-files]]` opt-out so an adopter whose stack matches a rule file's surface — but whose project is not yet ready to enforce that file's rules — can exclude the file from `/gov:review` loading with a recorded reason. |
 | [026-framework-self-audit](specs/026-framework-self-audit/spec.md) | done | 017, 022, 023, 024, 025 | A maintainer-grade slash command that audits `govern`'s own framework artifacts for the kinds of drift [`/gov:analyze`](../../framework/commands/analyze.md) is not scoped to catch. |
-| [027-command-source-templating](specs/027-command-source-templating/spec.md) | draft | 012, 026 | `/audit` Family 4 ([`scripts/audit/placeholder-roundtrip.sh`](../../scripts/audit/placeholder-roundtrip.sh)) flags command source files under `framework/commands/`, `framework/bootstrap/`, and `.claude/commands/gov/` that contain literal `/gov:` (and bare `gov:`) references where `/{project}:` placeholders belong. |
 
 <!-- generated:feature-specs:end -->
 

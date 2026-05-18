@@ -86,15 +86,13 @@ jobs:
       - name: (f) Procedure parseability
         run: bash scripts/lint-procedure-parseability.sh
 
-      # Step (h) runs the framework self-audit (spec 026). v1 ships in
-      # "soft launch" mode — continue-on-error is true because the v1
-      # audit surfaces known framework-level drift (Family 4
-      # placeholder-roundtrip on /gov: literals; Family 8 introducing-
-      # drift on old-name references in ~9 done specs) that requires
-      # separate follow-on work to resolve. Once the drift is addressed,
-      # flip continue-on-error to false so /audit becomes a hard PR gate
-      # per spec 026 Q4. Until then, findings are visible in PR logs
-      # but do not block merge.
-      - name: (h) Framework self-audit (advisory in v1)
+      # Step (h) runs the framework self-audit (spec 026). The v1
+      # advisories (Family 4 placeholder-roundtrip, Family 8 introducing-
+      # drift, Family 9 primitive-promotion candidates) were resolved in
+      # commit 1aca768. Per spec 026 §Q4 and the audit-ci-hard-gate
+      # scenario, this step is now a hard PR gate: any finding fails the
+      # check. To deliberately allow a finding, use the documented
+      # ignore-marker annotations (audit:ignore-placeholders,
+      # audit:ignore-promotion, etc.) inside the affected source.
+      - name: (h) Framework self-audit
         run: bash scripts/audit/run-all.sh
-        continue-on-error: true

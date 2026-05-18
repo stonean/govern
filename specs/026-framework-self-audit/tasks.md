@@ -179,28 +179,15 @@ Pulled in from the original Future Considerations during the autonomous implemen
 
 ## Phase F — Follow-on scenarios
 
-### 19. Implement scenario: family-8-burndown
-
-- [ ] Confirm the maintainer-paced burndown approach described in [`scenarios/family-8-burndown.md`](scenarios/family-8-burndown.md) — no batch rewrite. This task tracks the design acceptance, not a code change.
-
-- **Done when**: the design-by-acceptance scenario is recorded; the rationale (avoid reopening 9 done specs for mechanical word substitution) is captured in the scenario's Resolved Questions. No CI or framework change ships from this task; Family 8 advisory output continues under `continue-on-error: true` until burndown completes organically.
-
-### 20. Implement scenario: family-9-annotations-and-promotions
-
-- [ ] Pass 1 (annotation sweep): walk each `bash scripts/audit/primitive-promotion-candidates.sh` finding, decide host vs. promotion, insert `<!-- audit:ignore-promotion -->` annotations on host-responsibility steps in `framework/commands/*.md`. Regenerate `.claude/commands/gov/*.md`.
-- [ ] Pass 2 (primitive promotions): for each remaining flagged step, design and ship the corresponding gvrn primitive (schema, implementation, MCP registration, `framework/runtime-tools.txt` entry). Each promotion is its own commit / version bump.
-
-- **Done when**: `bash scripts/audit/primitive-promotion-candidates.sh` exits 0; every flagged step has been resolved as either annotated (Pass 1) or promoted to a primitive (Pass 2).
-
-### 21. Implement scenario: audit-script-refactors
+### 19. Implement scenario: audit-script-refactors
 
 - [ ] Extract `scripts/audit/lib.sh` exposing `audit_emit FAMILY LOCATION MESSAGE FIX` plus ROOT/cd setup; refactor the nine family check scripts to source it (REUSE-001).
 - [ ] Refactor `flush_step` in `scripts/audit/primitive-promotion-candidates.sh` to take state as explicit arguments and return the step list, eliminating caller-scope mutation (QUALITY-001).
 
 - **Done when**: `bash scripts/audit/run-all.sh` exits 0 with stdout-row parity against the pre-refactor state; each family script is shorter by ~10 lines; `flush_step` no longer reads or mutates caller-scope variables.
 
-### 22. Implement scenario: audit-ci-hard-gate
+### 20. Implement scenario: audit-ci-hard-gate
 
-- [ ] Once Families 4, 8, and 9 all exit 0 against `main` at HEAD, remove `continue-on-error: true` from `.github/workflows/markdown-only-pipeline.yml`'s `/audit` step and from `.github/workflows/runtime-release.yml`'s `audit` job.
+- [x] Remove `continue-on-error: true` from `.github/workflows/markdown-only-pipeline.yml`'s `/audit` step and from `.github/workflows/runtime-release.yml`'s `audit` job. Preconditions verified 2026-05-17: `bash scripts/audit/run-all.sh` exits 0 against `main` at HEAD; Families 4, 8, and 9 each exit 0 (resolved in commit `1aca768`).
 
-- **Done when**: `/audit` is a hard PR-check and a hard pre-tag release gate; a deliberately-introduced advisory finding is rejected by the PR workflow. Blocked on tasks 19, 20, 21 reaching their done-when conditions.
+- **Done when**: `/audit` is a hard PR-check and a hard pre-tag release gate; the next PR-check workflow run passes with the audit step blocking-eligible.

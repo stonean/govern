@@ -14,17 +14,14 @@ permissions:
 
 jobs:
   # Framework self-audit (spec 026) — runs before the build matrix as a
-  # pre-tag gate. v1 ships in "soft launch" mode: continue-on-error: true
-  # so the release matrix still fires even when /audit surfaces findings.
-  # The v1 audit has known findings (Family 4 placeholder-roundtrip and
-  # Family 8 introducing-drift) that require separate follow-on work.
-  # Once the framework drift is addressed, remove `continue-on-error` so
-  # /audit becomes a hard release gate per spec 026 Q4. Until then,
-  # findings are visible in workflow logs but do not abort the release.
+  # pre-tag gate. The v1 advisories (Family 4, 8, 9) were resolved in
+  # commit 1aca768. Per spec 026 §Q4 and the audit-ci-hard-gate
+  # scenario, this job is now a hard release gate: any finding aborts
+  # the release. To deliberately allow a finding, use the documented
+  # ignore-marker annotations inside the affected source.
   audit:
-    name: Framework self-audit (advisory in v1)
+    name: Framework self-audit
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - name: Run /audit
