@@ -69,7 +69,7 @@ When the underlying finding still exists elsewhere in scope after expiry, it re-
 
 ## `review.md` artifact
 
-Written to `specs/NNN-feature/review.md` (or `specs/NNN-feature/scenarios/SLUG/review.md` when targeting a scenario). Regenerated wholesale on each run.
+Written to `specs/NNN-feature/review.md` — one review artifact per spec, regardless of whether the run targeted a feature or a scenario. A scenario-targeted run records which scenario it covered via the `scenario:` frontmatter field. Regenerated wholesale on each run; the most recent `/gov:review` invocation supersedes any prior report.
 
 ### Frontmatter
 

@@ -247,8 +247,7 @@ mark the finding `auto-fixable`.
 
 ### 4. Write `review.md`
 
-Write the report to `specs/NNN-feature/review.md` (or
-`specs/NNN-feature/scenarios/SLUG/review.md` when the target is a scenario).
+Write the report to `specs/NNN-feature/review.md`. A scenario-targeted run still writes to the same spec-level path; the `scenario:` frontmatter field records which scenario was reviewed and `reviewed-against` records the commit. Re-running review (scenario- or feature-targeted) supersedes the prior `review.md` wholesale.
 
 ```markdown
 ---
