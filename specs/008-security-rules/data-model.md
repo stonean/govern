@@ -41,7 +41,7 @@ A rule file is a markdown document with the following structure:
 | Element | Type | Constraints |
 | --- | --- | --- |
 | `surface` | string | `BE` (backend) or `FE` (frontend). Uppercase. |
-| `category` | string | Short uppercase abbreviation drawn from the per-surface set below. |
+| `category` | string | Short uppercase alphanumeric abbreviation (`[A-Z][A-Z0-9]*`) drawn from the per-surface set below or extended by a later rule-introducing spec. |
 | `NNN` | integer | Zero-padded sequence number, starting at `001`. Never renumbered. Never reused after removal. |
 
 ### Category abbreviations

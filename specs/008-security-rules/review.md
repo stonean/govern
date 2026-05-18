@@ -1,8 +1,8 @@
 ---
 spec: 008-security-rules
-reviewed-at: 2026-05-10T00:00:00Z
-reviewed-against: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
-diff-base: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
+reviewed-at: 2026-05-18T00:00:00Z
+reviewed-against: 2c44696447300ddf12ad395e2c64b1dd17a81949
+diff-base: 2c44696447300ddf12ad395e2c64b1dd17a81949
 must-violations: 0
 should-violations: 0
 low-confidence: 0
@@ -13,7 +13,9 @@ skipped-passes: []
 
 ## Summary
 
-The rule files themselves (`framework/rules/security-backend.md`, `framework/rules/security-frontend.md`) plus `govern.md`, `analyze.md`, and `constitution.md` edits that wire them into the pipeline. These are the rules that `/gov:review` loads — meta-review applies, but the rule prose is what gets loaded, not interpreted code. All five passes ran; no findings. `blocking: no`.
+Re-review triggered by two advisory fixes landed against the spec's artifacts: `data-model.md` (line 44, category schema relaxed from "Short uppercase abbreviation" to `[A-Z][A-Z0-9]*` to admit alphanumeric tokens like `A11YFORM`, `A11YMEDIA`, `VITALS`, etc., introduced by the later rule files) and `tasks.md` (line 56, `FE-DEP-002` typo corrected to `FE-DEPS-002`). Both are doc-only edits; the rule files this spec creates (`framework/rules/security-{backend,frontend}.md`) and the bootstrap/analyze wiring are unchanged since the 2026-05-10 review.
+
+Tech-stack alignment was skipped via `.govern.toml [review] tech-stack-verified = true`. The project's own code surface is markdown + bash + YAML — no backend service, no frontend application — so only the cross-cutting rule file applies; the security-backend/security-frontend files are *shipped content*, not enforceable constraints on the framework's own source. All five passes ran clean against the modified scope.
 
 ## MUST violations (blocking)
 
@@ -39,20 +41,28 @@ _None._
 
 ### Security
 
-The artifact under review *is* the security rule set. Each rule has Statement / Rationale / Verification / Source per the data-model schema. Rules use stable `SEC-{CATEGORY}-{NNN}` IDs (permanent per the data-model decision documented here and reaffirmed in 020).
+`configuration-cross.md` CFG-CONST-* and CFG-ENV-* triggers fire on plans/specs that introduce operator-tunable constants or env vars. The data-model.md change tightens a category-token regex; the tasks.md change fixes a typo. Neither introduces a new constant, env var, or configuration value. No findings.
 
 ### Reuse
 
-Rule entry shape is reused unchanged by `framework/rules/configuration-cross.md` (017) and by any future domain rule files. The 7 edge cases codified in `analyze.md`'s "Security rules" check are the canonical loader logic, later generalized by 016 to "Rules".
+The schema clarification is one cell of one table; the typo fix is a single token. No duplication.
 
 ### Quality
 
-`framework/bootstrap/govern.md` Shared Files mapping uses the `update` strategy (so adopter additions survive), per the canonical-sources discipline. The Security audit (brownfield) section orders correctly between Shared Files and Per-Agent Scaffolding.
+The relaxed regex `[A-Z][A-Z0-9]*` matches every legacy ID (`AUTHN`, `XSS`, `CSRF`, etc.) and the extended set (`A11YFORM`, `A11YMEDIA`, `SCHEMA`, `APIVER`, `VITALS`, `BUNDLE`, `IMAGE`, `FONT`, `LOAD`, `KBD`, `ARIA`, `IDEMP`, `COMPAT`, `SEMHTML`, `CONTRAST`, `ERRENV`, `STATUS`, `PAGE`). It does not match lowercase or symbol-bearing tokens, preserving the original intent. No regression.
 
 ### Efficiency
 
-N/A.
+N/A — doc edits.
 
 ### Simplicity
 
-Rule format is minimal — four fields plus the body statement. No tunable thresholds, no optional metadata.
+The phrase "drawn from the per-surface set below or extended by a later rule-introducing spec" makes the open-extension semantics explicit, replacing the prior implicit "Short uppercase abbreviation" closed-list reading. One sentence, no indirection.
+
+## Rule-file selection
+
+```text
+loading rule files: configuration-cross.md
+```
+
+Backend / frontend rule files were not loaded — the framework's own implementation is markdown + bash + YAML, not application code. Those files are shipped to adopters; this project does not enforce them against itself.
