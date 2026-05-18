@@ -1,22 +1,22 @@
 ---
 spec: 022-deterministic-runtime
-scenario: runtime-primitive-structural-bugs
-reviewed-at: 2026-05-18T00:30:00Z
-reviewed-against: 7f9b121
-diff-base: c7fdf585b91a1f6f7d6e4f6e1f1f5b1a8e1f7a1b
+scenario: check-stuck-tasks-md-advancement
+reviewed-at: 2026-05-18T02:30:00Z
+reviewed-against: 109befe
+diff-base: 109befe983c7298482bafe2f751e9da41c2d51d4
 must-violations: 0
-should-violations: 0
+should-violations: 1
 low-confidence: 0
 skipped-passes: []
 ---
 
-# Review — 022-deterministic-runtime (runtime-primitive-structural-bugs scenario)
+# Review — 022-deterministic-runtime (check-stuck-tasks-md-advancement scenario)
 
 ## Summary
 
-Final review of the `runtime-primitive-structural-bugs` scenario after the four-phase autonomous run landed `gvrn 0.5.1`. Stack: govern is text-first markdown + bash with an opt-in Rust runtime under `runtime/`. Loaded rule files: `configuration-cross.md` (no CFG-* triggers fire against the Rust changes — the diff introduces no env-var lookups, operator-tunable constants, or shared cross-module values). No security rule file applies to the runtime crate at the framework level. All five passes ran; 0 findings. `blocking: no`.
+Reviewed the task-30 implementation: `check-stuck`'s second-condition fix. The change adds 4 helper functions (`first_incomplete_index_unchanged`, `read_blob_at_head`, `read_blob_at_commit`, `read_blob_from_tree`, `first_incomplete_subtask_index`), modifies `run()` to require both `count >= threshold` AND the new condition, and adds one regression test. CHANGELOG entry and version bump (0.5.1 → 0.5.2). All edits under `runtime/src/primitives/check_stuck.rs` plus metadata files.
 
-**Scope.** `runtime/src/primitives/append_task.rs`, `runtime/src/primitives/read_tasks.rs`, `runtime/src/primitives/check_stuck.rs`, helper additions to `runtime/src/primitives/mod.rs` (`TasksStructure`, `detect_tasks_structure`, `iter_task_numbers_at_levels`, `iter_phase_ranges`, `PhaseRange`, `MissingArgument`, `ParentHeadingNotFound`), schema additions to `runtime/src/schema/primitives.rs` (`AppendTaskArgs.slug`, `AppendTaskArgs.parent_heading`, `Task.phase`), CHANGELOG entry, `Cargo.toml`/`Cargo.lock` version bump, plus the cross-spec fix to `framework/commands/analyze.md` and its regenerated `.claude/commands/gov/analyze.md` mirror (the spec-016 step-10 parser-regression hit during the parity test sweep for Phase 1).
+Stack: text-first markdown + Rust runtime. Loaded rule files: `configuration-cross.md` — none of its CFG-* triggers fire against the diff (no env-var lookups, operator-tunable constants, or shared cross-module values introduced). 0 MUST, 1 SHOULD (low-impact reuse opportunity in `find_in_progress_commit`), 0 low-confidence. `blocking: no`.
 
 ## MUST violations (blocking)
 
@@ -24,7 +24,33 @@ _None._
 
 ## SHOULD violations (advisory)
 
-_None._
+### SHOULD: REUSE-002 — `find_in_progress_commit` duplicates blob-read logic
+
+- **File**: `runtime/src/primitives/check_stuck.rs:137-141` (the inline blob lookup inside `find_in_progress_commit`).
+- **Rule**: AGENTS.md design principles + DRY — when a helper exists, prefer it over inline duplication.
+- **Finding**: This diff adds `read_blob_from_tree(repo, tree, path)` as a clean helper, but the pre-existing `find_in_progress_commit` keeps its own inline version:
+
+  ```rust
+  let status = match tree.get_path(Path::new(spec_rel)).ok() {
+      Some(entry) => {
+          let blob = repo.find_blob(entry.id())?;
+          extract_status(std::str::from_utf8(blob.content()).unwrap_or(""))
+              .map(str::to_string)
+      }
+      None => None,
+  };
+  ```
+
+  Could be:
+
+  ```rust
+  let status = read_blob_from_tree(repo, &tree, spec_rel)?
+      .and_then(|c| extract_status(&c).map(str::to_string));
+  ```
+
+- **Auto-fixable**: yes (mechanical refactor; tests exercise the function so behavior is verifiable)
+- **Suggested fix**: refactor `find_in_progress_commit` to use `read_blob_from_tree` for its tree-read. Drop the inline `unwrap_or("")` in favor of the helper's `Option<String>` return. Keep `extract_status` as-is.
+- **Trade-off**: kept the inline version unchanged in this commit to avoid coupling the bug fix with a refactor — the existing inline code is correct and tested. The reuse cleanup is a follow-up commit; flagging here so it lands deliberately rather than accumulating.
 
 ## Low-confidence findings
 
@@ -42,20 +68,37 @@ _None._
 
 ### Security
 
-No security rule file applies. The Rust changes do not introduce HTTP, authentication, persistence, or shell-out paths beyond the existing primitives (which were reviewed in their introducing scenarios). The new `MissingArgument` and `ParentHeadingNotFound` error variants are operational errors that surface caller-side mistakes; they do not change the primitive's trust boundary.
+No security rules apply at the framework level. The new code reads git blob content via libgit2's safe Rust bindings, parses UTF-8 with `from_utf8(...).ok()` (silently returns None on invalid encoding — defensible because tasks.md is required to be UTF-8 per the framework's text-first contract; a corrupted blob yields `stuck: false`, which is the safer default than panicking).
+
+The `git2::Oid::from_str(sha)?` parse can fail if a malformed SHA is passed. Since `since` comes from `find_in_progress_commit`'s `oid.to_string()` (always 40-char hex), this is unreachable in practice. The `?` propagates as `PrimitiveError::Git` if it ever did fire — consistent with the rest of the file.
 
 ### Reuse
 
-Strong reuse — the shared helpers in `primitives/mod` (`TasksStructure`, `detect_tasks_structure`, `iter_task_numbers_at_levels`, `iter_phase_ranges`) are explicitly designed to be consumed by both `append-task` (Phase 2) and `read-tasks` (Phase 3). The Phase 2 commit lands the helpers; Phase 3 consumes them without duplicating detection logic. The deprecated single-purpose `iter_numbered_headings` wrapper is removed cleanly — its only callers were tests, which were migrated to invoke `iter_task_numbers_at_levels(_, &[2])` directly. `heading_starts_with_number` is duplicated between `primitives/mod` and `primitives::read_tasks` — annotated in the latter as "kept module-local to avoid widening the crate-internal surface." A future refactor could promote the helper, but the duplication is one short function and the boundary is intentional; not a finding.
+One SHOULD finding (REUSE-002 above) — `find_in_progress_commit` could use the new `read_blob_from_tree` helper to replace its inline blob lookup. Deferred to a follow-up commit per the "don't couple bug fix with refactor" preference.
+
+`first_incomplete_subtask_index`'s fenced-code-block skip pattern mirrors `iter_task_numbers_at_levels` in `primitives/mod.rs`. The shared pattern could promote to a helper (`is_fence_open(line)` + `walk_outside_fences(content)` iterator); both consumers care about slightly different line semantics though, so the shared abstraction would need a closure parameter. Not worth the abstraction for two callers in v1; promote later if a third consumer surfaces.
 
 ### Quality
 
-26 new unit tests across `append_task`, `read_tasks`, and `check_stuck` cover the four bug fixes and their edge cases (scenario-listed edge cases: mixed structure, alternate phase label, parent-heading-not-found, reopen, mechanical sweeps, never-reopened baseline). All atomic-write semantics preserved (tempfile-in-parent + persist). Two clippy fixes during the Phase 2 commit (collapsed `if a {} else if b {}` blocks with identical bodies into `if a || b {}`; corrected doc-comment backticks). Cross-spec regression caught: spec 016's new step 10 in `framework/commands/analyze.md` placed `check-rule-ids` inside a backtick code span, which the runtime parser interpreted as a primitive dispatch — fix landed in the same Phase 1 commit (reword to "step 5" without the code span).
+The vacuous-false cases match the scenario's edge case list:
+
+- `tasks.md` missing at `since-sha` → `since_idx = None` → return `false` → `stuck = false`. ✓
+- All subtasks complete at HEAD → `head_idx = None` → return `false` → `stuck = false` (completion is the opposite of stuck per scenario). ✓
+- Phased structure → `first_incomplete_subtask_index` walks lines and matches `- [ ]` regardless of containing heading level. ✓
+- No commits → count=0 → existing behavior, stuck=false. ✓
+
+The new regression test (`stuck_false_when_checkboxes_flipped_across_threshold_commits`) exercises the false-positive case directly — 4 commits, each flipping a different subtask, asserts `stuck: false` with `commit_count: 4`. The test passes both before this change is reverted (sanity check) and after — the assertion is on the post-fix expectation.
+
+All 5 existing tests still pass — each flips no checkboxes between commits so the new condition holds and `stuck` correctly fires when it should.
 
 ### Efficiency
 
-N/A — markdown / Rust changes only. The new phased-structure detection adds one extra line-walk over `tasks.md` content per `append-task` / `read-tasks` call (O(n) where n = lines in the file, dominated by the existing parse). No new I/O or sync points.
+Per `check-stuck` invocation, two extra git tree lookups (`since-sha` and HEAD) plus two content reads plus two line walks. Each operation is O(tasks.md size) and the tree lookups are constant in libgit2's object cache. Negligible compared to the existing commit walk for `count_commits_touching`. No findings.
 
 ### Simplicity
 
-Each bug fix is a focused commit. Phase 4 in particular was scoped down once investigation showed the implementation was already correct — only regression tests landed rather than reimplementing already-working logic. The default-phase-heading logic was extended past the strict-letter reading of Q2 to also extend an existing `Phase X — Follow-on scenarios` phase (preventing letter explosion across successive follow-ons); the deviation from the Q2 wording is documented in the Phase 2 commit message and motivated by a test that surfaced the unintended pathological behavior under the strict reading.
+The `match (head_idx, since_idx)` exhaustive-on-Option pattern is clean. Three free helper functions match the existing module style (free functions, not methods). The new code is ~50 lines vs the existing 130 lines of `check_stuck.rs` — proportionate to the behavior change.
+
+Considered alternative: thread `since_sha` and HEAD content through `count_commits_touching` to avoid the second tree walk. Rejected — `count_commits_touching` doesn't need the content; threading it would couple unrelated concerns. The current shape (one helper per concern) is simpler.
+
+The position-based equality (per Q1 resolution) keeps the helper's logic linear: walk the file, return the first `- [ ]` line index. Heading-text equality would have required parsing the structure (which level-2/3 heading owns each subtask) and is appropriately deferred to v2.
