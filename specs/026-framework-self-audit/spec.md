@@ -1,12 +1,12 @@
 ---
-status: in-progress
+status: done
 dependencies: [017-derive-dont-ask, 022-deterministic-runtime, 023-govern-refinement, 024-rule-loader, 025-rule-opt-out]
 review:
-  last-run: null
-  reviewed-against: null
+  last-run: 2026-05-18T01:30:00Z
+  reviewed-against: b160cfb
   must-violations: 0
-  should-violations: 0
-  low-confidence: 0
+  should-violations: 1
+  low-confidence: 1
   blocking: false
 ---
 
@@ -109,20 +109,20 @@ The maintainer reviews findings and routes each to a fix path:
 
 ## Acceptance Criteria
 
-- [ ] A new slash command `/audit` exists at `framework/commands/audit.md` (and its generated `.claude/commands/gov/audit.md` mirror). The command runs without a session target and audits the framework's own cross-cutting artifacts.
-- [ ] The nine check families listed in Behavior are implemented. Each produces at least one finding shape with severity, location, what failed, and a suggested fix.
-- [ ] **Cross-doc claim consistency** check #1 (README spec-status table) is implemented by invoking `scripts/gen-readme-table.sh --check` and reporting non-zero exit as a finding. Check #2 (pipeline diagrams) and check #3 (back-edge wording) extract the relevant textual blocks from each doc and report differences.
-- [ ] **Manifest parity** compares the file list scaffolded by `/govern` against `/gov:init` (extracted from each command's source body, not from runtime execution); compares the canonical permission set in `configure/claude.md` against `configure/auggie.md` (extracted in each agent's native format, normalized to a comparable shape).
-- [ ] **Registry equivalence** verifies every entry in `framework/workflows/registry.json` references a real workflow file in `framework/workflows/*.md`, every workflow file is registered, and registry descriptions match workflow file frontmatter `description:`.
-- [ ] **Placeholder roundtrip** scans `framework/commands/*.md` for hardcoded `.claude/`, `gov:`, or other tokens that should be placeholders per spec 012's multi-agent contract.
-- [ ] **Template-validate alignment** enumerates blocking checks in `framework/commands/analyze.md` and confirms each has a corresponding scaffolding element in the spec/plan/tasks/scenario templates.
-- [ ] **Single-source-of-truth invariants** detects when a normative rule (e.g., the open-question counting rule) appears textually in multiple locations and reports cases where the rule should be referenced rather than restated.
-- [ ] **Sibling-spec coupling check** scans `specs/` for pairs of specs at `status ∈ {draft, clarified, planned, in-progress}` that (a) inline-link each other AND (b) share at least one row in their `## Affected Files` tables; surfaces each pair as a bundling candidate. Findings name both specs and the overlapping rows.
-- [ ] **Introducing-spec body drift** scans every done spec's body for current-tense or imperative prose containing references to renamed commands (any old name listed in the framework's rename history per git log). Findings name the spec, the affected sentences, and propose past-tense rewrites. The maintainer accepts the rewrite (via a small `/gov:ask` cycle on the spec) or leaves the prose as-is.
-- [ ] **Primitive-promotion candidates** scans `framework/commands/*.md` Instructions sections for numbered steps that have neither a backtick-quoted runtime-primitive name nor an `<!-- llm:* -->` extension-point marker. Each such prose-only step is emitted as a finding. Genuine host-responsibility prose (e.g., "render the report") is annotated with `<!-- audit:ignore-promotion -->` to silence the check on that step.
-- [ ] `/audit`'s exit code is `0` when no findings are present and `1` when any finding is present. CI can gate releases on the exit code without parsing the report.
-- [ ] `/audit` writes its output to stdout in a maintainer-friendly format: one section per check family, one finding per row within a family, with severity / location / message / suggested-fix columns. No `audit.md` report file is produced (unlike `/gov:review`'s `review.md`) — the framework-level audit is run interactively, not stored as an artifact.
-- [ ] The boundary with `/gov:analyze` is documented in `framework/commands/audit.md` §Notes (or equivalent): `/gov:analyze` is feature-spec-scoped; `/audit` is framework-scoped; the two never duplicate a check. Adopters never invoke `/audit` — it is a govern-maintainer tool.
+- [x] A new slash command `/audit` exists at `framework/commands/audit.md` (and its generated `.claude/commands/gov/audit.md` mirror). The command runs without a session target and audits the framework's own cross-cutting artifacts.
+- [x] The nine check families listed in Behavior are implemented. Each produces at least one finding shape with severity, location, what failed, and a suggested fix.
+- [x] **Cross-doc claim consistency** check #1 (README spec-status table) is implemented by invoking `scripts/gen-readme-table.sh --check` and reporting non-zero exit as a finding. Check #2 (pipeline diagrams) and check #3 (back-edge wording) extract the relevant textual blocks from each doc and report differences.
+- [x] **Manifest parity** compares the file list scaffolded by `/govern` against `/gov:init` (extracted from each command's source body, not from runtime execution); compares the canonical permission set in `configure/claude.md` against `configure/auggie.md` (extracted in each agent's native format, normalized to a comparable shape).
+- [x] **Registry equivalence** verifies every entry in `framework/workflows/registry.json` references a real workflow file in `framework/workflows/*.md`, every workflow file is registered, and registry descriptions match workflow file frontmatter `description:`.
+- [x] **Placeholder roundtrip** scans `framework/commands/*.md` for hardcoded `.claude/`, `gov:`, or other tokens that should be placeholders per spec 012's multi-agent contract.
+- [x] **Template-validate alignment** enumerates blocking checks in `framework/commands/analyze.md` and confirms each has a corresponding scaffolding element in the spec/plan/tasks/scenario templates.
+- [x] **Single-source-of-truth invariants** detects when a normative rule (e.g., the open-question counting rule) appears textually in multiple locations and reports cases where the rule should be referenced rather than restated.
+- [x] **Sibling-spec coupling check** scans `specs/` for pairs of specs at `status ∈ {draft, clarified, planned, in-progress}` that (a) inline-link each other AND (b) share at least one row in their `## Affected Files` tables; surfaces each pair as a bundling candidate. Findings name both specs and the overlapping rows.
+- [x] **Introducing-spec body drift** scans every done spec's body for current-tense or imperative prose containing references to renamed commands (any old name listed in the framework's rename history per git log). Findings name the spec, the affected sentences, and propose past-tense rewrites. The maintainer accepts the rewrite (via a small `/gov:ask` cycle on the spec) or leaves the prose as-is.
+- [x] **Primitive-promotion candidates** scans `framework/commands/*.md` Instructions sections for numbered steps that have neither a backtick-quoted runtime-primitive name nor an `<!-- llm:* -->` extension-point marker. Each such prose-only step is emitted as a finding. Genuine host-responsibility prose (e.g., "render the report") is annotated with `<!-- audit:ignore-promotion -->` to silence the check on that step.
+- [x] `/audit`'s exit code is `0` when no findings are present and `1` when any finding is present. CI can gate releases on the exit code without parsing the report.
+- [x] `/audit` writes its output to stdout in a maintainer-friendly format: one section per check family, one finding per row within a family, with severity / location / message / suggested-fix columns. No `audit.md` report file is produced (unlike `/gov:review`'s `review.md`) — the framework-level audit is run interactively, not stored as an artifact.
+- [x] The boundary with `/gov:analyze` is documented in `framework/commands/audit.md` §Notes (or equivalent): `/gov:analyze` is feature-spec-scoped; `/audit` is framework-scoped; the two never duplicate a check. Adopters never invoke `/audit` — it is a govern-maintainer tool.
 
 ## Open Questions
 

@@ -173,6 +173,6 @@ Pulled in from the original Future Considerations during the autonomous implemen
 
 ### 18. Promote spec to `done`
 
-- [ ] After the user confirms `/gov:review` is clean against the five phases' commits, set `specs/026-framework-self-audit/spec.md` status from `in-progress` to `done`.
+- [x] After the user confirms `/gov:review` is clean against the five phases' commits, set `specs/026-framework-self-audit/spec.md` status from `in-progress` to `done`.
 
 - **Done when**: spec status is `done`; the runtime CI workflow passes on the final commit.
