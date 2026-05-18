@@ -103,10 +103,14 @@ Create `specs/` and copy these files from `framework/templates/project/` in the 
 - `framework/templates/project/events.md` → `specs/events.md`
 - `framework/templates/project/inbox.md` → `specs/inbox.md`
 
-Also copy the security rule files from `framework/rules/` into `specs/` so `/{slug}:validate`'s security check has rules to load on day one:
+Also create `specs/rules/` and copy the shipped rule files from `framework/rules/` into it so `/{slug}:review` and `/{slug}:analyze` have rules to load on day one:
 
-- `framework/rules/security-backend.md` → `specs/security-backend.md`
-- `framework/rules/security-frontend.md` → `specs/security-frontend.md`
+- `framework/rules/accessibility-frontend.md` → `specs/rules/accessibility-frontend.md`
+- `framework/rules/api-backend.md` → `specs/rules/api-backend.md`
+- `framework/rules/configuration-cross.md` → `specs/rules/configuration-cross.md`
+- `framework/rules/performance-frontend.md` → `specs/rules/performance-frontend.md`
+- `framework/rules/security-backend.md` → `specs/rules/security-backend.md`
+- `framework/rules/security-frontend.md` → `specs/rules/security-frontend.md`
 
 ### 6. Copy spec templates
 

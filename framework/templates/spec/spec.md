@@ -47,7 +47,7 @@ At least one concrete, testable criterion is required before `/{project}:clarify
 
 ## Applicable Rules
 
-<!-- Optional. Cite rule IDs (from rule files like specs/security-backend.md) that
+<!-- Optional. Cite rule IDs (from rule files like specs/rules/security-backend.md) that
      constrain the surface this spec touches. Citing rules here makes the cross-
      cutting requirements this spec depends on visible to reviewers and to
      /{project}:analyze, which checks every cited ID against the loaded rule

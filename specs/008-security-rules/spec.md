@@ -87,12 +87,12 @@ Both files are added to the govern file manifest with `update` strategy — gove
 
 | Source Path | Destination Path |
 | --- | --- |
-| `framework/rules/security-backend.md` | `specs/security-backend.md` |
-| `framework/rules/security-frontend.md` | `specs/security-frontend.md` |
+| `framework/rules/security-backend.md` | `specs/rules/security-backend.md` |
+| `framework/rules/security-frontend.md` | `specs/rules/security-frontend.md` |
 
-Source files live in the governance framework under `framework/rules/`, alongside the constitution and other ship-everything artifacts. Destination is the project's `specs/` directory, alongside `system.md`, `errors.md`, and `events.md` — the other cross-cutting global specs. Projects that do not have a frontend can pin `specs/security-frontend.md` in `.governance.toml` to skip it. Backend rules apply to all projects.
+Source files live in the governance framework under `framework/rules/`, alongside the constitution and other ship-everything artifacts. Destination is the project's `specs/` directory, alongside `system.md`, `errors.md`, and `events.md` — the other cross-cutting global specs. Projects that do not have a frontend can pin `specs/rules/security-frontend.md` in `.governance.toml` to skip it. Backend rules apply to all projects.
 
-**Local edits will be overwritten.** Because both files use the `update` strategy, any local edits to `specs/security-backend.md` or `specs/security-frontend.md` are discarded on the next `/govern` run. To diverge from the governance-owned ruleset, pin the file in `.governance.toml` — pinned files are never updated. Editing rule files directly without pinning is a path to losing work.
+**Local edits will be overwritten.** Because both files use the `update` strategy, any local edits to `specs/rules/security-backend.md` or `specs/rules/security-frontend.md` are discarded on the next `/govern` run. To diverge from the governance-owned ruleset, pin the file in `.governance.toml` — pinned files are never updated. Editing rule files directly without pinning is a path to losing work.
 
 ## Validate Integration
 
@@ -118,7 +118,7 @@ When `/govern` installs the security rule files in a project that already has fe
 
 Govern runs a one-time security audit when **both** conditions hold after the file manifest has been processed:
 
-- Either `specs/security-backend.md` or `specs/security-frontend.md` was newly **created** by the manifest pass (i.e., not already present, not just updated).
+- Either `specs/rules/security-backend.md` or `specs/rules/security-frontend.md` was newly **created** by the manifest pass (i.e., not already present, not just updated).
 - The project contains at least one feature spec directory under `specs/` matching the `NNN-*` pattern.
 
 When neither condition holds — greenfield adoption with no existing specs, or a routine re-run where the rule files already exist — the audit is silently skipped. There is no per-run audit; the trigger is "rule file newly installed in a project with existing specs."
@@ -174,7 +174,7 @@ The inbox approach also reuses 011's existing groom workflow rather than inventi
 
 The "Secure" principle in the constitution gains a reference to the security rule files:
 
-> Protect sensitive data through industry standards and best practices. See `specs/security-backend.md` and `specs/security-frontend.md` for enforceable rules.
+> Protect sensitive data through industry standards and best practices. See `specs/rules/security-backend.md` and `specs/rules/security-frontend.md` for enforceable rules.
 
 This connects the principle to its operational detail without duplicating content.
 
@@ -189,7 +189,7 @@ This connects the principle to its operational detail without duplicating conten
 
 How validate behaves when the inputs are unusual:
 
-- **Neither rule file present.** If a project has no `specs/security-backend.md` and no `specs/security-frontend.md` (e.g., both pinned out, or files manually deleted), validate emits a warning: `No security rule files found, skipping security checks.` Validate continues; the security check is non-blocking in this case.
+- **Neither rule file present.** If a project has no `specs/rules/security-backend.md` and no `specs/rules/security-frontend.md` (e.g., both pinned out, or files manually deleted), validate emits a warning: `No security rule files found, skipping security checks.` Validate continues; the security check is non-blocking in this case.
 - **Only one file present.** If a project has only one of the two files (e.g., backend-only project that pinned the frontend file out, or vice versa), validate runs over the present file and emits no finding for the missing one. This is the common case for non-fullstack projects.
 - **Malformed rule file.** A rule file is malformed if any rule is missing a required field (ID, statement, rationale, verification), if any rule's ID does not match the `{surface}-{category}-{NNN}` format, or if the file fails to parse. Validate **blocks** with an error: `Malformed security rule file {path} at {location}: {reason}`. The accompanying file is treated as unloadable; no rules from that file are applied. Rationale: validate's findings must rest on accurate rule data — partial or guessed-at parsing produces unreliable findings.
 - **Stale rule reference.** A spec or plan references a rule ID that does not exist in the current rule files (the rule was removed upstream after `/govern` updated the file). Validate **blocks** with an error: `Spec at {path} references unknown rule {ID}.` The adopter must update or remove the reference before validate will pass. Rationale: stale references silently rot if tolerated.
@@ -210,14 +210,14 @@ How validate behaves when the inputs are unusual:
 ### Govern Integration
 
 - [x] Both files appear in the govern file manifest with `update` strategy
-- [x] The govern command fetches `framework/rules/security-backend.md` and writes it to `specs/security-backend.md` in the project
-- [x] The govern command fetches `framework/rules/security-frontend.md` and writes it to `specs/security-frontend.md` in the project
+- [x] The govern command fetches `framework/rules/security-backend.md` and writes it to `specs/rules/security-backend.md` in the project
+- [x] The govern command fetches `framework/rules/security-frontend.md` and writes it to `specs/rules/security-frontend.md` in the project
 - [x] Re-running govern updates both files to the latest governance version
 - [x] Projects can pin either file in `.governance.toml` to skip updates
 
 ### Validate Integration
 
-- [x] The validate command reads `specs/security-backend.md` and `specs/security-frontend.md` when present in the project
+- [x] The validate command reads `specs/rules/security-backend.md` and `specs/rules/security-frontend.md` when present in the project
 - [x] MUST/MUST NOT violations are reported as errors (blocking)
 - [x] SHOULD/SHOULD NOT violations are reported as warnings (non-blocking)
 - [x] Rule IDs appear in validate output for each finding
@@ -243,7 +243,7 @@ How validate behaves when the inputs are unusual:
 
 ### Constitution Reference
 
-- [x] The "Secure" principle references `specs/security-backend.md` and `specs/security-frontend.md`
+- [x] The "Secure" principle references `specs/rules/security-backend.md` and `specs/rules/security-frontend.md`
 
 ## Open Questions
 

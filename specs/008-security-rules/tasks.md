@@ -76,8 +76,8 @@ The existing rules' *content* (rationale, threat model, OWASP citations) represe
 
 Add the two rule files to `framework/bootstrap/govern.md`'s **Governance-owned shared files (strategy: update)** table.
 
-- [x] Insert row mapping `framework/rules/security-backend.md` → `specs/security-backend.md`
-- [x] Insert row mapping `framework/rules/security-frontend.md` → `specs/security-frontend.md`
+- [x] Insert row mapping `framework/rules/security-backend.md` → `specs/rules/security-backend.md`
+- [x] Insert row mapping `framework/rules/security-frontend.md` → `specs/rules/security-frontend.md`
 - [x] Rows appear adjacent to the other governance-owned shared files
 - [x] `framework/bootstrap/govern.md` passes `npx markdownlint-cli2`
 
@@ -88,7 +88,7 @@ Add the two rule files to `framework/bootstrap/govern.md`'s **Governance-owned s
 Add a new top-level **Security audit (brownfield)** section to `framework/bootstrap/govern.md`, slotted after **Shared Files** and before **Per-Agent Scaffolding**. The section reads each rule file that was newly created by the manifest pass, evaluates each rule's Verification trigger against existing `specs/NNN-*` artifacts, and appends findings to `specs/inbox.md`.
 
 - [x] Insert **Security audit (brownfield)** section between **Shared Files** and **Per-Agent Scaffolding**
-- [x] Section's trigger: at least one of `specs/security-backend.md` or `specs/security-frontend.md` was newly **created** by the manifest pass AND the project contains at least one `specs/NNN-*` directory
+- [x] Section's trigger: at least one of `specs/rules/security-backend.md` or `specs/rules/security-frontend.md` was newly **created** by the manifest pass AND the project contains at least one `specs/NNN-*` directory
 - [x] Section silently skips when the trigger does not fire (greenfield run, or routine re-run with rule files already present)
 - [x] Section loads each newly created rule file using the same integrity checks validate uses (well-formed headings, required fields, valid IDs, no duplicates); on load failure, reports the failure and skips the audit for that file
 - [x] Section iterates loaded rules; for each rule whose Verification trigger fires against an existing project artifact (`spec.md`, `spec-and-plan.md`, `plan.md`, scenario files under `specs/NNN-*/`), produces a finding
@@ -104,7 +104,7 @@ Add a new top-level **Security audit (brownfield)** section to `framework/bootst
 Modify `framework/commands/analyze.md` to add a new **Security rules** check section that codifies the spec's edge-case behaviors. Place it after **Cross-spec references (advisory)** and before **Markdown lint (advisory)**.
 
 - [x] Add **Security rules (blocking and advisory)** section
-- [x] Section opens by reading `specs/security-backend.md` and `specs/security-frontend.md` (each independently optional — only the present files are loaded)
+- [x] Section opens by reading `specs/rules/security-backend.md` and `specs/rules/security-frontend.md` (each independently optional — only the present files are loaded)
 - [x] Section validates rule file integrity per `data-model.md` (well-formed headings, required fields, ID format) and reports a **blocking** error per malformed rule file (`Malformed security rule file {path} at {location}: {reason}`)
 - [x] Section reports a **blocking** error on duplicate IDs within a file (`Duplicate rule ID {ID} in {file}; refusing to load`)
 - [x] Section reports an **advisory** warning when neither file is present (`No security rule files found, skipping security checks`)
@@ -123,7 +123,7 @@ Modify `framework/commands/analyze.md` to add a new **Security rules** check sec
 
 Append the rule-files reference to the "Secure" guiding principle in `framework/constitution.md`.
 
-- [x] Edit the "Secure" bullet under **Guiding Principles → Technology** to read: `**Secure:** protect sensitive data through industry standards and best practices. See \`specs/security-backend.md\` and \`specs/security-frontend.md\` for enforceable rules.`
+- [x] Edit the "Secure" bullet under **Guiding Principles → Technology** to read: `**Secure:** protect sensitive data through industry standards and best practices. See \`specs/rules/security-backend.md\` and \`specs/rules/security-frontend.md\` for enforceable rules.`
 - [x] No other constitution edits in this task
 - [x] `framework/constitution.md` passes `npx markdownlint-cli2`
 

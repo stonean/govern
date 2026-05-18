@@ -218,24 +218,36 @@ warning: specs/{NNN-feature}/spec-and-plan.md kept; pipeline commands will fail 
 
 Report `migrated N spec-and-plan.md files` in the post-scaffolding output when N > 0; omit the line when N = 0. The check is idempotent — finds nothing on second run. Files at `status: done` are also renamed (the rename is just a filename change; the body and frontmatter are unchanged, so the frozen-archaeology rule is preserved by the byte-for-byte identity of the file content).
 
-### `configuration.md` → `configuration-cross.md` (rule-file closed-suffix migration)
+### Rule files: relocate to `specs/rules/`
 
-Spec 024 introduced the closed-suffix policy for rule files: every `framework/rules/*.md` (and its adopter-installed equivalent under `specs/`) must end in `-backend.md`, `-frontend.md`, or `-cross.md`. The configuration rule file was renamed in govern's source from `framework/rules/configuration.md` to `framework/rules/configuration-cross.md`; the bootstrap destination tracks the rename. Adopters scaffolded before this change have `specs/configuration.md` on disk, which `/{project}:review` and `/{project}:analyze` would load with an unrecognized-suffix warning on every run.
+Rule files installed in adopter projects live under `specs/rules/{rule-set}.md` so the top-level `specs/` directory stays focused on feature spec directories (`specs/NNN-*/`), `inbox.md`, `README.md`, and the seed system files. The bootstrap manifest's rule-file rows write to `specs/rules/`. Adopters scaffolded before this change have rule files at `specs/{rule-set}.md`, which `/{project}:review` and `/{project}:analyze` would no longer discover (the discovery walk targets `specs/rules/*.md`).
 
-The migration check looks for `specs/configuration.md` once per `/govern` run. If present, prompt the user with the source path and the proposed destination:
+This migration subsumes the earlier `configuration.md` → `configuration-cross.md` rename (closed-suffix policy, spec 024): when the legacy `specs/configuration.md` is found, it is renamed **and** relocated in one move.
+
+Walk the top level of `specs/` for files matching either:
+
+- `configuration.md` (pre-closed-suffix layout)
+- `*-backend.md`, `*-frontend.md`, or `*-cross.md` (closed-suffix rule files at the `specs/` root)
+
+For each match, compute the destination:
+
+- `specs/configuration.md` → `specs/rules/configuration-cross.md`
+- otherwise → `specs/rules/{basename}`
+
+Skip any source listed in `.govern.toml` `pinned.files` (path comparison after placeholder resolution) and emit one line: `warning: {source} is pinned; leaving in place — /{project}:review and /{project}:analyze will not discover it until moved manually.`
+
+Skip any source whose destination already exists in `specs/rules/` and emit one line: `warning: {destination} already exists; skipping relocation of {source}.`
+
+If at least one eligible move remains, prompt once:
 
 ```text
-Found legacy specs/configuration.md (no closed suffix).
-Rename to specs/configuration-cross.md? (Y/n)
+Found N legacy rule file(s) at the specs/ root.
+Move to specs/rules/? (Y/n)
 ```
 
-On confirm, rename via `mv`. On decline, emit a warning and continue:
+On confirm, create `specs/rules/` (if missing) and rename each eligible file via `mv` (or `git mv` when the source is tracked, so the rename is recorded). On decline, emit one warning per skipped file: `warning: {source} kept; /{project}:review and /{project}:analyze will not discover it until moved manually.`
 
-```text
-warning: specs/configuration.md kept; /{project}:review and /{project}:analyze will emit the unrecognized-suffix warning until renamed manually.
-```
-
-Report `migrated specs/configuration.md → specs/configuration-cross.md` in the post-scaffolding output when the rename runs; omit the line otherwise. The check is idempotent — finds nothing on second run. Rule IDs (`CFG-CONST-*`, `CFG-ENV-*`) are content-anchored and unchanged by the rename; every existing citation continues to resolve.
+Report `relocated N rule file(s) → specs/rules/` in the post-scaffolding output when N > 0; omit the line otherwise. The check is idempotent — finds nothing on the next run. Rule IDs (`BE-AUTHN-*`, `FE-XSS-*`, `CFG-CONST-*`, etc.) are content-anchored and unchanged by the relocation; every existing citation continues to resolve.
 
 ## Project Configuration
 
@@ -423,9 +435,12 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 | Source Path | Destination Path |
 | --- | --- |
 | `framework/constitution.md` | `constitution.md` |
-| `framework/rules/security-backend.md` | `specs/security-backend.md` |
-| `framework/rules/security-frontend.md` | `specs/security-frontend.md` |
-| `framework/rules/configuration-cross.md` | `specs/configuration-cross.md` |
+| `framework/rules/accessibility-frontend.md` | `specs/rules/accessibility-frontend.md` |
+| `framework/rules/api-backend.md` | `specs/rules/api-backend.md` |
+| `framework/rules/configuration-cross.md` | `specs/rules/configuration-cross.md` |
+| `framework/rules/performance-frontend.md` | `specs/rules/performance-frontend.md` |
+| `framework/rules/security-backend.md` | `specs/rules/security-backend.md` |
+| `framework/rules/security-frontend.md` | `specs/rules/security-frontend.md` |
 | `framework/bootstrap/hooks/govern-pre-commit` | `.githooks/govern-pre-commit` |
 | `.markdownlint-cli2.jsonc` | `.markdownlint-cli2.jsonc` |
 | `framework/templates/spec/spec.md` | `specs/templates/spec.md` |
@@ -469,7 +484,7 @@ Run a one-time security audit when the project newly receives a security rule fi
 
 Run the audit only when **both** conditions hold after the **Shared Files** manifest pass has completed:
 
-1. At least one of `specs/security-backend.md` or `specs/security-frontend.md` was **newly created** by the manifest pass (the destination file did not exist before this run). A file that was merely updated or unchanged does not trigger the audit.
+1. At least one of `specs/rules/security-backend.md` or `specs/rules/security-frontend.md` was **newly created** by the manifest pass (the destination file did not exist before this run). A file that was merely updated or unchanged does not trigger the audit.
 2. The project contains at least one feature spec directory under `specs/` matching the `NNN-*` pattern (zero-padded, three-digit prefix followed by a hyphen and a slug).
 
 If either condition fails, skip this section silently — no output, no finding, no inbox entry. This covers the two routine cases:
@@ -481,7 +496,7 @@ If either condition fails, skip this section silently — no output, no finding,
 
 For each rule file that passed the trigger:
 
-1. Read the file from its destination path (`specs/security-backend.md` or `specs/security-frontend.md`).
+1. Read the file from its destination path (`specs/rules/security-backend.md` or `specs/rules/security-frontend.md`).
 2. Apply the same integrity checks `/{project}:analyze` uses for the security-rule check section: well-formed level-3 headings of the form `### {ID}`, the four required fields (Statement, Rationale, Verification, Source), an ID matching `{FE|BE}-{CATEGORY}-{NNN}`, and no duplicate IDs within the file.
 3. If a file fails any integrity check, report `Security audit: {path} failed to load — {reason}; skipping audit for this file.` and continue with the other rule file (if applicable). Do not abort the surrounding `govern` run.
 

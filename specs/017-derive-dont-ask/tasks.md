@@ -226,7 +226,7 @@ Done when: the template exists and documents adopter usage. ✓
 
 - [x] Remove the `[promote-to-rule]` prefix instruction
 - [x] Replace with "leave in inbox unmodified — next groom pass re-walks every unmigrated item"
-- [x] Add `specs/configuration-cross.md` to the rule-file examples
+- [x] Add `specs/rules/configuration-cross.md` to the rule-file examples
 - [x] Lint passes
 
 ### 23. Update `framework/commands/analyze.md`
@@ -264,7 +264,7 @@ Done when: the template exists and documents adopter usage. ✓
 - [x] Add new top-level section "Hook Installation" before "Placeholder Substitution"
 - [x] Document seven detection states + actions (already-wired, custom hooksPath, husky, pre-commit-py, lefthook, govern-managed, none)
 - [x] Sentinel-based detection of govern-managed hooks via `# managed-by: govern` comment
-- [x] Add `framework/rules/configuration-cross.md` → `specs/configuration-cross.md` to update-strategy manifest
+- [x] Add `framework/rules/configuration-cross.md` → `specs/rules/configuration-cross.md` to update-strategy manifest
 - [x] Add `framework/bootstrap/hooks/pre-commit` → `.githooks/pre-commit` to update-strategy manifest (subject to detection)
 - [x] Add `scripts/gen-spec-deps.sh` → `scripts/gen-spec-deps.sh` to create-strategy manifest
 - [x] Document manual integration snippet for adopters with existing hook systems

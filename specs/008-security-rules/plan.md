@@ -106,7 +106,7 @@ When `/govern` lands rule files in a project with existing `specs/NNN-*/` direct
 
 `framework/bootstrap/govern.md` gains a new top-level section, **Security audit (brownfield)**, slotted after **Shared Files** (where the manifest deposits the rule files) and before **Per-Agent Scaffolding**. The section's logic:
 
-1. Detect the trigger: at least one of `specs/security-backend.md` or `specs/security-frontend.md` was newly created (not updated) by the manifest pass, AND at least one `specs/NNN-*` directory exists.
+1. Detect the trigger: at least one of `specs/rules/security-backend.md` or `specs/rules/security-frontend.md` was newly created (not updated) by the manifest pass, AND at least one `specs/NNN-*` directory exists.
 2. Load the newly created rule file(s) using the same integrity checks validate uses. If a file fails to load, report and skip the audit for that file.
 3. Iterate the rules; for each rule whose Verification trigger fires against an existing project artifact, produce a finding.
 4. Append findings to `specs/inbox.md`, deduplicating against existing lines that begin with the same `{Rule ID}: {artifact path}` prefix.
@@ -124,7 +124,7 @@ Trade-off: govern gains complexity from this audit step, but the alternative (ad
 
 Becomes:
 
-> **Secure:** protect sensitive data through industry standards and best practices. See `specs/security-backend.md` and `specs/security-frontend.md` for enforceable rules.
+> **Secure:** protect sensitive data through industry standards and best practices. See `specs/rules/security-backend.md` and `specs/rules/security-frontend.md` for enforceable rules.
 
 Minimal — does not duplicate rule content into the constitution; the rule files are the operational detail.
 

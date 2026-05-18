@@ -10,7 +10,7 @@ These are evaluation criteria, not implementation instructions. Use them to iden
 
 ### Technology
 
-- **Secure:** protect sensitive data through industry standards and best practices. See `specs/security-backend.md` and `specs/security-frontend.md` for enforceable rules.
+- **Secure:** protect sensitive data through industry standards and best practices. See `specs/rules/security-backend.md` and `specs/rules/security-frontend.md` for enforceable rules.
 - **Scalable:** design and implement to be dynamically scaled
 - **Learnable:** fast onboarding through clear patterns, documentation, and accessible codebase design
 - **Reliable:** graceful degradation and automatic recovery when components fail
@@ -253,7 +253,7 @@ Promotion is a user decision, not automated. The framework provides the pattern;
 
 A rule is an enforceable, citable requirement that applies across multiple features. Rules are the third artifact tier — alongside specs (feature-wide) and scenarios (situational), rules cover **cross-cutting** concerns the framework has opinions about regardless of which feature is being built (security, performance, concurrency, observability, accessibility, audit/compliance, data handling).
 
-Rule files ship under `specs/{rule-set}.md` and are referenced from feature specs by ID. The canonical example is `specs/security-backend.md`, whose rules (e.g., `BE-AUTHN-001`) any spec touching authentication can cite. `/{project}:analyze` enforces rules — it loads each rule file, runs each rule's Verification step against feature artifacts, and reports gaps.
+Rule files ship under `specs/rules/{rule-set}.md` and are referenced from feature specs by ID. The canonical example is `specs/rules/security-backend.md`, whose rules (e.g., `BE-AUTHN-001`) any spec touching authentication can cite. `/{project}:analyze` enforces rules — it loads each rule file, runs each rule's Verification step against feature artifacts, and reports gaps.
 
 #### Rule format (summary)
 
@@ -311,7 +311,7 @@ See `specs/008-security-rules/data-model.md` for the full ID-stability invariant
 
 | Tier | Scope | Artifact |
 | --- | --- | --- |
-| **Rule** | Cross-cutting (applies across many features) | A rule file under `specs/{rule-set}.md`, cited by ID from the specs that depend on it |
+| **Rule** | Cross-cutting (applies across many features) | A rule file under `specs/rules/{rule-set}.md`, cited by ID from the specs that depend on it |
 | **Spec / acceptance criterion** | Feature-wide (one feature, broad property) | A section or AC in the feature's `spec.md` |
 | **Scenario** | Situational (a specific condition with concrete behavior) | A file in the feature's `scenarios/` directory |
 

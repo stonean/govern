@@ -18,10 +18,12 @@ advances to `done`.
 
 - **Target** — the current `/{project}:target` feature, or every feature with
   status `in-progress` or `done` when invoked with `--all`.
-- **Rules** — every file under `framework/rules/` selected by the
-  suffix-based discovery in §Behavior step 5, loaded by reference. RFC 2119
-  language is authoritative: **MUST/MUST NOT** are blocking violations,
-  **SHOULD/SHOULD NOT** are advisory.
+- **Rules** — every file under the project's rule-file directory
+  (`framework/rules/` in govern's own repo, `specs/rules/` in adopter
+  projects) selected by the suffix-based discovery in §Behavior step 5,
+  loaded by reference. RFC 2119 language is authoritative:
+  **MUST/MUST NOT** are blocking violations, **SHOULD/SHOULD NOT** are
+  advisory.
 - **Scope** — files referenced by the target's `plan.md` under `Affected Files`,
   plus any files modified since the spec advanced to `in-progress` (whichever
   set is larger).
@@ -32,8 +34,9 @@ advances to `done`.
     automatically (with operator confirmation) on the first successful
     alignment check.
   - `[[review.disabled-rule-files]]` (array-of-tables, default empty):
-    each entry has a required `file` field (basename of a file in
-    `framework/rules/`, e.g., `"accessibility-frontend.md"`) and a
+    each entry has a required `file` field (basename of a file in the
+    rule-file directory — `framework/rules/` here, `specs/rules/` in
+    adopter projects — e.g., `"accessibility-frontend.md"`) and a
     required `reason` field (free-text justification; trimmed length
     ≥ 16 Unicode codepoints). Files listed here are excluded from
     rule-file selection regardless of stack detection. Consulted in
@@ -94,9 +97,9 @@ For each targeted feature, in order:
      `.govern.toml`. On `n` or skip, the check runs again on the next
      invocation. To re-run the check after a stack change, the operator
      removes the line manually — `/{project}:review` does not auto-reset.
-5. Discover rule files by suffix. List `framework/rules/*.md` (or the
-   installed equivalent in adopter projects). For each file, classify by
-   basename suffix:
+5. Discover rule files by suffix. List `framework/rules/*.md` in govern's
+   own repository, or `specs/rules/*.md` in adopter projects. For each
+   file, classify by basename suffix:
    - `*-backend.md` → backend surface
    - `*-frontend.md` → frontend surface
    - `*-cross.md` → cross-cutting (applies to every stack)
@@ -128,7 +131,7 @@ For each targeted feature, in order:
      notice is single-line by contract.
 
    - **No-op notice (non-stack-selected match).** `file` matches a
-     basename in `framework/rules/` but the file was NOT in the
+     basename in the rule-file directory but the file was NOT in the
      post-stack-filter set (different surface). Emit one line and
      change nothing:
 
@@ -139,11 +142,11 @@ For each targeted feature, in order:
      This is honest about state — the entry is currently a no-op,
      becomes load-bearing if the project's stack changes later.
 
-   - **Unknown warning.** `file` does not match any basename in
-     `framework/rules/`. Emit one line and change nothing:
+   - **Unknown warning.** `file` does not match any basename in the
+     rule-file directory. Emit one line and change nothing:
 
      ```text
-     unknown disabled-rule-file: <filename> (no such file in framework/rules/)
+     unknown disabled-rule-file: <filename> (no such file in the rule-file directory)
      ```
 
      This covers renamed/moved files; not a fatal error.
@@ -189,7 +192,7 @@ For each targeted feature, in order:
 Load these inputs inline as the authoritative review criteria:
 
 - Every rule file selected by the suffix-based discovery in step 5
-- Any rule file outside `framework/rules/` (e.g., `docs/rules/internal-api.md`)
+- Any rule file outside the rule-file directory (e.g., `docs/rules/internal-api.md`)
   referenced from `AGENTS.md` — see [Notes for adopters](#notes-for-adopters)
 - `AGENTS.md` `Code Style`, `Testing`, `Gotchas`, and `Boundaries` sections
 - The target spec's acceptance criteria and any `scenarios/*.md` files
@@ -288,7 +291,7 @@ Each finding follows this shape:
 ### MUST: <rule-id> — <one-line summary>
 
 - **File**: `path/to/file.ts:42-55`
-- **Rule**: <verbatim rule text from framework/rules/...>
+- **Rule**: <verbatim rule text from the rule file (framework/rules/... or specs/rules/...)>
 - **Finding**: <one to three sentences>
 - **Auto-fixable**: yes | no
 - **Suggested fix**: <code block or prose>
@@ -509,16 +512,17 @@ never of session state.
 ## Notes for adopters
 
 - Projects that customize shipped rule files (e.g.,
-  `framework/rules/security-backend.md`) pin them in `.govern.toml`
+  `specs/rules/security-backend.md`) pin them in `.govern.toml`
   `[pinned] files` to prevent `/govern` from overwriting their additions.
   `/{project}:review` reads whatever is on disk — pinned or not.
-- Files inside `framework/rules/` are auto-discovered by directory walk
-  (see §Behavior step 5). No `AGENTS.md` reference is required. Adding
-  a new file at `framework/rules/<domain>-{backend,frontend,cross}.md`
+- Files inside the rule-file directory (`specs/rules/` in adopter
+  projects; `framework/rules/` in govern's own repo) are auto-discovered
+  by directory walk (see §Behavior step 5). No `AGENTS.md` reference is
+  required. Adding a new file at `specs/rules/<domain>-{backend,frontend,cross}.md`
   with a recognized suffix is the only step needed; the suffix selects
   which stacks load it.
 - The `AGENTS.md` rule-file reference survives strictly for adopter-local
-  rule files placed **outside** `framework/rules/` — e.g.,
+  rule files placed **outside** `specs/rules/` — e.g.,
   `docs/rules/internal-api.md`. The framework cannot directory-walk
   arbitrary adopter paths, so an explicit `AGENTS.md` reference is the
   discovery signal for these files.

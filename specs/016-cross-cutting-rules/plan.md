@@ -37,7 +37,7 @@ The intro paragraph is rewritten to mention the three-tier framing (rule / spec 
 
 The §rules section carries:
 
-1. **Definition** — a rule is an enforceable, citable requirement that applies across multiple features. Rule files ship under `specs/{rule-set}.md`. Specs cite rules by ID.
+1. **Definition** — a rule is an enforceable, citable requirement that applies across multiple features. Rule files ship under `specs/rules/{rule-set}.md`. Specs cite rules by ID.
 2. **Conceptual format summary** — every rule has an ID (e.g., `BE-AUTHN-001`), a Statement (RFC 2119: MUST / MUST NOT / SHOULD / SHOULD NOT), a Rationale, and a Verification step. The full schema is canonically declared in [`specs/008-security-rules/data-model.md`](../../specs/008-security-rules/data-model.md). *(Path is from the constitution; in adopting projects the link resolves to `specs/008-security-rules/data-model.md` if 008 was scaffolded — see Edge Case below.)*
 3. **When to write a rule** — the four-indicator promotion checklist (cross-cutting / citable / governance-recognized category / generalizable wording), framed as "all four should hold."
 4. **When NOT to write a rule** — situational → scenario; feature-wide → acceptance criterion. Cross-references §scenarios and §spec-requirements.
@@ -50,9 +50,9 @@ The link from the constitution to 008's data-model is a relative markdown link. 
 
 Today's `framework/commands/analyze.md` "Security rules" section names the two security files explicitly:
 
-> Load `specs/security-backend.md` and `specs/security-frontend.md` if either is present in the project.
+> Load `specs/rules/security-backend.md` and `specs/rules/security-frontend.md` if either is present in the project.
 
-The generalization renames the section heading to "Rules" and rewrites the loading prose to be parameterized: "Load each rule file in the rule-file list (currently `specs/security-backend.md` and `specs/security-frontend.md`) if present in the project." The list itself remains hardcoded in analyze.md.
+The generalization renames the section heading to "Rules" and rewrites the loading prose to be parameterized: "Load each rule file in the rule-file list (currently `specs/rules/security-backend.md` and `specs/rules/security-frontend.md`) if present in the project." The list itself remains hardcoded in analyze.md.
 
 This is *prose-only* generalization. The list does not move to the manifest, nor is shared infrastructure introduced for cross-command list reuse. Reasoning:
 
@@ -72,7 +72,7 @@ The section is comment-prompt only. The body is an HTML comment listing example 
 
 `framework/commands/groom.md` walks a three-step decision tree that mirrors §bug-handling. After 016, this becomes a four-step walk with rule promotion as the first check. The new step text:
 
-> **Step 1: Is this a cross-cutting concern with no covering rule?** — Apply the four-indicator promotion checklist (§rules in the constitution). If the concern qualifies, recommend promoting to a rule. Direct the user to amend the relevant rule file (e.g., `specs/security-backend.md`) or, if no rule file covers the domain, note that a new rule file is its own spec (out of groom's scope) — capture the item back into the inbox with that signal.
+> **Step 1: Is this a cross-cutting concern with no covering rule?** — Apply the four-indicator promotion checklist (§rules in the constitution). If the concern qualifies, recommend promoting to a rule. Direct the user to amend the relevant rule file (e.g., `specs/rules/security-backend.md`) or, if no rule file covers the domain, note that a new rule file is its own spec (out of groom's scope) — capture the item back into the inbox with that signal.
 
 The existing Steps 1–3 become 2–4 with no other changes. Groom still creates scenarios and appends tasks; rule promotion is *user-action*, not auto-applied (matching scenario promotion's user-decision discipline).
 

@@ -30,7 +30,7 @@ After this spec, every requirement in `govern` lands at one of three levels of a
 
 | Tier | Scope | Artifact |
 | --- | --- | --- |
-| **Rule** | Cross-cutting (applies across many features) | A rule file under `specs/{rule-set}.md`, cited by ID from the specs that depend on it |
+| **Rule** | Cross-cutting (applies across many features) | A rule file under `specs/rules/{rule-set}.md`, cited by ID from the specs that depend on it |
 | **Spec / acceptance criterion** | Feature-wide (one feature, broad property) | A section or AC in the feature's `spec.md` |
 | **Scenario** | Situational (a specific condition with concrete behavior) | A file in the feature's `scenarios/` directory |
 

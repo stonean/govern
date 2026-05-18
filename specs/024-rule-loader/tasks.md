@@ -42,7 +42,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 ## 6. Rewrite `/gov:analyze` rule-file discovery
 
 - [x] In `framework/commands/analyze.md`, rewrite §Rules (around line 133) to apply the shared suffix-based discovery: iterate the rule-file directory, classify by basename suffix, load every discovered file (no stack filtering)
-- [x] Remove the closed list at lines 137–141 (`specs/security-backend.md`, `specs/security-frontend.md`, `specs/configuration.md`)
+- [x] Remove the closed list at lines 137–141 (`specs/rules/security-backend.md`, `specs/rules/security-frontend.md`, `specs/configuration.md`)
 - [x] Add a sentence clarifying: "`/gov:analyze` loads every discovered rule file regardless of detected stack — citation verification spans surfaces."
 - [x] Emit the same `loading rule files:` notice and unrecognized-suffix warnings as `/gov:review`
 - [x] Done when no hardcoded filename list remains under §Rules
@@ -50,13 +50,13 @@ Tasks derived from the [plan](plan.md). Complete in order.
 ## 7. Sweep `configuration.md` references in framework command files
 
 - [x] `framework/commands/implement.md` line 49: `framework/rules/configuration.md` → `framework/rules/configuration-cross.md`
-- [x] `framework/commands/groom.md` line 43: `specs/configuration.md` → `specs/configuration-cross.md`
+- [x] `framework/commands/groom.md` line 43: `specs/configuration.md` → `specs/rules/configuration-cross.md`
 - [x] Done when `grep -rn 'configuration\.md' framework/ scripts/ docs/ README.md AGENTS.md` returns no hits outside spec 024 itself
 
 ## 8. Update bootstrap map and add migration
 
-- [x] `framework/bootstrap/govern.md` line 393: source `framework/rules/configuration-cross.md`, destination `specs/configuration-cross.md`
-- [x] Add a one-pass migration check in the same file, modeled on the existing `spec-and-plan.md` cleanup from spec 023: on each `/govern` invocation, detect any `specs/configuration.md` in the adopting project and offer to rename it to `specs/configuration-cross.md`; emit a one-line notice
+- [x] `framework/bootstrap/govern.md` line 393: source `framework/rules/configuration-cross.md`, destination `specs/rules/configuration-cross.md`
+- [x] Add a one-pass migration check in the same file, modeled on the existing `spec-and-plan.md` cleanup from spec 023: on each `/govern` invocation, detect any `specs/configuration.md` in the adopting project and offer to rename it to `specs/rules/configuration-cross.md`; emit a one-line notice
 - [x] Done when the bootstrap doc shows the new map row and the migration step
 
 ## 9. Record the rename in `specs/README.md`
