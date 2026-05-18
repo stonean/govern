@@ -22,7 +22,7 @@ See [spec 026](../../specs/026-framework-self-audit/spec.md) for the design and 
 
 - Read-only against the framework's cross-cutting artifacts. Do NOT modify any file.
 - No session target required; the command operates on the framework as a whole.
-- Reference: §drift-prevention, §design-principles. The constitution is loaded by other pipeline commands; `/audit` re-reads it independently because it runs without `/gov:target`.
+- Reference: §drift-prevention, §principles. The constitution is loaded by other pipeline commands; `/audit` re-reads it independently because it runs without `/gov:target`.
 
 ## Instructions
 

@@ -32,7 +32,7 @@ Establishes which feature spec all subsequent `/{project}:*` commands operate on
 2. Parse the argument: when the value contains a slash, split into a feature-part and a scenario-slug; otherwise treat the value as a feature-part with no scenario. Resolve the feature-part by accepting a feature number, a partial name, or a full directory name; search the specs directory for a matching name. If ambiguous, list matches and ask the user to choose. If no match, report the feature does not exist and list available features. (Host responsibility — no runtime primitive iterates the specs directory; otherwise, fall back to the markdown-only path.)
 
 <!-- audit:ignore-promotion -->
-3. Load the constitution file once per session to make its §sections available for subsequent commands. (Host responsibility — no primitive reads the constitution; otherwise, fall back to the markdown-only path.)
+3. Load the constitution file once per session to make its sections available for subsequent commands. (Host responsibility — no primitive reads the constitution; otherwise, fall back to the markdown-only path.)
 
 <!-- audit:ignore-promotion -->
 4. Recompute dependencies as a safety net by running scripts/gen-spec-deps.sh as a dry run; if the dry run reports a diff, run it for real to sync the frontmatter dependencies from body inline links. The pre-commit hook normally keeps this in sync; this step catches uncommitted body edits. (Host responsibility today; the runtime exposes an equivalent procedural wrapper used by other commands. Otherwise, follow the markdown-only path.)

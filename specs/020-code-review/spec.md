@@ -37,7 +37,7 @@ satisfies the spec, the security rules added in spec 008, or basic quality
 expectations. Adopters currently have to remember to run external review
 tools — a discipline dependency the framework should remove.
 
-## Acceptance criteria
+## Acceptance Criteria
 
 - [x] `/gov:review` exists as a verb-named slash command in the same shape as `/gov:analyze`, distributed through the standard `framework/commands/` → `.claude/commands/gov/` regeneration pipeline.
 - [x] Running `/gov:review` against an `in-progress` target produces `specs/NNN-feature/review.md` with findings categorized into MUST, SHOULD, and low-confidence sections.
@@ -168,7 +168,7 @@ review:
   low-confidence: 2
   blocking: false                     # true iff must-violations > 0
   waivers:                            # optional, omitted when empty
-    - rule: SEC-BE-014
+    - rule: BE-AUTHN-001
       file: src/api/internal.ts
       reason: "Endpoint is internal-only behind mTLS"
       waived-at: 2026-05-10T14:40:00Z
@@ -512,7 +512,7 @@ This appends to the target spec's frontmatter:
 ```yaml
 review:
   waivers:
-    - rule: SEC-BE-014
+    - rule: BE-AUTHN-001
       file: src/api/internal.ts
       reason: "Endpoint is internal-only behind mTLS; rule applies to public APIs"
       waived-at: 2026-05-10T14:40:00Z

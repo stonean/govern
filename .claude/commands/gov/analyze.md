@@ -44,7 +44,7 @@ If `--all` is not present, use the feature identifier if provided, otherwise fal
 
 3. Invoke `traverse-deps` (MCP: `traverse-deps`) against the feature to verify each dependency directory exists and carries a compatible status. Missing dependencies are blocking; incompatible statuses are blocking when this spec is at clarified or later.
 
-4. Invoke `resolve-anchor` (MCP: `resolve-anchor`) against the spec path to confirm every section reference of the form §anchor resolves to a corresponding marker comment. Unresolved anchors are advisory — they usually indicate the constitution was renamed or restructured without updating callers. Otherwise, fall back to the markdown-only path.
+4. Invoke `resolve-anchor` (MCP: `resolve-anchor`) against the spec path to confirm every section reference of the form `§<name>` resolves to a corresponding marker comment. Unresolved anchors are advisory — they usually indicate the constitution was renamed or restructured without updating callers. Otherwise, fall back to the markdown-only path.
 
 5. Invoke `check-rule-ids` (MCP: `check-rule-ids`) against the spec path with the project's rule files. Cited rule IDs that are missing are blocking; cited rule IDs marked deprecated are advisory. Otherwise, follow the markdown-only path.
 
@@ -186,7 +186,7 @@ Read inputs:
 Checks:
 
 - **Generator drift** — run `scripts/gen-readme-table.sh --dry-run` and `scripts/gen-help-tables.sh --dry-run` (when the scripts exist in the project). Non-empty diff means the README Feature Specs table or the help.md command tables are out of sync with their sources. Report each as `Generator out of sync: {script}; the next commit will resolve.`
-- **Anchor resolution** — every §anchor reference in any installed command file (typically in "Reference: §X, §Y" Scope-Boundaries lines) resolves to a corresponding marker in `constitution.md`.
+- **Anchor resolution** — every `§<name>` reference in any installed command file (typically in `Reference: §<first>, §<second>` Scope-Boundaries lines) resolves to a corresponding marker in `constitution.md`.
 - **Command frontmatter completeness** — every `.md` file in the installed commands directory has a `description:` frontmatter field; the same check applies to `.claude/commands/govern.md` when that file exists. Files whose body documents an `$ARGUMENTS` parameter additionally have `argument-hint:`. Report missing fields; do not check value content.
 
 These are advisory, not blocking — they signal framework drift that the project should resolve at its convenience. They do not prevent pipeline advancement on the target feature.
