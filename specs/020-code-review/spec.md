@@ -1,6 +1,6 @@
 ---
 spec: 020-code-review
-status: in-progress
+status: done
 dependencies: []
 review:
   last-run: 2026-05-17T22:55:00Z
