@@ -2,6 +2,22 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.5.2] — 2026-05-18
+
+### Fixed
+
+- **`check-stuck` over-reported false positives.** The primitive set `stuck = count >= threshold` based purely on the commit count of `tasks.md` since the most-recent `in-progress` transition. `/gov:implement`'s contract specifies a second condition that was not enforced: `stuck: true` should only fire when the same task is still the first incomplete one (no checkbox flipped to `- [x]` between commits in the window). Once 3+ commits landed on `tasks.md` — even when each flipped a different subtask — `stuck: true` fired on every subsequent run for the remainder of the feature, training operators to dismiss the warning.
+
+  Resolution: the new `first_incomplete_index_unchanged` helper reads `tasks.md` at both `since-sha` and HEAD, finds the line index of the first `- [ ]` group in each (skipping fenced code blocks), and returns `true` only when both indices exist and match. `stuck` now requires `count >= threshold AND first_incomplete_index_unchanged`. Vacuous-false cases (no `tasks.md` at `since-sha`; all subtasks complete at HEAD) leave `stuck: false` — completion is the opposite of stuck.
+
+  Subtask-identity equality is position-based for v1 (per scenario `check-stuck-tasks-md-advancement` Q1 resolution): matches how `/gov:implement` already walks tasks; reordering during implementation is rare and breaks the implicit ordering contract anyway. Heading-text equality is a future enhancement if reorder churn surfaces.
+
+  New regression test `stuck_false_when_checkboxes_flipped_across_threshold_commits` exercises the false-positive case (4 commits, each flipping a different subtask). The five existing tests still pass — they each flip no checkboxes between commits, so the new condition holds and `stuck` correctly fires.
+
+  No schema changes; `CheckStuckArgs` and `CheckStuckResult` JSON shapes are unchanged. Lib tests 238 → 239; full crate suite still passes.
+
+  Reported 2026-05-17 from anvil/017-pagination (second occurrence). Inbox-routed via `/gov:groom`.
+
 ## [0.5.1] — 2026-05-17
 
 ### Fixed

@@ -264,6 +264,6 @@ Adds two new primitives — `create-scenario` and `append-task` — that the `/a
 
 ## 30. Implement scenario: check-stuck-tasks-md-advancement
 
-- [ ] Implement the behavior described in [`scenarios/check-stuck-tasks-md-advancement.md`](scenarios/check-stuck-tasks-md-advancement.md).
+- [x] Implement the behavior described in [`scenarios/check-stuck-tasks-md-advancement.md`](scenarios/check-stuck-tasks-md-advancement.md).
 
 - **Done when**: `check-stuck`'s second condition is enforced — `stuck` only fires when both `commit_count >= threshold` AND the first incomplete subtask in `tasks.md` has not advanced across the walked commit window. New regression test in `runtime/src/primitives/check_stuck.rs::tests` asserts `stuck: false` when threshold-count commits flipped intervening checkboxes. `gvrn` ships a patch version bump.

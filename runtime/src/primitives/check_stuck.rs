@@ -28,7 +28,19 @@ pub fn run(args: &CheckStuckArgs, repo: &Path) -> Result<CheckStuckResult> {
 
     let since = find_in_progress_commit(&repository, &spec_rel)?;
     let count = count_commits_touching(&repository, &tasks_rel, since.as_deref())?;
-    let stuck = count >= args.threshold;
+
+    // Second condition (per scenario check-stuck-tasks-md-advancement):
+    // `stuck` only fires when the first incomplete subtask in tasks.md has
+    // NOT advanced across the walked commit window. Position-based equality:
+    // the linear line index of the first `- [ ]` group at `since-sha` is
+    // compared against the same index at HEAD. Vacuous-false when either
+    // index is unavailable (no tasks.md at since-sha, or no incomplete
+    // subtasks remain at HEAD).
+    let first_incomplete_unchanged = match since.as_deref() {
+        Some(s) => first_incomplete_index_unchanged(&repository, &tasks_rel, s)?,
+        None => false,
+    };
+    let stuck = count >= args.threshold && first_incomplete_unchanged;
 
     Ok(CheckStuckResult {
         commit_count: count,
@@ -36,6 +48,76 @@ pub fn run(args: &CheckStuckArgs, repo: &Path) -> Result<CheckStuckResult> {
         since_sha: since.unwrap_or_default(),
         threshold: args.threshold,
     })
+}
+
+/// Compare the linear line-index of the first `- [ ]` group in `tasks_rel`
+/// at the commit `since_sha` vs. at HEAD. Returns `true` when both indices
+/// exist and match (the first incomplete subtask hasn't advanced). Returns
+/// `false` when either index is unavailable (no tasks.md at since, or all
+/// subtasks complete at HEAD) — vacuous-false matches the scenario's edge
+/// cases (no first-incomplete subtask at baseline / completion is the
+/// opposite of stuck).
+fn first_incomplete_index_unchanged(
+    repo: &Repository,
+    tasks_rel: &str,
+    since_sha: &str,
+) -> Result<bool> {
+    let head_content = read_blob_at_head(repo, tasks_rel)?;
+    let since_content = read_blob_at_commit(repo, since_sha, tasks_rel)?;
+    let head_idx = first_incomplete_subtask_index(head_content.as_deref().unwrap_or(""));
+    let since_idx = first_incomplete_subtask_index(since_content.as_deref().unwrap_or(""));
+    Ok(match (head_idx, since_idx) {
+        (Some(a), Some(b)) => a == b,
+        _ => false,
+    })
+}
+
+/// Read the blob at `path_rel` from HEAD's tree, returning its UTF-8 content.
+fn read_blob_at_head(repo: &Repository, path_rel: &str) -> Result<Option<String>> {
+    let head = repo.head()?.peel_to_commit()?;
+    read_blob_from_tree(repo, &head.tree()?, path_rel)
+}
+
+/// Read the blob at `path_rel` from the tree of the commit named `sha`.
+fn read_blob_at_commit(repo: &Repository, sha: &str, path_rel: &str) -> Result<Option<String>> {
+    let oid = git2::Oid::from_str(sha)?;
+    let commit = repo.find_commit(oid)?;
+    read_blob_from_tree(repo, &commit.tree()?, path_rel)
+}
+
+fn read_blob_from_tree(
+    repo: &Repository,
+    tree: &git2::Tree<'_>,
+    path_rel: &str,
+) -> Result<Option<String>> {
+    let Some(entry) = tree.get_path(Path::new(path_rel)).ok() else {
+        return Ok(None);
+    };
+    let blob = repo.find_blob(entry.id())?;
+    Ok(std::str::from_utf8(blob.content()).ok().map(str::to_string))
+}
+
+/// Return the 0-based line index of the first `- [ ]` group in `content`,
+/// or `None` when no incomplete subtask exists. Fenced code blocks are
+/// skipped so example `- [ ]` lines inside `` ``` `` blocks do not match.
+fn first_incomplete_subtask_index(content: &str) -> Option<usize> {
+    let mut in_fence = false;
+    for (idx, line) in content.lines().enumerate() {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with("```") {
+            in_fence = !in_fence;
+            continue;
+        }
+        if in_fence {
+            continue;
+        }
+        // Match `- [ ]` exactly (space inside the brackets, not [x]/[X]).
+        // Allow leading whitespace before the `-` for nested list items.
+        if trimmed.starts_with("- [ ]") {
+            return Some(idx);
+        }
+    }
+    None
 }
 
 /// Walk commits oldest-first looking for the most recent commit whose
@@ -400,5 +482,73 @@ mod tests {
         // touch tasks.md so it doesn't count toward stuck.
         assert_eq!(result.commit_count, 1);
         assert!(!result.stuck);
+    }
+
+    /// The false-positive case the `check-stuck-tasks-md-advancement`
+    /// scenario closes: threshold-count commits land on `tasks.md`, BUT
+    /// each one flips a different subtask checkbox. Under the old
+    /// implementation (count >= threshold alone), `stuck: true` would fire
+    /// despite real progress. With the second condition (first-incomplete
+    /// index unchanged), the check correctly reports `stuck: false`.
+    #[test]
+    fn stuck_false_when_checkboxes_flipped_across_threshold_commits() {
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = Repository::init(tmp.path()).unwrap();
+        let spec_path = tmp.path().join("specs/010-demo/spec.md");
+        let tasks_path = tmp.path().join("specs/010-demo/tasks.md");
+
+        write(&spec_path, &spec("planned"));
+        write(
+            &tasks_path,
+            "# Tasks\n\n## 1. Bootstrap\n\n- [ ] subtask A\n- [ ] subtask B\n- [ ] subtask C\n",
+        );
+        commit_all(&repo, "feat: plan");
+
+        write(&spec_path, &spec("in-progress"));
+        commit_all(&repo, "chore: begin");
+
+        // Three commits, each flipping a subsequent checkbox. The first
+        // incomplete subtask's index advances every commit (line 4 → 5 → 6).
+        write(
+            &tasks_path,
+            "# Tasks\n\n## 1. Bootstrap\n\n- [x] subtask A\n- [ ] subtask B\n- [ ] subtask C\n",
+        );
+        commit_all(&repo, "wip: flip A");
+        write(
+            &tasks_path,
+            "# Tasks\n\n## 1. Bootstrap\n\n- [x] subtask A\n- [x] subtask B\n- [ ] subtask C\n",
+        );
+        commit_all(&repo, "wip: flip B");
+        write(
+            &tasks_path,
+            "# Tasks\n\n## 1. Bootstrap\n\n- [x] subtask A\n- [x] subtask B\n- [x] subtask C\n",
+        );
+        commit_all(&repo, "wip: flip C");
+
+        // Add one more commit so count clearly exceeds threshold, again
+        // with a different first-incomplete state — re-introduce one.
+        write(
+            &tasks_path,
+            "# Tasks\n\n## 1. Bootstrap\n\n- [x] subtask A\n- [x] subtask B\n- [x] subtask C\n\n## 2. Follow-on\n\n- [ ] D\n",
+        );
+        commit_all(&repo, "wip: add follow-on task");
+
+        let result = run(
+            &CheckStuckArgs {
+                feature: "010-demo".into(),
+                threshold: 3,
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        // 4 commits touched tasks.md → count exceeds threshold.
+        assert_eq!(result.commit_count, 4);
+        // But subtasks advanced across the window: the first incomplete
+        // subtask moved from line 4 (subtask A) at since-sha to a later
+        // index (line 9, the new Follow-on D) at HEAD. NOT stuck.
+        assert!(
+            !result.stuck,
+            "stuck must not fire when first-incomplete index has advanced"
+        );
     }
 }
