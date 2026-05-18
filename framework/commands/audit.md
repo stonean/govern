@@ -2,6 +2,10 @@
 description: Audit framework artifacts for cross-doc, cross-manifest, cross-registry drift. Maintainer-only.
 ---
 
+<!-- audit:ignore-placeholders:file -->
+<!-- This command is maintainer-only and not scaffolded into adopter projects,
+     so its /gov: references are literal, not templating drift. -->
+
 # Audit
 
 Audit `govern`'s own framework artifacts for the kinds of drift `/gov:analyze` is not scoped to catch. Maintainer-only — adopters never invoke this command. Runs without a session target.

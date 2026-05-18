@@ -21,6 +21,16 @@
 #     maintainer dismisses per-spec via a small /gov:ask cycle that
 #     adds a past-tense rewrite or accepts the prose as-is.
 #
+# Exemptions (two forms):
+#   - Line scope: lines starting with `>` (blockquote) are skipped —
+#     this is the canonical pattern for citing an old token in a
+#     signpost without triggering the audit.
+#   - File scope: a file containing `<!-- audit:ignore-introducing-drift:file -->`
+#     anywhere is skipped wholesale. Use for the *introducing* spec of
+#     a cataloged rename (e.g., 023 itself for /capture, /elaborate,
+#     /validate, gov-rt:) where the old names are first-class subjects
+#     of the prose, not residual drift.
+#
 # Background: spec 026 lists ~9 specs (011, 014, 017, 020, 021, 022, 023,
 # 024, 000) that retain backticked old names after the 023 living-specs
 # sweep. This check surfaces them so cleanup happens organically when
@@ -64,6 +74,10 @@ for spec_file in specs/[0-9][0-9][0-9]-*/spec.md; do
     }
   ' "$spec_file")"
   [ "$status" != "done" ] && continue
+  # File-level skip: bail before walking lines if the marker is present.
+  if grep -q '<!-- audit:ignore-introducing-drift:file -->' "$spec_file"; then
+    continue
+  fi
   # For each renamed token, grep the spec body for the backticked form.
   for entry in "${RENAMED_TOKENS[@]}"; do
     old="${entry%%|*}"

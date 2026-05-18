@@ -58,6 +58,7 @@ Default is unset — without the flag, the user confirms each task as today.
 
 3. Invoke `check-stuck` (MCP: `check-stuck`) against the feature with a threshold of 3 to detect stuck cycles before starting work. When the result reports stuck, surface the cycle to the user and pause for direction before proceeding — auto mode does not power through cycles. Otherwise, follow the markdown-only path: count commits on `tasks.md` since the spec entered in-progress.
 
+<!-- audit:ignore-promotion -->
 4. Ask the user to approve the transition from planned to in-progress before any code changes. On confirmation, continue to step 5; on denial, the walker exits cleanly without modifying the spec.
 
 5. Invoke `set-status` (MCP: `set-status`) to flip the spec frontmatter's status from planned to in-progress; the primitive guards against a stale "from" value so concurrent edits surface as an operational error rather than a silent overwrite.
@@ -66,6 +67,7 @@ Default is unset — without the flag, the user confirms each task as today.
 
 7. Invoke `mark-task` (MCP: `mark-task`) to flip the first incomplete subtask's checkbox from unchecked to checked in `tasks.md` (atomic write via tempfile + rename). The primitive returns the previous and current states; a previous value of `true` surfaces as a no-op result.
 
+<!-- audit:ignore-promotion -->
 8. Render the completion summary (host responsibility): list the task processed, surface the cross-spec impact diff (any changes outside `specs/{feature}/`), remind the user to commit, and prompt for the next pipeline gate. The in-progress → done transition is its own invocation — re-run `/{project}:implement` after every task has been marked complete and review is clean.
 
 ## Markdown-only reference
@@ -112,6 +114,6 @@ If the spec's status is already in-progress, run `git log --oneline -- specs/{fe
    - All scenario-linked tasks are complete.
    - All `.md` files in the feature directory pass `npx markdownlint-cli2`.
 4. If any validation check fails, report the specific failures and do not propose the transition. The user fixes the issues and re-runs the command.
-5. **Pre-done review gate.** Read the target spec's frontmatter `review:` block before asking for the done transition. If `review.last-run` is missing, null, or the review block is absent, halt with: `blocked: spec has not been reviewed — run /gov:review before completing`. If `review.blocking: true`, halt with: `blocked: spec has {must-violations} MUST violation(s) — see specs/NNN-feature/review.md` followed by guidance to either resolve the violations and re-run `/gov:review`, or run `/gov:review --waive <rule-id> --reason "..."` for each waivable finding. Otherwise, proceed.
+5. **Pre-done review gate.** Read the target spec's frontmatter `review:` block before asking for the done transition. If `review.last-run` is missing, null, or the review block is absent, halt with: `blocked: spec has not been reviewed — run /{project}:review before completing`. If `review.blocking: true`, halt with: `blocked: spec has {must-violations} MUST violation(s) — see specs/NNN-feature/review.md` followed by guidance to either resolve the violations and re-run `/{project}:review`, or run `/{project}:review --waive <rule-id> --reason "..."` for each waivable finding. Otherwise, proceed.
 6. If all checks pass, present a summary and ask the user to approve the transition to done. Do not update the status until the user confirms.
 7. On confirmation, update the spec's frontmatter status from in-progress to done.

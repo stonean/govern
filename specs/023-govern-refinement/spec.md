@@ -12,6 +12,14 @@ review:
 
 # 023 — `govern` Refinement
 
+<!-- audit:ignore-introducing-drift:file -->
+<!-- This spec IS the introducing spec for the /capture, /elaborate, /validate,
+     and gov-rt: renames in the audit's RENAMED_TOKENS catalog. The old names
+     are first-class subjects of the prose below (describing the rename action,
+     the deleted command files, the comparative analysis that motivated the
+     consolidation), not residual current-tense references. Per the introducing-
+     drift script's file-scope exemption, this whole spec is skipped. -->
+
 Consolidate the slash command surface so the pipeline feels less like a framework and more like a natural flow. Four changes, indivisible: drop the lightweight track entirely; merge `/capture` into `/specify`; merge `/elaborate` into `/ask`; rename `/validate` to `/analyze` to align with the emerging spec-driven-development standard.
 
 ## Motivation

@@ -753,11 +753,11 @@ update it to read (preserving surrounding prose):
 
 ```markdown
 The pipeline is: `/specify` → `/clarify` → `/plan` → `/implement` →
-`/review` → `/validate` → `done`.
+`/review` → `/analyze` → `done`.
 
 `/review` is a quality gate, not a state transition. A spec cannot advance
 from `in-progress` to `done` while its `review.md` records MUST violations.
-The gate is enforced by `/implement`, by `/validate`, and by the optional CI
+The gate is enforced by `/implement`, by `/analyze`, and by the optional CI
 template — three mutually reinforcing checks rather than one, consistent
 with the Design Principles rule that framework features must not depend on
 human diligence.
@@ -765,7 +765,7 @@ human diligence.
 
 ### README edits
 
-In the **Pipeline (advance state)** table, insert before `/validate`:
+In the **Pipeline (advance state)** table, insert before `/analyze`:
 
 ```markdown
 | `/review` | Comprehensive code review across reuse, quality, security, efficiency, and simplicity. Writes `specs/NNN-feature/review.md`. Blocks the spec from reaching `done` when MUST violations are present. `--all` reviews every `in-progress` feature. `--fix` applies conservative auto-fixes. Composable: `--all --fix` |

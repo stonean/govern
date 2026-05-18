@@ -34,12 +34,14 @@ If the constitution has not been loaded in this session (e.g., `/{project}:targe
 
 > **For agent runtimes**: backticked primitive names in this section map to MCP tools the optional [gvrn runtime](https://crates.io/crates/gvrn) exposes under bare `<primitive>` names (e.g., `lint-markdown`). Hosts wrap them with a server-name prefix taken from `.mcp.json` (Claude: `mcp__gvrn__lint-markdown`; Auggie: `mcp:gvrn:lint-markdown`). When the server is registered for your session, **call the corresponding tool** for each step listed below — that is the deterministic path. When the server is not registered, walk the prose to produce the same result. The two paths share a contract; neither one wraps the other.
 
+<!-- audit:ignore-promotion -->
 1. The walker context carries the feature description and the resolved NNN-slug. The host pre-computes these from `$ARGUMENTS` before invoking the runtime; the runtime steps below assume the new feature's directory already exists with an empty `spec.md` copied from the template.
 
 2. <!-- llm:writeSpecBody --> Fill the new spec body following §spec-requirements: a Motivation section, Acceptance Criteria with concrete and testable checkboxes (sparse acceptance criteria are valid for brownfield use — leave the section with a comment noting criteria will emerge from real work), Open Questions, and any inline links to other specs that scripts/gen-spec-deps.sh will derive the frontmatter dependencies from. The host returns the markdown body for the new file; the walker forwards the response through the context. Otherwise, follow the markdown-only path: hand-write the spec body directly.
 
 3. Invoke `lint-markdown` (MCP: `lint-markdown`) against the new spec file to surface any markdown violations the LLM may have introduced. Otherwise, fall back to the markdown-only path.
 
+<!-- audit:ignore-promotion -->
 4. Ask the user to approve creating the new feature and setting it as the session target before any session-file write. On confirmation, the host writes the session JSON to point at the new feature; on denial, the walker exits cleanly without writing the session.
 
 ## Markdown-only reference

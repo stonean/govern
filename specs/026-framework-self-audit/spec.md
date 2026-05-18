@@ -67,11 +67,15 @@ Background: [024](../024-rule-loader/spec.md) (rule-file loader) and [025](../02
 
 #### 8. Introducing-spec body drift
 
-After a command, file, or identifier is renamed via the mechanical sweep ([023's living-specs scenario](../023-govern-refinement/scenarios/living-specs.md) established the rule), introducing-spec bodies retain references to the old name as accurate historical-action prose ("A new `/capture` command provides..." in 011, written before 023's consolidation). These references sit at a tension: they were correct when written, but a reader treating the spec body as current-state truth will be misled because the verb tense and surrounding language still implies the old name is in active use.
+After a command, file, or identifier is renamed via the mechanical sweep ([023's living-specs scenario](../023-govern-refinement/scenarios/living-specs.md) established the rule), introducing-spec bodies retain references to the old name as accurate historical-action prose written before the consolidation landed. These references sit at a tension: they were correct when written, but a reader treating the spec body as current-state truth will be misled because the verb tense and surrounding language still implies the old name is in active use.
 
 The audit flags each introducing-spec body that retains references to old names in current-tense or imperative prose (sentences using `is`/`provides`/`exposes` rather than `was`/`provided`/`introduced`) and lists the affected sentences. The maintainer chooses per-spec whether to past-tense-rewrite (small `/gov:ask` cycle on that spec) or accept the prose as-is.
 
-Background: 2026-05-17 the living-specs sweep left bare-backticked old names in ~9 specs (011, 014, 017, 020, 021, 022, 023, 024, 000) because mechanical substitution would break sentences like *"A new `/capture` command provides... separate from `/specify`"*. Each spec's cleanup is small but procedurally heavy if done as 9 separate `/gov:ask` cycles. The audit surfaces the remaining drift so the cleanup happens organically when authors touch the affected specs for other reasons; the back-edge fires anyway during those edits, and the past-tense rewrite rides along.
+Background: 2026-05-17 the living-specs sweep left bare-backticked old names in ~9 specs (011, 014, 017, 020, 021, 022, 023, 024, 000) because mechanical substitution would break sentences. For example, in 011:
+
+> "A new `/capture` command provides... separate from `/specify`"
+
+Each spec's cleanup is small but procedurally heavy if done as 9 separate `/gov:ask` cycles. The audit surfaces the remaining drift so the cleanup happens organically when authors touch the affected specs for other reasons; the back-edge fires anyway during those edits, and the past-tense rewrite rides along.
 
 #### 9. Primitive-promotion candidates
 

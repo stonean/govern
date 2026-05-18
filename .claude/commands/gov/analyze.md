@@ -56,8 +56,10 @@ If `--all` is not present, use the feature identifier if provided, otherwise fal
 
 9. <!-- llm:assessSpecQuality --> For every loaded SHOULD-tier rule whose Verification trigger fires against the spec, request a semantic assessment via the extension point. SHOULD-tier findings join the Advisory tier in the rendered report. Otherwise, fall back to the markdown-only path.
 
+<!-- audit:ignore-promotion -->
 10. Parse the spec body for a `## Applicable Rules` section and collect every rule ID cited there. For each cited ID that did **not** appear in the set of rules whose Verification triggers fired in steps 8 or 9, emit an advisory finding: `Applicable Rules citation does not fire: {rule-id} is listed under ## Applicable Rules, but the rule's Verification trigger did not fire against any spec artifact. Either remove the citation, or extend the spec to bring the cited surface into scope.` Skip this step when the spec has no `## Applicable Rules` section. Citations whose IDs do not resolve to any loaded rule are handled earlier in step 5 and not reprocessed here. See **Applicable Rules citation consistency** in the markdown-only reference for the full semantics and the promotion criterion that governs when this check graduates from advisory to blocking.
 
+<!-- audit:ignore-promotion -->
 11. Render the report (host responsibility): list hard-fail and blocking findings first, advisory findings next, then informational. For each finding, include what failed, what was expected, what was found, and a suggested fix. With `--fix` set, additionally revert any status-done spec whose review block has drifted to blocking — see the Review state drift section in the markdown-only reference below.
 
 ## Markdown-only reference

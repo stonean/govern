@@ -3,20 +3,20 @@ description: Audit code against rules — security, reuse, quality, efficiency, 
 argument-hint: "[--all] [--fix] [feature]"
 ---
 
-# /gov:review
+# /{project}:review
 
 Run a comprehensive code review against the targeted feature's implementation,
 covering reuse, quality, security, efficiency, and simplicity. Produces a
 `review.md` artifact alongside the spec. **Blocks the spec from reaching `done`
 when MUST violations are present.**
 
-`/gov:review` audits **code against rules**. It is complementary to `/gov:analyze`,
+`/{project}:review` audits **code against rules**. It is complementary to `/{project}:analyze`,
 which audits **artifacts against each other**. Both should pass before a spec
 advances to `done`.
 
 ## Inputs
 
-- **Target** — the current `/gov:target` feature, or every feature with
+- **Target** — the current `/{project}:target` feature, or every feature with
   status `in-progress` or `done` when invoked with `--all`.
 - **Rules** — every file under `framework/rules/` selected by the
   suffix-based discovery in §Behavior step 5, loaded by reference. RFC 2119
@@ -55,14 +55,14 @@ advances to `done`.
 
 ## Pipeline position
 
-`/gov:review` runs after `/gov:implement` has produced code and before the spec
+`/{project}:review` runs after `/{project}:implement` has produced code and before the spec
 can advance to `done`. The recommended sequence is:
 
 ```text
-/gov:implement   →   /gov:review   →   /gov:analyze   →   spec status: done
+/{project}:implement   →   /{project}:review   →   /{project}:analyze   →   spec status: done
 ```
 
-`/gov:implement` MUST NOT mark a spec `done` while the target's `review.md`
+`/{project}:implement` MUST NOT mark a spec `done` while the target's `review.md`
 records `must-violations: > 0`. See [Blocking semantics](#blocking-semantics).
 
 ## Behavior
@@ -71,8 +71,8 @@ For each targeted feature, in order:
 
 ### 1. Resolve target and scope
 
-1. Resolve the working feature from `--all` or the current `/gov:target`.
-   If neither yields a target, halt with `no target — run /gov:target first`.
+1. Resolve the working feature from `--all` or the current `/{project}:target`.
+   If neither yields a target, halt with `no target — run /{project}:target first`.
 2. Read the spec frontmatter. If `status` is not in `{in-progress, done}`,
    halt with `review only runs against in-progress or done specs`.
 3. Build the file scope per [Inputs](#inputs). If the resolved scope is
@@ -93,7 +93,7 @@ For each targeted feature, in order:
      (Y/n)"_. On `Y`, write `[review] tech-stack-verified = true` to
      `.govern.toml`. On `n` or skip, the check runs again on the next
      invocation. To re-run the check after a stack change, the operator
-     removes the line manually — `/gov:review` does not auto-reset.
+     removes the line manually — `/{project}:review` does not auto-reset.
 5. Discover rule files by suffix. List `framework/rules/*.md` (or the
    installed equivalent in adopter projects). For each file, classify by
    basename suffix:
@@ -168,7 +168,7 @@ For each targeted feature, in order:
      ```
 
    All four warning forms emit to stdout and **do not affect the exit
-   code**. `/gov:review`'s exit status is driven exclusively by MUST
+   code**. `/{project}:review`'s exit status is driven exclusively by MUST
    violations (see [Output](#output)). `.govern.toml` hygiene is a
    separate concern.
 
@@ -295,7 +295,7 @@ Each finding follows this shape:
 - **Suggested fix**: <code block or prose>
 ```
 
-The report is regenerated on every `/gov:review` run — never appended.
+The report is regenerated on every `/{project}:review` run — never appended.
 Findings the user has explicitly waived (see [Waivers](#waivers)) carry across
 runs as long as their anchor (rule + file) is still valid.
 
@@ -333,18 +333,18 @@ read.
 A spec MUST NOT advance from `in-progress` to `done` while its frontmatter
 records `review.blocking: true`. This is enforced as follows:
 
-1. **`/gov:implement`** — before marking `status: done`, reads
+1. **`/{project}:implement`** — before marking `status: done`, reads
    `review.blocking`. If `true` (or `review.last-run` is missing), halts with:
 
    ```text
    blocked: spec has N MUST violation(s) — see specs/NNN-feature/review.md
-   resolve the violations and re-run /gov:review, or waive with /gov:review --waive
+   resolve the violations and re-run /{project}:review, or waive with /{project}:review --waive
    ```
 
-2. **`/gov:analyze`** — adds a check to its existing audit: if the spec's
+2. **`/{project}:analyze`** — adds a check to its existing audit: if the spec's
    status is `done` but `review.blocking` is `true` or `review.last-run` is
    missing, this is a validation failure. Composable with `--fix`:
-   `/gov:analyze --fix` reverts `done` → `in-progress` and emits a notice
+   `/{project}:analyze --fix` reverts `done` → `in-progress` and emits a notice
    (it never silently downgrades; the notice is the point).
 
 3. **CI hook** — the shipped GHA template at
@@ -358,7 +358,7 @@ mechanisms rather than relying on any single one — consistent with the
 
 ## Blocking message
 
-Emitted by `/gov:review` when tech-stack alignment fails (missing/empty
+Emitted by `/{project}:review` when tech-stack alignment fails (missing/empty
 `AGENTS.md` `Tech Stack` section, or documented stack inconsistent with
 implementation):
 
@@ -368,7 +368,7 @@ blocked: tech-stack alignment failed — AGENTS.md Tech Stack {missing | inconsi
   expected: <stack inferred from scope, e.g., "TypeScript + React frontend">
   documented: <AGENTS.md Tech Stack contents, or "(empty)">
 
-reconcile AGENTS.md Tech Stack with the implementation, then re-run /gov:review.
+reconcile AGENTS.md Tech Stack with the implementation, then re-run /{project}:review.
 to skip this check on future runs after manual reconciliation, add
 [review] tech-stack-verified = true to .govern.toml.
 ```
@@ -378,7 +378,7 @@ to skip this check on future runs after manual reconciliation, add
 A MUST violation can be waived only with explicit, recorded justification:
 
 ```text
-/gov:review --waive <rule-id> --reason "<text>"
+/{project}:review --waive <rule-id> --reason "<text>"
 ```
 
 This appends to the target spec's frontmatter:
@@ -395,7 +395,7 @@ review:
 
 Waived findings drop out of `must-violations` count and into a separate
 `waived-violations` count. They appear in `review.md` under the **Waived
-findings** section. They survive across `/gov:review` runs as long as the
+findings** section. They survive across `/{project}:review` runs as long as the
 rule ID and file location still match; if either changes, the waiver expires
 and the finding re-blocks. Line numbers are not part of the waiver anchor —
 the contract is `(rule, file)`, so code moving within the file does not
@@ -403,7 +403,7 @@ expire the waiver.
 
 ### Per-run waiver processing
 
-At the start of every `/gov:review` run, before counting findings into
+At the start of every `/{project}:review` run, before counting findings into
 `must-violations`, walk `review.waivers` and process each entry:
 
 1. **Apply** when the file exists at the anchored path AND the rule still
@@ -445,8 +445,8 @@ At the start of every `/gov:review` run, before counting findings into
 
 The `review.waivers` list follows the §text-first-artifacts open-schema
 rule. Adopters MAY add fields (e.g., `co-waived-by`, `approved-by-team`,
-`ticket`) to enforce org-specific waiver policy in their own CI; `/gov:review`
-and `/gov:analyze` will not error on unknown fields.
+`ticket`) to enforce org-specific waiver policy in their own CI; `/{project}:review`
+and `/{project}:analyze` will not error on unknown fields.
 
 ## Auto-fix scope
 
@@ -467,7 +467,7 @@ When in doubt, leave the finding unfixed and let the user apply the
 Stdout summary (always), followed by the path to `review.md`:
 
 ```text
-/gov:review — 042-example-feature
+/{project}:review — 042-example-feature
 
   security    ✓ 0 MUST   2 SHOULD
   reuse       ✓ 0 MUST   1 SHOULD
@@ -482,7 +482,7 @@ Stdout summary (always), followed by the path to `review.md`:
 When MUST violations are present:
 
 ```text
-/gov:review — 042-example-feature
+/{project}:review — 042-example-feature
 
   security    ✗ 2 MUST   1 SHOULD
   reuse       ✓ 0 MUST   0 SHOULD
@@ -493,8 +493,8 @@ When MUST violations are present:
   blocking: yes — 3 MUST violations
   report:   specs/042-example-feature/review.md
 
-  spec cannot advance to done. Resolve violations and re-run /gov:review,
-  or run /gov:review --waive <rule-id> --reason "..." for each waivable finding.
+  spec cannot advance to done. Resolve violations and re-run /{project}:review,
+  or run /{project}:review --waive <rule-id> --reason "..." for each waivable finding.
 ```
 
 Exit code: `0` when not blocking, `1` when blocking. Allows CI to gate on the
@@ -502,7 +502,7 @@ exit code without parsing the report.
 
 ## Idempotency
 
-Re-running `/gov:review` against an unchanged target reproduces an identical
+Re-running `/{project}:review` against an unchanged target reproduces an identical
 `review.md` (modulo `reviewed-at` and `reviewed-against`). This is a
 derive-don't-ask invariant: review output is a function of code + rules,
 never of session state.
@@ -512,7 +512,7 @@ never of session state.
 - Projects that customize shipped rule files (e.g.,
   `framework/rules/security-backend.md`) pin them in `.govern.toml`
   `[pinned] files` to prevent `/govern` from overwriting their additions.
-  `/gov:review` reads whatever is on disk — pinned or not.
+  `/{project}:review` reads whatever is on disk — pinned or not.
 - Files inside `framework/rules/` are auto-discovered by directory walk
   (see §Behavior step 5). No `AGENTS.md` reference is required. Adding
   a new file at `framework/rules/<domain>-{backend,frontend,cross}.md`

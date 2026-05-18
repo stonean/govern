@@ -1,7 +1,7 @@
 ---
 title: "011-brownfield-process — spec"
 status: done
-dependencies: [007-govern-workflow]
+dependencies: [007-govern-workflow, 023-govern-refinement]
 tags: [brownfield, process]
 review:
   last-run: 2026-05-10T00:00:00Z
@@ -19,6 +19,8 @@ A formalized process for initializing and incrementally building out specs in br
 > **Note:** the `/inbox` command this spec introduces was subsequently renamed to `/{project}:groom`. The artifact remains `specs/inbox.md`. References below to `/inbox` reflect the original design.
 >
 > **Note:** the `/scenario` command referenced below was renamed to `/{project}:ask` (see [006-bug-workflow](../006-bug-workflow/spec.md)). References below to `/scenario` reflect the original design.
+>
+> **Note:** this spec originally introduced a separate `/capture` command for brownfield initialization. [023-govern-refinement](../023-govern-refinement/spec.md) consolidated it into `/specify` as an input-driven mode (terse description → sparse `draft` AC; rich description → AC filled in). The §Capture phase name survives; the prose below has been rewritten to point at `/specify`.
 
 ## Problem
 
@@ -26,11 +28,11 @@ After a brownfield project adopts governance, the team faces existing features w
 
 The current `/specify` command assumes a new feature is being defined. There is no path for initializing a spec that captures an existing feature's known behavior without pressure to be comprehensive.
 
-## Capture Command
+## Capture Phase via `/specify`
 
-A new `/capture` command provides a lightweight entry point for brownfield spec initialization, separate from `/specify`. The user describes the feature in their own words — freeform, no guided checklist. The command drafts a skeleton spec from that input and presents it for review before writing.
+`/specify` is the entry point for brownfield spec initialization. When the user supplies a terse description with no acceptance criteria, the command drafts a sparse skeleton spec and presents it for review before writing — the brownfield outcome. A richer description with concrete AC produces a fuller draft — the greenfield outcome. The user does not pick a mode; richness scales with input.
 
-`/capture` suggests starting broad. It is easier to decompose a broad feature into scenarios and eventually promote scenarios to their own specs than it is to combine over-partitioned specs back together.
+The brownfield path suggests starting broad. It is easier to decompose a broad feature into scenarios and eventually promote scenarios to their own specs than it is to combine over-partitioned specs back together.
 
 ### Behavior
 
@@ -45,7 +47,7 @@ A new `/capture` command provides a lightweight entry point for brownfield spec 
 
 ### Post-capture
 
-The command creates the spec and stops. It does not prescribe a next step. The post-capture message lists the user's options:
+`/specify` creates the spec and stops. It does not prescribe a next step. The post-capture message lists the user's options:
 
 - Run `/scenario` to capture a bug or edge case
 - Run `/clarify` to flesh out the spec
@@ -75,7 +77,7 @@ Over time the spec converges on a complete description of the feature — not fr
 
 In brownfield projects, scenarios serve a dual purpose: they elaborate edge cases (as in greenfield) and they decompose broad features into distinct workflows.
 
-When a scenario grows complex enough — multiple edge cases, its own open questions, distinct acceptance criteria that go beyond the parent spec's scope — it signals that the behavior warrants its own feature spec. The user runs `/specify` (for new behavior) or `/capture` (for another existing feature) to create the new spec. The original scenario is replaced with a dependency reference in the parent spec.
+When a scenario grows complex enough — multiple edge cases, its own open questions, distinct acceptance criteria that go beyond the parent spec's scope — it signals that the behavior warrants its own feature spec. The user runs `/specify` to create the new spec (richness of the description drives whether the result is a greenfield-style or brownfield-style draft). The original scenario is replaced with a dependency reference in the parent spec.
 
 Indicators that a scenario should be promoted:
 
@@ -93,7 +95,7 @@ Promotion is a user decision, not automated. The framework provides the pattern;
 - **Acceptance criteria** on an existing or new spec — when the item reveals a high-level behavior gap
 - **A scenario** under an existing spec — when the item elaborates a specific situation within a known behavior
 
-When an item does not map to any existing spec, `/inbox` tells the user to run `/capture` to initialize a spec first, then come back to process the item. The commands stay decoupled.
+When an item does not map to any existing spec, `/inbox` tells the user to run `/specify` to initialize a spec first, then come back to process the item. The commands stay decoupled.
 
 No inbox item remains as a standalone artifact. The spec or scenario is the permanent home. The goal is for `specs/inbox.md` to eventually be empty and deleted.
 
@@ -131,21 +133,21 @@ For this spec specifically: 006-bug-workflow gets a signpost noting that `triage
 
 ## Acceptance Criteria
 
-- [x] `/capture` command exists and creates a skeleton spec from freeform user input
-- [x] `/capture` uses the standard `spec.md` template
-- [x] `/capture` does not read existing code
-- [x] `/capture` does not create scenarios
-- [x] `/capture` sets the session target to the new feature
-- [x] `/capture` detects naming conflicts with existing spec directories
+- [x] `/specify` accepts freeform input and creates a sparse skeleton spec when AC are absent (brownfield outcome)
+- [x] `/specify` uses the standard `spec.md` template
+- [x] `/specify`'s brownfield path does not read existing code
+- [x] `/specify` does not create scenarios
+- [x] `/specify` sets the session target to the new feature
+- [x] `/specify` detects naming conflicts with existing spec directories
 - [x] Brownfield skeleton specs pass validation at `draft` status without requiring comprehensive acceptance criteria
 - [x] Bug fixes on a brownfield spec add either an acceptance criterion or a scenario
 - [x] Enhancements to a brownfield spec follow the normal pipeline (spec change before implementation)
 - [x] Inbox items migrate to acceptance criteria or scenarios — never remain standalone
-- [x] `/inbox` directs user to `/capture` when an item has no matching spec
+- [x] `/inbox` directs user to `/specify` when an item has no matching spec
 - [x] Scenario promotion pattern is documented in `constitution.md`
 - [x] `triage` is renamed to `inbox` across all governance artifacts (templates, commands, constitution, sdd-context, README)
 - [x] 006-bug-workflow spec includes a signpost noting the `triage` → `inbox` rename by this spec
-- [x] 007-govern-workflow spec includes a signpost noting the govern command gains a triage → inbox migration and `/capture` in the manifest by this spec
+- [x] 007-govern-workflow spec includes a signpost noting the govern command gains a triage → inbox migration and brownfield-initialization handling by this spec
 - [x] Cross-spec impact pattern is documented in `constitution.md`
 - [x] The brownfield process is documented in `constitution.md` under brownfield adoption
 - [x] `sdd-context.md` is updated to reflect the brownfield process
@@ -160,14 +162,14 @@ For this spec specifically: 006-bug-workflow gets a signpost noting that `triage
 - **Visual indicator for brownfield specs:** No. A brownfield spec and a greenfield spec are the same artifact. The `draft` status already communicates incompleteness. The process converges to the same outcome regardless of origin.
 - **Validate relaxation for brownfield:** No special treatment. Validate already scales checks to the spec's current status. A `draft` spec is not expected to have comprehensive criteria. Validate applies uniformly.
 - **Automatic advancement to clarified:** No. Explicit user action, always. This is an existing pipeline boundary. The user runs `/clarify` when ready.
-- **Automatic brownfield detection in `/specify`:** Superseded by the `/capture` decision. The user's choice of command is the signal — `/specify` for new features, `/capture` for existing ones.
-- **Dedicated `/capture` command vs. modal `/specify`:** Yes, dedicated command. The workflows are different enough to justify separation. `/specify` asks qualifying questions and scaffolds comprehensively. `/capture` takes freeform input and creates a skeleton. Keeps each command's intent clear.
-- **What `/capture` asks for:** Freeform. The user describes the feature in their own words. No guided checklist. The command suggests starting broad — decomposition happens through scenarios over time.
+- **Automatic brownfield detection in `/specify`:** Originally superseded by a dedicated capture command; later (per [023](../023-govern-refinement/spec.md)) folded back as input-driven detection — richness of the description selects the brownfield vs greenfield outcome without the user picking a mode.
+- **Dedicated capture command vs. modal `/specify`:** Originally yes (dedicated), on the grounds that the workflows were different enough to justify separation. Reversed in [023](../023-govern-refinement/spec.md): the two are the same artifact with two verbs, so `/specify` covers both and the brownfield/greenfield split is input-driven.
+- **What brownfield initialization asks for:** Freeform. The user describes the feature in their own words. No guided checklist. The command suggests starting broad — decomposition happens through scenarios over time.
 - **Code reading during capture:** No. The spec captures intended behavior as understood by the user. Existing code is referenced during `/implement` for task context, not during spec creation.
 - **Template:** Standard `spec.md`. The output is indistinguishable from any other spec. The command provides brownfield framing; the artifact is the same.
-- **Pipeline fit:** `/capture` creates the spec and stops. The normal pipeline applies from that point. No prescribed next step — depends on why the user captured it.
-- **Interaction with inbox:** `/inbox` tells the user to run `/capture` when an item has no matching spec. Commands stay decoupled.
-- **Scenario creation during capture:** No. `/capture` creates the spec only. The user runs `/scenario` separately.
+- **Pipeline fit:** `/specify` creates the spec and stops. The normal pipeline applies from that point. No prescribed next step — depends on why the user captured it.
+- **Interaction with inbox:** `/inbox` tells the user to run `/specify` when an item has no matching spec. Commands stay decoupled.
+- **Scenario creation during capture:** No. `/specify` creates the spec only. The user runs `/scenario` separately.
 
 ## References
 

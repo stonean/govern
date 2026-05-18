@@ -1,7 +1,7 @@
 ---
 title: "014-reclarify-backedge — spec"
 status: done
-dependencies: [000-slash-commands, 009-scenario-targeting, 013-text-first-artifacts]
+dependencies: [000-slash-commands, 009-scenario-targeting, 013-text-first-artifacts, 023-govern-refinement]
 tags: [pipeline, commands]
 review:
   last-run: 2026-05-10T00:00:00Z
@@ -16,11 +16,13 @@ review:
 
 Wire up `/ask` to own the `clarified` / `planned` / `in-progress` → `draft` back-edge so questions surfacing mid-pipeline are captured and the spec's lifecycle invariant is maintained automatically. When a question surfaces on a `clarified`, `planned`, or `in-progress` spec, `/ask` records the question and reverts status to `draft` — the only state that tolerates open questions per the constitution. The next `/clarify` resolves the question and the spec advances forward again. No flag, no manual frontmatter editing, no inconsistent intermediate state.
 
+> **Note:** at the time this spec was written, the `done → in-progress` back-edge was owned by a separate `/elaborate` command. [023-govern-refinement](../023-govern-refinement/spec.md) consolidated `/elaborate` into `/ask`, so `/ask` now owns both back-edges. References below to `/elaborate` reflect the original command boundary; the behavior they describe lives in `/ask` today.
+
 ## Problem
 
 Prior to this spec, the constitution §spec-lifecycle (`framework/constitution.md` lines 96–99) defined two back-edges:
 
-1. `done → in-progress` via `/elaborate` adding a scenario.
+1. `done → in-progress` via `/ask` adding a scenario (originally a separate `/{project}:elaborate` command, consolidated into `/ask` per [023](../023-govern-refinement/spec.md)).
 2. `planned/in-progress → clarified` via `/ask` recording a new open question.
 
 The first was implemented; the second was not, and its destination state was wrong on inspection (see below). This spec wires up the second back-edge and revises the constitution's wording so source and behavior match.
@@ -40,7 +42,7 @@ The behavior is not academic. The most common moment a question surfaces is duri
 
 `/ask` becomes the owner of the `planned/in-progress → clarified` back-edge. When `/ask` records a new open question on a `clarified`, `planned`, or `in-progress` spec, it reverts status to `draft` as part of the same write — capturing the question and fixing the lifecycle invariant in one action.
 
-This mirrors `/elaborate`, which owns the `done → in-progress` back-edge. The pattern is consistent: the command that introduces work or uncertainty incompatible with the current status is also the command that updates the status to match. The user's explicit invocation of `/ask` (and acceptance of the refined question) is the consent for the mutation; no separate confirmation prompt is required.
+This mirrors the `done → in-progress` back-edge `/ask` already owns (originally delivered by a separate `/{project}:elaborate` command, consolidated into `/ask` per [023](../023-govern-refinement/spec.md)). The pattern is consistent: the command that introduces work or uncertainty incompatible with the current status is also the command that updates the status to match. The user's explicit invocation of `/ask` (and acceptance of the refined question) is the consent for the mutation; no separate confirmation prompt is required.
 
 `/clarify` becomes the resolver, not the back-edge entry point. Its hot path is unchanged: walk open questions on a `draft` spec, advance to `clarified`. A recovery branch handles hand-edited specs that arrive at `/clarify` with a non-`draft` status and unresolved questions in the body — a state that should not occur via normal usage but might from manual frontmatter edits.
 
@@ -56,7 +58,7 @@ This mirrors `/elaborate`, which owns the `done → in-progress` back-edge. The 
 
 When `/ask` mutates status, it does so after the user accepts the refined question — that acceptance is the explicit consent for the mutation. A separate yes/no prompt at status-change time would be redundant friction.
 
-The post-question hint always points at `/{project}:clarify`. The spec is now at `draft` (regardless of where it started), so the next step is the same in every non-`done` case: "Question recorded. Run `/{project}:clarify` to resolve it." When `/ask` redirects to `/elaborate` on a `done` spec, the hint becomes that redirect message instead.
+The post-question hint always points at `/{project}:clarify`. The spec is now at `draft` (regardless of where it started), so the next step is the same in every non-`done` case: "Question recorded. Run `/{project}:clarify` to resolve it." On a `done` spec, `/ask` classifies the input as a scenario instead (per the post-consolidation behavior added in [023](../023-govern-refinement/spec.md) — originally this case redirected to a separate `/{project}:elaborate` command).
 
 When `/ask` targets a scenario (per spec 009), it appends to the scenario's `## Open Questions`. Scenarios have no status field — there is nothing to mutate. The scenario back-edge mechanism is unaffected by this spec.
 
@@ -110,7 +112,7 @@ This protection applies to every `/plan` run, not only those triggered after a b
 
 `framework/constitution.md` §spec-lifecycle (lines 96–99) needs revision so it matches what's wired up. The original wording is close to correct; only the destination state and the mechanism need clarification:
 
-- Back-edge 1 stays as written (delivered by `/elaborate`).
+- Back-edge 1 stays as written (originally delivered by `/{project}:elaborate`; now part of `/ask` per [023](../023-govern-refinement/spec.md)).
 - Back-edge 2 changes from "`planned` or `in-progress` → `clarified` when `/ask` records a new open question" to "`clarified` / `planned` / `in-progress` → `draft` when `/ask` records a new open question; the next `/clarify` resolves the question and the spec advances forward again." The destination is `draft` (the only state that tolerates open questions), not `clarified`.
 
 Both back-edges then read as command-owned, status-mutating actions triggered by the introduction of new work or uncertainty — consistent.
@@ -185,14 +187,14 @@ Both back-edges then read as command-owned, status-mutating actions triggered by
 
 ## Resolved Questions
 
-- **Symmetric vs asymmetric back-edge.** Symmetric: every status mutation is owned by the command whose action makes it necessary. `/elaborate` owns `done → in-progress` because adding a scenario creates incomplete work. `/ask` owns `clarified+ → draft` because adding an open question creates unresolved uncertainty (and the constitution defines `clarified` as "open questions resolved" — the new question violates that invariant). The asymmetric alternative (trim the constitution, leave `/ask` as a pure flag) was considered and rejected — symmetric matches the constitution's intent and prevents the spec from sitting in an inconsistent state.
+- **Symmetric vs asymmetric back-edge.** Symmetric: every status mutation is owned by the command whose action makes it necessary. `/ask` owns `done → in-progress` (the scenario-adding branch — originally a separate `/{project}:elaborate` command, consolidated per [023](../023-govern-refinement/spec.md)) because adding a scenario creates incomplete work, and owns `clarified+ → draft` because adding an open question creates unresolved uncertainty (and the constitution defines `clarified` as "open questions resolved" — the new question violates that invariant). The asymmetric alternative (trim the constitution, leave `/ask` as a pure flag) was considered and rejected — symmetric matches the constitution's intent and prevents the spec from sitting in an inconsistent state.
 - **Naming: `--reopen` vs `--reclarify` vs `--revert`.** Moot — no flag exists in the final design. The trigger is the data, not a user-supplied flag.
-- **Clear `plan.md`/`tasks.md` checkboxes on back-edge?** No — leave checkboxes as-is and surface stale artifacts in the impact display when `/ask` mutates status. Most back-edges are narrow (one new question); clearing destroys signal about what was actually completed pre-revert. Matches `/elaborate`'s precedent (adding a scenario to a `done` spec does not clear acceptance-criteria checkboxes; it adds a new task). Stale-checkbox risk is mitigated by the impact display plus the `/plan` re-run safety added by this spec.
+- **Clear `plan.md`/`tasks.md` checkboxes on back-edge?** No — leave checkboxes as-is and surface stale artifacts in the impact display when `/ask` mutates status. Most back-edges are narrow (one new question); clearing destroys signal about what was actually completed pre-revert. Matches the precedent set by the scenario back-edge (adding a scenario to a `done` spec does not clear acceptance-criteria checkboxes; it adds a new task). Stale-checkbox risk is mitigated by the impact display plus the `/plan` re-run safety added by this spec.
 - **Revert to `draft` or to `clarified`?** Revert to `draft`. The constitution defines `clarified` as "open questions resolved" — once a new open question exists, the spec no longer satisfies that definition, so `clarified` is internally inconsistent as a destination. `draft` is the only status that tolerates open questions. The "wholesale rethink" concern (re-walking previously resolved questions) does not apply: `/clarify` only walks items in `## Open Questions`, leaving `## Resolved Questions` untouched. After the new question is resolved, the spec advances back through `clarified` → `planned` (now safe per the `/plan` re-run protection added by this spec) → `in-progress` → `done`.
-- **Flag-driven (`--reopen`) or implicit (branch on data)?** Implicit. The trigger isn't user intent expressed via flag — it's the data: does the spec have open questions? Adding a flag would require the user to express the same intent twice (running the command AND passing `--reopen`). Mirrors `/elaborate` — that command doesn't have a flag for "reopen done spec"; it just does the right thing.
-- **Should `/ask` mutate status, or should `/clarify` own the mutation?** `/ask` mutates. Same logic: a `clarified+` spec with an open question is internally inconsistent. The command that *creates* the inconsistency is the natural place to fix it — same way `/elaborate` reverts `done → in-progress` immediately on adding a scenario. Putting the mutation in `/clarify` instead would let the inconsistent state persist between the two commands and would require either a flag or pre-revert prompt, both of which the user critique correctly identified as redundant. `/clarify`'s gate keeps a recovery branch for the rare hand-edit case but not for the normal flow.
+- **Flag-driven (`--reopen`) or implicit (branch on data)?** Implicit. The trigger isn't user intent expressed via flag — it's the data: does the spec have open questions? Adding a flag would require the user to express the same intent twice (running the command AND passing `--reopen`). Mirrors the scenario back-edge — that path doesn't have a flag for "reopen done spec"; it just does the right thing.
+- **Should `/ask` mutate status, or should `/clarify` own the mutation?** `/ask` mutates. Same logic: a `clarified+` spec with an open question is internally inconsistent. The command that *creates* the inconsistency is the natural place to fix it — same way the scenario branch reverts `done → in-progress` immediately on adding a scenario. Putting the mutation in `/clarify` instead would let the inconsistent state persist between the two commands and would require either a flag or pre-revert prompt, both of which the user critique correctly identified as redundant. `/clarify`'s gate keeps a recovery branch for the rare hand-edit case but not for the normal flow.
 - **`/ask` post-question hint posture.** Active suggestion in soft language. `/ask` is invoked because the user already cares about the question; naming the next obvious step (`/clarify`) is helpful, not pushy. Soft framing — "Question recorded. Run `/{project}:clarify` to resolve it." — is a recommendation, not a directive.
-- **Should `/ask` confirm before mutating status?** No. The user's acceptance of the refined question (the existing refinement loop) is the consent. `/elaborate` doesn't confirm before reverting `done → in-progress`; `/ask` shouldn't either. The impact display surfaces what's about to happen; the actual mutation follows the user's commitment to the refined question.
+- **Should `/ask` confirm before mutating status?** No. The user's acceptance of the refined question (the existing refinement loop) is the consent. The scenario branch doesn't confirm before reverting `done → in-progress`; the question branch shouldn't either. The impact display surfaces what's about to happen; the actual mutation follows the user's commitment to the refined question.
 
 ## References
 
