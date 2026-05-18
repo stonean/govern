@@ -31,9 +31,9 @@ The primitive's existing result shape is preserved — only the value of the `st
 
 ## Open Questions
 
-- **Subtask-identity equality: heading text or position?** When detecting whether the first incomplete subtask has advanced between two commits, do we compare by the subtask's heading text (semantically stable across reorders) or by its position in `tasks.md`'s linear walk (mechanically simpler)? Lean: **position** for v1 — simpler, matches how `/gov:implement` already walks tasks; reordering tasks during implementation is an unusual edit. Heading-text equality is a v2 if reorder churn surfaces. Resolve during clarify.
-- **Version bump: patch or minor?** Adds a logic refinement to an existing primitive without changing the args / result schema — same shape as `runtime-primitive-structural-bugs`'s 0.5.1 patch. Lean: **patch** (0.5.x → 0.5.x+1). Confirm during clarify.
+*None — all resolved.*
 
 ## Resolved Questions
 
-*None yet.*
+- **Subtask-identity equality: heading text or position?** **Position-based equality for v1.** The check tracks the linear index of the first `- [ ]` group across the full file walk (both flat `## N.` and phased `### N.` subtasks, per the `read-tasks` semantics established by `runtime-primitive-structural-bugs`). If the index at HEAD equals the index at `since-sha`, the first incomplete subtask hasn't advanced. Rationale: matches how `/gov:implement` already walks tasks (same index ⇒ same subtask in both consumers); reordering subtasks mid-implementation is rare and breaks `/gov:implement`'s ordering contract anyway; heading-text equality is complex (normalization bikeshed) and not worth building ahead of demand. Edge case: a reorder produces a false-negative on stuck (real first-incomplete subtask is the same one but at a new index) — acceptable for v1 because a false negative beats the current false-positive flood. Heading-text equality graduates to v2 if reorder churn surfaces in real usage.
+- **Version bump: patch or minor?** **Patch — `gvrn 0.5.2`.** The fix doesn't change the `CheckStuckArgs` or `CheckStuckResult` JSON schema. The change tightens (narrows) when `stuck: true` fires — strictly fewer false positives, no behavior callers were correctly depending on goes away. Matches the precedent the 0.5.1 release set for `runtime-primitive-structural-bugs` (additive primitive args, preserved JSON shape, patch bump). No new MCP tool name, no new entry in `framework/runtime-tools.txt`. A minor bump would only be appropriate if behavior changed beyond "tighten when stuck fires."
