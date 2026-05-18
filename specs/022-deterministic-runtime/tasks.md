@@ -261,3 +261,9 @@ Adds two new primitives — `create-scenario` and `append-task` — that the `/a
 - [x] - [ ] Implement the behavior described in [`scenarios/runtime-primitive-structural-bugs.md`](scenarios/runtime-primitive-structural-bugs.md).
 
 - **Done when**: All four primitive bug fixes ship: `append-task` accepts an explicit `slug` argument and detects phased vs. flat tasks.md structure; `read-tasks` parses phased tasks.md correctly and returns the flattened list with phase metadata; `check-stuck` measures from the most recent `in-progress` transition, not the first. Each fix has fixture-based unit tests plus a parity-test entry; `gvrn` ships a new patch or minor version.
+
+## 30. Implement scenario: check-stuck-tasks-md-advancement
+
+- [ ] Implement the behavior described in [`scenarios/check-stuck-tasks-md-advancement.md`](scenarios/check-stuck-tasks-md-advancement.md).
+
+- **Done when**: `check-stuck`'s second condition is enforced — `stuck` only fires when both `commit_count >= threshold` AND the first incomplete subtask in `tasks.md` has not advanced across the walked commit window. New regression test in `runtime/src/primitives/check_stuck.rs::tests` asserts `stuck: false` when threshold-count commits flipped intervening checkboxes. `gvrn` ships a patch version bump.
