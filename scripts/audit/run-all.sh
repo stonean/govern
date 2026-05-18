@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scripts/audit/run-all.sh — `/audit` aggregator.
 #
-# Runs the check-zero precondition pass followed by the eight family
+# Runs the check-zero precondition pass followed by the nine family
 # check scripts. Aggregates findings to stdout under per-family headers
 # and exits 1 when any family (or check-zero) produced findings.
 #
@@ -50,5 +50,6 @@ run_check "Family 5 — template alignment" "scripts/audit/template-alignment.sh
 run_check "Family 6 — SSOT invariants" "scripts/audit/ssot-invariants.sh"
 run_check "Family 7 — sibling-spec coupling" "scripts/audit/sibling-coupling.sh"
 run_check "Family 8 — introducing-spec body drift" "scripts/audit/introducing-drift.sh"
+run_check "Family 9 — primitive-promotion candidates" "scripts/audit/primitive-promotion-candidates.sh"
 
 exit "$drift"

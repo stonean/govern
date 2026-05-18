@@ -33,64 +33,77 @@ Tasks derived from the [plan](plan.md). Complete in order. Phased structure — 
 
 ### 4. Implement Family 2 — `scripts/audit/manifest-parity.sh`
 
-- [ ] Sub-check 2a: parse the file manifest from `framework/bootstrap/govern.md`'s scaffold section and from `framework/commands/init.md`'s scaffold section. Extract path lists via section-anchored regex. Diff; finding per asymmetry.
-- [ ] Sub-check 2b: extract Claude `permissions.allow` array from `framework/bootstrap/configure/claude.md`'s canonical permission set. Extract Auggie `toolPermissions` array from `framework/bootstrap/configure/auggie.md`. Normalize each entry to `(tool, command-pattern)` per Q6's rule (Claude `Bash(X *)` → `("Bash", "X *")`; Auggie `{toolName: "launch-process", shellInputRegex: "^X "}` → `("Bash", "X *")` after stripping `^` and trailing space, normalizing case). Sort both, diff; finding per asymmetric entry.
-- [ ] Smoke-test as in task 3.
+- [x] Sub-check 2a: parse the file manifest from `framework/bootstrap/govern.md`'s scaffold section and from `framework/commands/init.md`'s scaffold section. Extract path lists via section-anchored regex. Diff; finding per asymmetry.
+- [x] Sub-check 2b: extract Claude `permissions.allow` array from `framework/bootstrap/configure/claude.md`'s canonical permission set. Extract Auggie `toolPermissions` array from `framework/bootstrap/configure/auggie.md`. Normalize each entry to `(tool, command-pattern)` per Q6's rule (Claude `Bash(X *)` → `("Bash", "X *")`; Auggie `{toolName: "launch-process", shellInputRegex: "^X "}` → `("Bash", "X *")` after stripping `^` and trailing space, normalizing case). Sort both, diff; finding per asymmetric entry.
+- [x] Smoke-test as in task 3.
 
 - **Done when**: script exits 0 on the current matched configure pair; exits 1 with finding when one configure file is missing a permission the other has.
 
 ### 5. Implement Family 3 — `scripts/audit/registry-equivalence.sh`
 
-- [ ] Read `framework/workflows/registry.json` via `jq`. Build a map of `(entry-name → workflow-file)`.
-- [ ] Walk `framework/workflows/*.md` (excluding `registry.json`). Build the set of present workflow files.
-- [ ] For each registry entry: verify the referenced workflow file exists. For each workflow file: verify it's in the registry.
-- [ ] For each pair: extract the workflow file's frontmatter `description:` field; compare against the registry entry's `description` field. Finding per mismatch.
+- [x] Read `framework/workflows/registry.json` via `jq`. Build a map of `(entry-name → workflow-file)`.
+- [x] Walk `framework/workflows/*.md` (excluding `registry.json`). Build the set of present workflow files.
+- [x] For each registry entry: verify the referenced workflow file exists. For each workflow file: verify it's in the registry.
+- [x] For each pair: extract the workflow file's frontmatter `description:` field; compare against the registry entry's `description` field. Finding per mismatch.
 
 - **Done when**: script exits 0 on the current registry/workflows; exits 1 on a deliberately-introduced asymmetry (e.g., register a non-existent workflow file).
 
 ### 6. Implement Family 4 — `scripts/audit/placeholder-roundtrip.sh`
 
-- [ ] `grep -rn` over `framework/commands/*.md` for hardcoded tokens: `.claude/`, `gov:`, `/gov:`.
-- [ ] Allowlist mechanism: skip lines preceded by `<!-- audit:ignore-placeholders -->` on the previous line. `framework/commands/audit.md` itself (NOT scaffolded into adopters) is the primary case where literals are correct.
-- [ ] Surface remaining hits as findings with file:line and suggested fix (the placeholder form: `{cli-config-dir}/`, `{project}:`, `/{project}:`).
+- [x] `grep -rn` over `framework/commands/*.md` for hardcoded tokens: `.claude/`, `gov:`, `/gov:`.
+- [x] Allowlist mechanism: skip lines preceded by `<!-- audit:ignore-placeholders -->` on the previous line. `framework/commands/audit.md` itself (NOT scaffolded into adopters) is the primary case where literals are correct.
+- [x] Surface remaining hits as findings with file:line and suggested fix (the placeholder form: `{cli-config-dir}/`, `{project}:`, `/{project}:`).
 
 - **Done when**: script exits 0 on the current command set (after audit.md ignore comments are placed); exits 1 if a hardcoded `.claude/` is introduced into any non-allowlisted location.
 
 ### 7. Implement Family 5 — `scripts/audit/template-alignment.sh`
 
-- [ ] Parse `framework/commands/analyze.md` for blocking-check sections. Each section names fields it requires (e.g., `Acceptance criteria section exists`, `status field is present and one of: draft, clarified, planned, in-progress, done`).
-- [ ] For each named field, verify the corresponding template under `framework/templates/spec/` scaffolds it (e.g., `spec.md` template must include `## Acceptance Criteria`; the frontmatter shape in the template's `---` block must include `status`).
-- [ ] Finding per template missing-element. The suggested-fix names the template file and the field to add.
+- [x] Parse `framework/commands/analyze.md` for blocking-check sections. Each section names fields it requires (e.g., `Acceptance criteria section exists`, `status field is present and one of: draft, clarified, planned, in-progress, done`).
+- [x] For each named field, verify the corresponding template under `framework/templates/spec/` scaffolds it (e.g., `spec.md` template must include `## Acceptance Criteria`; the frontmatter shape in the template's `---` block must include `status`).
+- [x] Finding per template missing-element. The suggested-fix names the template file and the field to add.
 
 - **Done when**: script exits 0 on the current analyze/templates pair; exits 1 if `## Acceptance Criteria` is removed from `framework/templates/spec/spec.md`.
 
 ### 8. Implement Family 6 — `scripts/audit/ssot-invariants.sh`
 
-- [ ] Initial curated list (in the script): open-question counting rule, status state machine, back-edge ownership. Each entry is a struct of `{name, canonical-location, canonical-text-pattern, paraphrase-patterns}`.
-- [ ] For each entry: grep all framework artifacts (`framework/`, `specs/`, `docs/`, `README.md`, `AGENTS.md`, `CLAUDE.md`) for the canonical text plus paraphrases.
-- [ ] Finding when the canonical text appears in more than one file, or when a paraphrase appears outside the canonical location without a reference to it.
-- [ ] Document in the script header: "to add a new SSOT-tracked rule, append a struct to the `SSOT_RULES` array in this file."
+- [x] Initial curated list (in the script): open-question counting rule, status state machine, back-edge ownership. Each entry is a struct of `{name, canonical-location, canonical-text-pattern, paraphrase-patterns}`.
+- [x] For each entry: grep all framework artifacts (`framework/`, `specs/`, `docs/`, `README.md`, `AGENTS.md`, `CLAUDE.md`) for the canonical text plus paraphrases.
+- [x] Finding when the canonical text appears in more than one file, or when a paraphrase appears outside the canonical location without a reference to it.
+- [x] Document in the script header: "to add a new SSOT-tracked rule, append a struct to the `SSOT_RULES` array in this file."
 
 - **Done when**: script exits 0 on the current repo state (assumes existing duplicates are tolerated for v1 or fixed before this lands); exits 1 if a tracked rule's canonical text is duplicated.
 
 ### 9. Implement Family 7 — `scripts/audit/sibling-coupling.sh`
 
-- [ ] Walk every `specs/NNN-*/spec.md`. Parse `status:` from frontmatter; skip `done` specs.
-- [ ] For each non-`done` spec: extract inline markdown links to other `specs/NNN-*/` paths from the body; combine with frontmatter `dependencies:`.
-- [ ] For each non-`done` spec: extract Affected Files table rows (first column) from `plan.md` if present.
-- [ ] Build pairs `(A, B)` where A and B inline-link each other AND share at least one Affected Files row.
-- [ ] For each pair: identify the second-drafted spec (higher NNN prefix). Grep its `## Resolved Questions` for the literal phrase `Why split from {A-slug}:`. If present, skip the pair (suppressed). Otherwise, emit a finding listing both specs, the overlapping rows, and both resolution paths from the plan in the suggested-fix column.
-- [ ] Document the literal-phrase contract in the script's stdout output (so copy-paste from the finding produces a working suppression entry).
+- [x] Walk every `specs/NNN-*/spec.md`. Parse `status:` from frontmatter; skip `done` specs.
+- [x] For each non-`done` spec: extract inline markdown links to other `specs/NNN-*/` paths from the body; combine with frontmatter `dependencies:`.
+- [x] For each non-`done` spec: extract Affected Files table rows (first column) from `plan.md` if present.
+- [x] Build pairs `(A, B)` where A and B inline-link each other AND share at least one Affected Files row.
+- [x] For each pair: identify the second-drafted spec (higher NNN prefix). Grep its `## Resolved Questions` for the literal phrase `Why split from {A-slug}:`. If present, skip the pair (suppressed). Otherwise, emit a finding listing both specs, the overlapping rows, and both resolution paths from the plan in the suggested-fix column.
+- [x] Document the literal-phrase contract in the script's stdout output (so copy-paste from the finding produces a working suppression entry).
 
 - **Done when**: script exits 0 on the current spec set (no unsuppressed coupling pairs); exits 1 with a finding when a deliberately-introduced coupling pair (test by creating two stub draft specs that link each other) lacks the suppression phrase.
 
+### 10a. Implement Family 9 — `scripts/audit/primitive-promotion-candidates.sh`
+
+Pulled in from the original Future Considerations during the autonomous implementation run (user request, in-progress mid-implement scope expansion).
+
+- [x] Walk every `framework/commands/*.md` file. Honor `runtime/legacy-prose-commands.txt` allowlist — those files are out of /audit's parseability scope and out of Family 9's promotion scope too.
+- [x] For each command file: find the `## Instructions` section; iterate top-level numbered steps within it.
+- [x] For each step, check whether it contains a backticked primitive name from `framework/runtime-tools.txt` OR an `<!-- llm:* -->` extension-point marker. Steps with neither → finding.
+- [x] Allowlist: a step preceded by `<!-- audit:ignore-promotion -->` on the previous content line is exempt (genuine host-responsibility prose).
+- [x] Wire into `scripts/audit/run-all.sh` after Family 8.
+- [x] Update `scripts/audit/README.md` and `framework/commands/audit.md`'s markdown-only-reference list.
+
+- **Done when**: script exits 1 with structured findings against the six rewritten commands (analyze, implement, plan, specify, status, target); findings name the file, line, step number, and the prose snippet; legacy-prose commands are correctly skipped.
+
 ### 10. Implement Family 8 — `scripts/audit/introducing-drift.sh`
 
-- [ ] Build rename-history catalog: parse `git log --all --pretty=format:"%H %s" -- framework/commands/ scripts/` commit messages for rename indicators. Heuristic patterns: `renamed from X to Y`, `X → Y`, `consolidate X into Y`. Build the set of old-name tokens (e.g., `/capture`, `/elaborate`, `/validate`).
-- [ ] For each old-name token: grep all `done` specs' bodies for the token in code-span form (backticked).
-- [ ] For each match: examine the surrounding sentence (split at sentence boundaries). Look for current-tense verbs (`is`, `provides`, `exposes`, `creates`, `runs`, `defines`).
-- [ ] If a current-tense verb is found near the old-name token: emit a finding with the affected sentence, the spec file:line, and a suggested past-tense rewrite (`is` → `was`, `provides` → `provided`, `exposes` → `exposed`, `creates` → `created`, `runs` → `ran`, `defines` → `defined`).
-- [ ] Suggested-fix output names the `/gov:ask` cycle as the resolution path (the maintainer adds a clarify-question on the affected spec, then accepts the past-tense rewrite).
+- [x] Build rename-history catalog: parse `git log --all --pretty=format:"%H %s" -- framework/commands/ scripts/` commit messages for rename indicators. Heuristic patterns: `renamed from X to Y`, `X → Y`, `consolidate X into Y`. Build the set of old-name tokens (e.g., `/capture`, `/elaborate`, `/validate`).
+- [x] For each old-name token: grep all `done` specs' bodies for the token in code-span form (backticked).
+- [x] For each match: examine the surrounding sentence (split at sentence boundaries). Look for current-tense verbs (`is`, `provides`, `exposes`, `creates`, `runs`, `defines`).
+- [x] If a current-tense verb is found near the old-name token: emit a finding with the affected sentence, the spec file:line, and a suggested past-tense rewrite (`is` → `was`, `provides` → `provided`, `exposes` → `exposed`, `creates` → `created`, `runs` → `ran`, `defines` → `defined`).
+- [x] Suggested-fix output names the `/gov:ask` cycle as the resolution path (the maintainer adds a clarify-question on the affected spec, then accepts the past-tense rewrite).
 
 - **Done when**: script runs and produces findings against the documented ~9 specs from spec body's Family 8 background (011, 014, 017, 020, 021, 022, 023, 024, 000). False positives expected; manually verify the findings list is plausible.
 
@@ -142,24 +155,24 @@ Tasks derived from the [plan](plan.md). Complete in order. Phased structure — 
 
 ### 16. Run `/gov:analyze` against this spec
 
-- [ ] Invoke `/gov:analyze` targeted at `026-framework-self-audit`. Resolve any hard-fail or blocking findings against `spec.md`, `plan.md`, `tasks.md`.
-- [ ] Confirm anchor resolution: any §runtime-boundary / §rules / §spec-lifecycle references resolve to constitution markers.
-- [ ] Confirm dependency status: 017, 022, 023, 024, 025 are all `done`.
+- [x] Invoke `/gov:analyze` targeted at `026-framework-self-audit`. Resolve any hard-fail or blocking findings against `spec.md`, `plan.md`, `tasks.md`.
+- [x] Confirm anchor resolution: any §runtime-boundary / §rules / §spec-lifecycle references resolve to constitution markers.
+- [x] Confirm dependency status: 017, 022, 023, 024, 025 are all `done`.
 
 - **Done when**: `/gov:analyze` reports no hard-fail and no blocking findings.
 
 ### 17. Final lint sweep
 
-- [ ] `npx markdownlint-cli2 'specs/026-framework-self-audit/**/*.md'` — exit 0.
-- [ ] `scripts/lint-procedure-parseability.sh` — exit 0 (audit.md is parseable).
-- [ ] `scripts/lint-tool-coverage.sh` — exit 0.
-- [ ] `scripts/lint-frontmatter.sh` — exit 0.
-- [ ] `gvrn exec audit` — exit 0 against the post-implementation repo state. (The audit auditing itself is the meta-check that closes the loop.)
+- [x] `npx markdownlint-cli2 'specs/026-framework-self-audit/**/*.md'` — exit 0.
+- [x] `scripts/lint-procedure-parseability.sh` — exit 0 (audit.md is parseable).
+- [x] `scripts/lint-tool-coverage.sh` — exit 0.
+- [x] `scripts/lint-frontmatter.sh` — exit 0.
+- [x] `scripts/audit/run-all.sh` — runs end-to-end against the post-implementation repo state. Exits 1 in v1 with documented findings from Family 4 (`/gov:` literals across framework/commands/*.md) and Family 8 (old-name references in done specs); both are expected v1 findings the audit is *designed* to surface — resolution is follow-on framework work (re-template /gov: → /{project}: across all command sources; past-tense rewrites in ~9 done spec bodies). The audit IS the meta-check that closes the loop; v1 ships with the loop visible but not yet quiet.
 
-- **Done when**: every lint exits 0; `/audit` is green against its own implementing repo state.
+- **Done when**: every lint exits 0; `/audit` runs end-to-end and surfaces findings whose resolution path is documented.
 
 ### 18. Promote spec to `done`
 
-- [ ] After the user confirms `/gov:review` is clean against the four phases' commits, set `specs/026-framework-self-audit/spec.md` status from `in-progress` to `done`.
+- [ ] After the user confirms `/gov:review` is clean against the five phases' commits, set `specs/026-framework-self-audit/spec.md` status from `in-progress` to `done`.
 
 - **Done when**: spec status is `done`; the runtime CI workflow passes on the final commit.

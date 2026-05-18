@@ -73,6 +73,14 @@ The audit flags each introducing-spec body that retains references to old names 
 
 Background: 2026-05-17 the living-specs sweep left bare-backticked old names in ~9 specs (011, 014, 017, 020, 021, 022, 023, 024, 000) because mechanical substitution would break sentences like *"A new `/capture` command provides... separate from `/specify`"*. Each spec's cleanup is small but procedurally heavy if done as 9 separate `/gov:ask` cycles. The audit surfaces the remaining drift so the cleanup happens organically when authors touch the affected specs for other reasons; the back-edge fires anyway during those edits, and the past-tense rewrite rides along.
 
+#### 9. Primitive-promotion candidates
+
+Scan `framework/commands/*.md` Instructions sections for numbered steps that have neither a backticked runtime-primitive name nor an `<!-- llm:* -->` extension-point marker. Each such "prose-only" step is a candidate for primitive promotion (deterministic logic that could become a `gvrn` primitive) or for an explicit LLM-marker annotation (when the step actually requires semantic judgment).
+
+The check is deterministic — it doesn't try to decide whether a given step *should* be a primitive (that's an LLM judgment captured per-spec). It surfaces every prose-only step so the maintainer can either annotate it (`<!-- audit:ignore-promotion -->` for genuine host-responsibility prose like "render the report") or schedule a primitive design.
+
+Background: closing the loop on the runtime expansion path. Spec 022 designed the runtime primitives against existing slash-command prose; 026's v1 audit family closes the inverse direction — surfacing remaining prose that has accumulated since 022 (or that 022's primitive set didn't cover). Together, the two directions make primitive expansion data-driven rather than ad-hoc.
+
 ### Boundary with `/gov:analyze`
 
 | Concern | Owner |
@@ -85,6 +93,7 @@ Background: 2026-05-17 the living-specs sweep left bare-backticked old names in 
 | Manifest / permission / registry parity | `/audit` |
 | Sibling-spec coupling (bundling candidates) | `/audit` |
 | Introducing-spec body drift (current-tense prose around renamed names) | `/audit` |
+| Primitive-promotion candidates (prose-only steps in command sources) | `/audit` |
 
 Rule of thumb: `/gov:analyze` reads within one spec's directory plus its declared dependencies; `/audit` reads across the framework's cross-cutting artifacts. The two never duplicate a check.
 
@@ -98,16 +107,10 @@ The maintainer reviews findings and routes each to a fix path:
 - Sibling-spec coupling → record the bundling decision in the second spec's clarify resolution (split with rationale, or fold).
 - Missing parity → add the missing file/permission/registry entry to the lagging side.
 
-## Future Considerations
-
-These ideas are intentionally out of v1 scope. Captured here so they aren't lost; promoted to scenarios (or follow-on specs) when concrete forcing functions surface.
-
-- **Primitive-promotion candidate check.** A 9th check family that scans `framework/commands/*.md` Instructions sections, identifies prose steps without backtick-primitive calls or `<!-- llm: -->` markers, and surfaces them as primitive-candidate findings ("this step looks deterministic — consider promoting to a new `gvrn` primitive"). Deferred because (a) it's an opportunity-detection check, not a drift check — different success criterion than the v1 8 families; (b) it would require LLM judgment, clashing with the v1 binary-severity model; (c) the 022 primitive set was already designed against real slash-command prose, so the obvious candidates are already primitives — running this on day-one would be noisy without data on which patterns recur across rewrites. Best done after `/audit` has been live for a few releases.
-
 ## Acceptance Criteria
 
 - [ ] A new slash command `/audit` exists at `framework/commands/audit.md` (and its generated `.claude/commands/gov/audit.md` mirror). The command runs without a session target and audits the framework's own cross-cutting artifacts.
-- [ ] The eight check families listed in Behavior are implemented. Each produces at least one finding shape with severity, location, what failed, and a suggested fix.
+- [ ] The nine check families listed in Behavior are implemented. Each produces at least one finding shape with severity, location, what failed, and a suggested fix.
 - [ ] **Cross-doc claim consistency** check #1 (README spec-status table) is implemented by invoking `scripts/gen-readme-table.sh --check` and reporting non-zero exit as a finding. Check #2 (pipeline diagrams) and check #3 (back-edge wording) extract the relevant textual blocks from each doc and report differences.
 - [ ] **Manifest parity** compares the file list scaffolded by `/govern` against `/gov:init` (extracted from each command's source body, not from runtime execution); compares the canonical permission set in `configure/claude.md` against `configure/auggie.md` (extracted in each agent's native format, normalized to a comparable shape).
 - [ ] **Registry equivalence** verifies every entry in `framework/workflows/registry.json` references a real workflow file in `framework/workflows/*.md`, every workflow file is registered, and registry descriptions match workflow file frontmatter `description:`.
@@ -116,6 +119,7 @@ These ideas are intentionally out of v1 scope. Captured here so they aren't lost
 - [ ] **Single-source-of-truth invariants** detects when a normative rule (e.g., the open-question counting rule) appears textually in multiple locations and reports cases where the rule should be referenced rather than restated.
 - [ ] **Sibling-spec coupling check** scans `specs/` for pairs of specs at `status ∈ {draft, clarified, planned, in-progress}` that (a) inline-link each other AND (b) share at least one row in their `## Affected Files` tables; surfaces each pair as a bundling candidate. Findings name both specs and the overlapping rows.
 - [ ] **Introducing-spec body drift** scans every done spec's body for current-tense or imperative prose containing references to renamed commands (any old name listed in the framework's rename history per git log). Findings name the spec, the affected sentences, and propose past-tense rewrites. The maintainer accepts the rewrite (via a small `/gov:ask` cycle on the spec) or leaves the prose as-is.
+- [ ] **Primitive-promotion candidates** scans `framework/commands/*.md` Instructions sections for numbered steps that have neither a backtick-quoted runtime-primitive name nor an `<!-- llm:* -->` extension-point marker. Each such prose-only step is emitted as a finding. Genuine host-responsibility prose (e.g., "render the report") is annotated with `<!-- audit:ignore-promotion -->` to silence the check on that step.
 - [ ] `/audit`'s exit code is `0` when no findings are present and `1` when any finding is present. CI can gate releases on the exit code without parsing the report.
 - [ ] `/audit` writes its output to stdout in a maintainer-friendly format: one section per check family, one finding per row within a family, with severity / location / message / suggested-fix columns. No `audit.md` report file is produced (unlike `/gov:review`'s `review.md`) — the framework-level audit is run interactively, not stored as an artifact.
 - [ ] The boundary with `/gov:analyze` is documented in `framework/commands/audit.md` §Notes (or equivalent): `/gov:analyze` is feature-spec-scoped; `/audit` is framework-scoped; the two never duplicate a check. Adopters never invoke `/audit` — it is a govern-maintainer tool.

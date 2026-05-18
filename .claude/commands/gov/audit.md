@@ -41,6 +41,7 @@ When the runtime is not on `PATH`, walk the same nine scripts directly. Each pri
 7. Run `scripts/audit/ssot-invariants.sh` (Family 6).
 8. Run `scripts/audit/sibling-coupling.sh` (Family 7).
 9. Run `scripts/audit/introducing-drift.sh` (Family 8).
+10. Run `scripts/audit/primitive-promotion-candidates.sh` (Family 9).
 
 ## Boundary with `/gov:analyze`
 

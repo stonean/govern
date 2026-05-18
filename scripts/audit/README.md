@@ -23,5 +23,6 @@ Every script in this directory follows the same contract:
 - `ssot-invariants.sh` — Family 6.
 - `sibling-coupling.sh` — Family 7.
 - `introducing-drift.sh` — Family 8.
+- `primitive-promotion-candidates.sh` — Family 9.
 
 Each family is described in detail in the [026 spec](../../specs/026-framework-self-audit/spec.md#check-families) and the [026 plan's Technical Decisions](../../specs/026-framework-self-audit/plan.md#per-family-script-designs).
