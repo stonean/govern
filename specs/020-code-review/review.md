@@ -1,8 +1,8 @@
 ---
 spec: 020-code-review
-reviewed-at: 2026-05-10T00:00:00Z
-reviewed-against: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
-diff-base: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
+reviewed-at: 2026-05-17T22:55:00Z
+reviewed-against: 3794d7ed2b30593b8b5ce292f1d27b168b46405b
+diff-base: 2fd87e487a51ce72ea0d96cad4e3a90a0c87aef3
 must-violations: 0
 should-violations: 0
 low-confidence: 0
@@ -13,53 +13,53 @@ skipped-passes: []
 
 ## Summary
 
-The `/gov:review` command itself: `framework/commands/review.md`, three reinforcing edits to `implement.md` / `analyze.md` / `adopter-generators.yml` that implement the three-mechanism blocking gate, frontmatter schema additions to two templates, `waiver-expiry` scenario, and `data-model.md`. Self-review — `/gov:review` is the command being defined here. All five passes ran; no findings. `blocking: no`.
+Re-review of `020-code-review` after the spec reverted `done → in-progress` in commit `2fd87e4` ("fix(review): one review.md per spec — drop scenarios/SLUG/review.md path"). The body edit was a doc-prose simplification: the documented `/gov:review` output-path contract collapsed from two branches (`specs/NNN-feature/review.md` *or* `specs/NNN-feature/scenarios/SLUG/review.md`) to one (`specs/NNN-feature/review.md` for both feature- and scenario-targeted runs; the `scenario:` frontmatter field records which scenario was reviewed). The change touched three files consistently — `framework/commands/review.md`, `specs/020-code-review/spec.md`, and `specs/020-code-review/data-model.md` — and removed one structural anomaly under `specs/023-govern-refinement/scenarios/living-specs/`.
 
-This re-run regenerates the review.md that was first produced at the bootstrap of 020 (precedent review file dated 2026-05-10T22:31:48Z). Per the idempotency invariant, the body content is identical to that bootstrap review modulo `reviewed-at` and `reviewed-against`. The earlier review noted that `AGENTS.md` had no `Tech Stack` section and the alignment check was bypassed by inspection; that section now exists (added 2026-05-10) so the alignment check succeeds normally on this run.
+No application code in scope (`govern` is a text-first markdown framework). All five passes ran; zero findings across every severity. `blocking: no`. Idempotency holds: this review reproduces the prior pass's structure modulo timestamps and `reviewed-against`.
 
 ## MUST violations (blocking)
 
-_None._
+*None.*
 
 ## SHOULD violations (advisory)
 
-_None._
+*None.*
 
 ## Low-confidence findings
 
-_None._
+*None.*
 
 ## Waived findings
 
-_None._
+*None.*
 
 ## Skipped passes
 
-_None._ All five passes ran.
+*None.* All five passes ran.
 
 ## Pass notes
 
 ### Security
 
-No security-sensitive code introduced. The bash steps in `framework/templates/ci/adopter-generators.yml` use `find -maxdepth 2` with explicit predicates over spec frontmatter from the repo itself — no user-controlled input, no `eval`, no curl. Loaded security rules (`security-backend.md`, `security-frontend.md`) do not apply: no HTTP, no auth, no DOM.
+No security-sensitive surface introduced. The doc-prose change adds no new HTTP, auth, DOM, secrets, or env-var handling; no `eval`, no curl, no user-controlled input. Loaded rule file `configuration-cross.md` targets operator-tunable values in code — none introduced. `security-backend.md`, `security-frontend.md`, `api-backend.md`, `accessibility-frontend.md`, `performance-frontend.md` filtered out by stack (no backend/frontend code in `govern`'s framework surface — see AGENTS.md Tech Stack).
 
 ### Reuse
 
-Implementation reuses existing patterns: frontmatter schema (per spec 013), `.govern.toml` adopter-side storage (per spec 019), command-file structure (matching `/gov:analyze`, `/gov:plan`, et al.), and the three-mechanism gate composability (each mechanism reads the same `review:` block rather than maintaining parallel state).
+The change *removes* a duplicated path branch (the "or scenarios/SLUG/review.md" clause appeared in three locations: command source, spec body, data-model). Each location now documents a single canonical path, and the three statements are mechanically consistent. No new duplication introduced.
 
 ### Quality
 
-The three reinforcing checks (implement halt, validate drift, CI gate) read the same frontmatter shape with consistent grandfather logic — a `done` spec with no `review:` block is exempt. Edge cases addressed during clarify: empty scope, missing AGENTS.md Tech Stack, cross-pass dedupe, waiver expiry on rule/file changes. Idempotency is structurally enforced.
+Doc-prose simplification preserves the established `review.md` artifact contract: deterministic regeneration, frontmatter shape, blocking semantics, waiver processing. The narrowed path contract is internally consistent — the `scenario:` frontmatter field already existed in the data-model to record scenario context, and re-running `/gov:review` already supersedes the prior report wholesale. No edge cases newly exposed.
 
 ### Efficiency
 
-No performance concerns. `/gov:review` runs once per invocation; CI file-scan operations use bounded `find` predicates. The `.govern.toml [review] tech-stack-verified` opt-out exists to skip the agent-judgment alignment check on routine runs.
+No performance surface — `/gov:review` runs once per invocation; the path change does not affect compute or I/O cost.
 
 ### Simplicity
 
-Considered and rejected during clarify (per `plan.md`): tunable confidence threshold, required `co-waived-by` field, hash-based auto-reset of `tech-stack-verified`, separate `/gov:review` invocation in CI. All four rejections documented under §"Considered and rejected". Final design is minimal: one new command file, three edits, two template touches, one CI step, one `.govern.toml` key.
+The diff is itself a simplicity-pass win: one path is simpler than two paths plus a "when target is a scenario" conditional. The change removes a structural anomaly (the `specs/023-govern-refinement/scenarios/living-specs/` directory created by the prior two-path contract) and reduces the cognitive load of the contract.
 
 ## Notes
 
-- The waiver-processing additions (per-run apply/expire/no-extend, malformed/duplicate warnings) are operator-state handling, not new findings to track.
-- Future `/gov:review` runs against an unchanged target reproduce this report modulo timestamps and `reviewed-against`.
+- Prior pass (`3d7c50b`, 2026-05-10) found zero violations across all five passes; this re-pass continues that posture. The doc-prose change did not introduce new surface to flag.
+- The `/gov:review` invariants enumerated in 020 (three-mechanism blocking gate, deterministic regeneration, waiver-anchor semantics) are unchanged by this edit; the only contract change is the artifact path.
