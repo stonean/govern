@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "gvrn": {
+      "command": "gvrn",
+      "args": ["mcp"]
+    }
+  }
+}
