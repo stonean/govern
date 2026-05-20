@@ -2,6 +2,28 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.6.0] — 2026-05-19
+
+### Added
+
+- **`merge-permissions` primitive.** Idempotently merges a canonical permission allow/deny set into a JSON file (default `.claude/settings.local.json`) with exact-match dedup across `permissions.allow` and `permissions.deny`. Inputs: optional `path` (defaults to `.claude/settings.local.json`), `allow: Vec<String>`, `deny: Vec<String>`. Behavior: creates the file with `{"permissions":{"allow":[...],"deny":[...]}}` when absent (`created`); on an existing file, removes exact-match duplicates from each array (first-occurrence wins), ensures every canonical entry is present (appended at end if absent), preserves untouched top-level keys and unspecified keys under `permissions` byte-for-byte, and writes atomically via tempfile + rename. When the parsed file already equals the post-merge value structurally, emits `unchanged` and does not rewrite — preserves mtime for build-tool idempotency, matching `merge-managed-block`'s contract. Result envelope reports per-array counts of entries added vs. duplicates removed. Refuses with a `Json` parse error on malformed JSON, with a `JsonSchema` error when `permissions.allow` / `permissions.deny` exists but is not an array, or when the top-level value is not a JSON object. New `PrimitiveError::Json` and `PrimitiveError::JsonSchema` variants. 15 unit tests cover every edge case.
+
+  Origin: spec 022 scenario `framework-list-dedup` (consumed by spec 023 `configure-dedup-permissions` to land the `/configure` dedup invariant). Registered as both the CLI subcommand `gvrn merge-permissions` and the MCP tool exposed under the bare name `merge-permissions` (Claude: `mcp__gvrn__merge-permissions`; Auggie: `mcp:gvrn:merge-permissions`). `framework/runtime-tools.txt` updated.
+
+### Changed
+
+- **`merge-managed-block` cross-boundary dedup (line-prefix style only).** After the existing block install/update pass, the primitive scans adopter-owned territory (everything outside the `# {marker}` preamble line and its blank-line terminator) for lines that string-equal a non-blank, non-comment line inside the canonical block. Matching adopter-area lines are removed in place — canonical-block wins. Adopter-owned blank lines and comment lines (`#` lines other than the marker itself) are preserved untouched even when their content matches a canonical line. Comparison is exact string-equality after stripping trailing `\r`; no glob expansion, no path normalization (`.claude/` and `.claude/*` are distinct). The result envelope grows two new fields on `line-prefix` invocations: `dedup-removed` (count of removed lines) and `dedup-removed-lines` (verbatim removed lines in source order). The `html-comment` style is unchanged — `dedup-removed` and `dedup-removed-lines` are `None` and elided from the JSON envelope when serialized (`skip_serializing_if = "Option::is_none"`). 10 new unit tests cover the line-prefix dedup paths; the 13 existing tests still pass.
+
+  Motivating use case: `.gitignore` managed via `merge-managed-block` accumulated duplicates outside the `# govern` marker when adopters pasted a canonical pattern (e.g., `.claude/`) into adopter-owned territory. With cross-boundary dedup the canonical block stays the single source of those entries.
+
+- **`check-stuck` `find_in_progress_commit` REUSE refactor.** Inline `tree.get_path(...).find_blob(...).content()` chain replaced with the existing `read_blob_from_tree` helper (introduced for `check-stuck-tasks-md-advancement` in 0.5.2). REUSE-only; observable behavior unchanged. Origin: spec 022 scenario `check-stuck-read-blob-reuse`.
+
+- **`serde_json` `preserve_order` feature.** Enabled so user-supplied JSON key order in `.claude/settings.local.json` survives `merge-permissions` round-trips. Side effect: every JSON `Value` serialized by the runtime now preserves insertion order rather than alphabetizing keys. Three parity goldens re-blessed (`analyze-basic`, `implement-basic`, `plan-basic`) for the new key order in `llm-request` envelopes. New `BLESS=1` env-var path in `runtime/tests/parity.rs` enables future bulk re-blessing of the corpus.
+
+### Tests
+
+- 25 new unit tests added (15 for `merge-permissions`, 10 for `merge-managed-block` cross-boundary dedup). Total: 299 passing (`cargo test --release`); clippy clean across `--all-targets`; fmt clean.
+
 ## [0.5.2] — 2026-05-18
 
 ### Fixed
