@@ -282,6 +282,6 @@ Adds two new primitives — `create-scenario` and `append-task` — that the `/a
 
 ## 33. Implement scenario: mark-task-backtick-headings
 
-- [ ] Implement the behavior described in `scenarios/mark-task-backtick-headings.md`
+- [x] Implement the behavior described in `scenarios/mark-task-backtick-headings.md`
 
 - **Done when**: `mark-task` and `read-tasks` recognize the same set of task headings on every `tasks.md`, including headings containing inline-code (backtick-quoted) spans. The shared `primitives::mod::parse_atx_heading` helper is the single source of truth for both primitives' heading parsing. A regression test exercises a heading like `### N. Dedup ` + backtick + `/configure` + backtick + ` permission entries` and asserts both `mark-task` and `read-tasks` resolve task `N` identically. No version bump beyond a patch (REUSE-only, no behavior change for `read-tasks`).
