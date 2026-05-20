@@ -360,6 +360,58 @@ mod tests {
     }
 
     #[test]
+    fn phased_task_set_matches_read_tasks() {
+        // Cross-primitive agreement: the scenario's contract is that
+        // `mark-task` and `read-tasks` recognize the same set of task
+        // headings on every `tasks.md`. Exercise this directly by
+        // calling `read-tasks` against the phased fixture and then
+        // confirming `mark-task` resolves each reported task number.
+        use crate::primitives::read_tasks;
+        use crate::schema::primitives::ReadTasksArgs;
+
+        let tmp = tempdir().unwrap();
+        write_phased_fixture(tmp.path());
+
+        let read_result = read_tasks::run(
+            &ReadTasksArgs {
+                feature: "feat".into(),
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert!(
+            !read_result.tasks.is_empty(),
+            "read-tasks must find at least one task in the phased fixture"
+        );
+
+        // For every task `read-tasks` reports, `mark-task` must be able
+        // to address it. Use `checked: false` against the first
+        // subtask so the call is a no-op on initially-unchecked
+        // entries (deterministic across re-runs).
+        for task in &read_result.tasks {
+            if task.subtasks.is_empty() {
+                continue;
+            }
+            let outcome = run(
+                &MarkTaskArgs {
+                    feature: "feat".into(),
+                    task_number: task.number.clone(),
+                    subtask_index: 0,
+                    checked: task.subtasks[0].checked,
+                },
+                tmp.path(),
+            );
+            assert!(
+                outcome.is_ok(),
+                "mark-task must resolve task #{} that read-tasks reported (heading: {:?}): {:?}",
+                task.number,
+                task.heading,
+                outcome
+            );
+        }
+    }
+
+    #[test]
     fn dropping_named_tempfile_leaves_target_unchanged() {
         use std::io::Write;
         // Simulates an interrupted write: create the tempfile in the parent

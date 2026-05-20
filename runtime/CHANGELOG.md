@@ -12,7 +12,7 @@ All notable changes to the `govern` deterministic runtime are recorded here. The
 
   REUSE-only: `read-tasks`'s observable behavior is unchanged; `mark-task` and `read-tasks` now consume the same `detect_tasks_structure` helper, eliminating the structure-detection drift that caused this bug. Future heading-shape edge cases fix once, propagate to both primitives.
 
-  Three new regression tests cover the previously-broken path: `flips_subtask_in_phased_tasks_md` (basic phased success), `resolves_phased_task_with_backticks_in_heading` (the exact symptom from spec 023 task #19), `phased_task_range_terminates_at_next_phase_container` (range-termination correctness). The 6 existing tests still pass.
+  Four new regression tests cover the previously-broken path: `flips_subtask_in_phased_tasks_md` (basic phased success), `resolves_phased_task_with_backticks_in_heading` (the exact symptom from spec 023 task #19), `phased_task_range_terminates_at_next_phase_container` (range-termination correctness), and `phased_task_set_matches_read_tasks` (cross-primitive agreement — `read-tasks` and `mark-task` recognize the same set of tasks on a phased fixture, the contract named in the scenario's done-when). The 6 existing tests still pass; lib total 268 → 269.
 
   Origin: spec 022 scenario `mark-task-backtick-headings`, routed from `specs/inbox.md` via `/gov:groom`.
 
