@@ -9,14 +9,15 @@ Configure `.claude/settings.local.json` with the permissions needed for slash co
 ## Scope Boundaries
 
 - Read and write only `.claude/settings.local.json`. Do NOT modify any other file.
-- Add missing entries; do NOT remove, deduplicate, reorder, or rewrite entries the user (or another command) added beyond the canonical set listed below.
+- Add missing entries and remove exact-match duplicates from `permissions.allow` and `permissions.deny`; do NOT reorder or rewrite non-duplicate entries the user (or another command) added beyond the canonical set listed below. The `merge-permissions` primitive performs the canonical-presence + dedup passes automatically; only `additionalDirectories` is handled outside the primitive (it has no duplication problem — entries are presence-checked, not deduped).
 - Do NOT scan source code, specs, or git history. This command only manages permissions.
 - Reference: no constitution sections apply — this command operates on agent-specific permission state, not `govern` artifacts.
 
 ## Instructions
 
-1. Read `.claude/settings.local.json` (create it if missing, with `{"permissions":{"allow":[],"deny":[]}}`).
-2. Ensure the `permissions.allow` array contains **all** of the following entries. Add any that are missing; do not duplicate existing ones:
+1. Invoke `merge-permissions` (MCP: `merge-permissions`) to install the canonical `permissions.allow` and `permissions.deny` sets into `.claude/settings.local.json` and dedup exact-match entries from both arrays. The primitive creates the file if missing (with `{"permissions":{"allow":[],"deny":[]}}`), reads it otherwise, and writes atomically (tempfile + rename). It preserves untouched top-level keys and unspecified keys under `permissions` byte-for-byte; the action emitted is `created`, `updated`, or `unchanged` with per-array counts of entries added vs. duplicates removed. Otherwise (markdown-only path), the host walks the canonical sets below: read the file, ensure every canonical entry is present, remove exact-match duplicates from `permissions.allow` and `permissions.deny`, write atomically.
+
+2. Canonical `permissions.allow` entries:
 
    **File operations:**
    - `Edit`
@@ -107,7 +108,7 @@ Configure `.claude/settings.local.json` with the permissions needed for slash co
    - `mcp__gvrn__append-task`
    <!-- generated:mcp-allow:end -->
 
-3. Ensure the `permissions.deny` array contains **all** of the following entries. Add any that are missing:
+3. Canonical `permissions.deny` entries:
 
    **Destructive file operations:**
    - `Bash(rm -rf *)`
@@ -135,8 +136,10 @@ Configure `.claude/settings.local.json` with the permissions needed for slash co
    - `Bash(chmod -R 777 *)`
    - `Bash(> *)`
 
-4. Ensure `permissions.additionalDirectories` contains:
+4. Ensure `permissions.additionalDirectories` contains (host-side; not handled by `merge-permissions` — this field has no duplication problem, entries are presence-checked):
    - The `specs/` directory (absolute path)
    - The `.claude/commands/gov/` directory (absolute path)
 
-5. Write the updated file and confirm what was added.
+   Read the file (post-`merge-permissions` write), add any missing absolute paths to `additionalDirectories`, and write atomically.
+
+5. Confirm what was added.

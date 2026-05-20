@@ -230,6 +230,6 @@ Done when: `/gov:review` returns clean and the spec frontmatter's `review.blocki
 
 ### 19. Dedup `/configure` permission entries via new gvrn primitive
 
-- [ ] Implement the behavior described in `scenarios/configure-dedup-permissions.md`
+- [x] Implement the behavior described in `scenarios/configure-dedup-permissions.md`
 
 - **Done when**: `/configure` writes a `.claude/settings.local.json` whose `permissions.allow` and `permissions.deny` arrays contain no exact-match duplicates after the run, including duplicates that pre-existed in the file. The behavior is implemented via a new deterministic `gvrn` primitive (added on spec 022) that `/configure` invokes; the `configure.md` command source and the generated `.claude/commands/gov/configure.md` reflect the inverted instruction (dedup is mandatory; reorder/rewrite of non-duplicate entries is still forbidden). The scenario's described behavior is correctly implemented and tested.

@@ -8,8 +8,10 @@ Configure `{cli-config-dir}/settings.local.json` with the tool permissions neede
 
 ## Instructions
 
+> The `merge-permissions` runtime primitive currently targets the Claude permission shape (`permissions.allow` / `permissions.deny` as string arrays). Auggie's `toolPermissions` array of `{toolName, shellInputRegex, permission}` objects is structurally different and is NOT yet served by a deterministic primitive — whether `merge-permissions` grows a format argument or whether a separate Auggie-format primitive is introduced is a plan-phase decision tracked as an open question on the `framework-list-dedup` scenario (`specs/022-deterministic-runtime/scenarios/framework-list-dedup.md`). Until that lands, Auggie callers walk the prose below: install the canonical set, remove exact-match duplicates by host-side splice.
+
 1. Read `{cli-config-dir}/settings.local.json` (create it if missing, with `{"toolPermissions":[]}`).
-2. Ensure the `toolPermissions` array contains **all** of the following entries. Add any that are missing; do not duplicate existing ones. Match on `toolName` + `shellInputRegex` (when present) to detect duplicates.
+2. Ensure the `toolPermissions` array contains **all** of the following entries AND that no exact-match duplicate of an entry (matched on `toolName` + `shellInputRegex` when present) survives the run. Add any canonical entries that are missing; remove duplicates so that each `(toolName, shellInputRegex)` pair appears at most once. First-occurrence wins; later duplicates are removed in place. Do not reorder or rewrite non-duplicate entries beyond the canonical set listed below.
 
    **File operations:**
    - `{ "toolName": "str-replace-editor", "permission": { "type": "allow" } }`
