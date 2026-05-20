@@ -31,10 +31,11 @@ use crate::schema::primitives::{
     EnforceManifestResult, ExtractArchiveArgs, ExtractArchiveResult, FetchArchiveArgs,
     FetchArchiveResult, GateConfirmArgs, LintMarkdownArgs, LintMarkdownResult, MarkCriterionArgs,
     MarkTaskArgs, MergeClaudeMdArgs, MergeClaudeMdResult, MergeManagedBlockArgs,
-    MergeManagedBlockResult, ReadSpecArgs, ReadSpecResult, ReadTasksArgs, ReadTasksResult,
-    ResolveAnchorArgs, ResolveAnchorResult, RunGeneratorArgs, RunGeneratorResult, SetStatusArgs,
-    SetStatusResult, SubstituteTemplatesArgs, SubstituteTemplatesResult, TraverseDepsArgs,
-    TraverseDepsResult, ValidateFrontmatterArgs, ValidateFrontmatterResult,
+    MergeManagedBlockResult, MergePermissionsArgs, MergePermissionsResult, ReadSpecArgs,
+    ReadSpecResult, ReadTasksArgs, ReadTasksResult, ResolveAnchorArgs, ResolveAnchorResult,
+    RunGeneratorArgs, RunGeneratorResult, SetStatusArgs, SetStatusResult, SubstituteTemplatesArgs,
+    SubstituteTemplatesResult, TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs,
+    ValidateFrontmatterResult,
 };
 
 /// Canonical MCP tool names exposed by the server, in manifest order.
@@ -60,6 +61,7 @@ pub const TOOL_NAMES: &[&str] = &[
     "apply-manifest",
     "enforce-manifest",
     "merge-managed-block",
+    "merge-permissions",
     "create-scenario",
     "append-task",
 ];
@@ -361,6 +363,19 @@ impl GovRuntimeServer {
         params: Parameters<MergeManagedBlockArgs>,
     ) -> Result<Json<MergeManagedBlockResult>, String> {
         primitives::merge_managed_block::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "merge-permissions",
+        description = "Idempotently merge a canonical permission allow/deny set into a JSON file with exact-match dedup."
+    )]
+    async fn merge_permissions(
+        &self,
+        params: Parameters<MergePermissionsArgs>,
+    ) -> Result<Json<MergePermissionsResult>, String> {
+        primitives::merge_permissions::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
     }

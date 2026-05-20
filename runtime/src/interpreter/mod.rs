@@ -31,8 +31,8 @@ use crate::schema::primitives::{
     AppendTaskArgs, ApplyManifestArgs, CheckRuleIdsArgs, CheckStuckArgs, CreateScenarioArgs,
     DeriveBoundaryArgs, EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs,
     LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs,
-    ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs, RunGeneratorArgs, SetStatusArgs,
-    SubstituteTemplatesArgs, TraverseDepsArgs, ValidateFrontmatterArgs,
+    MergePermissionsArgs, ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs, RunGeneratorArgs,
+    SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs, ValidateFrontmatterArgs,
 };
 use crate::schema::procedure::{Procedure, Step, StepNumber};
 use crate::schema::protocol::{ErrorLocation, ProtocolMessage};
@@ -481,6 +481,7 @@ fn dispatch_primitive(
         "apply-manifest" => call!(ApplyManifestArgs, apply_manifest),
         "enforce-manifest" => call!(EnforceManifestArgs, enforce_manifest),
         "merge-managed-block" => call!(MergeManagedBlockArgs, merge_managed_block),
+        "merge-permissions" => call!(MergePermissionsArgs, merge_permissions),
         "create-scenario" => call!(CreateScenarioArgs, create_scenario),
         "append-task" => call!(AppendTaskArgs, append_task),
         "gate-confirm" => {

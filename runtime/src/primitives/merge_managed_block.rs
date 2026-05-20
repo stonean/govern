@@ -84,22 +84,32 @@ pub fn run(args: &MergeManagedBlockArgs, repo: &Path) -> Result<MergeManagedBloc
         }
     };
 
-    let (new_content, action) = compute_merge(
+    let (new_content, action_static, dedup_lines) = compute_merge(
         existing.as_deref(),
         style,
         &marker,
         &normalized_block,
         &path,
     )?;
-    if let Some(content) = new_content {
-        write_atomic(&path, &content)?;
+    if let Some(content) = &new_content {
+        write_atomic(&path, content)?;
     }
+
+    let (dedup_removed, dedup_removed_lines) = match style {
+        MarkerStyle::LinePrefix => {
+            let count = u32::try_from(dedup_lines.len()).unwrap_or(u32::MAX);
+            (Some(count), Some(dedup_lines))
+        }
+        MarkerStyle::HtmlComment => (None, None),
+    };
 
     Ok(MergeManagedBlockResult {
         path: path.to_string_lossy().into_owned(),
-        action: action.into(),
+        action: action_static.into(),
         marker,
         marker_style: style_str,
+        dedup_removed,
+        dedup_removed_lines,
     })
 }
 
@@ -132,20 +142,31 @@ fn parse_style(s: &str) -> Result<MarkerStyle> {
     }
 }
 
-/// Compute the post-merge file content and the action label. Returns
-/// `(Some(content), action)` when the file should be written, or
-/// `(None, "unchanged")` when no write is needed.
+/// Compute the post-merge file content, the action label, and (for
+/// `line-prefix` only) the list of adopter-area lines removed by the
+/// cross-boundary dedup pass. Returns `(Some(content), action,
+/// removed)` when the file should be written, or `(None, "unchanged",
+/// removed)` when no write is needed. The `removed` vector is always
+/// empty for the `html-comment` path (whose managed region is prose,
+/// not a list).
 fn compute_merge(
     existing: Option<&str>,
     style: MarkerStyle,
     marker: &str,
     block: &str,
     path: &Path,
-) -> Result<(Option<String>, &'static str)> {
+) -> Result<(Option<String>, &'static str, Vec<String>)> {
     match existing {
-        None => Ok((Some(format_fresh(style, marker, block)), "created")),
+        None => Ok((
+            Some(format_fresh(style, marker, block)),
+            "created",
+            Vec::new(),
+        )),
         Some(text) => match style {
-            MarkerStyle::HtmlComment => merge_html_comment(text, marker, block, path),
+            MarkerStyle::HtmlComment => {
+                let (content, action) = merge_html_comment(text, marker, block, path)?;
+                Ok((content, action, Vec::new()))
+            }
             MarkerStyle::LinePrefix => Ok(merge_line_prefix(text, marker, block)),
         },
     }
@@ -246,9 +267,14 @@ fn find_blank_line(text: &str, start: usize) -> usize {
     text.len()
 }
 
-fn merge_line_prefix(text: &str, marker: &str, block: &str) -> (Option<String>, &'static str) {
+fn merge_line_prefix(
+    text: &str,
+    marker: &str,
+    block: &str,
+) -> (Option<String>, &'static str, Vec<String>) {
     let header = format!("# {marker}");
-    match find_line_prefix_block(text, marker) {
+    // Phase 1: install or update the managed block.
+    let (post_merge, merge_action) = match find_line_prefix_block(text, marker) {
         None => {
             // Pad so the appended block is separated by exactly one
             // blank line. Empty file or file already ending in a
@@ -261,29 +287,103 @@ fn merge_line_prefix(text: &str, marker: &str, block: &str) -> (Option<String>, 
             } else {
                 "\n\n"
             };
-            let combined = format!("{text}{separator}{header}\n{block}\n");
-            (Some(combined), "inserted")
+            (format!("{text}{separator}{header}\n{block}\n"), "inserted")
         }
         Some((line_start, body_end, body)) => {
             if body == block {
-                return (None, "unchanged");
-            }
-            let before = &text[..line_start];
-            let after = &text[body_end..];
-            // Ensure exactly one blank line separates the block from
-            // subsequent content; the file always ends with exactly
-            // one trailing newline.
-            let after_normalized = if after.is_empty() {
-                String::new()
-            } else if after.starts_with('\n') {
-                after.to_string()
+                (text.to_string(), "unchanged")
             } else {
-                format!("\n{after}")
-            };
-            let combined = format!("{before}{header}\n{block}\n{after_normalized}");
-            (Some(combined), "updated")
+                let before = &text[..line_start];
+                let after = &text[body_end..];
+                // Ensure exactly one blank line separates the block from
+                // subsequent content; the file always ends with exactly
+                // one trailing newline.
+                let after_normalized = if after.is_empty() {
+                    String::new()
+                } else if after.starts_with('\n') {
+                    after.to_string()
+                } else {
+                    format!("\n{after}")
+                };
+                (
+                    format!("{before}{header}\n{block}\n{after_normalized}"),
+                    "updated",
+                )
+            }
         }
+    };
+
+    // Phase 2: cross-boundary dedup. Canonical-block wins — adopter-area
+    // lines that string-equal a non-blank, non-comment line inside the
+    // managed block are removed. Comments and blank lines in adopter
+    // territory are preserved untouched.
+    let canonical_lines: Vec<&str> = block
+        .lines()
+        .map(|l| l.trim_end_matches('\r'))
+        .filter(|l| !l.is_empty() && !l.starts_with('#'))
+        .collect();
+    let (final_content, removed) = dedup_outside_block(&post_merge, marker, &canonical_lines);
+
+    // Decide what to return. If the net effect (merge + dedup) leaves
+    // the file unchanged byte-for-byte, no write happens; otherwise
+    // promote `unchanged` → `updated` when dedup removed something.
+    if final_content == text {
+        return (None, "unchanged", removed);
     }
+    let action = if merge_action == "unchanged" && !removed.is_empty() {
+        "updated"
+    } else {
+        merge_action
+    };
+    (Some(final_content), action, removed)
+}
+
+/// Walk `content` line by line and remove adopter-area lines that
+/// string-equal a non-blank, non-comment line inside the managed
+/// block. Lines inside the managed region (the `# {marker}` preamble
+/// line through the body's terminator) are left intact; blank lines
+/// and comment lines (`# foo`) outside the block are also preserved
+/// untouched even when they happen to match a canonical line.
+/// Returns the post-dedup content plus the verbatim list of removed
+/// adopter-area lines in source order.
+fn dedup_outside_block(
+    content: &str,
+    marker: &str,
+    canonical_lines: &[&str],
+) -> (String, Vec<String>) {
+    let Some((block_start, block_end, _)) = find_line_prefix_block(content, marker) else {
+        return (content.to_string(), Vec::new());
+    };
+
+    let mut out = String::with_capacity(content.len());
+    let mut removed: Vec<String> = Vec::new();
+    let mut offset = 0;
+    while offset < content.len() {
+        let rest = &content[offset..];
+        let line_end = rest.find('\n').map_or(rest.len(), |i| i);
+        let raw_line = &rest[..line_end];
+        let line = raw_line.trim_end_matches('\r');
+        let has_newline = line_end < rest.len();
+        let advance = line_end + usize::from(has_newline);
+
+        let in_block = offset >= block_start && offset < block_end;
+        let is_blank = line.is_empty();
+        let is_comment = line.starts_with('#');
+        let should_remove =
+            !in_block && !is_blank && !is_comment && canonical_lines.contains(&line);
+
+        if should_remove {
+            removed.push(line.to_string());
+        } else {
+            out.push_str(raw_line);
+            if has_newline {
+                out.push('\n');
+            }
+        }
+        offset += advance;
+    }
+
+    (out, removed)
 }
 
 #[cfg(test)]
@@ -516,5 +616,197 @@ mod tests {
         // Surrounding lines kept verbatim.
         assert!(body.starts_with("node\r\n\r\n# govern-managed"));
         assert!(body.contains("user-tail\r\n"));
+    }
+
+    // -- cross-boundary dedup (line-prefix only) ----------------------------
+
+    #[test]
+    fn line_prefix_removes_duplicate_line_above_marker() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join(".gitignore");
+        fs::write(
+            &path,
+            "node_modules/\n.claude/\nother/\n\n# govern-managed\n.claude/\nspecs/.cache/\n",
+        )
+        .unwrap();
+        let block = ".claude/\nspecs/.cache/";
+        let result = run(&args(&path, block, Some("line-prefix")), tmp.path()).unwrap();
+        // body matches canonical → merge says unchanged, but dedup
+        // removes adopter-area `.claude/` → action upgrades to updated.
+        assert_eq!(result.action, "updated");
+        assert_eq!(result.dedup_removed, Some(1));
+        assert_eq!(
+            result.dedup_removed_lines.as_deref(),
+            Some(&[".claude/".to_string()][..])
+        );
+
+        let body = fs::read_to_string(&path).unwrap();
+        assert_eq!(
+            body,
+            "node_modules/\nother/\n\n# govern-managed\n.claude/\nspecs/.cache/\n"
+        );
+    }
+
+    #[test]
+    fn line_prefix_removes_duplicate_line_below_marker() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join(".gitignore");
+        fs::write(
+            &path,
+            "node_modules/\n\n# govern-managed\n.claude/\n\nother/\n.claude/\n",
+        )
+        .unwrap();
+        let block = ".claude/";
+        let result = run(&args(&path, block, Some("line-prefix")), tmp.path()).unwrap();
+        assert_eq!(result.action, "updated");
+        assert_eq!(result.dedup_removed, Some(1));
+
+        let body = fs::read_to_string(&path).unwrap();
+        assert_eq!(
+            body,
+            "node_modules/\n\n# govern-managed\n.claude/\n\nother/\n"
+        );
+    }
+
+    #[test]
+    fn line_prefix_removes_all_adopter_area_duplicates() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join(".gitignore");
+        fs::write(
+            &path,
+            ".claude/\nfoo/\n.claude/\n\n# govern-managed\n.claude/\n\n.claude/\nbar/\n",
+        )
+        .unwrap();
+        let block = ".claude/";
+        let result = run(&args(&path, block, Some("line-prefix")), tmp.path()).unwrap();
+        assert_eq!(result.action, "updated");
+        assert_eq!(result.dedup_removed, Some(3));
+        assert_eq!(
+            result.dedup_removed_lines.as_deref(),
+            Some(
+                &[
+                    ".claude/".to_string(),
+                    ".claude/".to_string(),
+                    ".claude/".to_string()
+                ][..]
+            )
+        );
+
+        let body = fs::read_to_string(&path).unwrap();
+        assert_eq!(body, "foo/\n\n# govern-managed\n.claude/\n\nbar/\n");
+    }
+
+    #[test]
+    fn line_prefix_preserves_adopter_comments_even_when_matching_canonical() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join(".gitignore");
+        // An adopter comment line `# .claude/` happens to share text
+        // with a canonical body line `.claude/` — but it starts with
+        // `#`, so dedup leaves it alone.
+        fs::write(
+            &path,
+            "# .claude/ (a note)\nnode_modules/\n\n# govern-managed\n.claude/\n",
+        )
+        .unwrap();
+        let block = ".claude/";
+        let result = run(&args(&path, block, Some("line-prefix")), tmp.path()).unwrap();
+        assert_eq!(result.action, "unchanged");
+        assert_eq!(result.dedup_removed, Some(0));
+
+        let body = fs::read_to_string(&path).unwrap();
+        assert!(body.starts_with("# .claude/ (a note)"));
+    }
+
+    #[test]
+    fn line_prefix_preserves_adopter_blank_lines() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join(".gitignore");
+        fs::write(&path, "foo/\n\n\nbar/\n\n# govern-managed\n.claude/\n").unwrap();
+        let block = ".claude/";
+        let result = run(&args(&path, block, Some("line-prefix")), tmp.path()).unwrap();
+        assert_eq!(result.action, "unchanged");
+        assert_eq!(result.dedup_removed, Some(0));
+    }
+
+    #[test]
+    fn line_prefix_unchanged_when_no_duplicates_and_block_matches() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join(".gitignore");
+        let original = "node_modules/\nother/\n\n# govern-managed\n.claude/\nspecs/.cache/\n";
+        fs::write(&path, original).unwrap();
+        let mtime_before = fs::metadata(&path).unwrap().modified().unwrap();
+        let block = ".claude/\nspecs/.cache/";
+        let result = run(&args(&path, block, Some("line-prefix")), tmp.path()).unwrap();
+        assert_eq!(result.action, "unchanged");
+        assert_eq!(result.dedup_removed, Some(0));
+        // mtime preserved — no write happened.
+        assert_eq!(
+            fs::metadata(&path).unwrap().modified().unwrap(),
+            mtime_before
+        );
+        assert_eq!(fs::read_to_string(&path).unwrap(), original);
+    }
+
+    #[test]
+    fn line_prefix_string_equality_is_exact() {
+        // `.claude/` and `.claude/*` are distinct under string-equality.
+        // Both are preserved if both are present outside the marker.
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join(".gitignore");
+        fs::write(&path, ".claude/*\nother/\n\n# govern-managed\n.claude/\n").unwrap();
+        let block = ".claude/";
+        let result = run(&args(&path, block, Some("line-prefix")), tmp.path()).unwrap();
+        assert_eq!(result.action, "unchanged");
+        assert_eq!(result.dedup_removed, Some(0));
+        let body = fs::read_to_string(&path).unwrap();
+        assert!(body.contains(".claude/*"));
+    }
+
+    #[test]
+    fn line_prefix_dedup_happens_on_insert_path() {
+        // Adopter has a pre-existing `.claude/` line; the marker doesn't
+        // exist yet. Insert path appends the marker + body; dedup then
+        // removes the adopter's duplicate.
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join(".gitignore");
+        fs::write(&path, ".claude/\nnode_modules/\n").unwrap();
+        let block = ".claude/\nspecs/.cache/";
+        let result = run(&args(&path, block, Some("line-prefix")), tmp.path()).unwrap();
+        assert_eq!(result.action, "inserted");
+        assert_eq!(result.dedup_removed, Some(1));
+
+        let body = fs::read_to_string(&path).unwrap();
+        assert_eq!(
+            body,
+            "node_modules/\n\n# govern-managed\n.claude/\nspecs/.cache/\n"
+        );
+    }
+
+    #[test]
+    fn html_comment_path_never_sets_dedup_fields() {
+        // The dedup contract gates on `marker-style: "line-prefix"`.
+        // For `html-comment` invocations, the result's dedup fields
+        // are `None` (the JSON shape elides them entirely).
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("CLAUDE.md");
+        let result = run(&args(&path, "framework section", None), tmp.path()).unwrap();
+        assert_eq!(result.marker_style, "html-comment");
+        assert_eq!(result.dedup_removed, None);
+        assert_eq!(result.dedup_removed_lines, None);
+    }
+
+    #[test]
+    fn line_prefix_does_not_remove_canonical_inside_block_even_if_repeated() {
+        // The dedup pass should never touch lines INSIDE the managed
+        // block — the canonical-block wins rule means the canonical
+        // copy stays, even when the same line appears again inside
+        // (canonical block is itself the trusted region).
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join(".gitignore");
+        fs::write(&path, "foo/\n\n# govern-managed\n.claude/\nspecs/.cache/\n").unwrap();
+        let block = ".claude/\nspecs/.cache/";
+        let result = run(&args(&path, block, Some("line-prefix")), tmp.path()).unwrap();
+        assert_eq!(result.action, "unchanged");
+        assert_eq!(result.dedup_removed, Some(0));
     }
 }

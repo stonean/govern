@@ -270,6 +270,12 @@ Adds two new primitives — `create-scenario` and `append-task` — that the `/a
 
 ## 31. Implement scenario: check-stuck-read-blob-reuse
 
-- [ ] Implement the behavior described in [`scenarios/check-stuck-read-blob-reuse.md`](scenarios/check-stuck-read-blob-reuse.md).
+- [x] Implement the behavior described in [`scenarios/check-stuck-read-blob-reuse.md`](scenarios/check-stuck-read-blob-reuse.md).
 
 - **Done when**: `find_in_progress_commit` in `runtime/src/primitives/check_stuck.rs` uses the `read_blob_from_tree` helper instead of the inline `tree.get_path(...).find_blob(...).content()` chain. Existing `check_stuck` tests pass unchanged; no `gvrn` version bump required (REUSE-only, no behavior change).
+
+## 32. Implement scenario: framework-list-dedup
+
+- [x] Implement the behavior described in `scenarios/framework-list-dedup.md`
+
+- **Done when**: `merge-permissions` ships as a new CLI subcommand and MCP tool with the canonical-presence + dedup contract described in the scenario, registered in `framework/runtime-tools.txt`. `merge-managed-block` grows cross-boundary dedup behavior gated on `marker-style: "line-prefix"` (canonical-block wins; html-comment callsites unchanged), with the envelope additions described. Both deliveries have unit tests covering the happy paths and edge cases. The scenario's described behavior is correctly implemented and tested.

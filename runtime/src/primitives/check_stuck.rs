@@ -134,14 +134,10 @@ fn find_in_progress_commit(repo: &Repository, spec_rel: &str) -> Result<Option<S
         let oid = oid?;
         let commit = repo.find_commit(oid)?;
         let tree = commit.tree()?;
-        let status = match tree.get_path(Path::new(spec_rel)).ok() {
-            Some(entry) => {
-                let blob = repo.find_blob(entry.id())?;
-                extract_status(std::str::from_utf8(blob.content()).unwrap_or(""))
-                    .map(str::to_string)
-            }
-            None => None,
-        };
+        let status = read_blob_from_tree(repo, &tree, spec_rel)?
+            .as_deref()
+            .and_then(extract_status)
+            .map(str::to_string);
         if previous_status.as_deref() != Some("in-progress")
             && status.as_deref() == Some("in-progress")
         {

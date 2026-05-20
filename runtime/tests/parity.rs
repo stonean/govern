@@ -587,11 +587,25 @@ fn run_parity_case(command: &str, fixture: &str) {
     );
 
     let actual = String::from_utf8(output.stdout).expect("utf-8 stdout");
+
+    // Optional `BLESS=1` env var: overwrite the golden file with the
+    // captured actual stream (templating the current runtime version
+    // back to `{{runtime-version}}`) instead of asserting. Used when a
+    // protocol-level change requires bulk re-blessing of the corpus.
+    if std::env::var("BLESS").as_deref() == Ok("1") {
+        let golden_path = repo_root()
+            .join("runtime/tests/golden")
+            .join(format!("{fixture}.jsonl"));
+        let templated = actual.replace(env!("CARGO_PKG_VERSION"), "{{runtime-version}}");
+        fs::write(&golden_path, templated).expect("write blessed golden");
+        return;
+    }
+
     let golden = read_golden(fixture);
     let expanded = golden.replace("{{runtime-version}}", env!("CARGO_PKG_VERSION"));
     assert_eq!(
         actual, expanded,
-        "stream mismatch for {fixture}.jsonl — re-bless by overwriting the golden with the captured stdout",
+        "stream mismatch for {fixture}.jsonl — re-bless by overwriting the golden with the captured stdout (or re-run with BLESS=1 to overwrite all goldens)",
     );
 
     let spec = read_parity_spec(command, fixture);

@@ -710,10 +710,11 @@ pub struct MergeManagedBlockArgs {
     pub marker_style: Option<String>,
 }
 
-/// Result for `merge-managed-block`. Same shape as
-/// [`MergeClaudeMdResult`] — `merge-claude-md` is now a compat shim
-/// that delegates to `merge-managed-block` with
-/// `marker-style: html-comment` and `marker: govern-managed`.
+/// Result for `merge-managed-block`. Extends [`MergeClaudeMdResult`]'s
+/// shape with two `line-prefix`-only fields for the cross-boundary
+/// dedup pass (`dedup-removed` count, `dedup-removed-lines` listing).
+/// Both fields are absent for `html-comment` invocations (the
+/// `merge-claude-md` compat shim ends up here too).
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct MergeManagedBlockResult {
@@ -725,6 +726,66 @@ pub struct MergeManagedBlockResult {
     pub marker: String,
     /// Marker style actually applied (echoes the arg's value or the default).
     pub marker_style: String,
+    /// Count of adopter-area lines removed by the cross-boundary dedup
+    /// pass. `Some(n)` only on `line-prefix` invocations; `None` for
+    /// `html-comment` callsites (the dedup contract is line-list-shaped
+    /// and doesn't apply to prose blocks).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dedup_removed: Option<u32>,
+    /// Verbatim content of the adopter-area lines removed by the
+    /// cross-boundary dedup pass, in source order. `Some(vec)` only on
+    /// `line-prefix` invocations; `None` for `html-comment` callsites.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dedup_removed_lines: Option<Vec<String>>,
+}
+
+// -- merge-permissions -------------------------------------------------------
+
+/// Args for `merge-permissions` — idempotently merge a canonical
+/// permission allow/deny set into a JSON file (default
+/// `.claude/settings.local.json`), removing exact-match duplicates
+/// from each array. The primitive is the deterministic surface
+/// `/configure` calls; see spec 022's `framework-list-dedup`
+/// scenario for the contract.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct MergePermissionsArgs {
+    /// Local path to the JSON file. Defaults to
+    /// `.claude/settings.local.json` when omitted; relative paths
+    /// resolve against the runtime's `repo`. Any path may be supplied
+    /// so host bootstraps for other agents can reuse this primitive.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[arg(long)]
+    pub path: Option<String>,
+    /// Canonical entries to ensure under `permissions.allow`.
+    #[serde(default)]
+    #[arg(long, value_delimiter = ',')]
+    pub allow: Vec<String>,
+    /// Canonical entries to ensure under `permissions.deny`.
+    #[serde(default)]
+    #[arg(long, value_delimiter = ',')]
+    pub deny: Vec<String>,
+}
+
+/// Result for `merge-permissions`. Reports the action taken plus
+/// per-array counts of entries added (canonical members that were
+/// not present) vs. duplicates removed (exact-match entries that
+/// were redundant).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct MergePermissionsResult {
+    /// Repo-relative or absolute path of the merged file.
+    pub path: String,
+    /// One of `created`, `updated`, `unchanged`.
+    pub action: String,
+    /// Count of canonical `allow` entries appended (not already present).
+    pub allow_added: u32,
+    /// Count of duplicate `allow` entries removed.
+    pub allow_deduped: u32,
+    /// Count of canonical `deny` entries appended (not already present).
+    pub deny_added: u32,
+    /// Count of duplicate `deny` entries removed.
+    pub deny_deduped: u32,
 }
 
 // -- substitute-templates ----------------------------------------------------
@@ -1417,9 +1478,61 @@ mod tests {
             action: "inserted".into(),
             marker: "govern-managed".into(),
             marker_style: "line-prefix".into(),
+            dedup_removed: Some(2),
+            dedup_removed_lines: Some(vec![".claude/".into(), "*.sqlite".into()]),
         };
         let r_value: serde_json::Value = serde_json::to_value(&result).unwrap();
         assert_eq!(r_value["marker-style"], "line-prefix");
+        assert_eq!(r_value["dedup-removed"], 2);
+        assert_eq!(round_trip(&result), result);
+
+        // html-comment shape: dedup fields are absent from JSON when None.
+        let html_result = MergeManagedBlockResult {
+            path: "CLAUDE.md".into(),
+            action: "updated".into(),
+            marker: "govern-managed".into(),
+            marker_style: "html-comment".into(),
+            dedup_removed: None,
+            dedup_removed_lines: None,
+        };
+        let v: serde_json::Value = serde_json::to_value(&html_result).unwrap();
+        assert!(!v.as_object().unwrap().contains_key("dedup-removed"));
+        assert!(!v.as_object().unwrap().contains_key("dedup-removed-lines"));
+    }
+
+    #[test]
+    fn merge_permissions_round_trip() {
+        use super::{MergePermissionsArgs, MergePermissionsResult};
+        let args = MergePermissionsArgs {
+            path: Some(".claude/settings.local.json".into()),
+            allow: vec!["Bash(ls *)".into(), "Edit".into()],
+            deny: vec!["Bash(rm -rf *)".into()],
+        };
+        let value: serde_json::Value = serde_json::to_value(&args).unwrap();
+        assert_eq!(value["path"], ".claude/settings.local.json");
+        assert_eq!(value["allow"][0], "Bash(ls *)");
+        assert_eq!(round_trip(&args), args);
+
+        // path omitted serializes without the field (default-applies).
+        let args_default_path = MergePermissionsArgs {
+            path: None,
+            allow: vec![],
+            deny: vec![],
+        };
+        let v: serde_json::Value = serde_json::to_value(&args_default_path).unwrap();
+        assert!(!v.as_object().unwrap().contains_key("path"));
+
+        let result = MergePermissionsResult {
+            path: ".claude/settings.local.json".into(),
+            action: "updated".into(),
+            allow_added: 2,
+            allow_deduped: 1,
+            deny_added: 0,
+            deny_deduped: 0,
+        };
+        let r_value: serde_json::Value = serde_json::to_value(&result).unwrap();
+        assert_eq!(r_value["allow-added"], 2);
+        assert_eq!(r_value["allow-deduped"], 1);
         assert_eq!(round_trip(&result), result);
     }
 

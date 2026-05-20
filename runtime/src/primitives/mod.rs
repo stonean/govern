@@ -25,6 +25,7 @@ pub mod mark_criterion;
 pub mod mark_task;
 pub mod merge_claude_md;
 pub mod merge_managed_block;
+pub mod merge_permissions;
 pub mod read_spec;
 pub mod read_tasks;
 pub mod resolve_anchor;
@@ -246,6 +247,25 @@ pub enum PrimitiveError {
         /// Comma-separated list of available phase headings (for the
         /// operator to choose from when retrying).
         available: String,
+    },
+    /// JSON parse failure (e.g., `merge-permissions` reading a malformed
+    /// `.claude/settings.local.json`).
+    #[error("JSON parse error in {path}: {source}")]
+    Json {
+        /// Path of the file whose JSON failed to parse.
+        path: PathBuf,
+        /// Underlying `serde_json` error.
+        #[source]
+        source: serde_json::Error,
+    },
+    /// JSON parsed but its shape doesn't match the primitive's expected
+    /// schema (e.g., `permissions.allow` exists but is not an array).
+    #[error("JSON schema mismatch in {path}: {reason}")]
+    JsonSchema {
+        /// Path of the file whose JSON shape was rejected.
+        path: PathBuf,
+        /// One-line description of the schema mismatch.
+        reason: String,
     },
 }
 

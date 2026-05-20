@@ -227,3 +227,9 @@ Done when: `/gov:review` returns clean and the spec frontmatter's `review.blocki
 - [x] Implement the behavior described in [`scenarios/living-specs.md`](scenarios/living-specs.md).
 
 - **Done when**: `framework/constitution.md` §drift-prevention no longer carries the "frozen archaeology" exception; `AGENTS.md` line 42's rename rule no longer carves out `specs/NNN-*/`; `specs/README.md` §Past Renames is deleted; the done specs identified during clarify/planning have been swept clean of dead references; this spec passes `/gov:review` with no MUST violations.
+
+### 19. Dedup `/configure` permission entries via new gvrn primitive
+
+- [ ] Implement the behavior described in `scenarios/configure-dedup-permissions.md`
+
+- **Done when**: `/configure` writes a `.claude/settings.local.json` whose `permissions.allow` and `permissions.deny` arrays contain no exact-match duplicates after the run, including duplicates that pre-existed in the file. The behavior is implemented via a new deterministic `gvrn` primitive (added on spec 022) that `/configure` invokes; the `configure.md` command source and the generated `.claude/commands/gov/configure.md` reflect the inverted instruction (dedup is mandatory; reorder/rewrite of non-duplicate entries is still forbidden). The scenario's described behavior is correctly implemented and tested.

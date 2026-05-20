@@ -38,5 +38,6 @@ merge-claude-md
 apply-manifest
 enforce-manifest
 merge-managed-block
+merge-permissions
 create-scenario
 append-task

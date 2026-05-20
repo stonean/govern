@@ -4,7 +4,7 @@
 {"type":"gate-confirm","gate":"step-1","request-id":"req-1","prompt":"Ask the user to approve the transition from planned to in-progress before any code changes. On confirmation, continue to step 5; on denial, the walker exits cleanly without modifying the spec."}
 {"type":"progress","message":"gate `step-1` confirmed","step":"1"}
 {"type":"progress","message":"dispatching primitive `set-status`","step":"2","primitive":"set-status"}
-{"type":"llm-request","extension-point":"writeCode","request-id":"req-2","request":{"checked":true,"feature":"004-implement","from":"planned","path":"specs/004-implement","setAt":"2026-05-11T00:00:00Z","subtask-index":0,"task-number":"1","threshold":3,"to":"in-progress","write-boundary":["specs/004-implement/**","runtime/**"]}}
+{"type":"llm-request","extension-point":"writeCode","request-id":"req-2","request":{"feature":"004-implement","path":"specs/004-implement","from":"planned","to":"in-progress","task-number":"1","subtask-index":0,"checked":true,"threshold":3,"write-boundary":["specs/004-implement/**","runtime/**"],"setAt":"2026-05-11T00:00:00Z"}}
 {"type":"progress","message":"received llm-response for `writeCode`","step":"3"}
 {"type":"progress","message":"dispatching primitive `mark-task`","step":"4","primitive":"mark-task"}
 {"type":"complete","result":{},"runtime-version":"{{runtime-version}}"}
