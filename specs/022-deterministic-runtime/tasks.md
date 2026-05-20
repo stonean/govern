@@ -279,3 +279,9 @@ Adds two new primitives — `create-scenario` and `append-task` — that the `/a
 - [x] Implement the behavior described in `scenarios/framework-list-dedup.md`
 
 - **Done when**: `merge-permissions` ships as a new CLI subcommand and MCP tool with the canonical-presence + dedup contract described in the scenario, registered in `framework/runtime-tools.txt`. `merge-managed-block` grows cross-boundary dedup behavior gated on `marker-style: "line-prefix"` (canonical-block wins; html-comment callsites unchanged), with the envelope additions described. Both deliveries have unit tests covering the happy paths and edge cases. The scenario's described behavior is correctly implemented and tested.
+
+## 33. Implement scenario: mark-task-backtick-headings
+
+- [ ] Implement the behavior described in `scenarios/mark-task-backtick-headings.md`
+
+- **Done when**: `mark-task` and `read-tasks` recognize the same set of task headings on every `tasks.md`, including headings containing inline-code (backtick-quoted) spans. The shared `primitives::mod::parse_atx_heading` helper is the single source of truth for both primitives' heading parsing. A regression test exercises a heading like `### N. Dedup ` + backtick + `/configure` + backtick + ` permission entries` and asserts both `mark-task` and `read-tasks` resolve task `N` identically. No version bump beyond a patch (REUSE-only, no behavior change for `read-tasks`).
