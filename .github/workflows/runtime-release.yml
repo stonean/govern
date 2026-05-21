@@ -115,3 +115,18 @@ jobs:
           files: |
             runtime/target/${{ matrix.target }}/release/gvrn-${{ matrix.target }}.zip
             runtime/target/${{ matrix.target }}/release/gvrn-${{ matrix.target }}.zip.sha256
+
+  publish:
+    name: Publish to crates.io
+    needs: [audit, build]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: runtime
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: cargo publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: cargo publish
