@@ -533,10 +533,10 @@ fn secret_pattern(path: &str) -> Option<&'static str> {
     }
     // *-secrets.* — split into stem and extension; the stem must end with
     // `-secrets` and there must be at least one extension.
-    if let Some((stem, _ext)) = basename.rsplit_once('.') {
-        if stem.ends_with("-secrets") {
-            return Some("*-secrets.*");
-        }
+    if let Some((stem, _ext)) = basename.rsplit_once('.')
+        && stem.ends_with("-secrets")
+    {
+        return Some("*-secrets.*");
     }
     None
 }

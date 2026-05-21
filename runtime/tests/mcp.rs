@@ -18,7 +18,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 
 use rmcp::ServiceExt;
-use rmcp::model::CallToolRequestParam;
+use rmcp::model::CallToolRequestParams;
 use serde_json::{Value, json};
 
 use gvrn::mcp::server::{GovRuntimeServer, TOOL_NAMES};
@@ -73,10 +73,7 @@ async fn call_tool(
         .cloned()
         .expect("arguments must be a JSON object");
     client
-        .call_tool(CallToolRequestParam {
-            name: name.to_string().into(),
-            arguments: Some(args_obj),
-        })
+        .call_tool(CallToolRequestParams::new(name.to_string()).with_arguments(args_obj))
         .await
         .unwrap_or_else(|err| panic!("call_tool({name}) failed: {err}"))
 }

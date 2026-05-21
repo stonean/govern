@@ -310,14 +310,14 @@ fn stitch(existing: &str, block: &str) -> String {
 /// Read the feature's spec to compose the new tasks.md H1 ("# NNN — Feature
 /// Tasks"). Falls back to a minimal heading when the spec cannot be read.
 fn derive_tasks_heading(feature_dir: &Path) -> String {
-    if let Ok(spec) = read_text(&feature_dir.join("spec.md")) {
-        if let Ok((_fm, body)) = split_frontmatter(&spec, &feature_dir.join("spec.md")) {
-            for line in body.lines() {
-                if let Some((level, text)) = parse_atx_heading(line) {
-                    if level == 1 {
-                        return format!("# {text} Tasks");
-                    }
-                }
+    if let Ok(spec) = read_text(&feature_dir.join("spec.md"))
+        && let Ok((_fm, body)) = split_frontmatter(&spec, &feature_dir.join("spec.md"))
+    {
+        for line in body.lines() {
+            if let Some((level, text)) = parse_atx_heading(line)
+                && level == 1
+            {
+                return format!("# {text} Tasks");
             }
         }
     }

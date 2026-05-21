@@ -317,13 +317,13 @@ pub(crate) fn write_atomic(path: &Path, content: &str) -> Result<()> {
 /// pattern as [`write_atomic`]; used by primitives that produce binary
 /// payloads (e.g., `fetch-archive` writing a downloaded tarball).
 pub(crate) fn write_atomic_bytes(path: &Path, content: &[u8]) -> Result<()> {
-    if let Some(parent) = path.parent() {
-        if !parent.as_os_str().is_empty() {
-            std::fs::create_dir_all(parent).map_err(|source| PrimitiveError::Io {
-                path: parent.into(),
-                source,
-            })?;
-        }
+    if let Some(parent) = path.parent()
+        && !parent.as_os_str().is_empty()
+    {
+        std::fs::create_dir_all(parent).map_err(|source| PrimitiveError::Io {
+            path: parent.into(),
+            source,
+        })?;
     }
     let parent = path.parent().unwrap_or_else(|| Path::new("."));
     let mut tmp = tempfile::NamedTempFile::new_in(parent).map_err(|source| PrimitiveError::Io {

@@ -52,23 +52,23 @@ fn parse_sections(body: &str, include_body: bool) -> Vec<SpecSection> {
     let mut current: Option<(String, u8)> = None;
 
     for line in body.lines() {
-        if let Some((level, heading)) = parse_atx_heading(line) {
-            if level >= 2 {
-                if let Some((h, l)) = current.take() {
-                    sections.push(SpecSection {
-                        heading: h,
-                        level: l,
-                        body: if include_body {
-                            pending_body.join("\n").trim().to_string()
-                        } else {
-                            String::new()
-                        },
-                    });
-                }
-                pending_body.clear();
-                current = Some((heading, level));
-                continue;
+        if let Some((level, heading)) = parse_atx_heading(line)
+            && level >= 2
+        {
+            if let Some((h, l)) = current.take() {
+                sections.push(SpecSection {
+                    heading: h,
+                    level: l,
+                    body: if include_body {
+                        pending_body.join("\n").trim().to_string()
+                    } else {
+                        String::new()
+                    },
+                });
             }
+            pending_body.clear();
+            current = Some((heading, level));
+            continue;
         }
         if current.is_some() {
             pending_body.push(line);
@@ -114,10 +114,10 @@ fn parse_open_questions(body: &str, section_heading: &str) -> Vec<OpenQuestion> 
                 buf.push(' ');
                 buf.push_str(&continuation);
             }
-        } else if trimmed.is_empty() {
-            if let Some(prev) = current.take() {
-                push_question(&mut out, &prev);
-            }
+        } else if trimmed.is_empty()
+            && let Some(prev) = current.take()
+        {
+            push_question(&mut out, &prev);
         }
     }
     if let Some(prev) = current {

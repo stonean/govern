@@ -71,6 +71,10 @@ pub const TOOL_NAMES: &[&str] = &[
 #[derive(Clone)]
 pub struct GovRuntimeServer {
     repo: Arc<PathBuf>,
+    // The `#[tool_router]` macro emits dispatch code that constructs and
+    // consumes this field at compile time, but rustc's dead-code analysis
+    // doesn't see through the macro. Required to remain on the struct.
+    #[allow(dead_code)]
     tool_router: ToolRouter<Self>,
 }
 
@@ -410,14 +414,9 @@ impl GovRuntimeServer {
 #[tool_handler]
 impl ServerHandler for GovRuntimeServer {
     fn get_info(&self) -> ServerInfo {
-        ServerInfo {
-            instructions: Some(
-                "Deterministic runtime for the govern pipeline. Exposes per-primitive tools; \
-                 see specs/022-deterministic-runtime/ for the protocol contract."
-                    .into(),
-            ),
-            capabilities: ServerCapabilities::builder().enable_tools().build(),
-            ..Default::default()
-        }
+        ServerInfo::new(ServerCapabilities::builder().enable_tools().build()).with_instructions(
+            "Deterministic runtime for the govern pipeline. Exposes per-primitive tools; \
+                 see specs/022-deterministic-runtime/ for the protocol contract.",
+        )
     }
 }

@@ -242,10 +242,10 @@ fn run_exec(command: &str, args: &[String], repo: &std::path::Path) -> ExitCode 
     // CLI `key=value` arg overrides.
     let mut context = Map::new();
     let session_path = repo.join(".claude/gov-session.json");
-    if let Ok(text) = std::fs::read_to_string(&session_path) {
-        if let Ok(Value::Object(map)) = serde_json::from_str::<Value>(&text) {
-            context.extend(map);
-        }
+    if let Ok(text) = std::fs::read_to_string(&session_path)
+        && let Ok(Value::Object(map)) = serde_json::from_str::<Value>(&text)
+    {
+        context.extend(map);
     }
     for arg in args {
         if let Some((key, value)) = arg.split_once('=') {

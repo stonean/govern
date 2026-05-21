@@ -2,6 +2,18 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.7.1] — 2026-05-21
+
+### Changed
+
+- **Direct dependencies refreshed to latest majors.** `git2` 0.20 → 0.21, `reqwest` 0.12 → 0.13, `rmcp` 0.8 → 1.7, `sha2` 0.10 → 0.11, `zip` 5 → 8. Plus the transitive bumps cargo picked up (`digest` 0.10 → 0.11, `pulldown-cmark` 0.13.3 → 0.13.4, `tar` 0.4.45 → 0.4.46, `tower-http` 0.6.10 → 0.6.11, etc.). Hygiene-driven; no bug pushed for the bumps. The runtime had no driver to update before, but staleness compounds — clearing the backlog while the runtime is quiescent is cheaper than absorbing the migrations one CVE at a time.
+
+  Migration touched two API surfaces. `reqwest` 0.13 renamed the rustls feature flag (`rustls-tls` → `rustls`), so `Cargo.toml` updated. `rmcp` 1.x made `ServerInfo` and `CallToolRequestParam` (renamed `CallToolRequestParams`) `#[non_exhaustive]`, so the construction sites in `src/mcp/server.rs` (`ServerInfo::new(caps).with_instructions(...)` builder) and `tests/mcp.rs` (`CallToolRequestParams::new(name).with_arguments(args)`) were rewritten through the new builder paths. One `#[allow(dead_code)]` annotation on `GovRuntimeServer::tool_router` because rustc's dead-code analysis doesn't see through the `#[tool_router]` macro — the field is required structurally even though rustc thinks it's unread.
+
+  No behavior change visible at the protocol surface. All 325 tests pass; `cargo clippy --all-targets -- -D warnings` clean; `cargo fmt --check` clean. Two parity goldens unchanged.
+
+- **MSRV bumped from 1.85 to 1.88.** `zip` 8 requires Rust 1.88. Adopters installing on a toolchain older than 1.88 will get a clean cargo rejection rather than a confusing build error. The release matrix runs on `stable`, which is well past 1.88. Side effect: clippy 1.95's `collapsible_if` now suggests let-chains (stabilized in 1.88) for `if let X { if Y { … } }` patterns. Six call sites in `interpreter::payload`, `primitives::append_task`, `primitives::read_spec`, `primitives::mod`, and `main` were rewritten to use `if let X && Y` — REUSE only, no behavior change.
+
 ## [0.7.0] — 2026-05-20
 
 ### Added
