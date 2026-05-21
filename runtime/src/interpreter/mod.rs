@@ -19,6 +19,8 @@
 
 #![allow(clippy::module_name_repetitions)]
 
+pub mod payload;
+
 use std::io::{BufRead, Write};
 use std::path::{Path, PathBuf};
 
@@ -125,10 +127,10 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
             Step::Extension {
                 number,
                 identifier,
-                prose: _,
+                prose,
                 location: _,
             } => {
-                let outcome = self.handle_extension(number, identifier)?;
+                let outcome = self.handle_extension(number, identifier, prose)?;
                 Ok(outcome)
             }
             Step::Prose { .. } => Ok(None),
@@ -174,9 +176,25 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
         &mut self,
         number: &StepNumber,
         identifier: &str,
+        prose: &str,
     ) -> std::io::Result<Option<WalkOutcome>> {
         let request_id = self.fresh_request_id();
-        self.emit_llm_request(identifier, &request_id, Value::Object(self.context.clone()))?;
+        let request = match payload::build_extension_request(
+            identifier,
+            &self.context,
+            &self.repo,
+            &self.procedure.command,
+            prose,
+        ) {
+            Ok(value) => value,
+            Err(err) => {
+                let code = err.code().to_string();
+                let message = err.to_string();
+                self.emit_error(code.clone(), message.clone(), None)?;
+                return Ok(Some(WalkOutcome::Errored { code, message }));
+            }
+        };
+        self.emit_llm_request(identifier, &request_id, request)?;
         let parsed = self.read_envelope()?;
         match parsed {
             ProtocolMessage::LlmResponse {

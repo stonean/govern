@@ -1,6 +1,6 @@
 {"type":"progress","message":"dispatching primitive `read-spec`","step":"1","primitive":"read-spec"}
 {"type":"progress","message":"dispatching primitive `lint-markdown`","step":"2","primitive":"lint-markdown"}
-{"type":"llm-request","extension-point":"writeSpecBody","request-id":"req-1","request":{"feature":"005-plan","path":"specs/005-plan","paths":["specs/005-plan/spec.md"],"from":"clarified","to":"planned","setAt":"2026-05-11T00:00:00Z"}}
+{"type":"llm-request","extension-point":"writeSpecBody","request-id":"req-1","request":{"section":"Technical Decisions","existing-content":"Prior decision recorded on the previous `/gov:plan` run: use the\nstandard library and avoid third-party dependencies for this fixture.","feature":"005-plan","path":"specs/005-plan","paths":["specs/005-plan/spec.md"],"from":"clarified","to":"planned","setAt":"2026-05-11T00:00:00Z"}}
 {"type":"progress","message":"received llm-response for `writeSpecBody`","step":"3"}
 {"type":"llm-request","extension-point":"writeSpecBody","request-id":"req-2","request":{"feature":"005-plan","path":"specs/005-plan","paths":["specs/005-plan/spec.md"],"from":"clarified","to":"planned","setAt":"2026-05-11T00:00:00Z","llm:writeSpecBody":{"content":"## Technical Decisions\n\n- Use the standard library.\n","section":"Technical Decisions"}}}
 {"type":"progress","message":"received llm-response for `writeSpecBody`","step":"4"}

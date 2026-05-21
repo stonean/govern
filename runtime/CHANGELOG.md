@@ -2,6 +2,26 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.7.0] — 2026-05-20
+
+### Added
+
+- **`writeCode` request bundling.** The interpreter now populates the typed `WriteCodeRequest` shape end-to-end before emitting an `llm-request` envelope. Three fields previously left empty are now filled from disk: `plan-relevant-files` (entries parsed from the targeted feature's `plan.md` Affected Files table, each inlined as `{path, content}`; planned-new files absent on disk are omitted, not errored), `constitution-excerpts` (sections resolved from the running command file's `Reference: §<anchor>, …` line under Scope Boundaries, each anchor's body extracted from `framework/constitution.md`), and `task` (the targeted feature's tasks.md entry matching `task-number`, with `number`, `heading`, and `subtasks[].text` all populated). The legacy context-dump fields are appended after the typed prefix for backward compatibility with hosts that already parse them.
+
+- **`writeSpecBody` re-run state.** When `/gov:plan` or `/gov:specify` re-runs against a partially-filled spec or plan section, the interpreter reads the existing section body from disk and emits it in the request's `existing-content` field. Empty sections elide the field. Section identification is heuristic-driven for v1 — matches `Fill the <name> section` in the step prose.
+
+- **Secret-exfiltration guard for `plan-relevant-files`.** A new read-side guard refuses to inline files matching `.env`, `.env.*`, `*-secrets.*`, or `credentials*`, plus paths that match the repo's `.gitignore`. The first match halts the procedure with a structured `secret-exfiltration-blocked` error envelope and an unambiguous remediation hint (rename or remove the entry from `plan.md`'s Affected Files). No override flag in v1 — the plan author resolves by editing the plan.
+
+### Changed
+
+- **`WriteCodeRequest` field order is now cache-anchored.** Struct fields reorder to `constitution-excerpts`, `plan-relevant-files`, `write-boundary`, `task` (was `task`, `plan-relevant-files`, `write-boundary`, `constitution-excerpts`). The stable prefix — three fields that do not vary between tasks in the same `/gov:implement` walk — is contiguous and front; the per-task variable (`task`) is last. Hosts implementing prompt caching SHOULD place a cache anchor between `write-boundary` and `task` per the new contract documented in spec 022's `LLM extension points` section. A `serialize-order-lock` test in `schema::extensions::tests` enforces the new layout. Two parity goldens re-blessed (`implement-basic`, `plan-basic`) for the new field order and bundled-payload contents.
+
+### Tests
+
+- 12 new unit tests under `interpreter::payload::tests` cover the new readers and the secret guard (`parse_affected_files`, `parse_command_references`, `extract_anchor_body`, `extract_section_body`, `extract_section_name`, `secret_pattern` for each pattern family, gitignore matching via libgit2, `load_plan_relevant_files` happy and rejection paths, `build_write_code_request` field-order lock, `build_write_spec_body_request` existing-content inlining). The fixture `runtime/tests/fixtures/implement-basic/` grows a small `plan.md` and `framework/constitution.md` exercising the populated bundle; `runtime/tests/fixtures/plan-basic/` grows a partially-filled `plan.md` exercising the writeSpecBody re-run state.
+
+  Origin: spec 022 scenario `writecode-payload-bundling`. Bumps the minor (additive bundling + field reorder — no host wire-format breakage thanks to backward-compat merge).
+
 ## [0.6.1] — 2026-05-19
 
 ### Fixed

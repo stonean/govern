@@ -97,17 +97,25 @@ pub struct PlanRelevantFile {
 }
 
 /// Request payload for `writeCode`.
+///
+/// Field order is the **cache-anchor contract** documented in spec 022's
+/// `LLM extension points` section: the stable prefix
+/// (`constitution-excerpts`, `plan-relevant-files`, `write-boundary`) is
+/// contiguous and front so a host can place a prompt-cache breakpoint
+/// immediately before `task`. The per-task variable suffix (`task`) is
+/// last. Reordering the fields here changes the on-wire field order;
+/// hosts integrating against the protocol rely on this layout.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct WriteCodeRequest {
-    /// Task being implemented.
-    pub task: WriteCodeTask,
+    /// Constitution excerpts the runtime determined are relevant.
+    pub constitution_excerpts: Vec<String>,
     /// Files the plan named as relevant for this task.
     pub plan_relevant_files: Vec<PlanRelevantFile>,
     /// Runtime write boundary (glob patterns and concrete paths).
     pub write_boundary: Vec<String>,
-    /// Constitution excerpts the runtime determined are relevant.
-    pub constitution_excerpts: Vec<String>,
+    /// Task being implemented.
+    pub task: WriteCodeTask,
 }
 
 /// Edit-action discriminator on a `writeCode` edit.
@@ -532,6 +540,45 @@ mod tests {
         use super::matches_pattern;
         assert!(matches_pattern("runtime/Cargo.toml", "runtime/Cargo.toml"));
         assert!(!matches_pattern("runtime/Cargo.lock", "runtime/Cargo.toml"));
+    }
+
+    #[test]
+    fn write_code_request_serializes_with_cache_anchor_field_order() {
+        // Locks the §LLM extension points cache-anchor contract: the stable
+        // prefix (constitution-excerpts, plan-relevant-files, write-boundary)
+        // must serialize contiguously and front; the per-task variable
+        // suffix (task) must be last. Hosts that drop a prompt-cache
+        // breakpoint between `write-boundary` and `task` rely on this layout.
+        let request = WriteCodeRequest {
+            constitution_excerpts: vec!["a".into()],
+            plan_relevant_files: vec![PlanRelevantFile {
+                path: "p".into(),
+                content: "c".into(),
+            }],
+            write_boundary: vec!["runtime/**".into()],
+            task: WriteCodeTask {
+                number: "1".into(),
+                heading: "h".into(),
+                subtasks: vec![],
+            },
+        };
+        let text = serde_json::to_string(&request).unwrap();
+        let value: serde_json::Value = serde_json::from_str(&text).unwrap();
+        let keys: Vec<&str> = value
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect();
+        assert_eq!(
+            keys,
+            vec![
+                "constitution-excerpts",
+                "plan-relevant-files",
+                "write-boundary",
+                "task",
+            ]
+        );
     }
 
     #[test]

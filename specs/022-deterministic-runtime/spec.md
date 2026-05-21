@@ -136,6 +136,8 @@ The extension point inventory across the initial release and follow-on scenarios
 - `writeCode` — `/gov:implement` walk-through-tasks step 4. Request: task description, plan-relevant files, write boundary. Response: list of file edits.
 - `writeSpecBody` — `/gov:specify` and `/gov:plan` template-fill moments. Request: template + feature description + section name. Response: filled-in section content.
 
+**Cache-breakpoint contract.** The `writeCode` request serializes its fields in this order: `constitution-excerpts`, `plan-relevant-files`, `write-boundary`, `task`. The first three are the stable prefix that does not vary between tasks in the same `/gov:implement` walk; the suffix (`task`) is the per-task variable. Hosts that implement prompt caching SHOULD place a cache anchor immediately after `write-boundary` and before `task` so the prefix's token cost is paid once per walk rather than once per task. The contract is SHOULD, not MUST — hosts without prompt caching still produce correct results, just at higher token cost. Independent host integrations (Claude Code, Auggie, third-party) converge on the same anchor position by following this contract.
+
 **Deferred to scenarios on this spec**:
 
 - `askClarifyQuestion` — `/gov:clarify`'s open-question loop. Multi-turn user-mediated: the agent host shows the runtime-prepared question to the user, awaits the user's answer, returns it. Ships in the first follow-on scenario.
