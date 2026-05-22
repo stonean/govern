@@ -21,7 +21,7 @@ The same `govern.md` supports every agent the framework knows about. The set of 
 
 > **For agent runtimes**: backticked primitive names in this section (`fetch-archive`, `extract-archive`, `apply-manifest`, `merge-managed-block`, `enforce-manifest`) map to MCP tools the optional [gvrn runtime](https://crates.io/crates/gvrn) exposes under bare `<primitive>` names (e.g., `fetch-archive`). Hosts wrap them with a server-name prefix taken from `.mcp.json` (Claude: `mcp__gvrn__fetch-archive`; Auggie: `mcp:gvrn:fetch-archive`). When the server is registered for your session, **call the corresponding tool** for each step listed below — that is the deterministic path. When it is not registered, walk the markdown-only reference below (`tar -xzf`, `curl`, etc.) to produce the same result. The two paths share a contract; neither one wraps the other.
 
-**Procedural fidelity.** Execute the steps below as written. The only confirmation prompts to issue are those the procedure specifies: project inputs (§Inputs), agent-selection prompts on `--add-agent` / first-run (§Agent Selection), the legacy `spec-and-plan.md` rename (§Pre-run Migrations), and per-category workflow prompts (§Workflow recommendation, step 9). Do not stop to warn about uncommitted edits to update-strategy files, custom slash commands that **Slash command cleanup** is about to remove, or "data loss" from the stale → write-and-abort path. The procedure already encodes safety: `.govern.toml` `[pinned] files` is the opt-out, the stale path writes upstream and aborts cleanly (recoverable from git), and slash-command cleanup is unconditional for unpinned files. Extra prompts duplicate information the procedure already gives the user and stall routine runs.
+**Procedural fidelity.** Execute the steps below as written. The only confirmation prompts to issue are those the procedure specifies: project inputs (§Inputs), agent-selection prompts on `--add-agent` / first-run (§Agent Selection), the registry-driven migration prompts (§Pre-run Migrations — outer "apply N pending migrations" prompt plus any per-entry inner prompts the procedure files specify), and per-category workflow prompts (§Workflow recommendation, step 8). Do not stop to warn about uncommitted edits to update-strategy files, custom slash commands that **Slash command cleanup** is about to remove, or "data loss" from the stale → write-and-abort path. The procedure already encodes safety: `.govern.toml` `[pinned] files` is the opt-out, the stale path writes upstream and aborts cleanly (recoverable from git), and slash-command cleanup is unconditional for unpinned files. Extra prompts duplicate information the procedure already gives the user and stall routine runs.
 
 1. The walker context carries the inputs the host has already gathered and validated: project (the destination project name), description (one-line project description), languages (comma-separated), agents (registry keys), framework-version (release tag), archive-url and sha256-url (computed from framework-version), staging-dir, substitutions-map, manifest-entries (the per-strategy list described in **Shared Files** and **Per-Agent Scaffolding**), pinned-list (from `.govern.toml`'s `[pinned] files` block), gitignore-block (the `.claude/`, `specs/.cache/`, etc. lines), enforce-directories (the slash-command directories whose top-level `*.md` files are pruned to the manifest), and the per-agent govern-install entry with `keep-literals: ["project", "cli-config-dir"]`. The host runs the markdown-only reference below to collect inputs, derive registry values, validate `.govern.toml`, and seed context; the runtime walks the procedure that follows.
 
@@ -33,7 +33,7 @@ The same `govern.md` supports every agent the framework knows about. The set of 
 
 5. Invoke `merge-managed-block` (MCP: `merge-managed-block`) against `.gitignore` with `marker-style: "line-prefix"` and `marker: "govern"` to install or update the framework-managed block (the `.claude/`, `specs/.cache/`, etc. lines). First-run creates the file; subsequent runs update only the region between the `# govern` preamble line and the next blank line, preserving the rest of the file byte-for-byte. Replaces the inline `grep` check the markdown-only reference describes for the `.gitignore` merge step.
 
-6. Invoke `enforce-manifest` (MCP: `enforce-manifest`) once per directory in the host's enforce-directories list (typically the per-agent slash-command directory, plus legacy paths slated for removal). The primitive removes files matching the glob-include arg (default `*.md`) whose relative path is neither in the expected list nor pinned. One call replaces the slash-command manifest enforcement loop, the legacy `skills/` directory removal, and the legacy workflow filename removal that the markdown-only reference describes.
+6. Invoke `enforce-manifest` (MCP: `enforce-manifest`) once per directory in the host's enforce-directories list (typically the per-agent slash-command directory). The primitive removes files matching the glob-include arg (default `*.md`) whose relative path is neither in the expected list nor pinned. One call replaces the slash-command manifest enforcement loop the markdown-only reference describes. Adopter cleanup of historical conventions (legacy `skills/` directory, post-005 workflow filename rename, and the rest) is owned by the **Pre-run Migrations** section above and the `framework/migrations.toml` registry it drives.
 
 7. Invoke `apply-manifest` (MCP: `apply-manifest`) a second time with a single entry for the per-agent `govern` self-install (the `{cli-config-dir}/commands/govern.md` path) and `keep-literals: ["project", "cli-config-dir"]`. This keeps the `{project}` and `{cli-config-dir}` placeholders literal in the installed file so the **next** adopter's `/govern` run substitutes them per **that** project — not this one. The split from step 4 isolates the keep-literals concern from the bulk substitute step.
 
@@ -189,65 +189,42 @@ When all selected agents are `current` or `no installed copy`, the run proceeds.
 
 ## Pre-run Migrations
 
-These one-shot renames carry adopters who scaffolded under the prior `governance` naming forward without manual cleanup. Each is a no-op when the legacy artifact is absent.
+Adopter-side cleanup for conventions that have been removed or renamed since the adopter's last `/govern` run. Driven by a machine-readable registry at `framework/migrations.toml` (one `[[migrations]]` entry per active removal); per-entry procedure bodies live at `framework/migrations/{id}.md`. Spec [027 — Bootstrap Migration Registry](../../specs/027-bootstrap-migration-registry/spec.md) defines the contract.
 
-### `.governance.toml` → `.govern.toml`
+### Procedure
 
-If `.governance.toml` exists in the project root and `.govern.toml` does not, rename it. Report `migrated config: .governance.toml → .govern.toml` in the post-scaffolding output. If both files exist, leave them alone and warn `Both .governance.toml and .govern.toml exist; remove the legacy file to silence this warning.`
+1. Read `framework/migrations.toml` from the fetched archive. If the file is missing or malformed (TOML parse error), abort with `Failed to read framework/migrations.toml; cannot run pre-run migrations.` and do not continue.
+2. Read `.govern.toml`'s `[migrations].last_applied` (treat an absent `[migrations]` section as null).
+3. Filter the registry to entries where both:
 
-### `# Governance` gitignore marker → `# govern`
+   - `introduced_in` is greater than `last_applied`'s `introduced_in` (SemVer comparison, lex tie-break on `id`); when `last_applied` is null, every entry qualifies.
+   - Either `sunset_after` is absent, or the current gvrn release version is less than `sunset_after` (SemVer comparison).
 
-If the project's `.gitignore` contains a `# Governance` line (the marker placed by `/govern`'s merge strategy) and does not already contain `# govern`, replace the first occurrence with `# govern`. Report `migrated .gitignore marker: # Governance → # govern` in the post-scaffolding output. The marker check used by the **.gitignore** merge step below uses the new spelling, so this rename keeps idempotency intact.
+4. If the filtered list is empty, emit nothing and proceed to the next bootstrap section.
+5. Otherwise, prompt once with text of the form:
 
-### `spec-and-plan.md` → `spec.md` (lightweight-track sunset)
+   ```text
+   N framework migrations are pending since your last /govern run:
+     - {id} (introduced {introduced_in})
+     ...
+   Apply now? (Y/n)
+   ```
 
-The lightweight track was removed in spec 023. Adopters who scaffolded under the prior dual-template model may still have `spec-and-plan.md` files at any non-`done` status under `specs/`. Pipeline commands now look for `spec.md` only — those files would fail the "spec does not exist" gate on the next command.
+6. On decline, emit `warning: N migrations skipped; pipeline commands may fail on legacy artifacts until applied. Re-run /govern to apply.` and proceed without filesystem changes.
+7. On confirm, for each filtered entry in order:
 
-The migration check walks `specs/*/spec-and-plan.md` once per `/govern` run. For each match, prompt the user with the source path and the proposed destination (`specs/{NNN-feature}/spec.md`):
+   1. Read `framework/migrations/{id}.md` from the fetched archive.
+   2. Execute its `## Procedure` steps. The procedure file owns idempotency (step 1 of every procedure exits silently when the target artifact is absent), per-file user prompts (when applicable), and the post-scaffolding summary line.
+   3. After the procedure completes successfully, update `.govern.toml`'s `[migrations].last_applied = "{id}"` atomically (tempfile + rename, matching the rest of `.govern.toml` write semantics). The update happens **per entry**, not at end of batch — an aborted batch resumes from the next-pending entry on the following `/govern` run.
+   4. If a procedure aborts (rare — only via explicit user "stop everything" path inside the procedure file), halt the loop. The retained `last_applied` value points at the last-completed entry; the next run resumes.
 
-```text
-Found legacy spec-and-plan.md: specs/{NNN-feature}/spec-and-plan.md
-Rename to specs/{NNN-feature}/spec.md? (Y/n)
-```
+### Stale-reference behavior
 
-On confirm, rename via `mv`. On decline, emit a warning and continue:
+If `.govern.toml`'s `[migrations].last_applied` references an `id` that no longer exists in the active registry (the entry was sunsetted since the adopter's last run), treat the field as "before the oldest active entry" and run every active entry. Emit one warning: `last_applied was "{retired_id}" which has been retired; see CHANGELOG.md for its recipe.` Adopters far enough behind to hit a sunsetted entry apply it manually from `CHANGELOG.md`.
 
-```text
-warning: specs/{NNN-feature}/spec-and-plan.md kept; pipeline commands will fail on this feature until renamed manually.
-```
+### Duplicate-id and reference-integrity guard
 
-Report `migrated N spec-and-plan.md files` in the post-scaffolding output when N > 0; omit the line when N = 0. The check is idempotent — finds nothing on second run. Files at `status: done` are also renamed (the rename is just a filename change; the body and frontmatter are unchanged, so the frozen-archaeology rule is preserved by the byte-for-byte identity of the file content).
-
-### Rule files: relocate to `specs/rules/`
-
-Rule files installed in adopter projects live under `specs/rules/{rule-set}.md` so the top-level `specs/` directory stays focused on feature spec directories (`specs/NNN-*/`), `inbox.md`, `README.md`, and the seed system files. The bootstrap manifest's rule-file rows write to `specs/rules/`. Adopters scaffolded before this change have rule files at `specs/{rule-set}.md`, which `/{project}:review` and `/{project}:analyze` would no longer discover (the discovery walk targets `specs/rules/*.md`).
-
-This migration subsumes the earlier `configuration.md` → `configuration-cross.md` rename (closed-suffix policy, spec 024): when the legacy `specs/configuration.md` is found, it is renamed **and** relocated in one move.
-
-Walk the top level of `specs/` for files matching either:
-
-- `configuration.md` (pre-closed-suffix layout)
-- `*-backend.md`, `*-frontend.md`, or `*-cross.md` (closed-suffix rule files at the `specs/` root)
-
-For each match, compute the destination:
-
-- `specs/configuration.md` → `specs/rules/configuration-cross.md`
-- otherwise → `specs/rules/{basename}`
-
-Skip any source listed in `.govern.toml` `pinned.files` (path comparison after placeholder resolution) and emit one line: `warning: {source} is pinned; leaving in place — /{project}:review and /{project}:analyze will not discover it until moved manually.`
-
-Skip any source whose destination already exists in `specs/rules/` and emit one line: `warning: {destination} already exists; skipping relocation of {source}.`
-
-If at least one eligible move remains, prompt once:
-
-```text
-Found N legacy rule file(s) at the specs/ root.
-Move to specs/rules/? (Y/n)
-```
-
-On confirm, create `specs/rules/` (if missing) and rename each eligible file via `mv` (or `git mv` when the source is tracked, so the rename is recorded). On decline, emit one warning per skipped file: `warning: {source} kept; /{project}:review and /{project}:analyze will not discover it until moved manually.`
-
-Report `relocated N rule file(s) → specs/rules/` in the post-scaffolding output when N > 0; omit the line otherwise. The check is idempotent — finds nothing on the next run. Rule IDs (`BE-AUTHN-*`, `FE-XSS-*`, `CFG-CONST-*`, etc.) are content-anchored and unchanged by the relocation; every existing citation continues to resolve.
+If `framework/migrations.toml` contains two entries with the same `id`, or if any entry's `procedure_file` references a path that doesn't exist in the fetched archive, abort the loop before applying anything with a clear error. `/audit`'s Family 10 (`scripts/audit/migration-coverage.sh`) catches these at maintainer time; this guard is the runtime safety net.
 
 ## Project Configuration
 
@@ -263,6 +240,13 @@ files = [
   ".claude/commands/myapp/implement.md",
   "constitution.md",
 ]
+
+[migrations]
+# Slug of the newest pre-run migration applied. Bootstrap runs only entries
+# newer than this (see §Pre-run Migrations). Absent section means "no
+# migrations applied" — bootstrap runs every active entry. Maintained by
+# /govern; do not edit by hand.
+last_applied = "rule-files-relocate"
 
 [workflows]
 # Workflow categories the user has chosen to permanently decline at the
@@ -288,6 +272,8 @@ declined_categories = ["Linting", "Formatting"]
 ```
 
 `pinned.files` — any file listed that would normally use `update` strategy is treated as `skip` instead. Report pinned files in the post-scaffolding summary.
+
+`migrations.last_applied` — slug of the newest pre-run migration applied to this project, written by `/govern` after each successful migration in §Pre-run Migrations. Absent section means "no migrations applied"; bootstrap runs every active entry on the next run. Adopters should not edit this field by hand — the registry in `framework/migrations.toml` and the per-entry procedure files in `framework/migrations/{id}.md` are the authoritative sources.
 
 `workflows.declined_categories` — categories listed here suppress the per-category workflow recommendation prompt entirely (see the **Workflow recommendation** flow below). Entries that don't match any canonical category name are reported once each in the post-scaffolding summary as `unrecognized workflow decline: "{value}" (in .govern.toml)` but do not abort the run.
 
@@ -567,39 +553,13 @@ After processing the slash command manifest above, list all `.md` files in `{con
 
 Files listed in `pinned.files` are never deleted — report them as "pinned (kept)" instead.
 
-### Legacy `skills/` directory cleanup
-
-Before the workflow recommendation flow runs, remove any legacy `{config_dir}/commands/{project}/skills/` directory left behind by `/govern` runs prior to the `skills/` → `workflows/` rename (introduced by spec 010 and delivered alongside spec 005's reopen). The rename moved every workflow file into the new `workflows/` directory, so the old `skills/` tree is unreferenced and safe to remove.
-
-Behavior:
-
-- If `{config_dir}/commands/{project}/skills/` does not exist, skip silently.
-- If it exists and is **not** listed in `.govern.toml` `pinned.files` (path comparison after placeholder resolution), recursively delete the directory and report `removed (legacy skills/ directory): {config_dir}/commands/{project}/skills/` in the post-scaffolding summary.
-- If it exists and **is** pinned, leave it alone and report `pinned (kept): {config_dir}/commands/{project}/skills/`.
-
-The cleanup is unconditional once the directory is detected — the new `workflows/` directory has already replaced it on every `/govern` run since the rename, so any remaining `skills/` tree is necessarily stale.
-
 ### Workflow recommendation (strategy: create per accepted workflow)
 
-After the legacy `skills/` cleanup and the slash command cleanup, offer any newly registered workflows that match the project's tech stack and have not yet been scaffolded for this agent.
+After the slash command cleanup, offer any newly registered workflows that match the project's tech stack and have not yet been scaffolded for this agent. Adopter cleanup of legacy workflow filenames and the legacy `skills/` directory is handled by the **Pre-run Migrations** section earlier in this procedure — see `framework/migrations.toml` entries `workflow-filename-rename` and `skills-to-workflows`.
 
-1. **Legacy workflow cleanup.** Before reading the registry, remove any workflow files left behind by `/govern` runs prior to the post-005 filename rename (which simplified `{category}-{language}-{tool}.md` to `{tool}.md`). In `{config_dir}/commands/{project}/workflows/`, delete any file whose name appears in this exact set:
+1. **Read the synced registry** at `workflows/registry.json` (the project-local copy written by the manifest above). If the file is missing or not valid JSON, warn `Workflow registry not found or invalid, skipping workflow recommendations` and skip the rest of this section. Validate each entry against the schema in `specs/005-workflows/data-model.md`; drop invalid entries with a per-entry warning.
 
-   - `format-go-gofmt.md`
-   - `format-python-black.md`
-   - `format-typescript-prettier.md`
-   - `lint-go-golangci-lint.md`
-   - `lint-python-ruff.md`
-   - `lint-typescript-eslint.md`
-   - `test-go-gotest.md`
-   - `test-python-pytest.md`
-   - `test-typescript-vitest.md`
-
-   Files listed in `.govern.toml` `pinned.files` are skipped — adopters who customized a legacy file and want to keep it can pin its destination path. Report each removal in the post-scaffolding summary as `removed (legacy workflow): {filename}`. The check is by exact filename match against the set above; custom user files (e.g., `pytest-fast.md`) are never affected because they aren't in the set. The cleanup runs every `/govern` invocation; once the legacy files are gone, subsequent runs are silent no-ops for this step.
-
-2. **Read the synced registry** at `workflows/registry.json` (the project-local copy written by the manifest above). If the file is missing or not valid JSON, warn `Workflow registry not found or invalid, skipping workflow recommendations` and skip the rest of this section. Validate each entry against the schema in `specs/005-workflows/data-model.md`; drop invalid entries with a per-entry warning.
-
-3. **Read the project's tech stack** from `AGENTS.md`. Locate the **Tech Stack** table and parse each row's `Layer` column to recover the canonical key:
+2. **Read the project's tech stack** from `AGENTS.md`. Locate the **Tech Stack** table and parse each row's `Layer` column to recover the canonical key:
 
    - `Language` → `backend_language` for backend-only projects, `frontend_language` for frontend-only projects (use the project context from the rest of AGENTS.md to disambiguate; if unclear, treat the row as both)
    - `Backend language` → `backend_language`
@@ -614,7 +574,7 @@ After the legacy `skills/` cleanup and the slash command cleanup, offer any newl
 
    If `AGENTS.md` is missing, has no Tech Stack table, or the table is empty (still the comment placeholder), skip the rest of this section silently — there is nothing to match against.
 
-4. **Load recorded declines.** Read `.govern.toml` if it exists and collect entries from `[workflows] declined_categories` into a normalized lowercase set. This set is consulted at the per-category prompt step to suppress prompts for categories the user has previously chosen to permanently decline. Behavior:
+3. **Load recorded declines.** Read `.govern.toml` if it exists and collect entries from `[workflows] declined_categories` into a normalized lowercase set. This set is consulted at the per-category prompt step to suppress prompts for categories the user has previously chosen to permanently decline. Behavior:
 
    - If `.govern.toml` does not exist: the decline set is empty. Skip silently.
    - If `.govern.toml` exists without a `[workflows]` section: the decline set is empty. Skip silently.
@@ -623,17 +583,17 @@ After the legacy `skills/` cleanup and the slash command cleanup, offer any newl
 
    While building the set, validate each entry case-insensitively against the canonical category list (`Linting`, `Formatting`, `Testing`, `Migrations`, `Code Review`, `Deployment`). Entries that don't match any canonical name are still loaded into the set (they cannot suppress anything because no category will hash to them) and recorded for the post-scaffolding summary as one line each: `unrecognized workflow decline: "{value}" (in .govern.toml)`. Unrecognized entries do not abort the run and do not affect prompts for valid categories.
 
-5. **Match registry entries** against the project's tech stack. For each entry, look up the project's value for `entry.trigger.field` and compare case-insensitively against `entry.trigger.value`. Collect every matching entry.
+4. **Match registry entries** against the project's tech stack. For each entry, look up the project's value for `entry.trigger.field` and compare case-insensitively against `entry.trigger.value`. Collect every matching entry.
 
-6. **Filter out already-scaffolded workflows.** For each match, check whether `{config_dir}/commands/{project}/workflows/{entry.template}` already exists. If it does, the workflow was previously scaffolded (for this agent) — drop it from the candidate list. Already-scaffolded workflow files are never overwritten, regardless of content changes upstream.
+5. **Filter out already-scaffolded workflows.** For each match, check whether `{config_dir}/commands/{project}/workflows/{entry.template}` already exists. If it does, the workflow was previously scaffolded (for this agent) — drop it from the candidate list. Already-scaffolded workflow files are never overwritten, regardless of content changes upstream.
 
-7. **Silent skip when there is nothing new to offer.** If no candidates remain, do not prompt the user and proceed to **Session state**.
+6. **Silent skip when there is nothing new to offer.** If no candidates remain, do not prompt the user and proceed to **Session state**.
 
-8. **Group remaining candidates by category** in the order: `Linting`, `Formatting`, `Testing`, `Migrations`, `Code Review`, `Deployment`. Within each category, list each match's `name` and `description`.
+7. **Group remaining candidates by category** in the order: `Linting`, `Formatting`, `Testing`, `Migrations`, `Code Review`, `Deployment`. Within each category, list each match's `name` and `description`.
 
-9. **Per-category prompt or suppress.** Walk the grouped categories in order. For each category:
+8. **Per-category prompt or suppress.** Walk the grouped categories in order. For each category:
 
-   - **Suppress branch.** If the category (lowercased) is in the decline set loaded at step 4, do not invoke `AskUserQuestion`. Skip scaffolding for this category's workflows entirely. Report `suppressed (workflow): {Category} (declined in .govern.toml)` in the post-scaffolding summary, using the category's title-case display name. Continue with the next category.
+   - **Suppress branch.** If the category (lowercased) is in the decline set loaded at step 3, do not invoke `AskUserQuestion`. Skip scaffolding for this category's workflows entirely. Report `suppressed (workflow): {Category} (declined in .govern.toml)` in the post-scaffolding summary, using the category's title-case display name. Continue with the next category.
    - **Prompt branch.** Otherwise, present `AskUserQuestion`: "Scaffold these {category} workflows for {agent name}?" with the matched entries listed. Options, in order, exactly as labeled:
 
      1. `Yes, scaffold all in this category`
@@ -642,11 +602,11 @@ After the legacy `skills/` cleanup and the slash command cleanup, offer any newl
 
      The user must explicitly accept — no workflows are scaffolded without consent. Route the answer:
 
-     - `Yes, scaffold all in this category` — proceed to step 11 with this category's matched entries marked as accepted.
+     - `Yes, scaffold all in this category` — proceed to step 10 with this category's matched entries marked as accepted.
      - `Skip this run` — skip scaffolding for this category's workflows. Write nothing to `.govern.toml`. The user will be asked again on the next run.
-     - `Skip and don't ask again` — skip scaffolding for this category's workflows AND mark the category for persistence (consumed at step 10).
+     - `Skip and don't ask again` — skip scaffolding for this category's workflows AND mark the category for persistence (consumed at step 9).
 
-10. **Record persisted declines.** For every category whose answer at step 9 was `Skip and don't ask again`, append the category name (in title case) to `[workflows] declined_categories` in `.govern.toml`. Behavior:
+9. **Record persisted declines.** For every category whose answer at step 8 was `Skip and don't ask again`, append the category name (in title case) to `[workflows] declined_categories` in `.govern.toml`. Behavior:
 
     - **`.govern.toml` does not exist** — create it with exactly:
 
@@ -665,16 +625,14 @@ After the legacy `skills/` cleanup and the slash command cleanup, offer any newl
 
     Preserve all existing TOML content: other sections (`[pinned]`, future sections), comments, ordering, and surrounding whitespace. Read the file, modify the `[workflows]` section in place, and write the result back. Report each newly persisted category once in the summary as `recorded decline (workflow): {Category} (in .govern.toml)`.
 
-11. **Fetch and write accepted workflows.** For each accepted entry (categories whose step-9 answer was `Yes, scaffold all in this category`):
+10. **Fetch and write accepted workflows.** For each accepted entry (categories whose step-8 answer was `Yes, scaffold all in this category`):
 
     - Fetch `framework/workflows/{entry.template}` from the `govern` repo using the same URL pattern as the rest of `govern`'s fetches. (Note: the workflows directory is flat — no inner `templates/` subdirectory.)
     - If the fetch fails or the file is missing, warn `Workflow file {entry.template} not found, skipping` and continue with the next accepted entry. Do not abort the surrounding scaffolding.
     - Replace every `{project}` with the user-provided project name and every `{cli-config-dir}` with the agent's `config_dir`.
     - Write the substituted content to `{config_dir}/commands/{project}/workflows/{entry.template}` (creating the `workflows/` directory if needed). Report the file as "scaffolded" in the post-scaffolding summary.
 
-12. **Discovery note for Auggie.** Auggie's official docs document subdirectory namespacing for one level (`.augment/commands/foo/bar.md` → `/foo:bar`). Multi-level paths like `.augment/commands/{project}/workflows/lint.md` should resolve to `/{project}:workflows:lint` by the same colon-namespace convention, but a user adopting Auggie may want to confirm autocomplete the first time. Claude Code's two-level path is documented and works as expected.
-
-13. **Legacy directory note.** The `skills/` → `workflows/` rename (introduced by spec 010) and the post-005 filename rename (`{category}-{language}-{tool}.md` → `{tool}.md`) are both handled automatically. The legacy `skills/` directory is removed by the **Legacy `skills/` directory cleanup** step that runs before this section, and legacy workflow filenames are removed by the **Legacy workflow cleanup** in step 1. No manual cleanup is required.
+11. **Discovery note for Auggie.** Auggie's official docs document subdirectory namespacing for one level (`.augment/commands/foo/bar.md` → `/foo:bar`). Multi-level paths like `.augment/commands/{project}/workflows/lint.md` should resolve to `/{project}:workflows:lint` by the same colon-namespace convention, but a user adopting Auggie may want to confirm autocomplete the first time. Claude Code's two-level path is documented and works as expected.
 
 ### Session state (strategy: create)
 

@@ -33,14 +33,14 @@ Look up `introduced_in` per migration via `git log` against the commits that shi
 
 ## 4. Rewrite `framework/bootstrap/govern.md` Pre-run Migrations section
 
-- [ ] Replace the existing `## Pre-run Migrations` section (lines ~190–250) with the registry-driven loop described in plan §Bootstrap loop placement and shape.
-- [ ] Delete the `### Legacy skills/ directory cleanup` sub-section inside `## Workflow recommendation` (line ~570).
-- [ ] Delete the `### Legacy workflow cleanup` content (step 1 of the workflow recommendation procedure, line ~586).
-- [ ] Update the `### Legacy directory note` at the end of the workflow recommendation section (line ~677) to reference the registry instead of the deleted sub-sections.
-- [ ] Update the procedural-fidelity rule at line 24 to drop the "legacy `spec-and-plan.md` rename" exception (the registry-driven loop's outer batch prompt subsumes it).
-- [ ] Add the `[migrations]` section to the `.govern.toml` schema documented in `## Project Configuration` (line ~252+). Document `last_applied` field with its absence semantics.
-- [ ] Update the `enforce-manifest` step at line 36 to drop the "legacy `skills/` directory removal" and "legacy workflow filename removal" mentions from its summary line. The primitive's expected-list construction loses the legacy paths.
-- [ ] Run `npx markdownlint-cli2` on `framework/bootstrap/govern.md`.
+- [x] Replace the existing `## Pre-run Migrations` section (lines ~190–250) with the registry-driven loop described in plan §Bootstrap loop placement and shape.
+- [x] Delete the `### Legacy skills/ directory cleanup` sub-section inside `## Workflow recommendation` (line ~570).
+- [x] Delete the `### Legacy workflow cleanup` content (step 1 of the workflow recommendation procedure, line ~586).
+- [x] Update the `### Legacy directory note` at the end of the workflow recommendation section (line ~677) to reference the registry instead of the deleted sub-sections.
+- [x] Update the procedural-fidelity rule at line 24 to drop the "legacy `spec-and-plan.md` rename" exception (the registry-driven loop's outer batch prompt subsumes it).
+- [x] Add the `[migrations]` section to the `.govern.toml` schema documented in `## Project Configuration` (line ~252+). Document `last_applied` field with its absence semantics.
+- [x] Update the `enforce-manifest` step at line 36 to drop the "legacy `skills/` directory removal" and "legacy workflow filename removal" mentions from its summary line. The primitive's expected-list construction loses the legacy paths.
+- [x] Run `npx markdownlint-cli2` on `framework/bootstrap/govern.md`.
 
 ## 5. Trim `enforce-manifest` primitive's expected-list contract
 
