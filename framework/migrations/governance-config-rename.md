@@ -1,6 +1,6 @@
 # governance-config-rename
 
-**Introduced in:** _set during 027.3 back-fill_
+**Introduced in:** gvrn 0.2.0
 **Summary:** Rename `.governance.toml` → `.govern.toml` in the project root.
 
 ## Procedure

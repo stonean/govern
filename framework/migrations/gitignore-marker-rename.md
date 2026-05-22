@@ -1,6 +1,6 @@
 # gitignore-marker-rename
 
-**Introduced in:** _set during 027.3 back-fill_
+**Introduced in:** gvrn 0.2.0
 **Summary:** Replace `# Governance` marker in `.gitignore` with `# govern`.
 
 ## Procedure

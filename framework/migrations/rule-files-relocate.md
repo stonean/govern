@@ -1,6 +1,6 @@
 # rule-files-relocate
 
-**Introduced in:** _set during 027.3 back-fill_
+**Introduced in:** gvrn 0.6.0
 **Summary:** Relocate rule files from `specs/` root to `specs/rules/` (subsumes `configuration.md` → `configuration-cross.md`).
 
 ## Procedure

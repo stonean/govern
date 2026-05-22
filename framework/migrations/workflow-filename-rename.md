@@ -1,6 +1,6 @@
 # workflow-filename-rename
 
-**Introduced in:** _set during 027.3 back-fill_
+**Introduced in:** gvrn 0.2.0
 **Summary:** Remove legacy `{category}-{language}-{tool}.md` workflow files left over after the post-005 filename simplification to `{tool}.md`.
 
 ## Procedure

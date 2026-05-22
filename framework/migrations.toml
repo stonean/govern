@@ -11,3 +11,70 @@
 #
 # Sunsetted entries are removed from this file and appended to
 # CHANGELOG.md at the repo root.
+#
+# Ordering: by `introduced_in` SemVer ascending, lexicographic tie-break
+# on `id`. File order in this TOML is not authoritative — the bootstrap
+# loop sorts on read.
+
+[[migrations]]
+id = "gitignore-marker-rename"
+introduced_in = "0.2.0"
+sunset_after = "0.10.0"
+summary = "Replace # Governance marker in .gitignore with # govern"
+target_paths = [".gitignore"]
+procedure_file = "framework/migrations/gitignore-marker-rename.md"
+
+[[migrations]]
+id = "governance-config-rename"
+introduced_in = "0.2.0"
+sunset_after = "0.10.0"
+summary = "Rename .governance.toml → .govern.toml in the project root"
+target_paths = [".governance.toml"]
+procedure_file = "framework/migrations/governance-config-rename.md"
+
+[[migrations]]
+id = "skills-to-workflows"
+introduced_in = "0.2.0"
+sunset_after = "0.10.0"
+summary = "Remove legacy {config_dir}/commands/{project}/skills/ directory"
+target_paths = ["{config_dir}/commands/{project}/skills/"]
+procedure_file = "framework/migrations/skills-to-workflows.md"
+
+[[migrations]]
+id = "workflow-filename-rename"
+introduced_in = "0.2.0"
+sunset_after = "0.10.0"
+summary = "Remove legacy {category}-{language}-{tool}.md workflow files"
+target_paths = [
+  "{config_dir}/commands/{project}/workflows/format-go-gofmt.md",
+  "{config_dir}/commands/{project}/workflows/format-python-black.md",
+  "{config_dir}/commands/{project}/workflows/format-typescript-prettier.md",
+  "{config_dir}/commands/{project}/workflows/lint-go-golangci-lint.md",
+  "{config_dir}/commands/{project}/workflows/lint-python-ruff.md",
+  "{config_dir}/commands/{project}/workflows/lint-typescript-eslint.md",
+  "{config_dir}/commands/{project}/workflows/test-go-gotest.md",
+  "{config_dir}/commands/{project}/workflows/test-python-pytest.md",
+  "{config_dir}/commands/{project}/workflows/test-typescript-vitest.md",
+]
+procedure_file = "framework/migrations/workflow-filename-rename.md"
+
+[[migrations]]
+id = "spec-and-plan-sunset"
+introduced_in = "0.5.0"
+sunset_after = "0.10.0"
+summary = "Rename specs/*/spec-and-plan.md → specs/*/spec.md (lightweight-track sunset)"
+target_paths = ["specs/*/spec-and-plan.md"]
+procedure_file = "framework/migrations/spec-and-plan-sunset.md"
+
+[[migrations]]
+id = "rule-files-relocate"
+introduced_in = "0.6.0"
+sunset_after = "0.10.0"
+summary = "Relocate rule files from specs/ root to specs/rules/ (subsumes configuration.md rename)"
+target_paths = [
+  "specs/configuration.md",
+  "specs/*-backend.md",
+  "specs/*-frontend.md",
+  "specs/*-cross.md",
+]
+procedure_file = "framework/migrations/rule-files-relocate.md"

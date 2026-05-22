@@ -26,10 +26,10 @@ For each of the six back-filled migrations, create `framework/migrations/{id}.md
 
 Look up `introduced_in` per migration via `git log` against the commits that shipped each removal. Use `registry_introduction_version + 2 minor versions` for every `sunset_after` (where `registry_introduction_version` is the gvrn release this spec lands in — pinned at release time).
 
-- [ ] Run `git log --diff-filter=D --name-only -- framework/templates/spec-and-plan.md framework/commands/spawn.md 'framework/skills/*'` (and similar) to find each migration's commit and corresponding gvrn tag.
-- [ ] Append the six `[[migrations]]` entries to `framework/migrations.toml` with: `id`, `introduced_in`, `sunset_after`, `summary`, `target_paths`, `procedure_file`.
-- [ ] Verify ordering: entries sort by `introduced_in` SemVer ascending, lex tie-break on `id`. File order in TOML is not authoritative but should match for human readability.
-- [ ] Run `tq` or equivalent to confirm `framework/migrations.toml` parses cleanly.
+- [x] Run `git log --diff-filter=D --name-only -- framework/templates/spec-and-plan.md framework/commands/spawn.md 'framework/skills/*'` (and similar) to find each migration's commit and corresponding gvrn tag.
+- [x] Append the six `[[migrations]]` entries to `framework/migrations.toml` with: `id`, `introduced_in`, `sunset_after`, `summary`, `target_paths`, `procedure_file`.
+- [x] Verify ordering: entries sort by `introduced_in` SemVer ascending, lex tie-break on `id`. File order in TOML is not authoritative but should match for human readability.
+- [x] Run `tq` or equivalent to confirm `framework/migrations.toml` parses cleanly.
 
 ## 4. Rewrite `framework/bootstrap/govern.md` Pre-run Migrations section
 

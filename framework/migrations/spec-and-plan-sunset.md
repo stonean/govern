@@ -1,6 +1,6 @@
 # spec-and-plan-sunset
 
-**Introduced in:** _set during 027.3 back-fill_
+**Introduced in:** gvrn 0.5.0
 **Summary:** Rename `specs/*/spec-and-plan.md` → `specs/*/spec.md` (lightweight-track sunset).
 
 ## Procedure

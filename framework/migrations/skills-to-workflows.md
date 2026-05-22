@@ -1,6 +1,6 @@
 # skills-to-workflows
 
-**Introduced in:** _set during 027.3 back-fill_
+**Introduced in:** gvrn 0.2.0
 **Summary:** Remove legacy `{config_dir}/commands/{project}/skills/` directory left over from the `skills/` → `workflows/` rename.
 
 ## Procedure
