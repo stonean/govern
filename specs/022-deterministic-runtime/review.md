@@ -1,41 +1,33 @@
 ---
 spec: 022-deterministic-runtime
-scenario: mark-task-backtick-headings
-reviewed-at: 2026-05-19T00:00:00Z
-reviewed-against: 389b68b
+reviewed-at: 2026-05-22T00:00:00Z
+reviewed-against: 2873aad8dfac63e4743964693d1ad60af8fc4ea4
 diff-base: 5d04421c157c042f7d23e170fbffd9ad8797661b
 must-violations: 0
-should-violations: 0
+should-violations: 1
 low-confidence: 0
 skipped-passes: []
 ---
 
-# Review — 022-deterministic-runtime (mark-task-backtick-headings scenario)
+# Review — 022-deterministic-runtime
 
 ## Summary
 
-Reviewed task #33's implementation — the `mark-task` heading-parser alignment with `read-tasks`. The work is a focused REUSE refactor: `runtime/src/primitives/mark_task.rs` now detects `tasks.md` structure (flat vs phased) via the existing `detect_tasks_structure` helper and walks the appropriate task level (2 for flat, 3 for phased), exactly the way `read_tasks.rs` already does. `parse_atx_heading` was already in use for heading parsing, so the diff is narrow: one new import (`TasksStructure`, `detect_tasks_structure`), one structure detection call before line-splitting, one new `task_level` parameter on `locate_task_range`, and one terminator-condition relaxation (`level <= task_level` instead of the hardcoded `level <= 2`).
+Whole-spec review at HEAD (`2873aad`). The prior scoped review (at `389b68b`, mark-task-backtick-headings scenario) cleared the runtime through gvrn 0.6.1; this pass picks up the unreviewed delta — primarily task #34 (writeCode payload bundling, gvrn 0.7.0), the gvrn 0.7.1 dependency-major refresh, and the 027.5 contract trim that touches `enforce_manifest`'s docstring.
 
-Origin: spec 022's `mark-task-backtick-headings` scenario, routed from `specs/inbox.md` via `/gov:groom` after the bug surfaced during `/gov:implement` on spec 023 task #19. The originating symptom described "backticks in the title"; the actual cause was the structure-detection gap (level-2-only matching ignored phased `### N.` task headings). Inline-code spans in titles parse correctly via `parse_atx_heading` and were never the root cause — but the symptom only surfaced on phased files, which always have backticks-or-not headings as a function of the spec being implemented.
+Stack: text-first markdown + Rust runtime. Loaded rule files: `api-backend.md`, `configuration-cross.md`, `security-backend.md`. Frontend rule files are skipped — no frontend surface in scope. No `[[review.disabled-rule-files]]` entries.
 
-Scope:
+Five-dimension review of the delta:
 
-- `runtime/src/primitives/mark_task.rs` — structure-aware task-level dispatch via `detect_tasks_structure`; `locate_task_range` takes a `task_level` parameter; terminator condition generalized to `level <= task_level`. Module-doc comment updated to document both file shapes.
-- Test fixture `write_phased_fixture` and three new regression tests (`flips_subtask_in_phased_tasks_md`, `resolves_phased_task_with_backticks_in_heading`, `phased_task_range_terminates_at_next_phase_container`) cover the previously-broken path. The 6 existing tests still pass unchanged.
+- **Security**: writeCode bundling adds a new read-side surface — the runtime opens files whose paths come from the targeted feature's `plan.md` Affected Files table. The existing guard (`secret_pattern` + `is_gitignored`) handles the named-file vectors well (`.env`, `.env.*`, `*-secrets.*`, `credentials*`, gitignored entries). However, `load_plan_relevant_files` does not canonicalize the joined path before reading, so a plan with `../` or absolute-path entries can escape the repo root — see SHOULD finding below. No other security surface is touched by the delta; the dep-major refresh sits on well-known crates and the migration was mechanical.
+- **Reuse**: writeCode payload assembly correctly delegates to the existing `read_tasks` primitive for task lookup and the existing `resolve-anchor` mechanism for constitution excerpts. No duplicated parsing. The `gvrn 0.7.1` clippy-driven let-chain collapse across `interpreter/payload`, `primitives/{append_task, read_spec, mod}`, and `main` is a defensible idiom-update under MSRV 1.88 — no behavior change, idiom drift removed.
+- **Quality**: error propagation from `build_extension_request` through `handle_extension` is clean: `PayloadError::SecretExfiltration` becomes an `error` envelope with code `secret-exfiltration-blocked` and the walk terminates via `WalkOutcome::Errored`. The `WriteCodeRequest` field-order lock (Subtask 34.4) is enforced by a serialization-order test — good. `is_gitignored` swallows libgit2 errors and returns false; the doc-comment is explicit that the gitignore layer is opt-in and the secret-pattern check is the floor.
+- **Efficiency**: payload bundling reads each file once; no N+1. The constitution-excerpts loader calls `resolve-anchor` per anchor, but the anchor count is bounded by the command file's `Reference:` line. No concerns.
+- **Simplicity**: `runtime/src/interpreter/payload.rs` lands at 873 lines but each function does one thing and the module-doc walks the reader through the flow. The `secret_pattern` helper is small and well-tested. No premature abstraction.
 
-Stack: text-first markdown + Rust runtime. Loaded rule files: `configuration-cross.md`, `security-backend.md`, `api-backend.md`. None of the BE-API or BE-AUTHN/AUTHZ/etc. triggers fire — pure internal-primitive refactor.
+Test posture: per CHANGELOG, 325 tests pass at gvrn 0.7.1; clippy --all-targets -- -D warnings clean; fmt --check clean. The lint suite (lint-procedure-parseability, lint-tool-coverage, lint-frontmatter, markdownlint-cli2 over the 022 spec dir) is clean as of the MD038 fix landed in this session.
 
-Five-dimension review:
-
-- **Security**: no input boundaries added; no new path/IO surface. The primitive's existing path-handling already validates feature-dir existence.
-- **Reuse**: the change IS the REUSE win — `mark-task` and `read-tasks` now consume the same `detect_tasks_structure` helper, eliminating the structure-detection drift that caused this bug. Future heading-shape edge cases fix once, propagate to both primitives.
-- **Quality**: terminator-condition generalization is the only behavior-altering line. Reviewed against the four existing tests (which all pass) and the three new tests; no regression. The Done-when's "regression test exercises a heading like `### N. Dedup ` + backtick + `/configure` + backtick" is satisfied by `resolves_phased_task_with_backticks_in_heading`.
-- **Efficiency**: structure detection runs once before line-splitting; `O(file_size)` linear scan, same as before.
-- **Simplicity**: the diff is ~10 lines of behavior change + ~50 lines of tests. The `locate_task_range` function gains one parameter and one comparison; no new control flow.
-
-Test posture: 268 tests pass (`cargo test --release`); `cargo clippy --release --all-targets -- -D warnings` clean; `cargo fmt --check` clean.
-
-**Result**: 0 MUST, 0 SHOULD, 0 low-confidence. `blocking: no`.
+**Result**: 0 MUST, 1 SHOULD, 0 low-confidence. `blocking: no`.
 
 ## MUST violations (blocking)
 
@@ -43,7 +35,34 @@ _None._
 
 ## SHOULD violations (advisory)
 
-_None._
+### SHOULD: BE-INPUT-004 — `load_plan_relevant_files` lacks canonical-path containment check
+
+- **File**: `runtime/src/interpreter/payload.rs:239-273`
+- **Rule**: User-supplied values MUST NOT be used directly in filesystem paths. Filesystem operations MUST resolve the canonical path and verify it falls within the expected base directory before opening the file.
+- **Finding**: `load_plan_relevant_files` reads path entries from the targeted feature's `plan.md` Affected Files table and bundles each file's content into the `writeCode` payload sent to the LLM. The existing guard rejects entries matching the secret-bearing patterns (`.env`, `.env.*`, `*-secrets.*`, `credentials*`) and gitignored paths, then calls `repo.join(&rel)` and `std::fs::read_to_string(&abs)` without canonicalizing `abs` or verifying it stays under `repo`. A plan entry of `../../etc/passwd` resolves outside the repo: the basename (`passwd`) does not match any secret pattern, libgit2 reports the path as not-ignored, and the file's contents are bundled into the outbound LLM payload. The same gap applies to absolute paths (`/etc/passwd`) — `Path::join` lets an absolute joinee replace the base. Threat model is prompt-injection-class: a compromised `/gov:plan` LLM (or a malicious plan author bypassing PR review) plants the entry once; `/gov:implement` exfiltrates on the next run. Severity is SHOULD rather than MUST because the input source (plan.md) is project-authored and reviewed, but the canonicalization check is the rule-mandated defense-in-depth and would close the prompt-injection vector deterministically.
+- **Auto-fixable**: no (the fix is mechanical but the test coverage needs new fixtures — escape-via-relative, escape-via-absolute, and a happy-path in-repo file — so author judgment is needed for the test scope).
+- **Suggested fix**: in `load_plan_relevant_files`, after computing `let abs = repo.join(&rel);`, canonicalize both `abs` and `repo` and verify containment before reading. Sketch:
+
+  ```rust
+  let abs = repo.join(&rel);
+  let canon_abs = match abs.canonicalize() {
+      Ok(p) => p,
+      Err(_) => continue, // missing file — planned-new, same as today
+  };
+  let canon_repo = repo.canonicalize().map_err(|_| PayloadError::SecretExfiltration {
+      path: rel.clone(),
+      pattern: "non-canonical-repo".into(),
+  })?;
+  if !canon_abs.starts_with(&canon_repo) {
+      return Err(PayloadError::SecretExfiltration {
+          path: rel,
+          pattern: "out-of-repo".into(),
+      });
+  }
+  let Ok(content) = std::fs::read_to_string(&canon_abs) else { continue; };
+  ```
+
+  Add a third pattern label (`"out-of-repo"`) to the `SecretExfiltration` enumeration's documentation so the error envelope's `pattern` field stays self-describing. Regression tests: one plan with `../foo.txt`, one with `/etc/hosts`, one with `subdir/legitimate.rs` (must pass through). Also consider lowercasing the basename before secret-pattern matching to close the related case-insensitive-filesystem gap (`.ENV` on macOS APFS resolves to `.env` but bypasses `secret_pattern`'s exact-equality check). The fix is one `.to_ascii_lowercase()` call on the captured basename; happy to defer if you'd rather keep this finding tight to the path-containment issue.
 
 ## Low-confidence findings
 
