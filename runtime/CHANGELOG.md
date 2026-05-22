@@ -2,6 +2,12 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.7.3] — 2026-05-22
+
+### Changed
+
+- **`writeCode` payload bundling now canonicalizes plan-relevant paths and case-folds the secret-pattern guard.** `load_plan_relevant_files` (in `runtime/src/interpreter/payload.rs`) previously joined each Affected-Files entry under `repo` and read it without verifying the resolved path stayed under the repo root. A plan entry of `../../etc/passwd` or `/etc/hosts` bypassed the basename-only secret-pattern check and exfiltrated through the outbound `writeCode` payload. The function now canonicalizes both `repo` and each candidate `abs` and rejects entries whose canonical form does not `starts_with(canon_repo)`, emitting `PayloadError::SecretExfiltration { pattern: "out-of-repo" }` so the existing `secret-exfiltration-blocked` error envelope stays the single surface for the whole class. Missing files (planned-new) still skip cleanly via the canonicalize-fails-continues branch — the existing happy path is preserved. `secret_pattern` also lowercases the basename before pattern matching so `.ENV` on macOS APFS cannot bypass the guard. Four new regression tests cover relative escape, absolute escape, in-repo happy path (positive), and case-fold bypass; the existing planned-new test continues to exercise the canonicalize-skip path for a fifth scenario. Closes the BE-INPUT-004 SHOULD finding recorded in `specs/022-deterministic-runtime/review.md`.
+
 ## [0.7.2] — 2026-05-21
 
 ### Changed
@@ -44,7 +50,7 @@ All notable changes to the `govern` deterministic runtime are recorded here. The
 
 ### Fixed
 
-- **`mark-task` ignored phased `tasks.md` files.** The primitive only matched task headings at level 2 (`## N. ...`), so phased files (`## Phase X — … / ### N. Task`, the shape `read-tasks` learned to handle in 0.5.1) returned `task '{N}' not found` for every task. Surfaced 2026-05-19 during `/gov:implement` on spec 023 task #19 — the heading happened to contain backticks (`### 19. Dedup `/configure` permission entries`), so the bug initially looked like a backtick-parser issue, but inline-code spans were never the root cause; the parser handled them correctly via `parse_atx_heading` already.
+- **`mark-task` ignored phased `tasks.md` files.** The primitive only matched task headings at level 2 (`## N. ...`), so phased files (`## Phase X — … / ### N. Task`, the shape `read-tasks` learned to handle in 0.5.1) returned `task '{N}' not found` for every task. Surfaced 2026-05-19 during `/gov:implement` on spec 023 task #19 — the heading happened to contain backticks (``### 19. Dedup `/configure` permission entries``), so the bug initially looked like a backtick-parser issue, but inline-code spans were never the root cause; the parser handled them correctly via `parse_atx_heading` already.
 
   Resolution: `mark-task` now calls `detect_tasks_structure` before splitting the file into lines and walks the appropriate task level (2 for flat, 3 for phased), exactly the way `read_tasks.rs` already does. `locate_task_range` takes a new `task_level` parameter; its terminator condition relaxes from the hardcoded `level <= 2` to `level <= task_level` so a phased task's range correctly ends at the next sibling `### N.` heading OR the next `## …` phase container, whichever comes first.
 

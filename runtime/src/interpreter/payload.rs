@@ -34,13 +34,16 @@ use crate::schema::primitives::ReadTasksArgs;
 #[derive(Debug, thiserror::Error)]
 pub enum PayloadError {
     /// A path listed in the plan's Affected Files matched a secret-bearing
-    /// pattern (`.env`, `credentials*`, etc.) or was marked ignored by
-    /// `.gitignore`.
+    /// pattern (`.env`, `credentials*`, etc.), was marked ignored by
+    /// `.gitignore`, or canonicalized to a location outside the repo root
+    /// (path traversal — pattern label `out-of-repo`).
     #[error("secret-exfiltration-blocked: '{path}' matches pattern '{pattern}'")]
     SecretExfiltration {
         /// Offending repo-relative path.
         path: String,
-        /// Pattern that matched (a glob name or `.gitignore`).
+        /// Pattern that matched: a glob name (`.env`, `.env.*`,
+        /// `*-secrets.*`, `credentials*`), `.gitignore`, or `out-of-repo`
+        /// for paths whose canonical form escapes the repo root.
         pattern: String,
     },
 }
@@ -243,7 +246,13 @@ fn load_plan_relevant_files(
     if feature.is_empty() {
         return Ok(Vec::new());
     }
-    let plan_path = repo.join("specs").join(feature).join("plan.md");
+    // Canonicalize repo once so the containment check below operates on the
+    // resolved form (e.g., macOS `/var/folders/...` → `/private/var/...`).
+    // A non-canonicalizable repo path mirrors the "no plan, no files" posture.
+    let Ok(canon_repo) = repo.canonicalize() else {
+        return Ok(Vec::new());
+    };
+    let plan_path = canon_repo.join("specs").join(feature).join("plan.md");
     let Ok(plan_content) = std::fs::read_to_string(&plan_path) else {
         return Ok(Vec::new());
     };
@@ -256,15 +265,30 @@ fn load_plan_relevant_files(
                 pattern: pattern.into(),
             });
         }
-        if is_gitignored(repo, &rel) {
+        if is_gitignored(&canon_repo, &rel) {
             return Err(PayloadError::SecretExfiltration {
                 path: rel,
                 pattern: ".gitignore".into(),
             });
         }
-        let abs = repo.join(&rel);
-        let Ok(content) = std::fs::read_to_string(&abs) else {
+        let abs = canon_repo.join(&rel);
+        let Ok(canon_abs) = abs.canonicalize() else {
             // Planned-new file or rename target — omit, don't error.
+            // (`canonicalize` errors on missing files; existing behavior
+            // preserved.)
+            continue;
+        };
+        if !canon_abs.starts_with(&canon_repo) {
+            // Path traversal: `../foo`, absolute path, or symlink whose
+            // canonical target escapes the repo root. BE-INPUT-004
+            // defense-in-depth — the basename-only secret-pattern check
+            // above doesn't catch this class.
+            return Err(PayloadError::SecretExfiltration {
+                path: rel,
+                pattern: "out-of-repo".into(),
+            });
+        }
+        let Ok(content) = std::fs::read_to_string(&canon_abs) else {
             continue;
         };
         out.push(PlanRelevantFile { path: rel, content });
@@ -512,7 +536,10 @@ fn extract_section_name(prose: &str) -> Option<String> {
 }
 
 /// Match a path against the v1 secret-exfiltration patterns. Returns the
-/// matched pattern label when blocked; `None` otherwise. Patterns:
+/// matched pattern label when blocked; `None` otherwise. Matching is
+/// ASCII-case-insensitive on the basename so a plan entry of `.ENV` or
+/// `Credentials.json` cannot bypass the guard on a case-insensitive
+/// filesystem (macOS APFS by default). Patterns:
 ///
 /// - `.env` and `.env.*` (e.g., `.env.production`)
 /// - `*-secrets.*` (e.g., `db-secrets.yaml`)
@@ -521,7 +548,8 @@ fn secret_pattern(path: &str) -> Option<&'static str> {
     let basename = Path::new(path)
         .file_name()
         .and_then(|s| s.to_str())
-        .unwrap_or("");
+        .unwrap_or("")
+        .to_ascii_lowercase();
     if basename == ".env" {
         return Some(".env");
     }
@@ -754,6 +782,136 @@ mod tests {
             PayloadError::SecretExfiltration { path, pattern } => {
                 assert_eq!(path, "secret-config.toml");
                 assert_eq!(pattern, ".gitignore");
+            }
+        }
+    }
+
+    #[test]
+    fn secret_pattern_is_case_insensitive() {
+        // BE-INPUT-004 — case-fold bypass on case-insensitive filesystems.
+        // `.ENV` on macOS APFS resolves to `.env` on disk; the basename
+        // check must match regardless of case.
+        assert_eq!(secret_pattern(".ENV"), Some(".env"));
+        assert_eq!(secret_pattern(".Env.Production"), Some(".env.*"));
+        assert_eq!(secret_pattern("Credentials.JSON"), Some("credentials*"));
+        assert_eq!(secret_pattern("DB-Secrets.YAML"), Some("*-secrets.*"));
+        assert_eq!(secret_pattern("README.md"), None);
+    }
+
+    #[test]
+    fn load_plan_relevant_files_rejects_relative_escape() {
+        // BE-INPUT-004 — a plan entry of `../outside.txt` resolves outside
+        // the repo. Basename `outside.txt` does not match any secret pattern,
+        // but the canonical-containment check catches it.
+        let outer = tempdir().unwrap();
+        let repo = outer.path().join("repo");
+        std::fs::create_dir_all(&repo).unwrap();
+        std::fs::write(outer.path().join("outside.txt"), "leaked").unwrap();
+        let feature_dir = repo.join("specs/123-foo");
+        std::fs::create_dir_all(&feature_dir).unwrap();
+        std::fs::write(
+            feature_dir.join("plan.md"),
+            "## Affected Files\n\n\
+             | File | Action |\n| --- | --- |\n\
+             | `../outside.txt` | Edit |\n",
+        )
+        .unwrap();
+
+        let err = load_plan_relevant_files("123-foo", &repo).unwrap_err();
+        match err {
+            PayloadError::SecretExfiltration { path, pattern } => {
+                assert_eq!(path, "../outside.txt");
+                assert_eq!(pattern, "out-of-repo");
+            }
+        }
+    }
+
+    #[test]
+    fn load_plan_relevant_files_rejects_absolute_escape() {
+        // BE-INPUT-004 — `Path::join` lets an absolute joinee replace the
+        // base, so `/etc/hosts` (or a sibling tempdir absolute path) would
+        // be read without the containment check. Use a sibling tempdir
+        // instead of /etc/hosts so the test is hermetic.
+        let outer = tempdir().unwrap();
+        let repo = outer.path().join("repo");
+        std::fs::create_dir_all(&repo).unwrap();
+        let sibling = outer.path().join("sibling.txt");
+        std::fs::write(&sibling, "leaked").unwrap();
+        // Resolve to the canonical absolute form so the test is robust
+        // against tempdir symlinks (macOS `/var` → `/private/var`).
+        let abs_str = sibling
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .into_owned();
+        let feature_dir = repo.join("specs/123-foo");
+        std::fs::create_dir_all(&feature_dir).unwrap();
+        std::fs::write(
+            feature_dir.join("plan.md"),
+            format!(
+                "## Affected Files\n\n\
+                 | File | Action |\n| --- | --- |\n\
+                 | `{abs_str}` | Edit |\n"
+            ),
+        )
+        .unwrap();
+
+        let err = load_plan_relevant_files("123-foo", &repo).unwrap_err();
+        match err {
+            PayloadError::SecretExfiltration { path, pattern } => {
+                assert_eq!(path, abs_str);
+                assert_eq!(pattern, "out-of-repo");
+            }
+        }
+    }
+
+    #[test]
+    fn load_plan_relevant_files_admits_in_repo_relative_path() {
+        // Happy path — a normal in-repo relative entry resolves under
+        // canon_repo and is bundled into the payload as today.
+        let tmp = tempdir().unwrap();
+        let feature_dir = tmp.path().join("specs/123-foo");
+        std::fs::create_dir_all(&feature_dir).unwrap();
+        std::fs::create_dir_all(tmp.path().join("src")).unwrap();
+        std::fs::write(tmp.path().join("src/lib.rs"), "fn main() {}").unwrap();
+        std::fs::write(
+            feature_dir.join("plan.md"),
+            "## Affected Files\n\n\
+             | File | Action |\n| --- | --- |\n\
+             | `src/lib.rs` | Edit |\n",
+        )
+        .unwrap();
+
+        let files = load_plan_relevant_files("123-foo", tmp.path()).unwrap();
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].path, "src/lib.rs");
+        assert_eq!(files[0].content, "fn main() {}");
+    }
+
+    #[test]
+    fn load_plan_relevant_files_skips_case_fold_bypass() {
+        // BE-INPUT-004 — `.ENV` lowercased to `.env` matches the pattern
+        // and is rejected before the containment check runs. Important on
+        // case-insensitive filesystems where the on-disk file is `.env`
+        // but the plan author can spell it `.ENV` (or `.Env`) to bypass.
+        let tmp = tempdir().unwrap();
+        let feature_dir = tmp.path().join("specs/123-foo");
+        std::fs::create_dir_all(&feature_dir).unwrap();
+        std::fs::write(
+            feature_dir.join("plan.md"),
+            "## Affected Files\n\n\
+             | File | Action |\n| --- | --- |\n\
+             | `.ENV` | Edit |\n",
+        )
+        .unwrap();
+
+        let err = load_plan_relevant_files("123-foo", tmp.path()).unwrap_err();
+        match err {
+            PayloadError::SecretExfiltration { path, pattern } => {
+                assert_eq!(path, ".ENV");
+                // Pattern label is the canonical lowercase form regardless
+                // of which case the author spelled.
+                assert_eq!(pattern, ".env");
             }
         }
     }

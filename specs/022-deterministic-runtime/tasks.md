@@ -299,3 +299,9 @@ Adds two new primitives — `create-scenario` and `append-task` — that the `/a
 - [x] 34.9 Tag-push `gvrn-v0.7.0` (triggers the 5-leg release matrix); after all matrix legs report success, `cargo publish` from `runtime/` to upload `gvrn 0.7.0` to crates.io. Both steps require user authorization (externally visible).
 
 - **Done when**: every subtask above is checked; the scenario's described behavior is correctly implemented and tested; `gvrn-v0.7.0` is live on GitHub releases and crates.io.
+
+## 35. Implement scenario: writecode-payload-canonicalize-paths
+
+- [x] Implement the behavior described in `scenarios/writecode-payload-canonicalize-paths.md`
+
+- **Done when**: `load_plan_relevant_files` canonicalizes every candidate path and rejects out-of-repo escapes with a structured error envelope; `secret_pattern` matches case-insensitively on the basename; the scenario's five scenarios (relative escape, absolute escape, in-repo happy path, planned-new file, case-fold bypass) are covered by tests; `gvrn` ships a patch bump (`0.7.3`; `0.7.2` was already claimed by 027.5).
