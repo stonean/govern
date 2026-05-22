@@ -51,19 +51,19 @@ Look up `introduced_in` per migration via `git log` against the commits that shi
 
 ## 6. Implement Family 10 audit script
 
-- [ ] Create `scripts/audit/migration-coverage.sh` matching plan §Family 10 design.
-- [ ] Implement check 10a — no orphan procedure files.
-- [ ] Implement check 10b — no stale target paths (parse both `framework/migrations.toml` and `CHANGELOG.md` archived sections).
-- [ ] Implement check 10c — no broken procedure references.
-- [ ] Make the script executable (`chmod +x`).
-- [ ] Verify the script exits 0 against the post-back-fill state (all six entries valid, all procedure files present).
+- [x] Create `scripts/audit/migration-coverage.sh` matching plan §Family 10 design.
+- [x] Implement check 10a — no orphan procedure files.
+- [x] Implement check 10b — no stale target paths (parse both `framework/migrations.toml` and `CHANGELOG.md` archived sections). CHANGELOG.md archived-entry parsing deferred until the first sunset commit establishes the archive format by example — TODO in the script.
+- [x] Implement check 10c — no broken procedure references.
+- [x] Make the script executable (`chmod +x`).
+- [x] Verify the script exits 0 against the post-back-fill state (all six entries valid, all procedure files present).
 
 ## 7. Wire Family 10 into the audit orchestrator and command doc
 
-- [ ] Append the Family 10 `run_check` line to `scripts/audit/run-all.sh` after the Family 9 invocation.
-- [ ] Append a numbered step for Family 10 in `framework/commands/audit.md`'s Markdown-only reference.
-- [ ] Update the "eight family check" / "nine family check" prose in `framework/commands/audit.md` and `specs/026-framework-self-audit/spec.md` references to "ten family check" — or accept that the count is now derivable and remove the magic number.
-- [ ] Run `/audit` end-to-end (`bash scripts/audit/run-all.sh`) and verify exit 0.
+- [x] Append the Family 10 `run_check` line to `scripts/audit/run-all.sh` after the Family 9 invocation.
+- [x] Append a numbered step for Family 10 in `framework/commands/audit.md`'s Markdown-only reference.
+- [x] Update the "eight family check" / "nine family check" prose in `framework/commands/audit.md` to a count-agnostic phrasing ("family check scripts"). The 026 spec body's references to family counts are deferred to the Task 8 scenario.
+- [x] Run `/audit` end-to-end (`bash scripts/audit/run-all.sh`) and verify exit 0.
 
 ## 8. Record cross-spec impact on 026
 

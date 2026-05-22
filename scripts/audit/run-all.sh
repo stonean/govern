@@ -51,5 +51,6 @@ run_check "Family 6 — SSOT invariants" "scripts/audit/ssot-invariants.sh"
 run_check "Family 7 — sibling-spec coupling" "scripts/audit/sibling-coupling.sh"
 run_check "Family 8 — introducing-spec body drift" "scripts/audit/introducing-drift.sh"
 run_check "Family 9 — primitive-promotion candidates" "scripts/audit/primitive-promotion-candidates.sh"
+run_check "Family 10 — migration coverage" "scripts/audit/migration-coverage.sh"
 
 exit "$drift"
