@@ -67,9 +67,9 @@ Look up `introduced_in` per migration via `git log` against the commits that shi
 
 ## 8. Record cross-spec impact on 026
 
-- [ ] Create `specs/026-framework-self-audit/scenarios/family-10-migration-coverage.md` with a back-link to 027 documenting the Family 10 extension.
-- [ ] The scenario file describes Family 10's three checks at scenario-level detail and notes that 027 is the driving spec.
-- [ ] Run `npx markdownlint-cli2` on the new scenario file.
+- [x] Create `specs/026-framework-self-audit/scenarios/family-10-migration-coverage.md` with a back-link to 027 documenting the Family 10 extension.
+- [x] The scenario file describes Family 10's three checks at scenario-level detail and notes that 027 is the driving spec.
+- [x] Run `npx markdownlint-cli2` on the new scenario file.
 
 ## 9. Update CLAUDE.md / AGENTS.md if needed
 
