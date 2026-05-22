@@ -1,0 +1,13 @@
+# framework/migrations.toml — adopter-cleanup registry.
+#
+# One [[migrations]] entry per active convention removal. Each entry's
+# procedure body lives at `framework/migrations/{id}.md`. The bootstrap
+# procedure in `framework/bootstrap/govern.md` iterates this file on every
+# `/govern` run and applies entries newer than the adopter's `.govern.toml`
+# `[migrations].last_applied` field.
+#
+# See spec 027 — Bootstrap Migration Registry for the governing pipeline:
+#   specs/027-bootstrap-migration-registry/spec.md
+#
+# Sunsetted entries are removed from this file and appended to
+# CHANGELOG.md at the repo root.
