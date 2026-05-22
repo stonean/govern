@@ -44,10 +44,10 @@ Look up `introduced_in` per migration via `git log` against the commits that shi
 
 ## 5. Trim `enforce-manifest` primitive's expected-list contract
 
-- [ ] In the runtime crate (`runtime/src/primitives/enforce_manifest.rs` or equivalent), remove the legacy-path inclusion logic from the expected-list construction.
-- [ ] Update tests under `runtime/tests/` that assert the legacy-path removal behavior. Replace with tests asserting the legacy paths are NOT touched by `enforce-manifest`.
-- [ ] Add a CHANGELOG entry to `runtime/CHANGELOG.md` describing the contract trim (likely a minor version bump).
-- [ ] Run `cargo test` from the runtime workspace.
+- [x] In the runtime crate (`runtime/src/primitives/enforce_manifest.rs` or equivalent), remove the legacy-path inclusion logic from the expected-list construction. (The primitive's behavior was already generic — caller supplies `expected`/`pinned` and the runtime never hardcoded legacy paths. The trim was the module docstring's claim that the primitive replaced "three legacy cleanup loops"; the docstring now scopes the primitive to slash-command manifest enforcement only, with adopter-cleanup owned by the registry-driven `## Pre-run Migrations` loop.)
+- [x] Update tests under `runtime/tests/` that assert the legacy-path removal behavior. Replace with tests asserting the legacy paths are NOT touched by `enforce-manifest`. (No integration test previously asserted legacy-path removal — the bootstrap caller already passed only `framework/commands/` as the enforce directory, and the fixture's only "legacy" file was a slash-command path (`legacy-cmd.md`). Added a new pre-seeded fixture file at `runtime/tests/fixtures/govern-basic/project/framework/skills/old-skill.md` and a parity-test assertion that the file survives the bootstrap end-to-end, locking the contract trim in place against regression.)
+- [x] Add a CHANGELOG entry to `runtime/CHANGELOG.md` describing the contract trim. (Patch bump 0.7.1 → 0.7.2 — no behavior change for the slash-command path, no API change, no wire-format change; the trim is docstring + regression-guard test only.)
+- [x] Run `cargo test` from the runtime workspace. (All 325 tests pass; `cargo clippy --all-targets -- -D warnings` clean; `cargo fmt --check` clean.)
 
 ## 6. Implement Family 10 audit script
 

@@ -3,9 +3,14 @@
 //! Walks `directory`, removes files matching `glob-include` whose
 //! relative path is neither in `expected` nor `pinned`, and returns the
 //! per-file outcome split across `removed` / `kept` / `pinned-kept`.
-//! One primitive call replaces the bootstrap's three legacy cleanup
-//! loops (slash-command manifest enforcement, legacy `skills/` removal,
-//! legacy workflow filename removal).
+//! The bootstrap's sole caller is the per-agent slash-command manifest
+//! enforcement loop; adopter cleanup of historical conventions (the
+//! legacy `skills/` directory, legacy workflow filenames, and so on) is
+//! owned by the registry-driven `## Pre-run Migrations` loop and the
+//! per-entry procedure files at `framework/migrations/{id}.md` (spec
+//! 027). The primitive itself is generic — it removes whatever files
+//! the caller's `expected` list omits — but the legacy adopter-cleanup
+//! responsibility has moved out of its contract.
 //!
 //! Companion to `apply-manifest`: `apply-manifest` writes the files
 //! callers want present; `enforce-manifest` deletes the files no longer

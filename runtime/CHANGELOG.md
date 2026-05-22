@@ -2,6 +2,12 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.7.2] — 2026-05-21
+
+### Changed
+
+- **`enforce-manifest` contract trimmed to slash-command manifest enforcement only.** The module docstring previously claimed the primitive replaced three bootstrap cleanup loops (slash-command manifest enforcement, legacy `skills/` directory removal, legacy workflow filename removal). Adopter cleanup of historical conventions has moved out of the primitive's contract and into the registry-driven `## Pre-run Migrations` loop introduced by spec [027 — Bootstrap Migration Registry](../specs/027-bootstrap-migration-registry/spec.md); per-entry procedures live at `framework/migrations/{id}.md` and are dispatched by the bootstrap loop, not by `enforce-manifest`. The primitive itself is unchanged — same `expected` / `pinned` inputs, same `removed` / `kept` / `pinned-kept` outputs, byte-identical behavior — but it is now the slash-command directory's enforcer only, and the docstring says so. The `govern-basic` parity fixture grows one pre-seeded `framework/skills/old-skill.md` plus a `runtime/tests/parity.rs` assertion that the file survives the bootstrap, locking the contract trim in place against regression.
+
 ## [0.7.1] — 2026-05-21
 
 ### Changed

@@ -208,6 +208,16 @@ fn govern_basic_post_run_filesystem_state_matches_expectations() {
         project.join("framework/commands/specify.md").exists(),
         "enforce-manifest must keep framework/commands/specify.md (in expected list)"
     );
+    // Legacy `framework/skills/` files survive — adopter-cleanup of
+    // historical conventions moved out of enforce-manifest's contract
+    // into the registry-driven Pre-run Migrations loop (spec 027). The
+    // primitive now operates only on the per-agent slash-command
+    // directory; any directory outside that scope is untouched.
+    assert!(
+        project.join("framework/skills/old-skill.md").exists(),
+        "enforce-manifest must NOT touch framework/skills/old-skill.md \
+         (legacy-cleanup is owned by framework/migrations.toml)"
+    );
 }
 
 #[test]
