@@ -12,15 +12,15 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 For each of the six back-filled migrations, create `framework/migrations/{id}.md` following the plan §Procedure file shape convention. Each procedure file lifts its body content from the corresponding existing prose in `framework/bootstrap/govern.md`.
 
-- [ ] `framework/migrations/governance-config-rename.md` (lifted from `framework/bootstrap/govern.md` `### .governance.toml → .govern.toml`).
-- [ ] `framework/migrations/gitignore-marker-rename.md` (lifted from `### # Governance gitignore marker → # govern`).
-- [ ] `framework/migrations/spec-and-plan-sunset.md` (lifted from `### spec-and-plan.md → spec.md (lightweight-track sunset)`).
-- [ ] `framework/migrations/rule-files-relocate.md` (lifted from `### Rule files: relocate to specs/rules/`, subsuming `configuration.md` rename).
-- [ ] `framework/migrations/skills-to-workflows.md` (lifted from `### Legacy skills/ directory cleanup`).
-- [ ] `framework/migrations/workflow-filename-rename.md` (lifted from `Legacy workflow cleanup` step 1 inside `## Workflow recommendation`).
-- [ ] Each procedure file starts with an idempotency check (step 1) that exits silently when the target artifact is absent.
-- [ ] Each procedure file ends with the post-scaffolding summary line step.
-- [ ] All six files pass `npx markdownlint-cli2`.
+- [x] `framework/migrations/governance-config-rename.md` (lifted from `framework/bootstrap/govern.md` `### .governance.toml → .govern.toml`).
+- [x] `framework/migrations/gitignore-marker-rename.md` (lifted from `### # Governance gitignore marker → # govern`).
+- [x] `framework/migrations/spec-and-plan-sunset.md` (lifted from `### spec-and-plan.md → spec.md (lightweight-track sunset)`).
+- [x] `framework/migrations/rule-files-relocate.md` (lifted from `### Rule files: relocate to specs/rules/`, subsuming `configuration.md` rename).
+- [x] `framework/migrations/skills-to-workflows.md` (lifted from `### Legacy skills/ directory cleanup`).
+- [x] `framework/migrations/workflow-filename-rename.md` (lifted from `Legacy workflow cleanup` step 1 inside `## Workflow recommendation`).
+- [x] Each procedure file starts with an idempotency check (step 1) that exits silently when the target artifact is absent.
+- [x] Each procedure file ends with the post-scaffolding summary line step.
+- [x] All six files pass `npx markdownlint-cli2`.
 
 ## 3. Back-fill the registry with six entries
 
