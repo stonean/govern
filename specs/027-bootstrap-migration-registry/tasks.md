@@ -73,8 +73,8 @@ Look up `introduced_in` per migration via `git log` against the commits that shi
 
 ## 9. Update CLAUDE.md / AGENTS.md if needed
 
-- [ ] Check whether `AGENTS.md` mentions any of the legacy migrations or `.govern.toml` schema details. Update if any text references the old prose-encoded migrations or omits the new `[migrations]` section.
-- [ ] No changes if AGENTS.md is silent on these topics — the bootstrap procedure is the canonical reference.
+- [x] Check whether `AGENTS.md` mentions any of the legacy migrations or `.govern.toml` schema details. Update if any text references the old prose-encoded migrations or omits the new `[migrations]` section.
+- [x] No changes if AGENTS.md is silent on these topics — the bootstrap procedure is the canonical reference. Updated line 43's procedural-fidelity mirror (spec-and-plan rename → registry-driven migration prompts) and incidentally fixed a stale spec reference at line 45 (the reverted 027-command-source-templating → 027-bootstrap-migration-registry).
 
 ## 10. End-to-end verification
 
