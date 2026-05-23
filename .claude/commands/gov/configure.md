@@ -104,6 +104,7 @@ Configure `.claude/settings.local.json` with the permissions needed for slash co
    - `mcp__gvrn__create-scenario`
    - `mcp__gvrn__append-task`
    - `mcp__gvrn__dashboard`
+   - `mcp__gvrn__write-session`
    <!-- generated:mcp-allow:end -->
 
 3. Canonical `permissions.deny` entries:

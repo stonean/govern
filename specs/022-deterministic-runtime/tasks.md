@@ -316,3 +316,9 @@ Adds two new primitives — `create-scenario` and `append-task` — that the `/a
 - [x] 36.6 Tag-push `gvrn-v0.8.0` (triggers the 5-leg release matrix); after all matrix legs report success, `cargo publish` from `runtime/` to upload `gvrn 0.8.0` to crates.io. Both steps require user authorization (externally visible).
 
 - **Done when**: every subtask above is checked; the scenario's described behavior is correctly implemented and tested; `gvrn-v0.8.0` is live on GitHub releases and crates.io.
+
+## 37. Implement the write-session primitive
+
+- [x] Implement the behavior described in `scenarios/write-session-primitive.md`
+
+- **Done when**: the scenario's described behavior is correctly implemented and tested.

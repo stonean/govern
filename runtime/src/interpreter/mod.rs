@@ -35,7 +35,7 @@ use crate::schema::primitives::{
     GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs,
     MergeManagedBlockArgs, MergePermissionsArgs, ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs,
     RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs,
-    ValidateFrontmatterArgs,
+    ValidateFrontmatterArgs, WriteSessionArgs,
 };
 use crate::schema::procedure::{Procedure, Step, StepNumber};
 use crate::schema::protocol::{ErrorLocation, ProtocolMessage};
@@ -504,6 +504,7 @@ fn dispatch_primitive(
         "create-scenario" => call!(CreateScenarioArgs, create_scenario),
         "append-task" => call!(AppendTaskArgs, append_task),
         "dashboard" => call!(DashboardArgs, dashboard),
+        "write-session" => call!(WriteSessionArgs, write_session),
         "gate-confirm" => {
             // The interpreter-level gate handler emits gate-confirm via
             // its own path (see handle_gate). When a primitive named

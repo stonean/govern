@@ -42,3 +42,4 @@ merge-permissions
 create-scenario
 append-task
 dashboard
+write-session

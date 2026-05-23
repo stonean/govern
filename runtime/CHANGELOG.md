@@ -2,6 +2,22 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.9.0] — 2026-05-23
+
+### Added
+
+- **`write-session` primitive — atomic rewrite of `.claude/gov-session.json`.** New MCP tool and CLI subcommand that writes the session-target record (feature, path, optional scenario + scenarioPath, setAt) through the same tempfile + rename pattern every other state-modifying primitive uses. Pairs with `dashboard`'s read of the same file: spec 022 already listed the session file as one of two durable journals (markdown + `.claude/gov-session.json`), and the read path was in the runtime since 0.8.0; the write path closes the asymmetry. On Claude Code, routing the write through MCP moves consent from the per-invocation `Write({cli-config-dir}/{project}-session.json)` permission prompt — which existing `Write(...)` allow entries did not reliably suppress across sessions — into the MCP tool-permission lane, where a single allow covers every subsequent `/gov:target` and `/gov:ask` scenario-switch. 13 new unit tests under `runtime/src/primitives/write_session.rs` cover the happy paths (with/without scenario, fresh-vs-overwrite, directory creation), error paths (mismatched scenario pair, parent-component path, absolute scenario path), and the atomic-write contract (dropped tempfile leaves destination unchanged).
+
+### Changed
+
+- **`framework/commands/target.md` step 7 now invokes `write-session`.** The host-write prose is replaced with the primitive call; the markdown-only fallback still writes the same JSON shape directly with the same tempfile + rename semantics. Step 1 additionally names `{cli-config-dir}/{project}-session.json` inline (with the Claude resolution to `~/.claude/gov-session.json`) so hosts no longer have to derive the path from the parity `strict-files` frontmatter.
+
+- **`framework/commands/ask.md` scenario-route step 4 now invokes `write-session`.** Same migration as target.md: the "host responsibility — the runtime exposes no session-shaped primitive" wording is removed; the markdown-only fallback remains.
+
+- **`framework/runtime-tools.txt` gains the `write-session` line.** Matched by the parser's `PRIMITIVE_NAMES` and the MCP server's `TOOL_NAMES`.
+
+- **`runtime/tests/golden/target-basic.jsonl` updated.** The byte-stream now includes the `write-session` dispatch envelope between `read-spec` and `complete`. Re-blessed via `BLESS=1 cargo test target_basic`.
+
 ## [0.8.1] — 2026-05-23
 
 ### Changed

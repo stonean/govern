@@ -1,0 +1,394 @@
+//! `write-session` — atomically rewrite `.claude/gov-session.json`.
+//!
+//! Mirrors the write-side of [`crate::primitives::dashboard::load_session_target`].
+//! The session file is the second of the two durable journals named by
+//! spec 022 (markdown + `.claude/gov-session.json`, per
+//! `specs/022-deterministic-runtime/plan.md` §No data persistence outside
+//! session file + markdown); the read path is exposed by `dashboard`, and
+//! this primitive is the matching write path.
+//!
+//! Pre-022 prose left the write to the host's file-writing tool (`Write`
+//! on Claude Code), which on Claude Code surfaces a per-invocation
+//! permission prompt that documented `Write(...)` allow entries have not
+//! reliably suppressed. Routing the write through an MCP tool moves the
+//! consent into the MCP tool-permission lane, so a single allow covers
+//! every subsequent target/scenario-switch.
+
+use std::path::Path;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use serde::Serialize;
+
+use crate::primitives::{PrimitiveError, Result, rel_path, validate_no_traversal, write_atomic};
+use crate::schema::primitives::{WriteSessionArgs, WriteSessionResult};
+
+/// Execute the `write-session` primitive against `repo`.
+///
+/// Resolves the session path to `repo.join(".claude/gov-session.json")`,
+/// creates the `.claude/` parent if absent, and writes the JSON record
+/// atomically via tempfile + rename — same pattern every other
+/// state-modifying primitive (`mark-task`, `mark-criterion`, `set-status`)
+/// already uses.
+///
+/// # Errors
+///
+/// Returns [`PrimitiveError::MissingArgument`] when `scenario` and
+/// `scenario-path` are not supplied together, [`PrimitiveError::InvalidPath`]
+/// when any caller-supplied path contains a parent-directory component or
+/// is absolute, or [`PrimitiveError::Io`] for filesystem failures during
+/// the write.
+pub fn run(args: &WriteSessionArgs, repo: &Path) -> Result<WriteSessionResult> {
+    run_with_now(args, repo, SystemTime::now())
+}
+
+/// Implementation seam that lets unit tests inject a stable clock instead
+/// of `SystemTime::now()`. The MCP and CLI surfaces both call [`run`],
+/// which forwards the system clock.
+pub(crate) fn run_with_now(
+    args: &WriteSessionArgs,
+    repo: &Path,
+    now: SystemTime,
+) -> Result<WriteSessionResult> {
+    validate_no_traversal(&args.path)?;
+    if let Some(scenario_path) = &args.scenario_path {
+        validate_no_traversal(scenario_path)?;
+    }
+    match (&args.scenario, &args.scenario_path) {
+        (Some(_), None) => {
+            return Err(PrimitiveError::MissingArgument {
+                primitive: "write-session".into(),
+                argument: "scenario-path".into(),
+                reason: "must be supplied together with `scenario`".into(),
+            });
+        }
+        (None, Some(_)) => {
+            return Err(PrimitiveError::MissingArgument {
+                primitive: "write-session".into(),
+                argument: "scenario".into(),
+                reason: "must be supplied together with `scenario-path`".into(),
+            });
+        }
+        _ => {}
+    }
+
+    let session_path = repo.join(".claude").join("gov-session.json");
+    let created = !session_path.exists();
+
+    let record = SessionRecord {
+        feature: &args.feature,
+        path: &args.path,
+        scenario: args.scenario.as_deref(),
+        scenario_path: args.scenario_path.as_deref(),
+        set_at: iso8601_utc(now),
+    };
+    let mut body =
+        serde_json::to_string_pretty(&record).map_err(|source| PrimitiveError::Json {
+            path: session_path.clone(),
+            source,
+        })?;
+    body.push('\n');
+
+    write_atomic(&session_path, &body)?;
+
+    Ok(WriteSessionResult {
+        path: rel_path(&session_path, repo),
+        created,
+    })
+}
+
+/// On-disk shape of the session file. Field order is the wire contract —
+/// the parity byte-equality check on `.claude/gov-session.json` depends
+/// on it. `scenarioPath` is camelCase to match the reader in
+/// [`crate::primitives::dashboard`].
+#[derive(Serialize)]
+struct SessionRecord<'a> {
+    feature: &'a str,
+    path: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    scenario: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "scenarioPath")]
+    scenario_path: Option<&'a str>,
+    #[serde(rename = "setAt")]
+    set_at: String,
+}
+
+/// Format `now` as an RFC 3339 / ISO 8601 UTC timestamp
+/// (`YYYY-MM-DDTHH:MM:SSZ`). Matches the field shape every existing
+/// fixture under `runtime/tests/fixtures/*/.claude/gov-session.json`
+/// uses for `setAt`.
+///
+/// Uses Howard Hinnant's date algorithms — the standard branchless
+/// civil-from-days computation. Valid for any date the underlying
+/// `SystemTime` can represent, including the entire post-1970 range
+/// the session file actually sees. A `now` earlier than the epoch
+/// falls back to `1970-01-01T00:00:00Z`, which the session file
+/// never produces in practice.
+fn iso8601_utc(now: SystemTime) -> String {
+    let secs = now.duration_since(UNIX_EPOCH).map_or(0, |d| d.as_secs());
+    let days = secs / 86_400;
+    let tod = secs % 86_400;
+    let hour = tod / 3600;
+    let min = (tod / 60) % 60;
+    let sec = tod % 60;
+
+    // `days` from a post-1970 SystemTime fits in i64 with enormous headroom;
+    // dates past year ~9999 are far outside any session file's lifetime.
+    #[allow(clippy::cast_possible_wrap)]
+    let (year, month, day) = civil_from_days(days as i64);
+    format!("{year:04}-{month:02}-{day:02}T{hour:02}:{min:02}:{sec:02}Z")
+}
+
+/// Convert days-since-1970-01-01 (Gregorian) into `(year, month, day)`.
+///
+/// Howard Hinnant's standard civil-from-days algorithm. The intermediate
+/// casts (`i64` ↔ `u64`, `u64` → `u32`) are part of the algorithm and
+/// safe for any input in the post-1970, pre-year-9999 range the session
+/// file will ever produce.
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_wrap
+)]
+fn civil_from_days(days: i64) -> (i64, u32, u32) {
+    let z = days + 719_468;
+    let era = if z >= 0 {
+        z / 146_097
+    } else {
+        (z - 146_096) / 146_097
+    };
+    let doe = (z - era * 146_097) as u64;
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+    let y = yoe as i64 + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let day = doy - (153 * mp + 2) / 5 + 1;
+    let month = if mp < 10 { mp + 3 } else { mp - 9 };
+    let year = y + i64::from(month <= 2);
+    (year, month as u32, day as u32)
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::unwrap_used, clippy::expect_used)]
+
+    use super::*;
+    use std::fs;
+    use std::time::Duration;
+    use tempfile::tempdir;
+
+    fn fixed_now() -> SystemTime {
+        // 2026-05-23T12:34:56Z
+        UNIX_EPOCH + Duration::from_secs(1_779_539_696)
+    }
+
+    fn base_args() -> WriteSessionArgs {
+        WriteSessionArgs {
+            feature: "022-deterministic-runtime".into(),
+            path: "specs/022-deterministic-runtime".into(),
+            scenario: None,
+            scenario_path: None,
+        }
+    }
+
+    #[test]
+    fn writes_canonical_shape_without_scenario() {
+        let tmp = tempdir().unwrap();
+        let result = run_with_now(&base_args(), tmp.path(), fixed_now()).unwrap();
+        assert_eq!(result.path, ".claude/gov-session.json");
+        assert!(result.created, "fresh file is reported as created");
+
+        let body = fs::read_to_string(tmp.path().join(".claude/gov-session.json")).unwrap();
+        assert_eq!(
+            body,
+            "{\n  \"feature\": \"022-deterministic-runtime\",\n  \"path\": \"specs/022-deterministic-runtime\",\n  \"setAt\": \"2026-05-23T12:34:56Z\"\n}\n"
+        );
+    }
+
+    #[test]
+    fn writes_scenario_pair_when_both_supplied() {
+        let tmp = tempdir().unwrap();
+        let mut args = base_args();
+        args.scenario = Some("write-session-primitive".into());
+        args.scenario_path =
+            Some("specs/022-deterministic-runtime/scenarios/write-session-primitive.md".into());
+
+        let result = run_with_now(&args, tmp.path(), fixed_now()).unwrap();
+        assert!(result.created);
+
+        let body = fs::read_to_string(tmp.path().join(".claude/gov-session.json")).unwrap();
+        assert!(
+            body.contains("\"scenario\": \"write-session-primitive\""),
+            "{body}"
+        );
+        assert!(
+            body.contains("\"scenarioPath\": \"specs/022-deterministic-runtime/scenarios/write-session-primitive.md\""),
+            "{body}"
+        );
+        // Field order: feature, path, scenario, scenarioPath, setAt.
+        let feat = body.find("\"feature\"").unwrap();
+        let p = body.find("\"path\"").unwrap();
+        let scen = body.find("\"scenario\"").unwrap();
+        let scen_path = body.find("\"scenarioPath\"").unwrap();
+        let set_at = body.find("\"setAt\"").unwrap();
+        assert!(feat < p && p < scen && scen < scen_path && scen_path < set_at);
+    }
+
+    #[test]
+    fn overwrites_existing_file_and_reports_not_created() {
+        let tmp = tempdir().unwrap();
+        let claude_dir = tmp.path().join(".claude");
+        fs::create_dir_all(&claude_dir).unwrap();
+        fs::write(
+            claude_dir.join("gov-session.json"),
+            "{\"feature\":\"old-feature\",\"path\":\"specs/old\",\"setAt\":\"2026-01-01T00:00:00Z\"}\n",
+        )
+        .unwrap();
+
+        let result = run_with_now(&base_args(), tmp.path(), fixed_now()).unwrap();
+        assert!(!result.created, "existing file is reported as overwritten");
+
+        let body = fs::read_to_string(tmp.path().join(".claude/gov-session.json")).unwrap();
+        assert!(body.contains("022-deterministic-runtime"));
+        assert!(!body.contains("old-feature"));
+    }
+
+    #[test]
+    fn creates_dot_claude_directory_when_absent() {
+        let tmp = tempdir().unwrap();
+        assert!(!tmp.path().join(".claude").exists());
+        run_with_now(&base_args(), tmp.path(), fixed_now()).unwrap();
+        assert!(tmp.path().join(".claude").is_dir());
+        assert!(tmp.path().join(".claude/gov-session.json").is_file());
+    }
+
+    #[test]
+    fn clearing_scenario_omits_both_fields() {
+        let tmp = tempdir().unwrap();
+        // First write with a scenario set.
+        let mut with_scenario = base_args();
+        with_scenario.scenario = Some("write-session-primitive".into());
+        with_scenario.scenario_path =
+            Some("specs/022-deterministic-runtime/scenarios/write-session-primitive.md".into());
+        run_with_now(&with_scenario, tmp.path(), fixed_now()).unwrap();
+
+        // Then overwrite without — both fields must vanish.
+        run_with_now(&base_args(), tmp.path(), fixed_now()).unwrap();
+        let body = fs::read_to_string(tmp.path().join(".claude/gov-session.json")).unwrap();
+        assert!(!body.contains("scenario"), "{body}");
+        assert!(!body.contains("scenarioPath"), "{body}");
+    }
+
+    #[test]
+    fn rejects_scenario_without_scenario_path() {
+        let tmp = tempdir().unwrap();
+        let mut args = base_args();
+        args.scenario = Some("orphan".into());
+        let err = run_with_now(&args, tmp.path(), fixed_now()).unwrap_err();
+        match err {
+            PrimitiveError::MissingArgument {
+                primitive,
+                argument,
+                ..
+            } => {
+                assert_eq!(primitive, "write-session");
+                assert_eq!(argument, "scenario-path");
+            }
+            other => panic!("expected MissingArgument, got {other:?}"),
+        }
+        // Disk is unchanged (no file created).
+        assert!(!tmp.path().join(".claude/gov-session.json").exists());
+    }
+
+    #[test]
+    fn rejects_scenario_path_without_scenario() {
+        let tmp = tempdir().unwrap();
+        let mut args = base_args();
+        args.scenario_path = Some("specs/x/scenarios/y.md".into());
+        let err = run_with_now(&args, tmp.path(), fixed_now()).unwrap_err();
+        match err {
+            PrimitiveError::MissingArgument {
+                primitive,
+                argument,
+                ..
+            } => {
+                assert_eq!(primitive, "write-session");
+                assert_eq!(argument, "scenario");
+            }
+            other => panic!("expected MissingArgument, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn rejects_path_with_parent_component() {
+        let tmp = tempdir().unwrap();
+        let mut args = base_args();
+        args.path = "specs/../escape".into();
+        let err = run_with_now(&args, tmp.path(), fixed_now()).unwrap_err();
+        assert!(matches!(err, PrimitiveError::InvalidPath { .. }));
+    }
+
+    #[test]
+    fn rejects_absolute_scenario_path() {
+        let tmp = tempdir().unwrap();
+        let mut args = base_args();
+        args.scenario = Some("x".into());
+        args.scenario_path = Some("/etc/passwd".into());
+        let err = run_with_now(&args, tmp.path(), fixed_now()).unwrap_err();
+        assert!(matches!(err, PrimitiveError::InvalidPath { .. }));
+    }
+
+    #[test]
+    fn dropping_named_tempfile_leaves_existing_session_unchanged() {
+        use std::io::Write;
+        let tmp = tempdir().unwrap();
+        let claude_dir = tmp.path().join(".claude");
+        fs::create_dir_all(&claude_dir).unwrap();
+        let session_path = claude_dir.join("gov-session.json");
+        let original = "{\"feature\":\"unchanged\"}\n";
+        fs::write(&session_path, original).unwrap();
+        {
+            let mut tf = tempfile::NamedTempFile::new_in(&claude_dir).unwrap();
+            tf.write_all(b"INTERRUPTED").unwrap();
+        }
+        assert_eq!(fs::read_to_string(&session_path).unwrap(), original);
+    }
+
+    #[test]
+    fn iso8601_utc_formats_known_epoch() {
+        // 0 → 1970-01-01T00:00:00Z
+        assert_eq!(iso8601_utc(UNIX_EPOCH), "1970-01-01T00:00:00Z");
+        // 1700000000 → 2023-11-14T22:13:20Z (a well-known epoch).
+        assert_eq!(
+            iso8601_utc(UNIX_EPOCH + Duration::from_secs(1_700_000_000)),
+            "2023-11-14T22:13:20Z"
+        );
+        // Our fixed test moment.
+        assert_eq!(iso8601_utc(fixed_now()), "2026-05-23T12:34:56Z");
+    }
+
+    #[test]
+    fn civil_from_days_handles_leap_years() {
+        // 2024-02-29 — 2024 is a leap year.
+        let days = day_count(2024, 2, 29);
+        assert_eq!(civil_from_days(days), (2024, 2, 29));
+        // 2100-03-01 — 2100 is NOT a leap year (divisible by 100, not 400).
+        let days = day_count(2100, 3, 1);
+        assert_eq!(civil_from_days(days), (2100, 3, 1));
+        // 2000-02-29 — 2000 IS a leap year.
+        let days = day_count(2000, 2, 29);
+        assert_eq!(civil_from_days(days), (2000, 2, 29));
+    }
+
+    /// Round-trip helper: count days since 1970-01-01 for a known date.
+    #[allow(clippy::cast_sign_loss, clippy::cast_possible_wrap)]
+    fn day_count(year: i64, month: u32, day: u32) -> i64 {
+        let y = year - i64::from(month <= 2);
+        let era = if y >= 0 { y / 400 } else { (y - 399) / 400 };
+        let yoe = (y - era * 400) as u64;
+        let m = u64::from(month);
+        let d = u64::from(day);
+        let doy = (153 * (if m > 2 { m - 3 } else { m + 9 }) + 2) / 5 + d - 1;
+        let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+        era * 146_097 + doe as i64 - 719_468
+    }
+}

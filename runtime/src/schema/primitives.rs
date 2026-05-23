@@ -1155,6 +1155,50 @@ pub struct AppendTaskResult {
     pub created: bool,
 }
 
+// -- write-session -----------------------------------------------------------
+
+/// Args for `write-session`. Writes `.claude/gov-session.json` atomically
+/// (tempfile + rename). The `scenario` and `scenario-path` fields are
+/// paired — both must be supplied together or both omitted; omitting both
+/// clears any previously set scenario.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct WriteSessionArgs {
+    /// Feature slug (e.g., `022-deterministic-runtime`).
+    #[arg(long)]
+    pub feature: String,
+    /// Repo-relative spec directory (e.g., `specs/022-deterministic-runtime`).
+    /// The JSON field name in the written session file is `path`, matching
+    /// the existing convention used by every fixture under
+    /// `runtime/tests/fixtures/*/.claude/gov-session.json` and by
+    /// host-written sessions in adopter repos.
+    #[arg(long)]
+    pub path: String,
+    /// Optional scenario slug. Must be supplied iff `scenario-path` is set.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[arg(long)]
+    pub scenario: Option<String>,
+    /// Optional repo-relative scenario file path. Must be supplied iff
+    /// `scenario` is set. Stored as `scenarioPath` (camelCase) in the
+    /// written session JSON for parity with the dashboard primitive's
+    /// reader.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[arg(long)]
+    pub scenario_path: Option<String>,
+}
+
+/// Result for `write-session`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct WriteSessionResult {
+    /// Repo-relative path of the written session JSON
+    /// (`.claude/gov-session.json`).
+    pub path: String,
+    /// `true` when the file did not exist before this call, `false` when
+    /// an existing file was overwritten in place.
+    pub created: bool,
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
@@ -1168,6 +1212,7 @@ mod tests {
         ResolveAnchorArgs, ResolveAnchorResult, ReviewBlock, RuleCitation, RunGeneratorArgs,
         RunGeneratorResult, SetStatusArgs, SetStatusResult, SpecSection, Subtask, Task,
         TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs, ValidateFrontmatterResult,
+        WriteSessionArgs, WriteSessionResult,
     };
 
     fn round_trip<T>(value: &T) -> T
@@ -1786,6 +1831,47 @@ mod tests {
             sha256: "abc123".into(),
             verified: true,
             bytes: 12345,
+        };
+        assert_eq!(round_trip(&result), result);
+    }
+
+    #[test]
+    fn write_session_round_trip() {
+        let args = WriteSessionArgs {
+            feature: "022-deterministic-runtime".into(),
+            path: "specs/022-deterministic-runtime".into(),
+            scenario: Some("write-session-primitive".into()),
+            scenario_path: Some(
+                "specs/022-deterministic-runtime/scenarios/write-session-primitive.md".into(),
+            ),
+        };
+        let value: serde_json::Value = serde_json::to_value(&args).unwrap();
+        // CLI/MCP args remain kebab-case to match every other primitive.
+        assert_eq!(value["feature"], "022-deterministic-runtime");
+        assert_eq!(value["path"], "specs/022-deterministic-runtime");
+        assert_eq!(value["scenario"], "write-session-primitive");
+        assert_eq!(
+            value["scenario-path"],
+            "specs/022-deterministic-runtime/scenarios/write-session-primitive.md"
+        );
+        assert_eq!(round_trip(&args), args);
+
+        // Absent scenario + scenario-path omit both fields.
+        let args_no_scenario = WriteSessionArgs {
+            feature: "002-target".into(),
+            path: "specs/002-target".into(),
+            scenario: None,
+            scenario_path: None,
+        };
+        let v: serde_json::Value = serde_json::to_value(&args_no_scenario).unwrap();
+        let obj = v.as_object().unwrap();
+        assert!(!obj.contains_key("scenario"));
+        assert!(!obj.contains_key("scenario-path"));
+        assert_eq!(round_trip(&args_no_scenario), args_no_scenario);
+
+        let result = WriteSessionResult {
+            path: ".claude/gov-session.json".into(),
+            created: true,
         };
         assert_eq!(round_trip(&result), result);
     }

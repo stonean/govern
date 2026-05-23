@@ -15,7 +15,7 @@ use gvrn::schema::primitives::{
     GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs,
     MergeManagedBlockArgs, MergePermissionsArgs, ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs,
     RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs,
-    ValidateFrontmatterArgs,
+    ValidateFrontmatterArgs, WriteSessionArgs,
 };
 
 #[derive(Parser, Debug)]
@@ -106,6 +106,8 @@ enum Command {
     GateConfirm(GateConfirmArgs),
     /// Single-call pipeline-state surface for `/gov:status`.
     Dashboard(DashboardArgs),
+    /// Atomically rewrite `.claude/gov-session.json` with the session-target record.
+    WriteSession(WriteSessionArgs),
 }
 
 fn emit_protocol_schema() -> ExitCode {
@@ -371,6 +373,7 @@ fn main() -> ExitCode {
         }
         Command::AppendTask(args) => emit_result(primitives::append_task::run(&args, &repo)),
         Command::Dashboard(args) => emit_result(primitives::dashboard::run(&args, &repo)),
+        Command::WriteSession(args) => emit_result(primitives::write_session::run(&args, &repo)),
         Command::GateConfirm(args) => {
             // The CLI binding is the subprocess-interpreter surface: emit the
             // gate-confirm envelope on stdout, then read one gate-response

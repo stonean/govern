@@ -35,6 +35,7 @@ pub mod set_status;
 pub mod substitute_templates;
 pub mod traverse_deps;
 pub mod validate_frontmatter;
+pub mod write_session;
 
 /// Operational errors common to every primitive. Domain outcomes (findings,
 /// violations, drift) are reported through the result struct; this enum is

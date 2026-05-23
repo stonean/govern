@@ -55,6 +55,7 @@ pub const PRIMITIVE_NAMES: &[&str] = &[
     "create-scenario",
     "append-task",
     "dashboard",
+    "write-session",
 ];
 
 /// Parse errors raised by [`parse`] and [`check`].

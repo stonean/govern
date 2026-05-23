@@ -35,7 +35,7 @@ use crate::schema::primitives::{
     ReadSpecResult, ReadTasksArgs, ReadTasksResult, ResolveAnchorArgs, ResolveAnchorResult,
     RunGeneratorArgs, RunGeneratorResult, SetStatusArgs, SetStatusResult, SubstituteTemplatesArgs,
     SubstituteTemplatesResult, TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs,
-    ValidateFrontmatterResult,
+    ValidateFrontmatterResult, WriteSessionArgs, WriteSessionResult,
 };
 
 /// Canonical MCP tool names exposed by the server, in manifest order.
@@ -65,6 +65,7 @@ pub const TOOL_NAMES: &[&str] = &[
     "create-scenario",
     "append-task",
     "dashboard",
+    "write-session",
 ];
 
 /// MCP server. Cloned per request by `rmcp`, so all state lives behind
@@ -420,6 +421,19 @@ impl GovRuntimeServer {
         params: Parameters<DashboardArgs>,
     ) -> Result<Json<DashboardResult>, String> {
         primitives::dashboard::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "write-session",
+        description = "Atomically rewrite `.claude/gov-session.json` with the session-target record. Pairs with `dashboard`'s read of the same file; allowing this MCP tool once suppresses the per-invocation Write permission prompt the host-write path triggers."
+    )]
+    async fn write_session(
+        &self,
+        params: Parameters<WriteSessionArgs>,
+    ) -> Result<Json<WriteSessionResult>, String> {
+        primitives::write_session::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
     }
