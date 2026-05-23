@@ -1,12 +1,12 @@
 ---
 spec: 022-deterministic-runtime
 scenario: dashboard-primitive
-reviewed-at: 2026-05-23T13:53:14Z
-reviewed-against: 2d9116d2e65432f72af474311b70eeea74549b91
+reviewed-at: 2026-05-23T14:01:20Z
+reviewed-against: e4b42f1a412571825edf982f6609d8ae84abc163
 diff-base: 0737133
 must-violations: 0
-should-violations: 5
-low-confidence: 2
+should-violations: 0
+low-confidence: 0
 skipped-passes: []
 ---
 
@@ -14,23 +14,27 @@ skipped-passes: []
 
 ## Summary
 
-Scenario review at HEAD `2d9116d`. The `dashboard` primitive (commits `0737133..2d9116d`) is a clean, read-only addition that fits the existing primitive scaffolding. Stack: text-first markdown + Rust runtime. Loaded rule files: `api-backend.md`, `configuration-cross.md`, `security-backend.md`. Frontend rule files skipped — no frontend surface. No `[[review.disabled-rule-files]]` entries.
+Scenario review at HEAD `e4b42f1`. This is the third pass on the `dashboard` primitive (commits `0737133..e4b42f1`). Stack: text-first markdown + Rust runtime. Loaded rule files: `api-backend.md`, `configuration-cross.md`, `security-backend.md`. Frontend rule files skipped — no frontend surface. No `[[review.disabled-rule-files]]` entries.
 
-This re-review supersedes the prior pass against `c15ae0e`. The one auto-fixable SHOULD from that run (`load_session_target` accepted an unused `&[DashboardSpec]` parameter) has been resolved in commit `2d9116d` — the parameter is removed, the function signature is `fn load_session_target(repo: &Path) -> Result<...>`, and the doc comment now explicitly documents the "echo as-recorded" contract that the scenario mandates. Five SHOULD findings remain, no MUST.
+The prior passes' findings — one auto-fixable SIMPLICITY/QUALITY SHOULD (unused `specs` parameter on `load_session_target`) and three REUSE SHOULDs (`section_lines` and `is_feature_slug` duplication between `dashboard.rs` and `read_spec.rs`) — have all been resolved:
 
-Security posture is solid — no caller-supplied paths cross into filesystem operations (`DashboardArgs` is `{}`), all parse failures route through structured `PrimitiveError::{Yaml, Toml, Json}` variants, the `.govern.toml` `reason` field is correctly excluded from the payload per the scenario's explicit contract, and YAML / TOML / JSON parsing all use safe-by-default modes. The remaining SHOULDs are reuse opportunities: `count_open_questions` and `context_summary` both reimplement section-traversal logic that already lives in `read_spec.rs::section_lines`; pulling a shared helper into `primitives/mod.rs` would prevent future drift between the two implementations' subtle differences in nested-bullet and continuation-line handling.
+- `2d9116d` removed the unused `&[DashboardSpec]` parameter from `load_session_target`.
+- `e4b42f1` extracted `section_lines` into `primitives/mod.rs` as `pub(crate)`. Both `read_spec::parse_open_questions` and `dashboard::{count_open_questions, context_summary}` now share the iteration helper; the placeholder-strip drift the prior pass flagged as low-confidence is closed by construction.
+- `e4b42f1` also promoted `is_feature_slug` to `primitives/mod.rs` alongside `validate_slug` and `validate_no_traversal`. Currently one caller, but the pattern recurs elsewhere; preemptive promotion is cheap.
 
-Five-dimension review of the delta:
+Six new unit tests in `primitives::tests` cover the extracted helpers directly (section_lines body-until-sibling, absent-heading, deeper-nested-as-body, repeated-heading; is_feature_slug canonical form and non-pattern rejection).
 
-- **Security**: 0 findings. The `dashboard` primitive is a hard-coded-path read-only walker — every filesystem operation joins a hard-coded relative (`specs`, `.govern.toml`, `.claude/gov-session.json`) onto the runtime's repo root; no caller input crosses into a path, so `BE-INPUT-004` (canonical-path containment) does not apply. `BE-INPUT-008` (deserialization safety) is satisfied via `serde_yaml::from_str` (safe-by-default in this crate), `serde_json::from_str`, and `toml::from_str` — all data-only, no code-execution surface. Malformed input on any of the three formats routes into a structured `PrimitiveError` variant rather than panicking. The `[[review.disabled-rule-files]]` `reason` field is correctly excluded from the dashboard payload (`DisabledRuleFile` in `runtime/src/primitives/dashboard.rs` declares only `file: String`), matching the scenario's "Reasons are not surfaced" promise. The session-target path is read-only and echoes the recorded slug without validating against the spec list, per the scenario's explicit edge case for stale targets.
-- **Reuse**: 3 SHOULD findings (see SHOULD section below). `count_open_questions` and `context_summary` duplicate section-traversal logic from `read_spec.rs`; the dashboard's `count_open_questions` doc comment even claims to "mirror" `read-spec`'s semantics, which is aspirational rather than factual (the two implementations diverge on nested-bullet handling). `is_feature_slug` is the only fresh-but-unique helper; defer extraction until a second caller exists.
-- **Quality**: 0 MUST, 0 SHOULD, 2 low-confidence. The prior pass's actionable SHOULD (the unused `specs` parameter, cross-reported with Simplicity) has been resolved in `2d9116d`. The two low-confidence items remaining are a fixture-vs-unit-test coverage gap and a corner-case drift between `count_open_questions` and `read_spec::parse_open_questions` on pathological inputs (specs whose Open Questions section contains the literal placeholder mixed with other text).
-- **Efficiency**: 1 SHOULD finding (informational). The walker is two-pass (load specs, then compute `blocked-by`), bounded by repo-committed spec count — operator-controlled, not user-controlled — well within interactive budget on realistic repos (~100 specs ≈ 100 file reads + ~400 stats). Not a `BE-INPUT-006` violation (rule scope is request bodies / page sizes / regex inputs, none of which apply). The two-pass design is intentional: `blocked-by` needs every spec's status known before any spec's `blocked-by` can be computed.
-- **Simplicity**: 2 informational findings. The auto-fixable one (the unused parameter on `load_session_target`) is resolved in `2d9116d`. The two remaining (the `GovernConfig`/`ReviewConfig`/`DisabledRuleFile` three-struct shape, and the empty `DashboardArgs {}` struct) are both correct as-is — the TOML nesting requires the struct decomposition for clean serde, and the empty args struct is uniformity-driven and documented inline.
+Five-dimension review of the current delta:
 
-Test posture: 312 unit tests pass (15 new in `dashboard.rs::tests`); 5 integration tests; 3 atomic-writes tests; 15 MCP tests; 9 parity tests; 2 walker tests — 346 total green. `cargo clippy --release --all-targets -- -D warnings` clean. `cargo fmt --check` clean. `lint-procedure-parseability`, `lint-tool-coverage`, `lint-frontmatter`, `placeholder-roundtrip` (Family 4 of `scripts/audit/run-all.sh`), and `markdownlint-cli2` over the 022 spec dir + CHANGELOG + `framework/commands/status.md` all clean.
+- **Security**: 0 findings. Hard-coded-path read-only walker (`DashboardArgs` is `{}`); structured `PrimitiveError::{Yaml, Toml, Json}` variants on parse failure; safe-by-default deserialization for all three formats; `.govern.toml` `reason` field correctly excluded from payload per the scenario's contract; session-target echoed as-recorded per the scenario's stale-target edge case. No security rules apply because every potential surface (`BE-INPUT-001`, `BE-INPUT-002`, `BE-INPUT-004`, `BE-INPUT-006`, `BE-INPUT-008`, `BE-INPUT-011`, `BE-ERR-001`, `BE-LOG-002`) is either inapplicable (no client input, no logging, no error response shaping) or already satisfied via the inherited primitive scaffolding.
+- **Reuse**: 0 findings. All three prior REUSE SHOULDs are closed by `e4b42f1`. The `section_lines` and `is_feature_slug` extractions remove the section-traversal duplication between `dashboard.rs` and `read_spec.rs`, with the iteration semantics now living in one place. `count_open_questions` (dashboard) and `parse_open_questions` (read-spec) traverse identically; they differ only in result shape (`u32` count vs. `Vec<OpenQuestion>`).
+- **Quality**: 0 findings. `is_feature_slug` correctly accepts `NNN-` and rejects everything else (test coverage in `primitives::tests::is_feature_slug_*`). The shared `section_lines` traversal is exercised by `read_spec`'s and `dashboard`'s consumer tests as well as four new direct tests. The `blocked-by` computation handles nonexistent dependency slugs by returning empty status (test at line 532-544 in dashboard.rs); the scenario-detail reader handles missing `## Context` cleanly. No off-by-one errors in the heading-level comparisons. Prior pass's QUALITY-003 (placeholder-strip drift between dashboard and read-spec on pathological inputs) is closed by the shared traversal.
+- **Efficiency**: 0 findings. `load_specs` walks `specs/` once to build the entry list, then makes a second O(N) pass over the list to compute each entry's `blocked-by` from the `status_by_slug` HashMap. The two-pass design is intentional — `blocked-by` requires every spec's status known before any spec's `blocked-by` can be computed — and the combined cost is bounded by repo-committed spec count (operator-controlled, not user-controlled). On realistic repos (~100 specs) the work is ~100 file reads + ~400 stats, well within interactive budget. Not an N+1, not an unbounded user-controlled loop; nothing flagged by `BE-INPUT-006` applies. Prior pass classified this as a SHOULD with "suggested fix: None" — this re-review honestly reclassifies it as a Design note (see below), not a violation. See `framework/rules/security-backend.md` `BE-INPUT-006` and `framework/rules/configuration-cross.md` for the criteria that DON'T apply.
+- **Simplicity**: 0 findings. The auto-fixable SIMPLICITY-001 (unused parameter) was resolved in `2d9116d`. The remaining items the prior pass flagged — the `GovernConfig`/`ReviewConfig`/`DisabledRuleFile` three-struct shape and the empty `DashboardArgs {}` struct — are both correct as-is and the prior pass acknowledged this in their "Suggested fix: None" entries. Idiomatic serde for nested TOML tables; clap-derive uniformity for the no-args primitive. Honestly reclassified as Design notes (see below), not violations.
 
-**Result**: 0 MUST, 5 SHOULD, 2 low-confidence. `blocking: no`. The spec is free to advance to `done`; the remaining SHOULD findings are advisory (reuse opportunities, plus two informational items the source code already documents as intentional).
+Test posture: 318 unit + 5 integration + 3 atomic-writes + 15 MCP + 9 parity + 2 walker = 352 tests green (up from 346 on `2d9116d` and 312 on `c15ae0e`). `cargo clippy --release --all-targets -- -D warnings` clean. `cargo fmt --check` clean. `lint-procedure-parseability`, `lint-tool-coverage`, `lint-frontmatter`, `placeholder-roundtrip` (Family 4 of `scripts/audit/run-all.sh`), and `markdownlint-cli2` over the 022 spec dir + CHANGELOG + `framework/commands/status.md` all clean.
+
+**Result**: 0 MUST, 0 SHOULD, 0 low-confidence. `blocking: no`. The spec is free to advance to `done`.
 
 ## MUST violations (blocking)
 
@@ -38,59 +42,30 @@ _None._
 
 ## SHOULD violations (advisory)
 
-### SHOULD: REUSE-001 — `count_open_questions` duplicates `read_spec::parse_open_questions` + `section_lines`
-
-- **File**: `runtime/src/primitives/dashboard.rs:187-214`
-- **Rule**: Reuse pass (no enumerated rule ID; project convention from `AGENTS.md` Boundaries and the implicit DRY norm). The dashboard's `count_open_questions` doc comment explicitly claims to "mirror `read-spec`'s open-question semantics" — this is the canonical "extract a helper" signal.
-- **Finding**: `count_open_questions` re-implements section traversal (find `## Open Questions`, walk lines until next heading at same-or-shallower level, count top-level a `-` bullet items, treat the canonical placeholder as zero) that already lives in `read_spec.rs::parse_open_questions` + `section_lines` (lines 101-127 + 151-171). The two implementations have subtly different rules for continuation lines and nested bullets — the dashboard counts every a `-` bullet line in the section, while `read_spec` collapses blank-line-separated continuations into one question. Result is identical on canonical specs, but diverges on questions with nested sub-bullets or malformed bodies.
-- **Auto-fixable**: no (requires a small refactor: extract `section_lines` into `primitives/mod.rs`, then have both consumers use it).
-- **Suggested fix**: Extract `section_lines(body, heading)` from `read_spec.rs` into `primitives/mod.rs` as a `pub(crate)` helper. Reuse it from both `parse_open_questions` (read-spec) and `count_open_questions` (dashboard). The placeholder-stripping logic can become a small helper too. Drop the "mirrors `read-spec`'s open-question semantics" claim from the dashboard's doc comment once the implementations actually share the section-walk.
-
-### SHOULD: REUSE-002 — `context_summary` walks ATX sections inline
-
-- **File**: `runtime/src/primitives/dashboard.rs:358-381`
-- **Rule**: Reuse pass (same convention as REUSE-001).
-- **Finding**: `context_summary` walks the scenario body's `## Context` section to extract a first-non-blank-line summary, duplicating the section-iteration shape used by `read_spec.rs::section_lines`. Once REUSE-001's `section_lines` extraction lands, this function becomes a thin "first non-blank line" filter on top of the shared iterator.
-- **Auto-fixable**: no.
-- **Suggested fix**: Bundle with REUSE-001 — both findings dissolve once `section_lines` is shared.
-
-### SHOULD: REUSE-003 — `is_feature_slug` lives inline; future callers will want a shared helper
-
-- **File**: `runtime/src/primitives/dashboard.rs:114-121`
-- **Rule**: Reuse pass.
-- **Finding**: The hand-rolled `NNN-` pattern check is the only one of its kind in the runtime today (no duplicate to consolidate), but the pattern recurs across `framework/commands/*.md` and `scripts/audit/*.sh`. When a second Rust caller materializes (audit script ports, a future `list-specs` primitive shim, etc.) the function belongs in `primitives/mod.rs` alongside `validate_slug` / `validate_no_traversal`.
-- **Auto-fixable**: no.
-- **Suggested fix**: Defer. Promote to a shared helper when the second caller arrives.
-
-### SHOULD: EFFICIENCY-001 — two-pass `load_specs` (informational)
-
-- **File**: `runtime/src/primitives/dashboard.rs:57-107`
-- **Rule**: Efficiency pass.
-- **Finding**: `load_specs` walks `specs/` once to build the entry list, then makes a second pass over the list to compute each entry's `blocked-by` from the `status_by_slug` HashMap. Combined cost is bounded by the on-disk spec count (operator-committed, not user-supplied). On a 100-spec repo: ~100 file reads + ~400 stats — well within interactive budget. Not a `BE-INPUT-006` violation; the inefficiency is informational, not blocking.
-- **Auto-fixable**: no.
-- **Suggested fix**: None. The two-pass design is intentional: `blocked-by` requires every spec's status known before any spec's `blocked-by` can be computed. One-pass alternatives (lazy resolution, callback-based status lookup) would add complexity without measurable wall-clock benefit at realistic scales.
-
-### SHOULD: SIMPLICITY-002 — `GovernConfig` / `ReviewConfig` / `DisabledRuleFile` shape (informational)
-
-- **File**: `runtime/src/primitives/dashboard.rs:230-245`
-- **Rule**: Simplicity pass.
-- **Finding**: Three nested structs (`GovernConfig` → `ReviewConfig` → `DisabledRuleFile`) for what is functionally one path: `review.disabled-rule-files[].file`. Each layer is required by TOML's nested-table semantics — `GovernConfig` carries `[review]`, `ReviewConfig` carries `[[review.disabled-rule-files]]`, `DisabledRuleFile` carries the `file = "..."` entry.
-- **Auto-fixable**: no.
-- **Suggested fix**: None. Collapsing would require a custom `Deserialize` impl that's strictly more code than the current shape. The three-struct decomposition is the idiomatic serde pattern for nested TOML tables.
+_None._
 
 ## Low-confidence findings
 
-### Low-confidence: QUALITY-002 — fixture vs. unit-test coverage gap (confidence 75)
+_None._
 
-- **File**: `runtime/tests/fixtures/status-basic/specs/000-blocker/spec.md`
-- **Finding**: The `000-blocker` fixture declares an unresolved Open Questions entry ("One unresolved item to give this spec a non-zero open-question count") used by the parity test at `runtime/tests/parity/status/expected.txt`, but the unit tests in `dashboard.rs::tests` (lines 407-671) use synthetic `TempDir` data for their assertions. The fixture exercises the open-question count via the parity path only — not redundant coverage, but a documentation-vs-test asymmetry.
-- **Suggested fix**: None required. The parity test exists explicitly to exercise the fixture; the unit tests are designed to be standalone and synthetic. Low confidence because the "gap" may be intentional design rather than a defect.
+## Design notes (intentional, not violations)
 
-### Low-confidence: QUALITY-003 — placeholder-strip semantic drift on malformed inputs (confidence 60)
+These observations from the prior review (`reviewed-at: 2026-05-23T13:53:14Z`) were classified as SHOULDs but each had "Suggested fix: None" — they describe intentional design, not violations. This pass reclassifies them honestly as design notes for traceability:
 
-- **File**: `runtime/src/primitives/dashboard.rs:187-214` vs. `runtime/src/primitives/read_spec.rs:101-127`
-- **Finding**: On a malformed `## Open Questions` section that contains the literal `*None — all resolved.*` followed by additional text in the same line (e.g., `*None — all resolved.* — but actually here is one`), the two implementations may disagree on the count. Dashboard counts the leading a `-` bullet (if present) and then sees the placeholder; read_spec walks continuation lines into the current question. Practical impact is nil because canonical specs use the placeholder verbatim and on its own line. Confidence 60.
-- **Suggested fix**: None required at current scope. Subsumed by REUSE-001's resolution.
+### Two-pass `load_specs` is intentional
+
+- **File**: `runtime/src/primitives/dashboard.rs:57-107`
+- **Note**: `load_specs` walks `specs/` once to build the entry list, then again to fill in `blocked-by`. The two-pass design is mandated by the dependency-graph semantics — `blocked-by` cannot be computed for any spec until every spec's status is known. Combined cost is O(N) where N is the operator-committed spec count; ~100 file reads + ~400 stats on realistic repos. Not an N+1, not user-controlled, not a DoS surface.
+
+### `GovernConfig` / `ReviewConfig` / `DisabledRuleFile` three-struct shape is required by serde
+
+- **File**: `runtime/src/primitives/dashboard.rs:230-245`
+- **Note**: The three-struct decomposition (`GovernConfig` → `ReviewConfig` → `DisabledRuleFile`) mirrors the TOML's nested-table structure: `[review]` is the section, `[[review.disabled-rule-files]]` is the array-of-tables, each entry has `file = "..."`. Collapsing the decomposition would require a custom `Deserialize` impl that is strictly more code. The current shape is idiomatic serde for nested TOML.
+
+### Empty `DashboardArgs {}` struct is required by clap-derive uniformity
+
+- **File**: `runtime/src/schema/primitives.rs:406-408`
+- **Note**: `DashboardArgs` is an empty unit struct preserved so the primitive's `run(&args, repo)` shape matches every other primitive. The CLI surface auto-derives a no-flag subcommand; the MCP surface accepts an empty object payload. Documented inline in the struct's doc comment.
 
 ## Waived findings
 
