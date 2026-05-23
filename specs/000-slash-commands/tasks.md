@@ -108,3 +108,9 @@ Done when: the scenario's described behavior is correctly implemented; every gov
 - [x] Implement the behavior described in `scenarios/dashboard-dependencies-column.md`
 
 - **Done when**: the scenario's described behavior is correctly implemented and tested.
+
+## 15. Implement scenario: target-clear-flag
+
+- [x] Implement the behavior described in `scenarios/target-clear-flag.md`
+
+- **Done when**: the scenario's described behavior is correctly implemented and tested.
