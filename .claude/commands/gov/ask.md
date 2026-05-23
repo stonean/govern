@@ -33,6 +33,8 @@ Read `.claude/gov-session.json`. If the session includes a `scenario` and `scena
 
 ## Instructions
 
+> **For agent runtimes**: backticked primitive names in this section map to MCP tools the optional [gvrn runtime](https://crates.io/crates/gvrn) exposes under bare `<primitive>` names (e.g., `set-status`). Hosts wrap them with a server-name prefix taken from `.mcp.json` (Claude: `mcp__gvrn__set-status`; Auggie: `mcp:gvrn:set-status`). When the server is registered for your session, **call the corresponding tool** for each primitive referenced below — that is the deterministic path. If your host loads MCP tool schemas lazily (e.g., Claude Code lists tool names in a deferred-tool system reminder before exposing their schemas), the runtime is still registered: fetch the schema via the host's mechanism (`ToolSearch` on Claude Code) and call the tool — do not bail to the markdown-only fallback. When no `gvrn` MCP server is configured, walk the prose using the host's file-reading tool (e.g., `Read`) to produce the same result; do **not** substitute shell utilities (`awk`, `sed`, `grep` pipelines, `for` loops over files) for the prescribed file reads. The two paths share a contract; neither one wraps the other.
+
 ### Confirm target
 
 1. Read `.claude/gov-session.json` to get the session target's feature and optional scenario.

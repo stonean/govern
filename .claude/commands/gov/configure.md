@@ -31,13 +31,10 @@ Configure `.claude/settings.local.json` with the permissions needed for slash co
    - `WebFetch`
    - `WebSearch`
 
-   **Bash commands used by workflows (read-only shell operations):**
+   **Bash commands (read-only shell operations):**
    - `Bash(ls *)`
-   - `Bash(for *)`
-   - `Bash(head *)`
-   - `Bash(cat *)`
-   - `Bash(awk *)`
-   - `Bash(grep *)`
+
+   File-content parsers (`awk`, `grep`, `cat`, `head`, `for` loops over files) are intentionally **not** in the canonical set. The runtime primitives and the host's `Read` / `Grep` / `Glob` tools cover those reads on the deterministic and markdown-only paths respectively; shell pipelines are not a sanctioned third path. See `framework/constitution.md` §runtime-boundary.
 
    **Git commands:**
    - `Bash(git add *)`
