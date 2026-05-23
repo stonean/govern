@@ -1,6 +1,6 @@
 ---
 title: "000-slash-commands — spec"
-status: in-progress
+status: done
 dependencies: []
 tags: [commands, pipeline, templates]
 review:
