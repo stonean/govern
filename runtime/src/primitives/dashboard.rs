@@ -15,7 +15,9 @@ use std::path::Path;
 
 use serde::Deserialize;
 
-use crate::primitives::{PrimitiveError, Result, parse_atx_heading, read_text, split_frontmatter};
+use crate::primitives::{
+    PrimitiveError, Result, is_feature_slug, read_text, section_lines, split_frontmatter,
+};
 use crate::schema::primitives::{
     DashboardArgs, DashboardConfig, DashboardResult, DashboardScenarioDetail,
     DashboardSessionTarget, DashboardSpec, Frontmatter,
@@ -107,19 +109,6 @@ fn load_specs(repo: &Path) -> Result<Vec<DashboardSpec>> {
     Ok(entries)
 }
 
-/// `true` when `name` matches the `NNN-feature` convention: three ASCII
-/// digits, a literal hyphen, and at least one trailing character. Anything
-/// else (`templates/`, `inbox.md`, ad-hoc notes, dotfiles) is silently
-/// excluded from the dashboard.
-fn is_feature_slug(name: &str) -> bool {
-    let bytes = name.as_bytes();
-    bytes.len() >= 5
-        && bytes[0].is_ascii_digit()
-        && bytes[1].is_ascii_digit()
-        && bytes[2].is_ascii_digit()
-        && bytes[3] == b'-'
-}
-
 /// Load one spec's dashboard entry. `blocked_by` is filled in by the
 /// caller after every spec's status has been read.
 fn load_one_spec(repo: &Path, slug: &str) -> Result<DashboardSpec> {
@@ -180,32 +169,19 @@ fn count_scenario_files(scenarios_dir: &Path) -> u32 {
 }
 
 /// Count unresolved entries in a spec body's `## Open Questions` section.
-/// Mirrors `read-spec`'s open-question semantics: top-level list items
-/// (`- ` lines) are entries; a single `*None — all resolved.*` placeholder
-/// is treated as zero. Continuation lines inside an entry don't add to
-/// the count.
+/// Top-level list items (`-` bullets) are entries; the canonical
+/// `*None — all resolved.*` placeholder is treated as zero. Continuation
+/// lines and nested sub-bullets inside an entry don't add to the count.
+/// Shares section traversal with `read_spec::parse_open_questions` via
+/// the shared `section_lines` helper — the two consumers only differ in
+/// how they fold the yielded lines into their result shape.
 fn count_open_questions(body: &str) -> u32 {
     let mut count: u32 = 0;
-    let mut in_section = false;
-    let mut section_level: u8 = 0;
-    for line in body.lines() {
-        if let Some((level, heading)) = parse_atx_heading(line) {
-            if in_section && level <= section_level {
-                in_section = false;
-            }
-            if heading == "Open Questions" {
-                in_section = true;
-                section_level = level;
-                continue;
-            }
-        }
-        if !in_section {
-            continue;
-        }
+    for line in section_lines(body, "Open Questions") {
         let trimmed = line.trim_start();
         if let Some(rest) = trimmed.strip_prefix("- ") {
-            let body = rest.trim();
-            if !body.is_empty() && body != "*None — all resolved.*" {
+            let entry = rest.trim();
+            if !entry.is_empty() && entry != "*None — all resolved.*" {
                 count += 1;
             }
         }
@@ -348,25 +324,12 @@ struct ScenarioFrontmatter {
     spec_ref: Option<String>,
 }
 
-/// First non-blank line of the scenario body's `## Context` section,
-/// trimmed. Empty string when the section is absent or empty.
+/// First non-blank, non-HTML-comment line of the scenario body's
+/// `## Context` section, trimmed. Empty string when the section is
+/// absent or contains only blanks and comments. Shares section
+/// traversal with the open-question counter via `section_lines`.
 fn context_summary(body: &str) -> String {
-    let mut in_section = false;
-    let mut section_level: u8 = 0;
-    for line in body.lines() {
-        if let Some((level, heading)) = parse_atx_heading(line) {
-            if in_section && level <= section_level {
-                return String::new();
-            }
-            if heading == "Context" {
-                in_section = true;
-                section_level = level;
-                continue;
-            }
-        }
-        if !in_section {
-            continue;
-        }
+    for line in section_lines(body, "Context") {
         let trimmed = line.trim();
         if !trimmed.is_empty() && !trimmed.starts_with("<!--") {
             return trimmed.to_string();

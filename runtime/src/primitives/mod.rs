@@ -636,6 +636,56 @@ pub(crate) fn parse_atx_heading(line: &str) -> Option<(u8, String)> {
     Some((level, heading))
 }
 
+/// Yield the body lines inside the section with heading `heading`, in
+/// document order. The section ends at the next ATX heading whose level
+/// is `<=` the matched heading's level (a sibling or shallower heading),
+/// or at EOF. Lines INSIDE the section — including blank lines and any
+/// nested deeper-level headings — are yielded as-is so consumers can
+/// apply their own filters. When the heading appears more than once,
+/// lines from every matching section are yielded in document order.
+///
+/// Shared between `read_spec::parse_open_questions` (returns
+/// `Vec<OpenQuestion>`) and `dashboard::{count_open_questions,
+/// context_summary}` (return a `u32` count and a `String` summary
+/// respectively). The iteration semantics are the single source of
+/// truth for "lines inside section X"; consumers diverge only in how
+/// they fold the yielded lines into their result shape.
+pub(crate) fn section_lines<'a>(body: &'a str, heading: &str) -> Vec<&'a str> {
+    let mut out = Vec::new();
+    let mut in_section = false;
+    let mut section_level: u8 = 0;
+    for line in body.lines() {
+        if let Some((level, h)) = parse_atx_heading(line) {
+            if in_section && level <= section_level {
+                in_section = false;
+            }
+            if h == heading {
+                in_section = true;
+                section_level = level;
+                continue;
+            }
+        }
+        if in_section {
+            out.push(line);
+        }
+    }
+    out
+}
+
+/// `true` when `name` matches the `NNN-feature` convention: three ASCII
+/// digits, a literal hyphen, and at least one trailing character. Used
+/// by primitives that walk `specs/` and need to distinguish feature
+/// directories from sibling artifacts (`templates/`, `inbox.md`, ad-hoc
+/// notes, dotfiles).
+pub(crate) fn is_feature_slug(name: &str) -> bool {
+    let bytes = name.as_bytes();
+    bytes.len() >= 5
+        && bytes[0].is_ascii_digit()
+        && bytes[1].is_ascii_digit()
+        && bytes[2].is_ascii_digit()
+        && bytes[3] == b'-'
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
@@ -748,8 +798,63 @@ mod tests {
 
     #[test]
     fn iter_numbered_headings_handles_non_numeric_headings() {
-        let content = "## Setup\n\n## 1. First\n\n## Wrap-up\n\n## 7. Seventh\n";
+        let content = "## Setup\n\n## 1. First\n\n## 7. Seventh\n";
         let nums: Vec<u32> = iter_task_numbers_at_levels(content, &[2]).collect();
         assert_eq!(nums, vec![1, 7]);
+    }
+
+    #[test]
+    fn section_lines_yields_section_body_until_sibling_heading() {
+        let body = "## A\n\nline A1\nline A2\n\n## B\n\nline B1\n";
+        let a = section_lines(body, "A");
+        assert_eq!(a, vec!["", "line A1", "line A2", ""]);
+        let b = section_lines(body, "B");
+        assert_eq!(b, vec!["", "line B1"]);
+    }
+
+    #[test]
+    fn section_lines_yields_nothing_for_absent_heading() {
+        let body = "## Other\n\nx\n";
+        assert!(section_lines(body, "Missing").is_empty());
+    }
+
+    #[test]
+    fn section_lines_keeps_deeper_nested_headings_as_body_content() {
+        // A `### nested` heading INSIDE `## A` is body content, not a
+        // section boundary — section ends only at <= same-level heading.
+        let body = "## A\n\n### nested\n\nx\n\n## B\n";
+        let a = section_lines(body, "A");
+        assert_eq!(a, vec!["", "### nested", "", "x", ""]);
+    }
+
+    #[test]
+    fn section_lines_handles_repeated_heading() {
+        // When the same heading appears more than once, lines from every
+        // matching section are yielded in document order.
+        let body = "## A\n\nfirst\n\n## B\n\nx\n\n## A\n\nsecond\n";
+        let a = section_lines(body, "A");
+        assert_eq!(a, vec!["", "first", "", "", "second"]);
+    }
+
+    #[test]
+    fn is_feature_slug_accepts_canonical_form() {
+        for slug in &["022-deterministic-runtime", "000-blocker", "999-foo"] {
+            assert!(is_feature_slug(slug), "expected acceptance for {slug:?}");
+        }
+    }
+
+    #[test]
+    fn is_feature_slug_rejects_non_pattern() {
+        for bad in &[
+            "templates",
+            "inbox.md",
+            ".hidden",
+            "022",
+            "abc-something",
+            "22-too-short",
+            "0220-too-long-prefix", // first 3 chars are digits but 4th isn't '-'
+        ] {
+            assert!(!is_feature_slug(bad), "expected rejection for {bad:?}");
+        }
     }
 }

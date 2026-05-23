@@ -3,7 +3,8 @@
 use std::path::Path;
 
 use crate::primitives::{
-    PrimitiveError, Result, parse_atx_heading, read_text, rel_path, split_frontmatter,
+    PrimitiveError, Result, parse_atx_heading, read_text, rel_path, section_lines,
+    split_frontmatter,
 };
 use crate::schema::primitives::{
     AcceptanceCriterion, Frontmatter, OpenQuestion, ReadSpecArgs, ReadSpecResult, SpecSection,
@@ -146,28 +147,6 @@ fn parse_checkbox_item(line: &str) -> Option<(bool, String)> {
     let checked = matches!(bytes[0], b'x' | b'X');
     let text = rest[2..].trim().to_string();
     Some((checked, text))
-}
-
-fn section_lines<'a>(body: &'a str, heading: &str) -> Vec<&'a str> {
-    let mut out = Vec::new();
-    let mut in_section = false;
-    let mut section_level: u8 = 0;
-    for line in body.lines() {
-        if let Some((level, h)) = parse_atx_heading(line) {
-            if in_section && level <= section_level {
-                in_section = false;
-            }
-            if h == heading {
-                in_section = true;
-                section_level = level;
-                continue;
-            }
-        }
-        if in_section {
-            out.push(line);
-        }
-    }
-    out
 }
 
 #[cfg(test)]
