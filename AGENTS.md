@@ -54,7 +54,7 @@ When tooling-language decisions arise (e.g., the runtime spec'd in 022, future b
 
 ## Boundaries
 
-- Never edit `.claude/commands/gov/*.md` directly — your changes will be overwritten the next time the generator runs. Edit the source under `framework/commands/` (or `framework/bootstrap/configure/claude.md` for the `configure` command).
+- Never edit `.claude/commands/gov/*.md` directly — your changes will be overwritten the next time the generator runs. Edit the source under `framework/commands/` (or `framework/bootstrap/configure/claude.md` for the `configure` command). **When writing or rewriting that source, use placeholders, not substituted literals.** Write `{cli-config-dir}/` (not `.claude/`) and `/{project}:` (not `/gov:`); the generator substitutes them on the way to `.claude/commands/gov/*.md`. Reason: surfaced 2026-05-23 during the spec-022 `/gov:status` rewrite — I read the deployed (already-substituted) copy when drafting the rewrite and shipped hardcoded `/gov:` and `.claude/` literals to the source, which broke the `markdown-only-pipeline` CI on Family 4 of `scripts/audit/run-all.sh` (`placeholder-roundtrip`). How to apply: when in doubt, `git show HEAD:framework/commands/{name}.md` to see the source convention before editing; the `placeholder-roundtrip` audit is the post-hoc check, not the first line of defense.
 
 ## Design Principles
 
