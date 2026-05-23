@@ -2,6 +2,18 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.8.1] — 2026-05-23
+
+### Changed
+
+- **Internal: `section_lines` extracted to `primitives/mod.rs`.** Both `read_spec::parse_open_questions` and `dashboard::{count_open_questions, context_summary}` now share the section-traversal helper via `primitives::section_lines` (new `pub(crate)` function). The iteration semantics are the single source of truth; consumers diverge only in how they fold the yielded lines into their result shape. Closes the `count_open_questions` / `parse_open_questions` semantic-drift surface the `/gov:review` pass against `c15ae0e` flagged on pathological inputs. Six new direct unit tests in `primitives::tests` cover the extracted helper.
+
+- **Internal: `is_feature_slug` promoted to `primitives/mod.rs`.** The `NNN-feature` pattern check moves from `dashboard.rs` to `primitives/mod.rs` as `pub(crate)`, alongside `validate_slug` and `validate_no_traversal`. Currently one caller, but the pattern recurs across the codebase and the helper is small enough to promote ahead of demand.
+
+- **Internal: `load_session_target` no longer accepts an unused `&[DashboardSpec]` parameter.** The dashboard scenario's last edge case explicitly forbids the session-target validation that parameter was prospective for ("Return the session-target field as-recorded; do not validate against the `specs` array"). The parameter existed for a use case the scenario contract rules out; removing it tightens the signature without changing behavior.
+
+No behavior changes, no schema changes, no public surface changes. CLI subcommands, MCP tool shapes, and protocol envelopes are byte-identical to `0.8.0`. Patch bump per the runtime's convention for internal cleanups that leave the wire contract unchanged (precedent: `0.5.2`, `0.7.3`).
+
 ## [0.8.0] — 2026-05-23
 
 ### Added
