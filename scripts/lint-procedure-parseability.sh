@@ -33,15 +33,18 @@ if [[ ! -f "$allowlist" ]]; then
   exit 2
 fi
 
-# Build the runtime if the binary is absent or older than its source.
-# CI caches target/ so most runs skip the rebuild.
-if [[ ! -x "$runtime_bin" ]]; then
-  echo "building runtime in release mode (one-time cost per CI run)..."
-  (cd "$runtime_dir" && cargo build --release --quiet) || {
-    echo "::error::cargo build --release failed" >&2
-    exit 2
-  }
-fi
+# Always invoke `cargo build --release` so cargo's incremental check
+# rebuilds when source/Cargo.lock changed but the cached binary is stale.
+# Cargo itself is a no-op when nothing changed (cache-warm CI runs stay
+# fast); skipping the build only when the binary file exists missed the
+# case where the restore-keys fallback in CI brought back an older
+# binary from a prior runtime version (#26342549657 — stale 0.8.1
+# binary failed to parse a 0.9.0 procedure that referenced
+# write-session).
+(cd "$runtime_dir" && cargo build --release --quiet) || {
+  echo "::error::cargo build --release failed" >&2
+  exit 2
+}
 
 # Load allowlist into an associative-array-friendly grep pattern.
 allow_paths=()
