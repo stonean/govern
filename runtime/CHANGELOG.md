@@ -2,6 +2,12 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.7.4] — 2026-05-22
+
+### Fixed
+
+- **`merge-managed-block` cross-boundary dedup no longer destroys canonical content past the first interior blank line.** The dedup pass in `runtime/src/primitives/merge_managed_block.rs` previously re-derived the managed block's bounds by calling `find_line_prefix_block` on the post-merge content, which terminates at the first blank line. Canonical blocks shipped by the framework (notably `framework/templates/project/gitignore`) contain blank-line-separated subsections, so every canonical line past the first subsection was flagged `!in_block` and removed as an "adopter duplicate," leaving section comment headers with no patterns under them. `merge_line_prefix` now computes `block_start` and `block_end` directly from what it writes — `header.len() + 1 + block.len() + 1` past the start offset — and passes them as parameters to `dedup_outside_block`, which no longer re-scans for marker bounds. The contract for canonical blocks (string-equal-line removal in adopter territory, canonical-block wins) is unchanged; only the bounds computation moved from a fragile blank-line walk to a direct measurement. New regression test `line_prefix_preserves_multi_subsection_block_with_interior_blank_lines` exercises a multi-subsection block mirroring the shipped `.gitignore` template.
+
 ## [0.7.3] — 2026-05-22
 
 ### Changed

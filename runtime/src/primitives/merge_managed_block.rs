@@ -273,45 +273,71 @@ fn merge_line_prefix(
     block: &str,
 ) -> (Option<String>, &'static str, Vec<String>) {
     let header = format!("# {marker}");
+    // Length of `# {marker}\n{block}\n` — the exact byte span the
+    // primitive writes for the managed region. Used to compute the
+    // post-merge block bounds passed to the dedup phase below, so the
+    // dedup pass doesn't re-derive bounds via `find_line_prefix_block`
+    // (which stops at the first interior blank line and would leave
+    // canonical content past the first subsection unprotected).
+    let managed_region_len = header.len() + 1 + block.len() + 1;
+
     // Phase 1: install or update the managed block.
-    let (post_merge, merge_action) = match find_line_prefix_block(text, marker) {
-        None => {
-            // Pad so the appended block is separated by exactly one
-            // blank line. Empty file or file already ending in a
-            // blank line: no padding. Single trailing newline: one
-            // more. No trailing newline: two more.
-            let separator = if text.is_empty() || text.ends_with("\n\n") {
-                ""
-            } else if text.ends_with('\n') {
-                "\n"
-            } else {
-                "\n\n"
-            };
-            (format!("{text}{separator}{header}\n{block}\n"), "inserted")
-        }
-        Some((line_start, body_end, body)) => {
-            if body == block {
-                (text.to_string(), "unchanged")
-            } else {
-                let before = &text[..line_start];
-                let after = &text[body_end..];
-                // Ensure exactly one blank line separates the block from
-                // subsequent content; the file always ends with exactly
-                // one trailing newline.
-                let after_normalized = if after.is_empty() {
-                    String::new()
-                } else if after.starts_with('\n') {
-                    after.to_string()
+    let (post_merge, merge_action, block_start, block_end) =
+        match find_line_prefix_block(text, marker) {
+            None => {
+                // Pad so the appended block is separated by exactly one
+                // blank line. Empty file or file already ending in a
+                // blank line: no padding. Single trailing newline: one
+                // more. No trailing newline: two more.
+                let separator = if text.is_empty() || text.ends_with("\n\n") {
+                    ""
+                } else if text.ends_with('\n') {
+                    "\n"
                 } else {
-                    format!("\n{after}")
+                    "\n\n"
                 };
+                let block_start = text.len() + separator.len();
+                let block_end = block_start + managed_region_len;
                 (
-                    format!("{before}{header}\n{block}\n{after_normalized}"),
-                    "updated",
+                    format!("{text}{separator}{header}\n{block}\n"),
+                    "inserted",
+                    block_start,
+                    block_end,
                 )
             }
-        }
-    };
+            Some((line_start, body_end, body)) => {
+                if body == block {
+                    // `body` was returned by `find_line_prefix_block`,
+                    // which truncates at the first blank line. Equality
+                    // with `block` therefore implies `block` has no
+                    // interior blanks, so the on-disk bounds returned by
+                    // the helper are accurate for the dedup phase.
+                    let block_end = body_end;
+                    (text.to_string(), "unchanged", line_start, block_end)
+                } else {
+                    let before = &text[..line_start];
+                    let after = &text[body_end..];
+                    // Ensure exactly one blank line separates the block from
+                    // subsequent content; the file always ends with exactly
+                    // one trailing newline.
+                    let after_normalized = if after.is_empty() {
+                        String::new()
+                    } else if after.starts_with('\n') {
+                        after.to_string()
+                    } else {
+                        format!("\n{after}")
+                    };
+                    let block_start = before.len();
+                    let block_end = block_start + managed_region_len;
+                    (
+                        format!("{before}{header}\n{block}\n{after_normalized}"),
+                        "updated",
+                        block_start,
+                        block_end,
+                    )
+                }
+            }
+        };
 
     // Phase 2: cross-boundary dedup. Canonical-block wins — adopter-area
     // lines that string-equal a non-blank, non-comment line inside the
@@ -322,7 +348,8 @@ fn merge_line_prefix(
         .map(|l| l.trim_end_matches('\r'))
         .filter(|l| !l.is_empty() && !l.starts_with('#'))
         .collect();
-    let (final_content, removed) = dedup_outside_block(&post_merge, marker, &canonical_lines);
+    let (final_content, removed) =
+        dedup_outside_block(&post_merge, block_start, block_end, &canonical_lines);
 
     // Decide what to return. If the net effect (merge + dedup) leaves
     // the file unchanged byte-for-byte, no write happens; otherwise
@@ -340,21 +367,20 @@ fn merge_line_prefix(
 
 /// Walk `content` line by line and remove adopter-area lines that
 /// string-equal a non-blank, non-comment line inside the managed
-/// block. Lines inside the managed region (the `# {marker}` preamble
-/// line through the body's terminator) are left intact; blank lines
-/// and comment lines (`# foo`) outside the block are also preserved
-/// untouched even when they happen to match a canonical line.
-/// Returns the post-dedup content plus the verbatim list of removed
-/// adopter-area lines in source order.
+/// block. `block_start..block_end` is the byte range of the managed
+/// region as computed by the merge phase (not re-derived here) —
+/// callers pass the exact span they just wrote so canonical content
+/// with interior blank lines is fully protected from dedup. Blank
+/// lines and comment lines (`# foo`) outside the block are also
+/// preserved untouched even when they happen to match a canonical
+/// line. Returns the post-dedup content plus the verbatim list of
+/// removed adopter-area lines in source order.
 fn dedup_outside_block(
     content: &str,
-    marker: &str,
+    block_start: usize,
+    block_end: usize,
     canonical_lines: &[&str],
 ) -> (String, Vec<String>) {
-    let Some((block_start, block_end, _)) = find_line_prefix_block(content, marker) else {
-        return (content.to_string(), Vec::new());
-    };
-
     let mut out = String::with_capacity(content.len());
     let mut removed: Vec<String> = Vec::new();
     let mut offset = 0;
@@ -793,6 +819,64 @@ mod tests {
         assert_eq!(result.marker_style, "html-comment");
         assert_eq!(result.dedup_removed, None);
         assert_eq!(result.dedup_removed_lines, None);
+    }
+
+    #[test]
+    fn line_prefix_preserves_multi_subsection_block_with_interior_blank_lines() {
+        // Regression: the canonical block may contain blank-line-separated
+        // subsections (the .gitignore template shipped by /govern is shaped
+        // this way). The dedup pass must not treat lines past the first
+        // interior blank line as adopter territory — they're still inside
+        // the managed region and must be preserved.
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join(".gitignore");
+        // Adopter file has duplicates of several canonical lines above
+        // the marker.
+        fs::write(&path, ".claude/*\nnode_modules/\n.vscode/\n.DS_Store\n").unwrap();
+        let block = "\
+# Environment and secrets
+.env
+.env.*
+
+# Claude Code local settings (keep commands tracked for project-wide access)
+.claude/*
+!.claude/commands/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db";
+        let result = run(&args(&path, block, Some("line-prefix")), tmp.path()).unwrap();
+        assert_eq!(result.action, "inserted");
+        // .claude/*, .vscode/, .DS_Store are adopter-area dupes of canonical
+        // lines spread across multiple subsections; all three get removed.
+        assert_eq!(result.dedup_removed, Some(3));
+
+        let body = fs::read_to_string(&path).unwrap();
+        // The full canonical block — every subsection — must survive
+        // inside the managed region.
+        assert!(body.contains("# Environment and secrets\n.env\n.env.*"));
+        assert!(
+            body.contains(".claude/*\n!.claude/commands/"),
+            "subsection past first interior blank must survive: got {body:?}"
+        );
+        assert!(
+            body.contains(".vscode/\n.idea/"),
+            "later subsection must survive: got {body:?}"
+        );
+        assert!(
+            body.contains(".DS_Store\nThumbs.db"),
+            "final subsection must survive: got {body:?}"
+        );
+        // Adopter-area dupes removed; non-canonical adopter line preserved.
+        assert!(body.contains("node_modules/"));
+        assert!(
+            !body.starts_with(".claude/*\n"),
+            "adopter-area .claude/* dupe must be removed: got {body:?}"
+        );
     }
 
     #[test]

@@ -35,7 +35,7 @@ The same `govern.md` supports every agent the framework knows about. The set of 
 
 6. Invoke `enforce-manifest` (MCP: `enforce-manifest`) once per directory in the host's enforce-directories list (typically the per-agent slash-command directory). The primitive removes files matching the glob-include arg (default `*.md`) whose relative path is neither in the expected list nor pinned. One call replaces the slash-command manifest enforcement loop the markdown-only reference describes. Adopter cleanup of historical conventions (legacy `skills/` directory, post-005 workflow filename rename, and the rest) is owned by the **Pre-run Migrations** section above and the `framework/migrations.toml` registry it drives.
 
-7. Invoke `apply-manifest` (MCP: `apply-manifest`) a second time with a single entry for the per-agent `govern` self-install (the `{cli-config-dir}/commands/govern.md` path) and `keep-literals: ["project", "cli-config-dir"]`. This keeps the `{project}` and `{cli-config-dir}` placeholders literal in the installed file so the **next** adopter's `/govern` run substitutes them per **that** project — not this one. The split from step 4 isolates the keep-literals concern from the bulk substitute step.
+7. Invoke `apply-manifest` (MCP: `apply-manifest`) a second time with a single entry for the per-agent `govern` self-install (the `{cli-config-dir}/commands/govern.md` path) and an **empty substitutions map** (`{}`). `govern.md`'s body contains prose references to every placeholder name the bulk step substitutes — `{project}`, `{cli-config-dir}`, `{project-name}`, `{One-line project description.}` — describing what those placeholders mean in *other* files. None of them are values to substitute in `govern.md` itself, so the self-install call passes no substitutions rather than relying on `keep-literals` to mask individual keys from the full map. The split from step 4 isolates the no-substitute concern from the bulk substitute step.
 
 8. Render the completion message (host responsibility): list the agents configured, the next pipeline command (`/{project}:specify`), the optional runtime install pointer (see the README's Runtime section), and any per-agent post-install reminders from the registry rows above.
 
@@ -454,13 +454,13 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 
 **CLAUDE.md** (strategy: skip) — if it exists, leave it alone. If not, fetch `framework/templates/project/claude-md.md` from the `govern` repo and copy it as `CLAUDE.md`. Both supported agents read `CLAUDE.md` natively (see each row's `rules_file_note`).
 
-**.gitignore** (strategy: merge) — if it exists, check for a `# govern` comment header. If the header exists, skip (already merged). If no header, append `govern` patterns below existing content:
+**.gitignore** (strategy: merge) — install or update a framework-managed block delimited by a `# govern` line preamble, then dedup any adopter-area copies of canonical patterns. Mirrors the runtime `merge-managed-block` contract (line-prefix style, marker `govern`):
 
-1. Fetch `framework/templates/project/gitignore` from the `govern` repo.
-2. Append its content below a `# govern` comment header.
-3. For each primary language provided by the user, fetch from `https://raw.githubusercontent.com/github/gitignore/main/{Language}.gitignore` and append below a `# {Language}` comment header.
-
-If `.gitignore` does not exist, create it from `framework/templates/project/gitignore` plus language patterns.
+1. Fetch `framework/templates/project/gitignore` from the `govern` repo. This is the **canonical block** — including its blank-line-separated subsections.
+2. If `.gitignore` does not exist, create it with `# govern\n{canonical-block}\n`. Skip to step 5 for language patterns.
+3. If `.gitignore` exists and contains a `# govern` line preamble, replace the managed region (the `# govern` line through the rest of the block — note the canonical block itself contains blank lines between subsections, so do not stop at the first interior blank) with `# govern\n{canonical-block}\n`. If no `# govern` line is present, append `# govern\n{canonical-block}\n` after the existing content, separated by exactly one blank line.
+4. **Dedup pass (canonical-block wins).** After the managed block is in place, scan the rest of the file (everything outside `# govern` through the canonical block's end) and remove any non-blank, non-comment line that string-equals a non-blank, non-comment line inside the canonical block. Adopter-area blank lines and comment lines are preserved untouched even when they happen to share text with a canonical pattern. This collapses duplicates that an adopter (or another command) pasted above or below the marker; the canonical copy inside `# govern` is the surviving one.
+5. For each primary language provided by the user, fetch from `https://raw.githubusercontent.com/github/gitignore/main/{Language}.gitignore` and append below a `# {Language}` comment header. If the file is being re-merged on a subsequent run and a `# {Language}` section is already present, leave it alone — language sections, once written, are adopter territory.
 
 ## Security Audit (brownfield)
 
@@ -642,7 +642,7 @@ Create `{config_dir}/{project}-session.json` with empty content `{}` only if it 
 
 Fetch `framework/bootstrap/govern.md` and write it to `{config_dir}/commands/govern.md`. This is the same unified file the user is currently running, copied into every selected agent's command directory so the command is invokable from that agent on subsequent runs.
 
-In this file (and only this file), keep `{project}` and `{cli-config-dir}` as literal placeholders — do **not** substitute. `govern` itself reads `$ARGUMENTS` for the project name on each run.
+In this file (and only this file), keep **every** placeholder literal — do **not** substitute anything. `{project}` and `{cli-config-dir}` must stay literal so `govern` itself can read `$ARGUMENTS` and the per-agent config dir on each run; `{project-name}` and `{One-line project description.}` must stay literal because this file's prose *documents* those placeholders for the AGENTS.md template — substituting them would corrupt the documentation, not personalize a value.
 
 After writing, run the **Post-Write Integrity Check** below.
 
