@@ -35,7 +35,7 @@ See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred 
 
 | Spec | Status | Dependencies | Description |
 | --- | --- | --- | --- |
-| [000-slash-commands](specs/000-slash-commands/spec.md) | done | none | Generic, project-agnostic slash command templates that operationalize the governance development pipeline. |
+| [000-slash-commands](specs/000-slash-commands/spec.md) | in-progress | none | Generic, project-agnostic slash command templates that operationalize the governance development pipeline. |
 | [001-system-spec-templates](specs/001-system-spec-templates/spec.md) | done | none | Templates for the cross-cutting system specs that the constitution references but does not provide: `system.md`, `errors.md`, and `events.md`. |
 | [002-project-scaffolding](specs/002-project-scaffolding/spec.md) | done | 000, 001 | Templates for the project-level files that every governance-adopting project needs beyond the constitution, AGENTS.md, and spec templates. |
 | [003-bootstrap-automation](specs/003-bootstrap-automation/spec.md) | done | 000, 001, 002 | Governance slash commands that dogfood the same pipeline commands adopting projects use (`/gov:about`, `/gov:target`, `/gov:status`, `/gov:setup`, `/gov:specify`, `/gov:clarify`, `/gov:plan`, `/gov:implement`, `/gov:analyze`, `/gov:next`), plus a governance-specific `/gov:init` that scaffolds new projects from templates. |

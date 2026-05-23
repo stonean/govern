@@ -102,3 +102,9 @@ Done when: the scenario's described behavior is correctly implemented and tested
 - [x] Lint clean (`npx markdownlint-cli2 "**/*.md" "!CLAUDE.md"` — 121 files, 0 errors).
 
 Done when: the scenario's described behavior is correctly implemented; every gov command shows a summary in the Claude Code autocomplete window; the repo lints clean.
+
+## 14. Implement scenario: dashboard-dependencies-column
+
+- [x] Implement the behavior described in `scenarios/dashboard-dependencies-column.md`
+
+- **Done when**: the scenario's described behavior is correctly implemented and tested.
