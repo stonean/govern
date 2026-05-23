@@ -1,5 +1,7 @@
 {
   "feature": "001-basic",
   "path": "specs/001-basic",
-  "setAt": "2026-05-11T00:00:00Z"
+  "scenario": "dashboard-test",
+  "scenarioPath": "specs/001-basic/scenarios/dashboard-test.md",
+  "setAt": "2026-05-22T00:00:00Z"
 }

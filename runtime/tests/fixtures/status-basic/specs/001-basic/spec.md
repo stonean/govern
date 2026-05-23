@@ -1,6 +1,7 @@
 ---
 status: clarified
 dependencies: []
+tags: [test, pipeline]
 review:
   last-run: null
   reviewed-against: null
@@ -12,16 +13,16 @@ review:
 
 # 001 — Basic Status Fixture
 
-A minimal fixture used by the `/gov:status` parity test. The status is
-`clarified` so that the runtime stops after `read-spec` and the host is
-expected to prompt `/gov:plan` (i.e., not at the full-dashboard branch).
+A minimal fixture used by the `/gov:status` parity test. Status
+`clarified` with no dependencies — the dashboard reports it as unblocked
+and renders its next action as `/gov:plan`.
 
 ## Motivation
 
-The fixture exists to exercise the `read-spec` primitive on a real
-spec.md shape: frontmatter is valid YAML, the body has the canonical
-sections, and the status is something other than `done` so step 2's
-"stop here" branch fires.
+The fixture exercises the `dashboard` primitive on a real spec.md shape:
+frontmatter is valid YAML, the body has the canonical sections, and the
+spec carries `tags` so the `tags-union` fold produces a non-empty
+result.
 
 ## Acceptance Criteria
 

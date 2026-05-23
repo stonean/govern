@@ -27,10 +27,10 @@ use crate::primitives::gate_confirm::GatePromptPayload;
 use crate::schema::primitives::{
     AppendTaskArgs, AppendTaskResult, ApplyManifestArgs, ApplyManifestResult, CheckRuleIdsArgs,
     CheckRuleIdsResult, CheckStuckArgs, CheckStuckResult, CheckboxToggleResult, CreateScenarioArgs,
-    CreateScenarioResult, DeriveBoundaryArgs, DeriveBoundaryResult, EnforceManifestArgs,
-    EnforceManifestResult, ExtractArchiveArgs, ExtractArchiveResult, FetchArchiveArgs,
-    FetchArchiveResult, GateConfirmArgs, LintMarkdownArgs, LintMarkdownResult, MarkCriterionArgs,
-    MarkTaskArgs, MergeClaudeMdArgs, MergeClaudeMdResult, MergeManagedBlockArgs,
+    CreateScenarioResult, DashboardArgs, DashboardResult, DeriveBoundaryArgs, DeriveBoundaryResult,
+    EnforceManifestArgs, EnforceManifestResult, ExtractArchiveArgs, ExtractArchiveResult,
+    FetchArchiveArgs, FetchArchiveResult, GateConfirmArgs, LintMarkdownArgs, LintMarkdownResult,
+    MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeClaudeMdResult, MergeManagedBlockArgs,
     MergeManagedBlockResult, MergePermissionsArgs, MergePermissionsResult, ReadSpecArgs,
     ReadSpecResult, ReadTasksArgs, ReadTasksResult, ResolveAnchorArgs, ResolveAnchorResult,
     RunGeneratorArgs, RunGeneratorResult, SetStatusArgs, SetStatusResult, SubstituteTemplatesArgs,
@@ -64,6 +64,7 @@ pub const TOOL_NAMES: &[&str] = &[
     "merge-permissions",
     "create-scenario",
     "append-task",
+    "dashboard",
 ];
 
 /// MCP server. Cloned per request by `rmcp`, so all state lives behind
@@ -406,6 +407,19 @@ impl GovRuntimeServer {
         params: Parameters<AppendTaskArgs>,
     ) -> Result<Json<AppendTaskResult>, String> {
         primitives::append_task::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "dashboard",
+        description = "Single-call pipeline-state surface for /gov:status. Returns the per-spec inventory (status, deps, tags, open-question count, artifact existence, scenarios count, blocked-by), the repo-wide tags-union, the .govern.toml review-state summary, and the optional session target."
+    )]
+    async fn dashboard(
+        &self,
+        params: Parameters<DashboardArgs>,
+    ) -> Result<Json<DashboardResult>, String> {
+        primitives::dashboard::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
     }

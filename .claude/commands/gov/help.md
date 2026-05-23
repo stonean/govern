@@ -74,7 +74,7 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 | Command | Description |
 | --- | --- |
 | `/gov:target` | Set the working feature (and optionally scenario) for this session. |
-| `/gov:status` | Display the pipeline dashboard for all feature specs. |
+| `/gov:status` | Display the pipeline view for all feature specs. |
 | `/gov:help` | Display an overview of the pipeline and its slash commands. |
 
 <!-- generated:commands-orient:end -->

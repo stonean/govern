@@ -88,6 +88,7 @@ Configure `{cli-config-dir}/settings.local.json` with the tool permissions neede
    - `{ "toolName": "mcp:gvrn:merge-permissions", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gvrn:create-scenario", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gvrn:append-task", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:dashboard", "permission": { "type": "allow" } }`
    <!-- generated:mcp-allow:end -->
 
    **Shell commands — denied (destructive):**

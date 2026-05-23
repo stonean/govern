@@ -74,7 +74,7 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 | Command | Description |
 | --- | --- |
 | `/{project}:target` | Set the working feature (and optionally scenario) for this session. |
-| `/{project}:status` | Display the pipeline dashboard for all feature specs. |
+| `/{project}:status` | Display the pipeline view for all feature specs. |
 | `/{project}:help` | Display an overview of the pipeline and its slash commands. |
 
 <!-- generated:commands-orient:end -->

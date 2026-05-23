@@ -1,0 +1,3 @@
+[[review.disabled-rule-files]]
+file = "accessibility-frontend.md"
+reason = "Fixture-only: exercise the disabled-rule-files callout path."

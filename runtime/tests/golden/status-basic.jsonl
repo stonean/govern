@@ -1,2 +1,2 @@
-{"type":"progress","message":"dispatching primitive `read-spec`","step":"2","primitive":"read-spec"}
+{"type":"progress","message":"dispatching primitive `dashboard`","step":"1","primitive":"dashboard"}
 {"type":"complete","result":{},"runtime-version":"{{runtime-version}}"}

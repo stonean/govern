@@ -2,6 +2,24 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.8.0] — 2026-05-23
+
+### Added
+
+- **`dashboard` primitive — single-call surface for `/gov:status`.** New MCP tool and CLI subcommand returning the per-spec inventory (slug / status / dependencies / tags / open-question-count / has-plan / has-tasks / has-data-model / scenarios-count / blocked-by), the repo-wide `tags-union`, the `.govern.toml` review-state summary (`{present, disabled-rule-files}`), and the optional session target (with `scenario-detail` populated when a scenario is targeted) in one call. Collapses the previous `/gov:status` "list specs + N read-spec + shell for-loop + cat .govern.toml" dance — which the §Instructions preamble already forbade as a fallback substitute — into a single MCP round-trip. `blocked-by` is computed in-primitive as the subset of `dependencies` whose own status is below `clarified`; `tags-union` is the sorted, deduplicated fold across every spec's `tags` array. 15 new unit tests under `runtime/src/primitives/dashboard.rs` cover the happy path plus every edge case enumerated in the scenario (empty `specs/`, missing `spec.md`, non-pattern dirs, `.govern.toml` absent / present-empty / parse-failure, scenarios with non-md files, session absent, session targeting a stale scenario, blocked-by computation, open-question continuation lines).
+
+### Changed
+
+- **`framework/commands/status.md` collapses to a single path.** The short-circuit branch (steps 2.1 / 2.2 — "stop after read-spec when target is not `done`") is removed. The procedure now invokes `dashboard` unconditionally and renders a one-line preamble above the table that surfaces the targeted feature (and scenario, when present) plus its next action. The §Instructions preamble names `dashboard` as the deterministic target for the status command so the shell-utility ban has a positive callout.
+
+- **`Frontmatter` schema gains a serde-default `tags` field.** Backwards-compatible: specs that omit `tags:` continue to deserialize with an empty `Vec<String>`. Existing primitives (`read-spec`, `traverse-deps`) see the new field but do not surface it; `dashboard` is the first consumer.
+
+- **Two new `PrimitiveError` variants.** `Toml` wraps `toml::de::Error` for `.govern.toml` parse failures; `MissingSpecFile` surfaces when an `NNN-feature` directory under `specs/` lacks the expected `spec.md`. Both surface as operational errors that halt the procedure with structured envelopes, consistent with the partial-failure semantics resolved in spec 022.
+
+### Dependencies
+
+- **`toml = "0.8"`.** New dependency used by the `.govern.toml` reader inside the `dashboard` primitive. Small, well-maintained crate; standard choice for TOML parsing.
+
 ## [0.7.4] — 2026-05-22
 
 ### Fixed

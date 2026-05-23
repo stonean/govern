@@ -54,6 +54,7 @@ pub const PRIMITIVE_NAMES: &[&str] = &[
     "merge-permissions",
     "create-scenario",
     "append-task",
+    "dashboard",
 ];
 
 /// Parse errors raised by [`parse`] and [`check`].
