@@ -4,8 +4,8 @@ status: in-progress
 dependencies: []
 tags: [commands, pipeline, templates]
 review:
-  last-run: 2026-05-10T00:00:00Z
-  reviewed-against: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
+  last-run: 2026-05-23T00:00:00Z
+  reviewed-against: badbc8039ae3fc273a1c8a8e9d50dbd1ba404121
   must-violations: 0
   should-violations: 0
   low-confidence: 0
