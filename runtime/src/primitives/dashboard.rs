@@ -41,7 +41,7 @@ pub fn run(_args: &DashboardArgs, repo: &Path) -> Result<DashboardResult> {
     let specs = load_specs(repo)?;
     let tags_union = compute_tags_union(&specs);
     let config = load_config(repo)?;
-    let session_target = load_session_target(repo, &specs)?;
+    let session_target = load_session_target(repo)?;
     Ok(DashboardResult {
         session_target,
         specs,
@@ -285,11 +285,10 @@ struct SessionFile {
 
 /// Read `.claude/gov-session.json` (when present) and populate the
 /// session-target field. When the targeted scenario file exists, also
-/// reads it to populate `scenario-detail`.
-fn load_session_target(
-    repo: &Path,
-    specs: &[DashboardSpec],
-) -> Result<Option<DashboardSessionTarget>> {
+/// reads it to populate `scenario-detail`. The session field is echoed
+/// as-recorded; `/gov:target` is the corrective action for stale slugs,
+/// not the dashboard.
+fn load_session_target(repo: &Path) -> Result<Option<DashboardSessionTarget>> {
     let session_path = repo.join(".claude").join("gov-session.json");
     if !session_path.is_file() {
         return Ok(None);
@@ -304,10 +303,6 @@ fn load_session_target(
         (Some(_), Some(rel_path)) => load_scenario_detail(repo, rel_path)?,
         _ => None,
     };
-    // Validate-on-return is deliberately skipped: the caller (`/gov:target`
-    // is the corrective action) handles targets that point at a nonexistent
-    // feature. The dashboard echoes the session as-recorded.
-    let _ = specs;
     Ok(Some(DashboardSessionTarget {
         feature: session.feature,
         scenario: session.scenario,
