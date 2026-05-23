@@ -58,6 +58,9 @@ pub struct Frontmatter {
     /// Dependency feature names.
     #[serde(default)]
     pub dependencies: Vec<String>,
+    /// Topic tags (e.g., `[format, process, pipeline]`).
+    #[serde(default)]
+    pub tags: Vec<String>,
     /// Last-review block, when set.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub review: Option<ReviewBlock>,
@@ -392,6 +395,122 @@ pub struct TraverseDepsResult {
     pub dependencies: Vec<DependencyEdge>,
     /// Overall compatibility (logical AND across edges).
     pub compatible: bool,
+}
+
+// -- dashboard ---------------------------------------------------------------
+
+/// Args for `dashboard`. The primitive takes no caller-supplied inputs — the
+/// repo root and (optionally) `.claude/gov-session.json` are the only state
+/// it reads. The empty args struct preserves clap-derive consistency with
+/// every other primitive.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct DashboardArgs {}
+
+/// Per-spec entry in the dashboard payload. The fields mirror the dashboard
+/// table 1:1 — `slug` / `status` / `dependencies` / `tags` / `open-question-count`
+/// drive the row's identity and labels; `has-plan` / `has-tasks` /
+/// `has-data-model` / `scenarios-count` populate the artifact-existence
+/// columns; `blocked-by` carries the deterministically-computed list of
+/// dependency slugs whose own `status` is below `clarified` (empty when
+/// unblocked).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct DashboardSpec {
+    /// Directory basename (e.g., "022-deterministic-runtime").
+    pub slug: String,
+    /// Frontmatter status (one of `draft`, `clarified`, `planned`,
+    /// `in-progress`, `done`).
+    pub status: String,
+    /// Frontmatter `dependencies` array (empty when absent).
+    pub dependencies: Vec<String>,
+    /// Frontmatter `tags` array (empty when absent).
+    pub tags: Vec<String>,
+    /// Count of unresolved questions in the spec body's `## Open Questions`
+    /// section, matching `read-spec`'s open-question semantics.
+    pub open_question_count: u32,
+    /// `true` when `specs/{slug}/plan.md` exists on disk.
+    pub has_plan: bool,
+    /// `true` when `specs/{slug}/tasks.md` exists on disk.
+    pub has_tasks: bool,
+    /// `true` when `specs/{slug}/data-model.md` exists on disk.
+    pub has_data_model: bool,
+    /// Count of `*.md` files under `specs/{slug}/scenarios/` (0 when the
+    /// directory is absent).
+    pub scenarios_count: u32,
+    /// Dependency slugs whose own `status` is below `clarified`; empty when
+    /// every dependency is at `clarified` or later. The caller renders the
+    /// "blocked specs" callout straight from a non-empty array.
+    pub blocked_by: Vec<String>,
+}
+
+/// `.govern.toml` review-state summary returned alongside the per-spec
+/// inventory. The `present` flag distinguishes "config absent" from
+/// "config present but section absent / empty" so callers can drive the
+/// callout-suppression rule correctly.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct DashboardConfig {
+    /// `true` when `.govern.toml` exists at the repo root.
+    pub present: bool,
+    /// Basenames from `[[review.disabled-rule-files]]`. Empty when the
+    /// section is absent or its array is empty.
+    pub disabled_rule_files: Vec<String>,
+}
+
+/// Scenario-level detail returned when the session target names a scenario.
+/// Populated so callers render the scenario header line without a separate
+/// file read.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct DashboardScenarioDetail {
+    /// Scenario frontmatter `section` field (or the legacy `spec-ref` field
+    /// for pre-017 scenarios). Empty when neither is present.
+    pub section: String,
+    /// One-line summary of the scenario's `## Context` section (first
+    /// non-blank line, trimmed). Empty when the section is absent.
+    pub context_summary: String,
+    /// Count of unresolved questions in the scenario body's
+    /// `## Open Questions` section.
+    pub open_question_count: u32,
+}
+
+/// Session-target summary returned when `.claude/gov-session.json` exists.
+/// The `feature` field always names the targeted feature; `scenario` is
+/// populated when a scenario is targeted; `scenario-detail` is populated
+/// alongside `scenario` to spare callers an extra read.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct DashboardSessionTarget {
+    /// Targeted feature slug as recorded in the session file.
+    pub feature: String,
+    /// Targeted scenario slug, when one is set.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scenario: Option<String>,
+    /// Scenario header detail; present when `scenario` is `Some` and the
+    /// scenario file is readable.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scenario_detail: Option<DashboardScenarioDetail>,
+}
+
+/// Result for `dashboard`. One call returns everything `/gov:status` needs
+/// to render the full pipeline view: the per-spec inventory, the
+/// repo-wide `tags-union`, the `.govern.toml` review-state summary, and
+/// the optional session target.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct DashboardResult {
+    /// Session target when `.claude/gov-session.json` exists; `None`
+    /// otherwise.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub session_target: Option<DashboardSessionTarget>,
+    /// Per-spec entries in directory-name order.
+    pub specs: Vec<DashboardSpec>,
+    /// Sorted, deduplicated union of every spec's `tags` array. Empty when
+    /// no spec has tags.
+    pub tags_union: Vec<String>,
+    /// `.govern.toml` review-state summary.
+    pub config: DashboardConfig,
 }
 
 // -- check-rule-ids ----------------------------------------------------------
@@ -1077,6 +1196,7 @@ mod tests {
             frontmatter: Frontmatter {
                 status: "clarified".into(),
                 dependencies: vec!["021-runtime-boundary".into()],
+                tags: vec![],
                 review: Some(ReviewBlock::default()),
             },
             sections: vec![SpecSection {

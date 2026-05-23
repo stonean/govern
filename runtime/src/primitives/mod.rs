@@ -15,6 +15,7 @@ pub mod apply_manifest;
 pub mod check_rule_ids;
 pub mod check_stuck;
 pub mod create_scenario;
+pub mod dashboard;
 pub mod derive_boundary;
 pub mod enforce_manifest;
 pub mod extract_archive;
@@ -266,6 +267,24 @@ pub enum PrimitiveError {
         path: PathBuf,
         /// One-line description of the schema mismatch.
         reason: String,
+    },
+    /// TOML parse failure (e.g., `dashboard` reading a malformed
+    /// `.govern.toml`).
+    #[error("TOML parse error in {path}: {source}")]
+    Toml {
+        /// Path of the file whose TOML failed to parse.
+        path: PathBuf,
+        /// Underlying TOML error.
+        #[source]
+        source: toml::de::Error,
+    },
+    /// Spec directory missing its `spec.md` file. `dashboard` raises this
+    /// when an `NNN-feature` directory under `specs/` lacks the expected
+    /// `spec.md` — the directory naming convention promises one.
+    #[error("missing spec.md in specs/{feature}")]
+    MissingSpecFile {
+        /// Feature directory name that lacks a `spec.md`.
+        feature: String,
     },
 }
 
