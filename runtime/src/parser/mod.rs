@@ -52,6 +52,7 @@ pub const PRIMITIVE_NAMES: &[&str] = &[
     "enforce-manifest",
     "merge-managed-block",
     "merge-permissions",
+    "migrate-session-file",
     "create-scenario",
     "append-task",
     "dashboard",

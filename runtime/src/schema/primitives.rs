@@ -1165,6 +1165,47 @@ pub struct AppendTaskResult {
     pub created: bool,
 }
 
+// -- migrate-session-file ----------------------------------------------------
+
+/// Args for `migrate-session-file`. Translates a pre-0.10.0 legacy
+/// session JSON at `legacy-path` into the consolidated
+/// `<repo>/.govern.session.toml` and deletes the legacy file. The
+/// destination is hardcoded (it's `write-session`'s `SESSION_FILE`
+/// constant) so the migration cannot drift from the runtime's read
+/// path.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct MigrateSessionFileArgs {
+    /// Repo-relative path of the legacy session JSON, host-supplied
+    /// from the bootstrap-substituted `{cli-config-dir}/{project}-session.json`
+    /// template (e.g., `.claude/gov-session.json`,
+    /// `.claude/anvil-session.json`, `.augment/anvil-session.json`).
+    /// Validated as relative-and-no-`..`.
+    #[arg(long)]
+    pub legacy_path: String,
+}
+
+/// Result for `migrate-session-file`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct MigrateSessionFileResult {
+    /// Repo-relative path of the legacy file the primitive operated on
+    /// (echoes the input `legacy-path`).
+    pub source: String,
+    /// Repo-relative path of the consolidated session file. Always
+    /// `.govern.session.toml` (the runtime's `write-session::SESSION_FILE`).
+    pub dest: String,
+    /// `"migrated"` — legacy file translated into a fresh
+    /// `.govern.session.toml` and deleted.
+    /// `"kept-existing"` — `.govern.session.toml` already existed; the
+    /// new file was left untouched and the legacy file was deleted.
+    /// `"no-legacy"` — no legacy file present at `legacy-path`; no-op.
+    pub action: String,
+    /// `true` when the legacy file was removed from disk; `false` only
+    /// when `action == "no-legacy"`.
+    pub legacy_deleted: bool,
+}
+
 // -- write-session -----------------------------------------------------------
 
 /// Args for `write-session`. Sets the session state at the canonical
@@ -1218,11 +1259,11 @@ mod tests {
         CheckStuckResult, CheckboxToggleResult, DependencyEdge, DeriveBoundaryArgs,
         DeriveBoundaryResult, Frontmatter, FrontmatterFinding, GateConfirmArgs, GateConfirmResult,
         LintMarkdownArgs, LintMarkdownResult, MarkCriterionArgs, MarkTaskArgs, MarkdownViolation,
-        OpenQuestion, ReadSpecArgs, ReadSpecResult, ReadTasksArgs, ReadTasksResult,
-        ResolveAnchorArgs, ResolveAnchorResult, ReviewBlock, RuleCitation, RunGeneratorArgs,
-        RunGeneratorResult, SetStatusArgs, SetStatusResult, SpecSection, Subtask, Task,
-        TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs, ValidateFrontmatterResult,
-        WriteSessionArgs, WriteSessionResult,
+        MigrateSessionFileArgs, MigrateSessionFileResult, OpenQuestion, ReadSpecArgs,
+        ReadSpecResult, ReadTasksArgs, ReadTasksResult, ResolveAnchorArgs, ResolveAnchorResult,
+        ReviewBlock, RuleCitation, RunGeneratorArgs, RunGeneratorResult, SetStatusArgs,
+        SetStatusResult, SpecSection, Subtask, Task, TraverseDepsArgs, TraverseDepsResult,
+        ValidateFrontmatterArgs, ValidateFrontmatterResult, WriteSessionArgs, WriteSessionResult,
     };
 
     fn round_trip<T>(value: &T) -> T
@@ -1856,6 +1897,36 @@ mod tests {
             verified: true,
             bytes: 12345,
         };
+        assert_eq!(round_trip(&result), result);
+    }
+
+    #[test]
+    fn migrate_session_file_round_trip() {
+        let args = MigrateSessionFileArgs {
+            legacy_path: ".claude/gov-session.json".into(),
+        };
+        let value: serde_json::Value = serde_json::to_value(&args).unwrap();
+        assert_eq!(value["legacy-path"], ".claude/gov-session.json");
+        assert_eq!(round_trip(&args), args);
+
+        // Adopter on a non-Claude host or non-`gov` project name:
+        let auggie_args = MigrateSessionFileArgs {
+            legacy_path: ".augment/anvil-session.json".into(),
+        };
+        let v: serde_json::Value = serde_json::to_value(&auggie_args).unwrap();
+        assert_eq!(v["legacy-path"], ".augment/anvil-session.json");
+
+        let result = MigrateSessionFileResult {
+            source: ".claude/gov-session.json".into(),
+            dest: ".govern.session.toml".into(),
+            action: "migrated".into(),
+            legacy_deleted: true,
+        };
+        let r_value: serde_json::Value = serde_json::to_value(&result).unwrap();
+        assert_eq!(r_value["source"], ".claude/gov-session.json");
+        assert_eq!(r_value["dest"], ".govern.session.toml");
+        assert_eq!(r_value["action"], "migrated");
+        assert_eq!(r_value["legacy-deleted"], true);
         assert_eq!(round_trip(&result), result);
     }
 

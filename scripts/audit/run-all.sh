@@ -52,5 +52,7 @@ run_check "Family 7 — sibling-spec coupling" "scripts/audit/sibling-coupling.s
 run_check "Family 8 — introducing-spec body drift" "scripts/audit/introducing-drift.sh"
 run_check "Family 9 — primitive-promotion candidates" "scripts/audit/primitive-promotion-candidates.sh"
 run_check "Family 10 — migration coverage" "scripts/audit/migration-coverage.sh"
+run_check "Family 11 — consolidation-pair drift" "scripts/audit/consolidation-pair.sh"
+run_check "Family 12 — fixture session-file shape" "scripts/audit/fixture-session-shape.sh"
 
 exit "$drift"

@@ -31,11 +31,12 @@ use crate::schema::primitives::{
     EnforceManifestArgs, EnforceManifestResult, ExtractArchiveArgs, ExtractArchiveResult,
     FetchArchiveArgs, FetchArchiveResult, GateConfirmArgs, LintMarkdownArgs, LintMarkdownResult,
     MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeClaudeMdResult, MergeManagedBlockArgs,
-    MergeManagedBlockResult, MergePermissionsArgs, MergePermissionsResult, ReadSpecArgs,
-    ReadSpecResult, ReadTasksArgs, ReadTasksResult, ResolveAnchorArgs, ResolveAnchorResult,
-    RunGeneratorArgs, RunGeneratorResult, SetStatusArgs, SetStatusResult, SubstituteTemplatesArgs,
-    SubstituteTemplatesResult, TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs,
-    ValidateFrontmatterResult, WriteSessionArgs, WriteSessionResult,
+    MergeManagedBlockResult, MergePermissionsArgs, MergePermissionsResult, MigrateSessionFileArgs,
+    MigrateSessionFileResult, ReadSpecArgs, ReadSpecResult, ReadTasksArgs, ReadTasksResult,
+    ResolveAnchorArgs, ResolveAnchorResult, RunGeneratorArgs, RunGeneratorResult, SetStatusArgs,
+    SetStatusResult, SubstituteTemplatesArgs, SubstituteTemplatesResult, TraverseDepsArgs,
+    TraverseDepsResult, ValidateFrontmatterArgs, ValidateFrontmatterResult, WriteSessionArgs,
+    WriteSessionResult,
 };
 
 /// Canonical MCP tool names exposed by the server, in manifest order.
@@ -62,6 +63,7 @@ pub const TOOL_NAMES: &[&str] = &[
     "enforce-manifest",
     "merge-managed-block",
     "merge-permissions",
+    "migrate-session-file",
     "create-scenario",
     "append-task",
     "dashboard",
@@ -382,6 +384,19 @@ impl GovRuntimeServer {
         params: Parameters<MergePermissionsArgs>,
     ) -> Result<Json<MergePermissionsResult>, String> {
         primitives::merge_permissions::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "migrate-session-file",
+        description = "Translate a pre-0.10.0 legacy session JSON (`.claude/{project}-session.json`) into the consolidated `.govern.session.toml` at the repo root, applying camelCase→kebab-case key renames (`scenarioPath`→`scenario-path`, `setAt`→`set-at`), and delete the legacy file. Idempotent: no-op when no legacy file is present; preserves any existing `.govern.session.toml`."
+    )]
+    async fn migrate_session_file(
+        &self,
+        params: Parameters<MigrateSessionFileArgs>,
+    ) -> Result<Json<MigrateSessionFileResult>, String> {
+        primitives::migrate_session_file::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
     }

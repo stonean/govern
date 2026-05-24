@@ -13,9 +13,9 @@ use gvrn::schema::primitives::{
     AppendTaskArgs, ApplyManifestArgs, CheckRuleIdsArgs, CheckStuckArgs, CreateScenarioArgs,
     DashboardArgs, DeriveBoundaryArgs, EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs,
     GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs,
-    MergeManagedBlockArgs, MergePermissionsArgs, ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs,
-    RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs,
-    ValidateFrontmatterArgs, WriteSessionArgs,
+    MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs, ReadSpecArgs,
+    ReadTasksArgs, ResolveAnchorArgs, RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs,
+    TraverseDepsArgs, ValidateFrontmatterArgs, WriteSessionArgs,
 };
 
 #[derive(Parser, Debug)]
@@ -98,15 +98,17 @@ enum Command {
     MergeManagedBlock(MergeManagedBlockArgs),
     /// Idempotently merge a canonical permission allow/deny set into a JSON file with dedup.
     MergePermissions(MergePermissionsArgs),
+    /// Translate a pre-0.10.0 legacy session JSON into `.govern.session.toml` and delete the legacy file.
+    MigrateSessionFile(MigrateSessionFileArgs),
     /// Write a new scenarios/{slug}.md file under a feature with frontmatter and body.
     CreateScenario(CreateScenarioArgs),
     /// Append a numbered task block to a feature's tasks.md (atomic rewrite).
     AppendTask(AppendTaskArgs),
     /// Emit a `gate-confirm` envelope on stdout and block for a response.
     GateConfirm(GateConfirmArgs),
-    /// Single-call pipeline-state surface for `/gov:status`.
+    /// Single-call pipeline-state surface for `/{project}:status`.
     Dashboard(DashboardArgs),
-    /// Atomically rewrite `.claude/gov-session.json` with the session-target record.
+    /// Atomically rewrite `.govern.session.toml` with the session-target record.
     WriteSession(WriteSessionArgs),
 }
 
@@ -374,6 +376,9 @@ fn main() -> ExitCode {
         }
         Command::MergePermissions(args) => {
             emit_result(primitives::merge_permissions::run(&args, &repo))
+        }
+        Command::MigrateSessionFile(args) => {
+            emit_result(primitives::migrate_session_file::run(&args, &repo))
         }
         Command::CreateScenario(args) => {
             emit_result(primitives::create_scenario::run(&args, &repo))
