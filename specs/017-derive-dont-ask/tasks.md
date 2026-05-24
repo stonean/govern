@@ -328,3 +328,17 @@ Done when: validate runs cleanly against the whole repo modulo expected pre-fina
 - [x] Lint passes on all four files
 
 Done when: this spec's artifacts have no `title:` or `tags:` frontmatter; validate runs clean. ✓
+
+## Phase 8 — Post-done scenarios
+
+### 33. Implement scenario: skip-prose-cross-references
+
+- [x] Implement the behavior described in `scenarios/skip-prose-cross-references.md`
+
+- **Done when**: the scenario's described behavior is correctly implemented and tested. `gen-spec-deps.sh` recognizes the chosen opt-out form (resolved via `/gov:clarify` Q1) so navigational cross-references can stay rich without inducing dep edges; fixtures cover the opt-out region, an unmarked link still producing an edge, and the existing code-fence exclusion regression; constitution / AGENTS.md / 017's §Generators and Hooks gain the one-line carve-out describing the chosen form.
+
+### 34. Implement scenario: detect-dependency-cycles
+
+- [x] Implement the behavior described in `scenarios/detect-dependency-cycles.md`
+
+- **Done when**: the scenario's described behavior is correctly implemented and tested. `gen-spec-deps.sh` exits non-zero and names the SCC(s) on stderr when the generated graph contains a cycle; the pre-commit hooks (`.githooks/govern-pre-commit` and shipped `framework/bootstrap/hooks/govern-pre-commit`) propagate the failure and block the commit; fixtures cover 2-cycle, 3-cycle (single SCC), mixed acyclic+cyclic, self-cycle, and the acyclic happy path.

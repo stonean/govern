@@ -106,7 +106,7 @@ Per Q2 (twin constitutions collapsed) and Q7 (spec-deps derivation), three new g
 
 1. `scripts/gen-readme-table.sh` — rebuilds the Feature Specs table in the root `README.md` between marker comments from `specs/*/spec*.md` frontmatter.
 2. `scripts/gen-help-tables.sh` — rebuilds the command tables in `framework/commands/help.md` from each command file's frontmatter `description:`.
-3. `scripts/gen-spec-deps.sh` — scans every `specs/*/spec*.md` body for inline markdown links to sibling specs (excluding code fences) and rewrites the frontmatter `dependencies` list to match.
+3. `scripts/gen-spec-deps.sh` — scans every `specs/*/spec*.md` body for inline markdown links to sibling specs (excluding code fences, blockquote-prefixed lines, and `## See also` opt-out sections) and rewrites the frontmatter `dependencies` list to match. `## References` is *not* an opt-out (it is the canonical body-authored dep section per task 29's migration); only `## See also` suppresses edges. After the rewrite, the script runs an SCC-based cycle check across the full derived graph; any cycle (including self-cycles) is reported on stderr as `cycle: a -> b -> ... -> a` and exits the script non-zero, which the pre-commit hooks propagate to block the commit.
 
 (The fourth proposed generator, `gen-root-constitution.sh`, is *not* needed — Q2 collapsed the twin constitutions to a single canonical file at `framework/constitution.md`, removing the divergence the generator would have managed.)
 
