@@ -178,6 +178,47 @@ async fn traverse_deps_returns_compatibility() {
     .await;
     let obj = structured_object(&result);
     assert!(obj["compatible"].is_boolean());
+    // Acyclic fixture must carry an empty `cycles` array — confirms the
+    // schema field is wired through the MCP surface and stays empty when
+    // the reachable subgraph has no SCCs.
+    assert!(obj["cycles"].is_array());
+    assert_eq!(obj["cycles"].as_array().unwrap().len(), 0);
+}
+
+#[tokio::test]
+async fn traverse_deps_surfaces_two_cycle_via_mcp() {
+    // Parity coverage for spec 022's `traverse-deps-cycle-check` scenario:
+    // the MCP surface (called by adopter hosts in markdown-only mode and
+    // by every slash command host) returns the same `cycles` payload the
+    // primitive's unit tests produce. Asserts the end-to-end wiring from
+    // the rmcp tool handler through to the response envelope.
+    let tmp = tempfile::tempdir().unwrap();
+    let specs = tmp.path().join("specs");
+    fs::create_dir_all(&specs).unwrap();
+    for (slug, dep) in [("200-a", "201-b"), ("201-b", "200-a")] {
+        let dir = specs.join(slug);
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(
+            dir.join("spec.md"),
+            format!("---\nstatus: planned\ndependencies: [{dep}]\n---\n\n# {slug}\n"),
+        )
+        .unwrap();
+    }
+
+    let client = start_pair(tmp.path().to_path_buf()).await;
+    let result = call_tool(&client, "traverse-deps", json!({"feature": "200-a"})).await;
+    let obj = structured_object(&result);
+    assert_eq!(obj["compatible"], false, "cycle flips compatible to false");
+    let cycles = obj["cycles"].as_array().expect("cycles array").clone();
+    assert_eq!(cycles.len(), 1, "exactly one SCC for the two-node cycle");
+    let slugs: Vec<String> = cycles[0]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_str().unwrap().to_string())
+        .collect();
+    assert!(slugs.contains(&"200-a".to_string()));
+    assert!(slugs.contains(&"201-b".to_string()));
 }
 
 #[tokio::test]

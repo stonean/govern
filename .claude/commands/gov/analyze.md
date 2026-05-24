@@ -42,7 +42,7 @@ If `--all` is not present, use the feature identifier if provided, otherwise fal
 
 2. Invoke `validate-frontmatter` (MCP: `validate-frontmatter`) against the spec path to check that the YAML block parses and that the required fields (status, dependencies) are present with valid values. Frontmatter findings are hard-fail tier; the rest of the procedure still runs to surface every issue in a single pass.
 
-3. Invoke `traverse-deps` (MCP: `traverse-deps`) against the feature to verify each dependency directory exists and carries a compatible status. Missing dependencies are blocking; incompatible statuses are blocking when this spec is at clarified or later.
+3. Invoke `traverse-deps` (MCP: `traverse-deps`) against the feature to verify each dependency directory exists, carries a compatible status, and that the reachable dep subgraph is acyclic. Missing dependencies are blocking; incompatible statuses are blocking when this spec is at clarified or later; any non-empty `cycles` entry — multi-node SCC or self-loop — is blocking. The cycle check is defense-in-depth that fires when the upstream `gen-spec-deps.sh` generator check (spec 017) was bypassed or stale frontmatter re-introduces an edge.
 
 4. Invoke `resolve-anchor` (MCP: `resolve-anchor`) against the spec path to confirm every section reference of the form `§<name>` resolves to a corresponding marker comment. Unresolved anchors are advisory — they usually indicate the constitution was renamed or restructured without updating callers. Otherwise, fall back to the markdown-only path.
 

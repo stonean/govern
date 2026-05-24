@@ -393,8 +393,16 @@ pub struct DependencyEdge {
 pub struct TraverseDepsResult {
     /// All dependency edges.
     pub dependencies: Vec<DependencyEdge>,
-    /// Overall compatibility (logical AND across edges).
+    /// Overall compatibility (logical AND across direct edges, plus
+    /// `cycles.is_empty()`).
     pub compatible: bool,
+    /// Strongly-connected components forming cycles in the reachable dep
+    /// subgraph rooted at the targeted feature. Each entry is one SCC as
+    /// a list of slugs in traversal order — multi-node cycles (size ≥ 2)
+    /// and self-cycles (size 1 with a self-edge) both surface here.
+    /// Empty when the walked subgraph is acyclic.
+    #[serde(default)]
+    pub cycles: Vec<Vec<String>>,
 }
 
 // -- dashboard ---------------------------------------------------------------
@@ -1445,8 +1453,21 @@ mod tests {
                 compatible: true,
             }],
             compatible: true,
+            cycles: Vec::new(),
         };
         assert_eq!(round_trip(&result), result);
+        // Cycle-bearing payload round-trips with the new field populated.
+        let with_cycles = TraverseDepsResult {
+            dependencies: vec![DependencyEdge {
+                feature: "100-a".into(),
+                exists: true,
+                status: "planned".into(),
+                compatible: true,
+            }],
+            compatible: false,
+            cycles: vec![vec!["100-a".into(), "101-b".into()]],
+        };
+        assert_eq!(round_trip(&with_cycles), with_cycles);
     }
 
     #[test]

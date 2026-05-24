@@ -322,3 +322,9 @@ Adds two new primitives — `create-scenario` and `append-task` — that the `/a
 - [x] Implement the behavior described in `scenarios/write-session-primitive.md`
 
 - **Done when**: the scenario's described behavior is correctly implemented and tested.
+
+## 38. Implement scenario: traverse-deps-cycle-check
+
+- [x] Implement the behavior described in `scenarios/traverse-deps-cycle-check.md`
+
+- **Done when**: the scenario's described behavior is correctly implemented and tested. `traverse-deps` detects cycles in the dep graph it walks and emits a blocking finding naming the SCC(s); `/anvil:analyze` surfaces the finding and fails its gate; parity tests under `runtime/tests/parity/` cover the cycle-detection path against a 2-cycle fixture and the existing acyclic happy path stays green; coordinates with sibling [detect-dependency-cycles](../017-derive-dont-ask/scenarios/detect-dependency-cycles.md) as defense-in-depth (this fires when the upstream generator-side check was bypassed or the adopter is on an older shipped script).

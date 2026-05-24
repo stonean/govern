@@ -221,6 +221,68 @@ fn govern_basic_post_run_filesystem_state_matches_expectations() {
 }
 
 #[test]
+fn traverse_deps_cycle_check_surfaces_two_cycle_via_cli() {
+    // Parity coverage for spec 022's `traverse-deps-cycle-check` scenario:
+    // both the markdown-only walker (the agent reading frontmatter via
+    // host tools and feeding traverse-deps via MCP) and the runtime
+    // walker (`gvrn traverse-deps` subprocess used by `/gov:analyze` step
+    // 3) surface the same finding shape. This test exercises the CLI
+    // subprocess surface against a hand-built 2-cycle fixture and
+    // asserts the JSON envelope carries the expected `cycles` payload.
+    // The companion MCP integration test in `runtime/tests/mcp.rs`
+    // exercises the rmcp tool-handler surface against the same shape,
+    // so both paths an adopter host might use are covered.
+    ensure_binary_built();
+    let bin = runtime_binary();
+    let tmp = tempfile::tempdir().unwrap();
+    let specs = tmp.path().join("specs");
+    fs::create_dir_all(&specs).unwrap();
+    for (slug, dep) in [("200-a", "201-b"), ("201-b", "200-a")] {
+        let dir = specs.join(slug);
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(
+            dir.join("spec.md"),
+            format!("---\nstatus: planned\ndependencies: [{dep}]\n---\n\n# {slug}\n"),
+        )
+        .unwrap();
+    }
+
+    let output = Command::new(&bin)
+        .args(["traverse-deps", "--feature", "200-a"])
+        .current_dir(tmp.path())
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .expect("traverse-deps subprocess");
+    assert!(
+        output.status.success(),
+        "traverse-deps exited non-zero: {:?}\nstderr: {}",
+        output.status,
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let stdout = String::from_utf8(output.stdout).expect("utf-8 stdout");
+    let json: serde_json::Value =
+        serde_json::from_str(stdout.trim()).expect("traverse-deps emits a single JSON object");
+    assert_eq!(
+        json["compatible"], false,
+        "cycle must flip overall compatibility to false"
+    );
+    let cycles = json["cycles"].as_array().expect("cycles is an array");
+    assert_eq!(cycles.len(), 1, "exactly one SCC for the two-node cycle");
+    let scc: Vec<String> = cycles[0]
+        .as_array()
+        .expect("first cycle is an array")
+        .iter()
+        .map(|v| v.as_str().expect("slug is a string").to_string())
+        .collect();
+    assert_eq!(scc.len(), 2);
+    assert!(scc.contains(&"200-a".to_string()));
+    assert!(scc.contains(&"201-b".to_string()));
+}
+
+#[test]
 fn implement_rejects_out_of_boundary_write_code_edit() {
     ensure_binary_built();
     let bin = runtime_binary();

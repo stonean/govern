@@ -2,6 +2,16 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.9.1] — 2026-05-23
+
+### Fixed
+
+- **`traverse-deps` now detects cycles in the reachable dep subgraph.** The primitive previously checked dependency existence and per-edge status compatibility but ignored graph-level acyclicity, so a 2-cycle (`A → B → A`), a self-cycle (`A → A`), or any deeper SCC slipped through silently. Spec 017's `gen-spec-deps.sh` blocks cycles at commit time, but that check does not cover adopters on an older shipped script, skipped pre-commit hooks, or stale frontmatter edits that drift from the body links — all paths where a cycle can re-enter the artifact tree without the generator firing. The primitive now runs Tarjan's strongly-connected-components algorithm over the subgraph it walks and reports every non-trivial SCC (size ≥ 2, or size 1 with a self-edge) in a new `cycles: Vec<Vec<String>>` result field; each entry names the participating slugs in traversal order. Any non-empty `cycles` flips `compatible` to `false`, so `/gov:analyze` step 3 fails its gate without further wiring. Eight new unit tests under `runtime/src/primitives/traverse_deps.rs` cover the scenario's five edge cases (cycle among `done` specs still reported; self-cycle as 1-cycle; multiple disjoint SCCs; missing-node-doesn't-close-a-cycle; stale-frontmatter cycle visible) plus a 3-node hop case; an MCP integration test in `runtime/tests/mcp.rs` and a CLI-subprocess parity test in `runtime/tests/parity.rs` exercise both surfaces against a hand-built 2-cycle fixture so the markdown-only walker (agent + MCP) and the runtime walker (`gvrn traverse-deps`) surface equivalent findings. Closes spec 022's `traverse-deps-cycle-check` scenario.
+
+### Changed
+
+- **`TraverseDepsResult` schema gains a `cycles` field.** Additive and `#[serde(default)]` — adopters reading the JSON envelope on `0.9.0` continue to deserialize cleanly; consumers reading `0.9.1` see an empty array on every acyclic invocation. `framework/commands/analyze.md` step 3 prose now names cycles as blocking and explains the defense-in-depth relationship with spec 017's generator-side check.
+
 ## [0.9.0] — 2026-05-23
 
 ### Added

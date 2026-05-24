@@ -1,40 +1,45 @@
 ---
 spec: 022-deterministic-runtime
-scenario: dashboard-primitive
-reviewed-at: 2026-05-23T14:01:20Z
-reviewed-against: e4b42f1a412571825edf982f6609d8ae84abc163
-diff-base: 0737133
+scenario: traverse-deps-cycle-check
+reviewed-at: 2026-05-24T02:24:13Z
+reviewed-against: a643e4141d6135690887df2bb26cded8d7552561
+diff-base: a643e4141d6135690887df2bb26cded8d7552561
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 skipped-passes: []
 ---
 
-# Review — 022-deterministic-runtime (dashboard-primitive scenario)
+# Review — 022-deterministic-runtime (traverse-deps-cycle-check scenario)
 
 ## Summary
 
-Scenario review at HEAD `e4b42f1`. This is the third pass on the `dashboard` primitive (commits `0737133..e4b42f1`). Stack: text-first markdown + Rust runtime. Loaded rule files: `api-backend.md`, `configuration-cross.md`, `security-backend.md`. Frontend rule files skipped — no frontend surface. No `[[review.disabled-rule-files]]` entries.
+Scenario review at HEAD `a643e41` (back-edge transition `done → in-progress` plus the scenario implementation are uncommitted; diff base is therefore HEAD and the review walks the working tree). Stack: Rust runtime + text-first markdown. Loaded rule files: `api-backend.md`, `configuration-cross.md`, `security-backend.md`. Frontend rule files skipped — no frontend surface. No `[[review.disabled-rule-files]]` entries.
 
-The prior passes' findings — one auto-fixable SIMPLICITY/QUALITY SHOULD (unused `specs` parameter on `load_session_target`) and three REUSE SHOULDs (`section_lines` and `is_feature_slug` duplication between `dashboard.rs` and `read_spec.rs`) — have all been resolved:
+The scenario adds graph-level cycle detection to `traverse-deps`, complementing spec 017's commit-time `gen-spec-deps.sh` check as defense-in-depth. Delta is contained:
 
-- `2d9116d` removed the unused `&[DashboardSpec]` parameter from `load_session_target`.
-- `e4b42f1` extracted `section_lines` into `primitives/mod.rs` as `pub(crate)`. Both `read_spec::parse_open_questions` and `dashboard::{count_open_questions, context_summary}` now share the iteration helper; the placeholder-strip drift the prior pass flagged as low-confidence is closed by construction.
-- `e4b42f1` also promoted `is_feature_slug` to `primitives/mod.rs` alongside `validate_slug` and `validate_no_traversal`. Currently one caller, but the pattern recurs elsewhere; preemptive promotion is cheap.
+- `runtime/src/primitives/traverse_deps.rs` — reachable-subgraph walker plus Tarjan's SCC, eight new edge-case unit tests covering the scenario's five edge cases plus a 3-node hop.
+- `runtime/src/schema/primitives.rs` — additive `cycles: Vec<Vec<String>>` field on `TraverseDepsResult` (`#[serde(default)]`), cycle-bearing round-trip assertion.
+- `runtime/tests/mcp.rs` — `traverse_deps_surfaces_two_cycle_via_mcp` plus an empty-cycles assertion on the existing acyclic MCP test.
+- `runtime/tests/parity.rs` — `traverse_deps_cycle_check_surfaces_two_cycle_via_cli` exercising the CLI subprocess surface against a hand-built 2-cycle fixture.
+- `framework/commands/analyze.md` step 3 prose — names cycles as blocking and explains the defense-in-depth relationship with spec 017's generator-side check.
+- `runtime/Cargo.toml`, `runtime/CHANGELOG.md`, `runtime/Cargo.lock` — version bump `0.9.0 → 0.9.1` (patch — defense-in-depth fix, additive schema field; mirrors the 0.7.4 / 0.8.1 patch-for-fix precedent).
 
-Six new unit tests in `primitives::tests` cover the extracted helpers directly (section_lines body-until-sibling, absent-heading, deeper-nested-as-body, repeated-heading; is_feature_slug canonical form and non-pattern rejection).
+Five-dimension review of the delta:
 
-Five-dimension review of the current delta:
+- **Security**: 0 findings. The cycle walker reads frontmatter via the same `read_text` / `split_frontmatter` / `serde_yaml::from_str::<Frontmatter>` chain already used by `read_status` and inherited from every other primitive; `serde_yaml` is a data-only parser with no side-effect deserialization (`BE-INPUT-008` satisfied — same posture as every prior `traverse-deps` review). Path construction at `repo.join("specs").join(node).join("spec.md")` mirrors the existing primitive's pattern that the dashboard / write-session / spec-022 base reviews already cleared against `BE-INPUT-004` — `node` flows from operator-committed frontmatter, not from client input, so the path-traversal threat model does not apply (the `is_feature_slug` guard on the dashboard primitive enforces the same boundary on a different surface). `read_dependencies` swallows IO and YAML errors by returning an empty `Vec`, which is the documented contract for graph degradation to a sink node — not silent error suppression of operationally-meaningful state (the focal-spec read path through `run()` still surfaces these errors as `PrimitiveError::Io` / `PrimitiveError::Yaml` envelopes). No new auth, network, logging, crypto, error-response shaping, or PII surface; no rule from `BE-AUTHN`/`BE-AUTHZ`/`BE-DATA`/`BE-API`/`BE-ERR` triggers against this delta.
 
-- **Security**: 0 findings. Hard-coded-path read-only walker (`DashboardArgs` is `{}`); structured `PrimitiveError::{Yaml, Toml, Json}` variants on parse failure; safe-by-default deserialization for all three formats; `.govern.toml` `reason` field correctly excluded from payload per the scenario's contract; session-target echoed as-recorded per the scenario's stale-target edge case. No security rules apply because every potential surface (`BE-INPUT-001`, `BE-INPUT-002`, `BE-INPUT-004`, `BE-INPUT-006`, `BE-INPUT-008`, `BE-INPUT-011`, `BE-ERR-001`, `BE-LOG-002`) is either inapplicable (no client input, no logging, no error response shaping) or already satisfied via the inherited primitive scaffolding.
-- **Reuse**: 0 findings. All three prior REUSE SHOULDs are closed by `e4b42f1`. The `section_lines` and `is_feature_slug` extractions remove the section-traversal duplication between `dashboard.rs` and `read_spec.rs`, with the iteration semantics now living in one place. `count_open_questions` (dashboard) and `parse_open_questions` (read-spec) traverse identically; they differ only in result shape (`u32` count vs. `Vec<OpenQuestion>`).
-- **Quality**: 0 findings. `is_feature_slug` correctly accepts `NNN-` and rejects everything else (test coverage in `primitives::tests::is_feature_slug_*`). The shared `section_lines` traversal is exercised by `read_spec`'s and `dashboard`'s consumer tests as well as four new direct tests. The `blocked-by` computation handles nonexistent dependency slugs by returning empty status (test at line 532-544 in dashboard.rs); the scenario-detail reader handles missing `## Context` cleanly. No off-by-one errors in the heading-level comparisons. Prior pass's QUALITY-003 (placeholder-strip drift between dashboard and read-spec on pathological inputs) is closed by the shared traversal.
-- **Efficiency**: 0 findings. `load_specs` walks `specs/` once to build the entry list, then makes a second O(N) pass over the list to compute each entry's `blocked-by` from the `status_by_slug` HashMap. The two-pass design is intentional — `blocked-by` requires every spec's status known before any spec's `blocked-by` can be computed — and the combined cost is bounded by repo-committed spec count (operator-controlled, not user-controlled). On realistic repos (~100 specs) the work is ~100 file reads + ~400 stats, well within interactive budget. Not an N+1, not an unbounded user-controlled loop; nothing flagged by `BE-INPUT-006` applies. Prior pass classified this as a SHOULD with "suggested fix: None" — this re-review honestly reclassifies it as a Design note (see below), not a violation. See `framework/rules/security-backend.md` `BE-INPUT-006` and `framework/rules/configuration-cross.md` for the criteria that DON'T apply.
-- **Simplicity**: 0 findings. The auto-fixable SIMPLICITY-001 (unused parameter) was resolved in `2d9116d`. The remaining items the prior pass flagged — the `GovernConfig`/`ReviewConfig`/`DisabledRuleFile` three-struct shape and the empty `DashboardArgs {}` struct — are both correct as-is and the prior pass acknowledged this in their "Suggested fix: None" entries. Idiomatic serde for nested TOML tables; clap-derive uniformity for the no-args primitive. Honestly reclassified as Design notes (see below), not violations.
+- **Reuse**: 0 findings. The local `read_dependencies` helper sits alongside the pre-existing `read_status` helper; both call `read_text → split_frontmatter → serde_yaml::from_str::<Frontmatter>` then extract one field. The duplication is intentional and small (~5 lines): `read_status` propagates errors via `Result<String>` because the focal-spec read must halt the primitive on YAML failure, while `read_dependencies` swallows errors to `Vec<String>` because graph-walker nodes degrade to sinks. Collapsing them would require either a flag parameter (more lines than the current shape) or a generic `read_one_field::<F>` over a `Frontmatter -> F` closure (premature abstraction for two call sites with different error semantics). The `section_lines` / `is_feature_slug` / `validate_slug` helpers in `primitives/mod.rs` are not applicable: `section_lines` traverses body markdown (frontmatter-only here); `is_feature_slug` is a slug-shape validator for the dashboard primitive's specs/ directory walk (this walker reads frontmatter the operator committed and is already paired with `gen-spec-deps.sh`'s commit-time slug check, so re-validating is duplicative). Tarjan's SCC is implemented inline rather than pulling in `petgraph` — adding a graph crate for ~50 lines of well-trodden algorithm on graphs bounded by spec count is over-investment; the recursive form is small enough that lifting it into its own module would obscure rather than clarify.
 
-Test posture: 318 unit + 5 integration + 3 atomic-writes + 15 MCP + 9 parity + 2 walker = 352 tests green (up from 346 on `2d9116d` and 312 on `c15ae0e`). `cargo clippy --release --all-targets -- -D warnings` clean. `cargo fmt --check` clean. `lint-procedure-parseability`, `lint-tool-coverage`, `lint-frontmatter`, `placeholder-roundtrip` (Family 4 of `scripts/audit/run-all.sh`), and `markdownlint-cli2` over the 022 spec dir + CHANGELOG + `framework/commands/status.md` all clean.
+- **Quality**: 0 findings. Tarjan's algorithm correctly classifies single-node SCCs: the `scc.len() == 1 && adj[v].contains(&v)` check at `traverse_deps.rs:138-142` separates isolated nodes (no cycle) from self-loops (1-cycle) — covered by `self_cycle_is_reported_as_one_cycle`. The `index_of` early-return in `visit` (`traverse_deps.rs:157-159`) deduplicates the BFS-style walk so revisits don't double-add nodes to `order`; combined with the post-visit `adj[idx].push(dep_idx)`, this correctly records every directed edge even when the dep was already discovered through a different path (covered by `three_node_cycle_via_intermediate_node`). The missing-dep edge case (`missing_node_does_not_close_a_cycle`) confirms the documented "absent closing edge means no cycle" contract — the missing node is added to `order` and gets an empty `adj[idx]` because `read_dependencies` returns `Vec::new()` for the absent file. `read_dependencies`'s error-swallowing is sound by design and not silent: the focal spec's read still propagates IO / YAML errors via `PrimitiveError` (verified by the existing `dependent_resolves_basic_edge` and `missing_dependency_is_incompatible` happy-path tests staying green). The `cycles` field is `Vec<Vec<String>>` rather than `Option<...>` because an empty Vec is the natural "no cycles" sentinel and round-trips through serde with `#[serde(default)]` for older consumers — confirmed by the cycle-bearing round-trip assertion added to `schema::primitives::tests::traverse_deps_round_trip`. All 374 tests green; clippy --release --all-targets -- -D warnings clean; fmt --check clean.
 
-**Result**: 0 MUST, 0 SHOULD, 0 low-confidence. `blocking: no`. The spec is free to advance to `done`.
+- **Efficiency**: 0 findings. The walker performs one file read per reachable spec (frontmatter parse), then a single Tarjan's pass over the resulting subgraph. For realistic repos (~30 specs, ~50 edges) this is a sub-millisecond pass within the existing `/gov:analyze` budget; the marginal cost over the pre-cycle-detection primitive is reading transitively-reachable specs' frontmatter, which the dashboard primitive already does for the full corpus on every `/gov:status` invocation. The graph is operator-committed, not user-controlled, so `BE-INPUT-006` (input upper bounds) does not apply — there is no DoS surface (the existing primitive already reads each direct dep's frontmatter for status checking; the new code extends to transitive reads). `read_dependencies` returns owned `Vec<String>` rather than borrowing from the file content; the allocations are bounded by the dependency count of each visited spec (typically <5 edges per spec, <200 allocations total on realistic repos). No N+1 pattern (no database), no unbounded loop over user-controlled input.
+
+- **Simplicity**: 0 findings. Tarjan's SCC is the canonical algorithm for "report every cycle in a directed graph"; the recursive form lives in a single ~50-line `Tarjan` struct with the standard `indices` / `lowlinks` / `on_stack` / `stack` / `counter` / `sccs` state. The post-pop `component.reverse()` (`traverse_deps.rs:235`) is documented inline as a deliberate choice to surface slugs in traversal order rather than pop order, matching the scenario's "slugs in traversal order, one entry per cycle" requirement. The `else if … && let Some(w_index) = …` let-chain (`traverse_deps.rs:222-224`) is idiomatic Rust 1.88+ (MSRV is 1.88 per `Cargo.toml`); clippy's `collapsible_if` lint required this exact form. No premature abstraction (`Tarjan` is a struct rather than a free-function only because it carries enough mutable state that threading every field through arguments would be noisier); no dead branches; no configuration that should be a constant.
+
+Test posture: 338 unit + 3 atomic-writes + 5 exec_subprocess + 16 MCP + 10 parity + 2 walker = 374 tests green (up from 352 at the prior `e4b42f1` review; the deltas are the 8 new traverse-deps unit tests + acyclic-empty-cycles assertion on the existing MCP test + 1 new MCP cycle test + 1 new parity cycle test, with a 12-test net increase coming partly from intervening commits between `e4b42f1` and `a643e41`). `cargo clippy --release --all-targets -- -D warnings` clean. `cargo fmt --check` clean. `lint-procedure-parseability`, `lint-tool-coverage`, `lint-frontmatter`, `gen-spec-deps --dry-run` all exit 0. `markdownlint-cli2` on the 022 spec dir + CHANGELOG + `framework/commands/analyze.md` reports 2 errors, both pre-existing on `main` at `analyze.md:60` and `analyze.md:63` (MD029 ordered-list prefix; the `10.` / `11.` step numbers under `1/1/1` style) — verified by `git stash && markdownlint analyze.md` on the unmodified file; not introduced by this scenario's edits.
+
+**Result**: 0 MUST, 0 SHOULD, 0 low-confidence. `blocking: no`. The scenario is free to advance the spec back to `done` once `/gov:implement`'s done-transition gate runs.
 
 ## MUST violations (blocking)
 
@@ -47,25 +52,6 @@ _None._
 ## Low-confidence findings
 
 _None._
-
-## Design notes (intentional, not violations)
-
-These observations from the prior review (`reviewed-at: 2026-05-23T13:53:14Z`) were classified as SHOULDs but each had "Suggested fix: None" — they describe intentional design, not violations. This pass reclassifies them honestly as design notes for traceability:
-
-### Two-pass `load_specs` is intentional
-
-- **File**: `runtime/src/primitives/dashboard.rs:57-107`
-- **Note**: `load_specs` walks `specs/` once to build the entry list, then again to fill in `blocked-by`. The two-pass design is mandated by the dependency-graph semantics — `blocked-by` cannot be computed for any spec until every spec's status is known. Combined cost is O(N) where N is the operator-committed spec count; ~100 file reads + ~400 stats on realistic repos. Not an N+1, not user-controlled, not a DoS surface.
-
-### `GovernConfig` / `ReviewConfig` / `DisabledRuleFile` three-struct shape is required by serde
-
-- **File**: `runtime/src/primitives/dashboard.rs:230-245`
-- **Note**: The three-struct decomposition (`GovernConfig` → `ReviewConfig` → `DisabledRuleFile`) mirrors the TOML's nested-table structure: `[review]` is the section, `[[review.disabled-rule-files]]` is the array-of-tables, each entry has `file = "..."`. Collapsing the decomposition would require a custom `Deserialize` impl that is strictly more code. The current shape is idiomatic serde for nested TOML.
-
-### Empty `DashboardArgs {}` struct is required by clap-derive uniformity
-
-- **File**: `runtime/src/schema/primitives.rs:406-408`
-- **Note**: `DashboardArgs` is an empty unit struct preserved so the primitive's `run(&args, repo)` shape matches every other primitive. The CLI surface auto-derives a no-flag subcommand; the MCP surface accepts an empty object payload. Documented inline in the struct's doc comment.
 
 ## Waived findings
 
