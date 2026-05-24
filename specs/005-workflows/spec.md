@@ -101,7 +101,7 @@ If the user's tech stack selections match no registry entries (e.g., all categor
 
 ## Resolved Questions
 
-1. **Registry format** — JSON. Consistent with `gov-session.json`, `settings.local.json`, and other structured files in the project. No new format dependency.
+1. **Registry format** — JSON. Consistent with `settings.local.json` and other structured files in the project at the time. No new format dependency. (Note: post-0.10.0 the session file moved from `gov-session.json` to `.govern.session.toml`, so the file-format consistency argument now applies to fewer artifacts than originally; the choice stands for the registry on path-of-least-resistance grounds.)
 2. **Plugin ecosystem maturity** — v1 focuses exclusively on workflow files that governance fully controls. Plugin/marketplace support is deferred to a future spec when the ecosystem stabilizes.
 3. **Trigger complexity** — single-value matching only. Each trigger matches one tech stack field to one value. Compound logic (AND/OR) is deferred — single triggers cover the common cases and keep the registry simple.
 4. **Workflow categories** — fixed set: Testing, Linting, Formatting, Migrations, Code Review, Deployment. Adding a new category requires a governance update. This ensures consistent grouping in the UI.

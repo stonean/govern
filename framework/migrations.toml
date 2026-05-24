@@ -95,3 +95,12 @@ target_paths = [
   "specs/*-cross.md",
 ]
 procedure_file = "framework/migrations/rule-files-relocate.md"
+
+[[migrations]]
+id = "session-file-consolidate"
+introduced_in = "0.10.0"
+summary = "Consolidate {config_dir}/{project}-session.json (host/project-specific JSON) onto .govern.session.toml (repo root, gitignored, host-agnostic)"
+target_paths = [
+  "{config_dir}/{project}-session.json",
+]
+procedure_file = "framework/migrations/session-file-consolidate.md"

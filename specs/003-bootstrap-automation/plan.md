@@ -28,7 +28,7 @@ The init command fetches `.gitignore` patterns from `https://raw.githubuserconte
 
 ### Session file path
 
-Standard commands reference `.claude/gov-session.json` for session state, consistent with the `{project}-session.json` pattern from spec 000.
+Standard commands reference `.govern.session.toml` for session state. (Original 003 design referenced `.claude/gov-session.json` under the `{cli-config-dir}/{project}-session.json` pattern from spec 000; consolidated onto the repo-root TOML in spec 022 task 40.)
 
 ## Affected Files
 

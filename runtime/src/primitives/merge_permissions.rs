@@ -1,7 +1,9 @@
 //! `merge-permissions` — idempotently install or update a canonical
-//! permission allow/deny set into a JSON file (default
-//! `.claude/settings.local.json`), removing exact-match duplicates
-//! from each array.
+//! permission allow/deny set into a JSON file, removing exact-match
+//! duplicates from each array. The destination path is host-supplied
+//! (typically the bootstrap-substituted `{cli-config-dir}/settings.local.json`,
+//! e.g. `.claude/settings.local.json` on Claude Code or
+//! `.augment/settings.json` on Auggie); no default — `path` is required.
 //!
 //! The primitive is the deterministic surface `/configure` calls; see
 //! spec 022's `framework-list-dedup` scenario for the contract.
@@ -29,14 +31,12 @@
 
 #![allow(clippy::expect_used)]
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use serde_json::{Map, Value, json};
 
 use crate::primitives::{PrimitiveError, Result, read_text, write_atomic};
 use crate::schema::primitives::{MergePermissionsArgs, MergePermissionsResult};
-
-const DEFAULT_PATH: &str = ".claude/settings.local.json";
 
 /// Execute the `merge-permissions` primitive.
 ///
@@ -48,7 +48,12 @@ const DEFAULT_PATH: &str = ".claude/settings.local.json";
 ///   `permissions.deny` exists but is not an array (e.g., null,
 ///   object, string).
 pub fn run(args: &MergePermissionsArgs, repo: &Path) -> Result<MergePermissionsResult> {
-    let target_path = resolve_path(repo, args.path.as_deref());
+    let candidate = Path::new(&args.path);
+    let target_path = if candidate.is_absolute() {
+        candidate.to_path_buf()
+    } else {
+        repo.join(candidate)
+    };
 
     let existing = match target_path.try_exists() {
         Ok(true) => Some(read_text(&target_path)?),
@@ -83,16 +88,6 @@ pub fn run(args: &MergePermissionsArgs, repo: &Path) -> Result<MergePermissionsR
         deny_added,
         deny_deduped,
     })
-}
-
-fn resolve_path(repo: &Path, supplied: Option<&str>) -> PathBuf {
-    let raw = supplied.unwrap_or(DEFAULT_PATH);
-    let candidate = Path::new(raw);
-    if candidate.is_absolute() {
-        candidate.to_path_buf()
-    } else {
-        repo.join(candidate)
-    }
 }
 
 /// Pretty-print with 2-space indent and a trailing newline. The
@@ -272,9 +267,9 @@ mod tests {
     use super::*;
     use std::fs;
 
-    fn args(path: Option<&str>, allow: &[&str], deny: &[&str]) -> MergePermissionsArgs {
+    fn args(path: &str, allow: &[&str], deny: &[&str]) -> MergePermissionsArgs {
         MergePermissionsArgs {
-            path: path.map(str::to_string),
+            path: path.to_string(),
             allow: allow.iter().map(|s| (*s).to_string()).collect(),
             deny: deny.iter().map(|s| (*s).to_string()).collect(),
         }
@@ -286,7 +281,7 @@ mod tests {
         let path = tmp.path().join(".claude/settings.local.json");
         let result = run(
             &args(
-                Some(".claude/settings.local.json"),
+                ".claude/settings.local.json",
                 &["Edit", "Bash(ls *)"],
                 &["Bash(rm -rf *)"],
             ),
@@ -307,11 +302,19 @@ mod tests {
     }
 
     #[test]
-    fn default_path_is_claude_settings_local_json() {
+    fn writes_to_host_supplied_path_for_non_claude_adopter() {
+        // Auggie keeps its permissions at `.augment/settings.json`; the
+        // primitive writes wherever the caller says without baking in a
+        // Claude-shaped default.
         let tmp = tempfile::tempdir().unwrap();
-        let result = run(&args(None, &["Edit"], &[]), tmp.path()).unwrap();
-        assert!(result.path.ends_with(".claude/settings.local.json"));
+        let result = run(&args(".augment/settings.json", &["Edit"], &[]), tmp.path()).unwrap();
+        assert!(result.path.ends_with(".augment/settings.json"));
         assert_eq!(result.action, "created");
+        assert!(tmp.path().join(".augment/settings.json").is_file());
+        assert!(
+            !tmp.path().join(".claude").exists(),
+            "Auggie write must not create a Claude-shaped sibling"
+        );
     }
 
     #[test]
@@ -324,7 +327,7 @@ mod tests {
         )
         .unwrap();
         let result = run(
-            &args(Some("settings.json"), &["Edit", "Bash(ls *)"], &[]),
+            &args("settings.json", &["Edit", "Bash(ls *)"], &[]),
             tmp.path(),
         )
         .unwrap();
@@ -353,7 +356,7 @@ mod tests {
             r#"{"permissions":{"allow":["UserAdded","UserAdded","Other","UserAdded"],"deny":[]}}"#,
         )
         .unwrap();
-        let result = run(&args(Some("s.json"), &[], &[]), tmp.path()).unwrap();
+        let result = run(&args("s.json", &[], &[]), tmp.path()).unwrap();
         assert_eq!(result.allow_deduped, 2);
         assert_eq!(result.allow_added, 0);
         let body = fs::read_to_string(&path).unwrap();
@@ -374,7 +377,7 @@ mod tests {
         )
         .unwrap();
         let result = run(
-            &args(Some("s.json"), &["Canonical1", "Canonical2"], &[]),
+            &args("s.json", &["Canonical1", "Canonical2"], &[]),
             tmp.path(),
         )
         .unwrap();
@@ -404,7 +407,7 @@ mod tests {
         )
         .unwrap();
         let result = run(
-            &args(Some("s.json"), &["Canonical1", "Canonical2"], &[]),
+            &args("s.json", &["Canonical1", "Canonical2"], &[]),
             tmp.path(),
         )
         .unwrap();
@@ -432,7 +435,7 @@ mod tests {
         let mtime_before = fs::metadata(&path).unwrap().modified().unwrap();
 
         let result = run(
-            &args(Some("s.json"), &["Edit", "Bash(ls *)"], &["Bash(rm -rf *)"]),
+            &args("s.json", &["Edit", "Bash(ls *)"], &["Bash(rm -rf *)"]),
             tmp.path(),
         )
         .unwrap();
@@ -467,7 +470,7 @@ mod tests {
 }"#,
         )
         .unwrap();
-        let result = run(&args(Some("s.json"), &["Canonical1"], &[]), tmp.path()).unwrap();
+        let result = run(&args("s.json", &["Canonical1"], &[]), tmp.path()).unwrap();
         assert_eq!(result.action, "updated");
 
         let body = fs::read_to_string(&path).unwrap();
@@ -483,11 +486,7 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let path = tmp.path().join("s.json");
         fs::write(&path, r#"{"defaultMode": "default"}"#).unwrap();
-        let result = run(
-            &args(Some("s.json"), &["Edit"], &["Bash(rm -rf *)"]),
-            tmp.path(),
-        )
-        .unwrap();
+        let result = run(&args("s.json", &["Edit"], &["Bash(rm -rf *)"]), tmp.path()).unwrap();
         assert_eq!(result.action, "updated");
 
         let body = fs::read_to_string(&path).unwrap();
@@ -502,7 +501,7 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let path = tmp.path().join("s.json");
         fs::write(&path, r#"{"permissions":{"deny":["Existing"]}}"#).unwrap();
-        let result = run(&args(Some("s.json"), &["Edit"], &[]), tmp.path()).unwrap();
+        let result = run(&args("s.json", &["Edit"], &[]), tmp.path()).unwrap();
         assert_eq!(result.action, "updated");
         assert_eq!(result.allow_added, 1);
 
@@ -517,7 +516,7 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let path = tmp.path().join("s.json");
         fs::write(&path, r#"{"permissions": {"allow": [oops}"#).unwrap();
-        let err = run(&args(Some("s.json"), &["Edit"], &[]), tmp.path()).unwrap_err();
+        let err = run(&args("s.json", &["Edit"], &[]), tmp.path()).unwrap_err();
         assert!(matches!(err, PrimitiveError::Json { .. }));
         // File should be unchanged.
         let body = fs::read_to_string(&path).unwrap();
@@ -533,7 +532,7 @@ mod tests {
             r#"{"permissions": {"allow": "not-an-array", "deny": []}}"#,
         )
         .unwrap();
-        let err = run(&args(Some("s.json"), &["Edit"], &[]), tmp.path()).unwrap_err();
+        let err = run(&args("s.json", &["Edit"], &[]), tmp.path()).unwrap_err();
         match err {
             PrimitiveError::JsonSchema { reason, .. } => {
                 assert!(reason.contains("permissions.allow"));
@@ -548,7 +547,7 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let path = tmp.path().join("s.json");
         fs::write(&path, "[]").unwrap();
-        let err = run(&args(Some("s.json"), &["Edit"], &[]), tmp.path()).unwrap_err();
+        let err = run(&args("s.json", &["Edit"], &[]), tmp.path()).unwrap_err();
         assert!(matches!(err, PrimitiveError::JsonSchema { .. }));
     }
 
@@ -561,7 +560,7 @@ mod tests {
             r#"{"permissions":{"allow":[],"deny":["Bash(rm -rf *)","Bash(rm -rf *)","Other"]}}"#,
         )
         .unwrap();
-        let result = run(&args(Some("s.json"), &[], &["Bash(rm -rf *)"]), tmp.path()).unwrap();
+        let result = run(&args("s.json", &[], &["Bash(rm -rf *)"]), tmp.path()).unwrap();
         assert_eq!(result.deny_deduped, 1);
         assert_eq!(result.deny_added, 0);
         assert_eq!(result.allow_added, 0);
@@ -577,7 +576,7 @@ mod tests {
             r#"{"permissions":{"allow":["Edit",42,"Edit",null,"Edit"],"deny":[]}}"#,
         )
         .unwrap();
-        let result = run(&args(Some("s.json"), &[], &[]), tmp.path()).unwrap();
+        let result = run(&args("s.json", &[], &[]), tmp.path()).unwrap();
         assert_eq!(result.allow_deduped, 2, "duplicate 'Edit' entries removed");
 
         let body = fs::read_to_string(&path).unwrap();

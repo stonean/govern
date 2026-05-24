@@ -18,7 +18,7 @@ Pipeline gate: clarified → planned. A spec cannot be implemented until it has 
 
 ## Context
 
-Use the session target from `.claude/gov-session.json`. If `$ARGUMENTS` is provided, use it to override the session target. If no session target is set and no arguments provided, stop and tell the user to run `/gov:target` first.
+Use the session target from `.govern.session.toml`. If `$ARGUMENTS` is provided, use it to override the session target. If no session target is set and no arguments provided, stop and tell the user to run `/gov:target` first.
 
 ## Spec File Detection
 

@@ -24,8 +24,8 @@ Configure `.claude/settings.local.json` with the permissions needed for slash co
    - `Write`
 
    **Govern state files (no per-write confirmation):**
-   - `Edit(.claude/gov-session.json)`
-   - `Write(.claude/gov-session.json)`
+   - `Edit(.govern.session.toml)`
+   - `Write(.govern.session.toml)`
 
    **Web access:**
    - `WebFetch`

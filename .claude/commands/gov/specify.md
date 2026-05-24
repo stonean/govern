@@ -20,7 +20,7 @@ First step in the pipeline. Creates a new numbered feature directory with a spec
 
 ## Context
 
-This command does not require a session target — it creates a new feature. If `.claude/gov-session.json` exists, the session target will be overwritten with the new feature.
+This command does not require a session target — it creates a new feature. If `.govern.session.toml` exists, the session target will be overwritten with the new feature.
 
 If the constitution has not been loaded in this session (e.g., `/gov:target` has not been run), read `constitution.md` now to load `govern` rules. If the constitution was already loaded by `/gov:target`, do not re-read it.
 
@@ -76,7 +76,7 @@ Run `npx markdownlint-cli2` on the new file (primitive: `lint-markdown`).
 
 ### Write the session target
 
-Write `.claude/gov-session.json` to set this feature as the session target (host responsibility; the runtime exposes no session-shaped primitive). Use tempfile + rename atomic-write semantics analogous to the runtime's spec write primitives.
+Write `.govern.session.toml` to set this feature as the session target (host responsibility; the runtime exposes no session-shaped primitive). Use tempfile + rename atomic-write semantics analogous to the runtime's spec write primitives.
 
 ### Display the next step
 

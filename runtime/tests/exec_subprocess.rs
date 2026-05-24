@@ -5,7 +5,6 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use std::collections::BTreeMap;
 use std::fs;
 use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
@@ -197,27 +196,28 @@ fn exec_chains_bootstrap_primitives_extract_substitute_merge() {
     )
     .unwrap();
 
-    // Seed the session JSON with every arg the three primitives need.
-    let session_dir = tmp.path().join(".claude");
-    fs::create_dir_all(&session_dir).unwrap();
-    let mut subs = BTreeMap::new();
-    subs.insert("project".to_string(), "anvil".to_string());
-    let session = serde_json::json!({
-        // extract-archive args
-        "archive": tarball_path.to_string_lossy(),
-        "dest": tmp.path().join("staging").to_string_lossy(),
-        // substitute-templates args — distinct key names (source-dir,
-        // target-dir) so they don't collide with extract-archive's dest.
-        "source-dir": tmp.path().join("staging").to_string_lossy(),
-        "target-dir": tmp.path().join("project").to_string_lossy(),
-        // merge-claude-md args
-        "path": tmp.path().join("CLAUDE.md").to_string_lossy(),
-        "block": "framework managed block\nproject = anvil",
-        "substitutions": subs,
-    });
-    let session_path = session_dir.join("gov-session.json");
+    // Seed `.govern.session.toml` with every arg the three primitives
+    // need. Post-consolidation, the walker reads this single repo-root
+    // file regardless of AI CLI / project name.
+    let session_toml = format!(
+        "archive = {archive:?}\n\
+         dest = {dest:?}\n\
+         source-dir = {source_dir:?}\n\
+         target-dir = {target_dir:?}\n\
+         path = {path:?}\n\
+         block = \"framework managed block\\nproject = anvil\"\n\
+         \n\
+         [substitutions]\n\
+         project = \"anvil\"\n",
+        archive = tarball_path.to_string_lossy().to_string(),
+        dest = tmp.path().join("staging").to_string_lossy().to_string(),
+        source_dir = tmp.path().join("staging").to_string_lossy().to_string(),
+        target_dir = tmp.path().join("project").to_string_lossy().to_string(),
+        path = tmp.path().join("CLAUDE.md").to_string_lossy().to_string(),
+    );
+    let session_path = tmp.path().join(".govern.session.toml");
     let mut sf = fs::File::create(&session_path).unwrap();
-    sf.write_all(session.to_string().as_bytes()).unwrap();
+    sf.write_all(session_toml.as_bytes()).unwrap();
 
     let child = Command::new(runtime_binary())
         .arg("exec")

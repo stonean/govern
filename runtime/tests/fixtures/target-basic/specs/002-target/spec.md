@@ -20,8 +20,8 @@ to `/gov:implement` as the next pipeline step.
 
 Exercises the runtime's `read-spec` primitive when /gov:target is
 invoked with a feature already resolved to `002-target`. The fixture
-sets the session JSON to point at this feature so the parity check on
-`.claude/gov-session.json` can compare host-written values across the
+sets the session file to point at this feature so the parity check on
+`.govern.session.toml` can compare host-written values across the
 LLM-driven and runtime-driven paths.
 
 ## Acceptance Criteria

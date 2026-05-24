@@ -407,10 +407,11 @@ pub struct TraverseDepsResult {
 
 // -- dashboard ---------------------------------------------------------------
 
-/// Args for `dashboard`. The primitive takes no caller-supplied inputs — the
-/// repo root and (optionally) `.claude/gov-session.json` are the only state
-/// it reads. The empty args struct preserves clap-derive consistency with
-/// every other primitive.
+/// Args for `dashboard`. The primitive takes no caller-supplied inputs —
+/// the repo root, `.govern.toml` (committed config), and
+/// `.govern.session.toml` (gitignored per-user session state) are the only
+/// state it reads. The empty args struct preserves clap-derive consistency
+/// with every other primitive.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct DashboardArgs {}
@@ -483,10 +484,11 @@ pub struct DashboardScenarioDetail {
     pub open_question_count: u32,
 }
 
-/// Session-target summary returned when `.claude/gov-session.json` exists.
-/// The `feature` field always names the targeted feature; `scenario` is
-/// populated when a scenario is targeted; `scenario-detail` is populated
-/// alongside `scenario` to spare callers an extra read.
+/// Session-target summary returned when `session-path` is supplied and the
+/// file at that path exists. The `feature` field always names the targeted
+/// feature; `scenario` is populated when a scenario is targeted;
+/// `scenario-detail` is populated alongside `scenario` to spare callers an
+/// extra read.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct DashboardSessionTarget {
@@ -508,8 +510,8 @@ pub struct DashboardSessionTarget {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct DashboardResult {
-    /// Session target when `.claude/gov-session.json` exists; `None`
-    /// otherwise.
+    /// Session target when `session-path` is supplied and the file exists;
+    /// `None` otherwise.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub session_target: Option<DashboardSessionTarget>,
     /// Per-spec entries in directory-name order.
@@ -869,21 +871,21 @@ pub struct MergeManagedBlockResult {
 // -- merge-permissions -------------------------------------------------------
 
 /// Args for `merge-permissions` — idempotently merge a canonical
-/// permission allow/deny set into a JSON file (default
-/// `.claude/settings.local.json`), removing exact-match duplicates
-/// from each array. The primitive is the deterministic surface
-/// `/configure` calls; see spec 022's `framework-list-dedup`
-/// scenario for the contract.
+/// permission allow/deny set into a JSON file, removing exact-match
+/// duplicates from each array. The primitive is the deterministic surface
+/// `/configure` calls; see spec 022's `framework-list-dedup` scenario for
+/// the contract.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct MergePermissionsArgs {
-    /// Local path to the JSON file. Defaults to
-    /// `.claude/settings.local.json` when omitted; relative paths
-    /// resolve against the runtime's `repo`. Any path may be supplied
-    /// so host bootstraps for other agents can reuse this primitive.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    /// Repo-relative path of the JSON file to merge into (e.g.,
+    /// `.claude/settings.local.json` on Claude Code,
+    /// `.augment/settings.json` on Auggie). Host-supplied from the
+    /// bootstrap-substituted `{cli-config-dir}/settings.local.json`
+    /// template — no default, so a missing path fails loudly instead of
+    /// silently writing to a Claude-shaped location on a non-Claude host.
     #[arg(long)]
-    pub path: Option<String>,
+    pub path: String,
     /// Canonical entries to ensure under `permissions.allow`.
     #[serde(default)]
     #[arg(long, value_delimiter = ',')]
@@ -1165,10 +1167,11 @@ pub struct AppendTaskResult {
 
 // -- write-session -----------------------------------------------------------
 
-/// Args for `write-session`. Writes `.claude/gov-session.json` atomically
-/// (tempfile + rename). The `scenario` and `scenario-path` fields are
-/// paired — both must be supplied together or both omitted; omitting both
-/// clears any previously set scenario.
+/// Args for `write-session`. Sets the session state at the canonical
+/// `<repo>/.govern.session.toml` location (gitignored, repo-root, no
+/// host/project variability). The `scenario` and `scenario-path` fields
+/// are paired — both must be supplied together or both omitted; omitting
+/// both clears any previously set scenario.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct WriteSessionArgs {
@@ -1176,10 +1179,9 @@ pub struct WriteSessionArgs {
     #[arg(long)]
     pub feature: String,
     /// Repo-relative spec directory (e.g., `specs/022-deterministic-runtime`).
-    /// The JSON field name in the written session file is `path`, matching
-    /// the existing convention used by every fixture under
-    /// `runtime/tests/fixtures/*/.claude/gov-session.json` and by
-    /// host-written sessions in adopter repos.
+    /// The TOML key in the written session file is `path`, matching the
+    /// convention used by `dashboard`'s reader and by host-written
+    /// sessions in adopter repos pre-consolidation.
     #[arg(long)]
     pub path: String,
     /// Optional scenario slug. Must be supplied iff `scenario-path` is set.
@@ -1187,9 +1189,8 @@ pub struct WriteSessionArgs {
     #[arg(long)]
     pub scenario: Option<String>,
     /// Optional repo-relative scenario file path. Must be supplied iff
-    /// `scenario` is set. Stored as `scenarioPath` (camelCase) in the
-    /// written session JSON for parity with the dashboard primitive's
-    /// reader.
+    /// `scenario` is set. Stored as `scenario-path` (kebab-case) in the
+    /// written session TOML.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[arg(long)]
     pub scenario_path: Option<String>,
@@ -1199,8 +1200,9 @@ pub struct WriteSessionArgs {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct WriteSessionResult {
-    /// Repo-relative path of the written session JSON
-    /// (`.claude/gov-session.json`).
+    /// Repo-relative path of the written session file (always
+    /// `.govern.session.toml` — kept on the result for symmetry with
+    /// other write primitives' return shapes).
     pub path: String,
     /// `true` when the file did not exist before this call, `false` when
     /// an existing file was overwritten in place.
@@ -1690,7 +1692,7 @@ mod tests {
     fn merge_permissions_round_trip() {
         use super::{MergePermissionsArgs, MergePermissionsResult};
         let args = MergePermissionsArgs {
-            path: Some(".claude/settings.local.json".into()),
+            path: ".claude/settings.local.json".into(),
             allow: vec!["Bash(ls *)".into(), "Edit".into()],
             deny: vec!["Bash(rm -rf *)".into()],
         };
@@ -1699,14 +1701,15 @@ mod tests {
         assert_eq!(value["allow"][0], "Bash(ls *)");
         assert_eq!(round_trip(&args), args);
 
-        // path omitted serializes without the field (default-applies).
-        let args_default_path = MergePermissionsArgs {
-            path: None,
+        // A non-Claude host supplies its own settings path; the runtime
+        // does not hardcode `.claude/`.
+        let auggie_args = MergePermissionsArgs {
+            path: ".augment/settings.json".into(),
             allow: vec![],
             deny: vec![],
         };
-        let v: serde_json::Value = serde_json::to_value(&args_default_path).unwrap();
-        assert!(!v.as_object().unwrap().contains_key("path"));
+        let v: serde_json::Value = serde_json::to_value(&auggie_args).unwrap();
+        assert_eq!(v["path"], ".augment/settings.json");
 
         let result = MergePermissionsResult {
             path: ".claude/settings.local.json".into(),
@@ -1891,7 +1894,7 @@ mod tests {
         assert_eq!(round_trip(&args_no_scenario), args_no_scenario);
 
         let result = WriteSessionResult {
-            path: ".claude/gov-session.json".into(),
+            path: ".govern.session.toml".into(),
             created: true,
         };
         assert_eq!(round_trip(&result), result);

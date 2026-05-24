@@ -11,7 +11,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] Create `.claude/commands/gov/` directory
 - [x] Copy all ten command templates from `commands/` into `.claude/commands/gov/`
 - [x] Replace every `{project}` with `gov` in all ten files
-- [x] Verify commands reference `.claude/gov-session.json` for session state
+- [x] Verify commands reference `.govern.session.toml` for session state (was `.claude/gov-session.json` pre-0.10.0)
 
 Done when: all ten `/gov:*` commands exist, all `{project}` placeholders are replaced with `gov`, and no template placeholders remain.
 

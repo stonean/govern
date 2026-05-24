@@ -12,7 +12,7 @@ Backlog grooming for `specs/inbox.md`. Walks each raw item through the bug decis
 
 ## Context
 
-Use the session target from `.claude/gov-session.json` if set, but groom operates across all specs so a target is not required.
+Use the session target from `.govern.session.toml` if set, but groom operates across all specs so a target is not required.
 
 ## Scope Boundaries
 

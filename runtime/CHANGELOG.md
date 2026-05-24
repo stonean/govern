@@ -2,6 +2,30 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.10.0] — 2026-05-24
+
+### Changed
+
+- **Session state consolidated onto `.govern.session.toml` at the repo root.** `write-session` and `dashboard` previously read/wrote `.claude/gov-session.json` — a hardcoded path that baked in both the AI CLI's config directory (`.claude/` for Claude Code) and the adopting project's name (`gov-session.json` for this repo). That broke adopters whose project name or AI CLI didn't match the runtime's baked-in constants (observed against an adopter named `anvil`, whose canonical session would have been `.claude/anvil-session.json`): `/{project}:target` wrote the gov-shaped filename while every downstream consumer read the bootstrap-substituted one, and the session never round-tripped. The fix is consolidation, not parameterization — both primitives now read/write `<repo>/.govern.session.toml`, a single location with no `{cli-config-dir}` or `{project}` variability. The new file sits alongside `.govern.toml` at the repo root, is gitignored (per-user, ephemeral state), and uses TOML to align with `.govern.toml`'s on-disk format. Keys are kebab-case (`scenario-path`, `set-at`) rather than the legacy camelCase (`scenarioPath`, `setAt`). The runtime CLI's walker-context seed in `gvrn exec` reads the same file via TOML→JSON bridging so parity fixtures keep working. Closes spec 022's reopened consolidation scope.
+
+- **`merge-permissions`'s `path` is now required.** The previous `DEFAULT_PATH = ".claude/settings.local.json"` constant silently routed non-Claude hosts to a Claude-shaped destination. The bootstrap procedure already passes the path explicitly via `{cli-config-dir}/settings.local.json`, so the default was unused on every supported invocation path; removing it makes a missing path fail loudly instead of corrupting an Auggie adopter's settings.
+
+### Migration
+
+- **Bootstrap migration `session-file-consolidate`.** Added to `framework/migrations.toml` (introduced in 0.10.0). On the next `/govern` run, the bootstrap detects any legacy `{config_dir}/{project}-session.json` files (across every selected agent's config dir), translates the most recent one into `.govern.session.toml` with kebab-case key renames (`scenarioPath` → `scenario-path`, `setAt` → `set-at`), and deletes the legacy file(s). Adopters who skip the bootstrap can also clear the legacy file by re-running `/{project}:target` once after upgrade.
+
+- **`.govern.session.toml` added to the framework-managed `.gitignore` block.** The next `/govern` run rewrites `.gitignore` via `merge-managed-block` and the new entry lands automatically.
+
+### Schema (wire-compatible, no breaking deserialization)
+
+- `MergePermissionsArgs.path` changed from `Option<String>` to `String`. CLI callers that omitted `--path` now get a clap error instead of a silent default; the bootstrap procedure already passes the path on every call.
+- `DashboardArgs` reverts to an empty struct. Session-target reads use the constant `.govern.session.toml` path; callers do not pass a `session-path` arg.
+- `WriteSessionArgs.session_path` was *not* added (intermediate path-parameterization design rejected). The TOML on-disk shape uses kebab-case keys (`scenario-path`, `set-at`); the JSON wire shape for CLI/MCP args is unchanged from 0.9.x.
+
+### Documentation
+
+- Framework command sources (`framework/commands/*.md`), the bootstrap procedure (`framework/bootstrap/govern.md`), the configure permission file (`framework/bootstrap/configure/claude.md`), and `framework/constitution.md` reference `.govern.session.toml` exclusively. The "Session JSON path" derived-value row in the bootstrap's per-agent registry table is removed (the session file is no longer per-agent).
+
 ## [0.9.2] — 2026-05-23
 
 ### Fixed

@@ -47,7 +47,7 @@ Modify `framework/commands/implement.md` to accept and document the `--auto` fla
 - [x] In the "Walk through tasks" section, document that `--auto` skips the per-task "prompt the user to commit and push changes" confirmation
 - [x] List the gates that still fire even with `--auto` on: phase transitions (`planned`→`in-progress`, `in-progress`→`done`), stuck-detection events, out-of-bounds file writes, spec/plan edits, mid-implement task discovery, risky actions (destructive ops, secrets, force pushes)
 - [x] Document the auto-mode commit policy: commit, do not push (push remains gated)
-- [x] Confirm `gov-session.json` is unchanged (no `autoAdvance` field)
+- [x] Confirm the session file is unchanged (no `autoAdvance` field)
 - [x] File passes `npx markdownlint-cli2`
 
 **Done when:** the implement command documents `--auto` as a per-invocation flag with the listed gate set and commit policy.
@@ -80,7 +80,7 @@ Modify `framework/constitution.md` to add a new subsection immediately after the
 Modify `framework/constitution.md` to add a new subsection under `## Pipeline Boundaries`.
 
 - [x] Insert `### Concurrent Features` heading under `## Pipeline Boundaries`
-- [x] Paragraph states `gov-session.json` holds a single target by design
+- [x] Paragraph states the session file holds a single target by design
 - [x] Paragraph directs users to `git worktree` and platform isolation features (Claude Code's `isolation: "worktree"` agent parameter, Cursor's worktree integration) for concurrent feature work
 - [x] Paragraph stays short (3–5 sentences)
 - [x] File passes `npx markdownlint-cli2`

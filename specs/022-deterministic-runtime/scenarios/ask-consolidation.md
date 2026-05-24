@@ -29,7 +29,7 @@ Two new primitives. Each is independently testable, atomic via tempfile + rename
    - Behavior: read `{feature-path}/tasks.md`, count existing `## NNN.` headings to compute the next task number, append a new section block. If `tasks.md` does not exist, create it with the heading `# {NNN} — {Feature Name} Tasks` derived from the feature's spec title (or a minimal heading when the title can't be read). Atomic via tempfile-in-parent + `persist` rename.
    - Result: `{ "appended": { "task-number": N, "path": "{feature-path}/tasks.md" } }`. Operational error on write failure or unparseable existing tasks file.
 
-Both primitives compose with existing primitives at the procedure level — `/ask`'s scenario branch in 023's `framework/commands/ask.md` rewrite will call `create-scenario` then `append-task` then (on a `done` spec) `set-status` to reopen, then the host updates `{cli-config-dir}/{project}-session.json` to point at the new scenario.
+Both primitives compose with existing primitives at the procedure level — `/ask`'s scenario branch in 023's `framework/commands/ask.md` rewrite will call `create-scenario` then `append-task` then (on a `done` spec) `set-status` to reopen, then `write-session` rewrites `.govern.session.toml` to point at the new scenario.
 
 The CLI surfaces follow the same shape as existing write primitives:
 

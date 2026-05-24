@@ -99,7 +99,7 @@ fn govern_basic_post_run_filesystem_state_matches_expectations() {
     // state to verify every primitive's effects landed as designed.
     //
     // Per-entry expectations against
-    // runtime/tests/fixtures/govern-basic/.claude/gov-session.json:
+    // runtime/tests/fixtures/govern-basic/.govern.session.toml:
     //
     // - update strategy + substitution → specify.md, feature.md with
     //   `{project}` → "anvil"
@@ -474,11 +474,11 @@ fn build_tarball_with_sha256(root: &Path) -> (Vec<u8>, String) {
     (archive_bytes, hex)
 }
 
-/// Read the staged `.claude/gov-session.json`, replace every occurrence
-/// of `placeholder` with `replacement`, and write the result back.
-/// No-op when the session file is absent.
+/// Read the staged `.govern.session.toml`, replace every occurrence of
+/// `placeholder` with `replacement`, and write the result back. No-op
+/// when the session file is absent.
 fn substitute_in_session(root: &Path, placeholder: &str, replacement: &str) {
-    let path = root.join(".claude/gov-session.json");
+    let path = root.join(".govern.session.toml");
     if !path.is_file() {
         return;
     }

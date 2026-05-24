@@ -109,10 +109,9 @@ These files use native paths and formats for the target CLI:
 | File | Claude Code | Auggie |
 | ------ | ------------ | -------- |
 | Slash commands | `.claude/commands/{project}/*.md` | `.augment/commands/{project}/*.md` |
-| Session state | `.claude/gov-session.json` | `.augment/gov-session.json` |
 | Rules file | `CLAUDE.md` (from `templates/claude-md.md`) | `CLAUDE.md` (Auggie reads it natively) |
 
-Slash command templates use a `{cli-config-dir}` placeholder for CLI-specific paths (e.g., session file location). The govern command resolves this placeholder to the target CLI's native directory (`.claude` or `.augment`) during copy.
+Slash command templates use a `{cli-config-dir}` placeholder for CLI-specific paths. The govern command resolves this placeholder to the target CLI's native directory (`.claude` or `.augment`) during copy. Session state is not in this table — post-0.10.0 it lives at the repo-root `.govern.session.toml` and is host-agnostic.
 
 ### Files with conflict handling
 

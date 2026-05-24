@@ -18,11 +18,11 @@ Spec 022 establishes the command-specific-primitive pattern (`check-stuck` for `
 
 New primitive: `dashboard`. MCP tool name `dashboard`; CLI subcommand `runtime dashboard`.
 
-Inputs: none beyond the standard repo-root context every primitive operates on.
+Inputs: none beyond the standard repo-root context every primitive operates on. The primitive reads `.govern.toml` (committed config) and `.govern.session.toml` (gitignored session state) at the repo root; both paths are constants, neither is caller-supplied.
 
 Returns one structured payload:
 
-- `session-target` — `{feature: string, scenario: string|null, scenario-detail: {section, context-summary, open-question-count}|null}` when `.claude/gov-session.json` exists, otherwise `null`. The `scenario-detail` field is populated when `scenario` is non-null, giving callers everything they need to render the scenario header line without a separate read. Lets MCP callers skip a separate session-file read; the subprocess-interpreter surface continues to seed walker context from the same file.
+- `session-target` — `{feature: string, scenario: string|null, scenario-detail: {section, context-summary, open-question-count}|null}` when `<repo-root>/.govern.session.toml` exists, otherwise `null`. The `scenario-detail` field is populated when `scenario` is non-null, giving callers everything they need to render the scenario header line without a separate read. Lets MCP callers skip a separate session-file read; the subprocess-interpreter surface continues to seed walker context from the same file.
 - `specs` — array, one entry per `NNN-feature` directory under `specs/`, in directory-name order:
   - `slug` — the directory basename
   - `status` — frontmatter status (`draft` | `clarified` | `planned` | `in-progress` | `done`)
@@ -54,8 +54,10 @@ The primitive is read-only and pure with respect to filesystem state (no atomic-
 - **`.govern.toml` present but `[[review.disabled-rule-files]]` section absent or its array empty.** Returns `config: {present: true, disabled-rule-files: []}`. Caller suppresses the callout per the existing prose rule.
 - **`.govern.toml` parse failure.** Operational error, halts the call. Consistent with other primitives' handling of malformed-input files at the repo root.
 - **`scenarios/` exists but contains non-markdown files.** `scenarios-count` reflects only `*.md` files, matching the existing prose ("count the markdown files in its scenarios subdirectory").
-- **Session file absent.** `session-target: null`. No error — a fresh session with no `/gov:target` invocation yet is valid.
-- **Session file present but its `feature` field names a directory that doesn't exist.** Return the session-target field as-recorded; do not validate against the `specs` array. The caller already handles this — `/gov:target` is the corrective action, not `/gov:status`.
+- **`.govern.session.toml` absent.** `session-target: null`. No error — a fresh project with no `/{project}:target` invocation yet is a valid state.
+- **`.govern.session.toml` present but malformed.** Operational error (`PrimitiveError::Toml`), halts the call. Consistent with `.govern.toml` parse failures.
+- **Legacy `.claude/{project}-session.json` on disk.** Ignored — `dashboard` reads `.govern.session.toml` only. Adopters who haven't yet run the post-0.10.0 `/govern` bootstrap migration see "no target" until they re-`/{project}:target` or the migration translates the legacy file.
+- **Session file present but its `feature` field names a directory that doesn't exist.** Return the session-target field as-recorded; do not validate against the `specs` array. The caller already handles this — `/{project}:target` is the corrective action, not `/{project}:status`.
 
 ## Open Questions
 

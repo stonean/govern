@@ -55,9 +55,10 @@ For each agent, these paths are computed by convention from the row above. They 
 | Derived value | Formula |
 | --- | --- |
 | Configure source path | `framework/bootstrap/configure/{key}.md` |
-| Session JSON path | `{config_dir}/{project}-session.json` |
 | Project commands directory | `{config_dir}/commands/{project}/` |
 | `govern` install path | `{config_dir}/commands/govern.md` |
+
+The session state file is `.govern.session.toml` at the repo root for every adopter — not a derived per-agent value. It's gitignored and host-agnostic.
 
 ### Adding a new agent
 
@@ -634,9 +635,9 @@ After the slash command cleanup, offer any newly registered workflows that match
 
 11. **Discovery note for Auggie.** Auggie's official docs document subdirectory namespacing for one level (`.augment/commands/foo/bar.md` → `/foo:bar`). Multi-level paths like `.augment/commands/{project}/workflows/lint.md` should resolve to `/{project}:workflows:lint` by the same colon-namespace convention, but a user adopting Auggie may want to confirm autocomplete the first time. Claude Code's two-level path is documented and works as expected.
 
-### Session state (strategy: create)
+### Session state
 
-Create `{config_dir}/{project}-session.json` with empty content `{}` only if it does not already exist.
+The session state file lives at `.govern.session.toml` at the repo root — host-agnostic, project-name-agnostic, gitignored. The bootstrap does not create it; it's written on the first `/{project}:target` (or its scenario sibling) invocation by the runtime's `write-session` primitive (or, on the markdown-only path, by the host's file-writing tool). Each adopted agent reads from the same file; there is no per-agent session state.
 
 ### `govern` self-installation (strategy: update)
 

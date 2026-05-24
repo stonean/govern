@@ -15,11 +15,11 @@ This command is the resolver, not the back-edge entry point. The `clarified` / `
 
 ## Context
 
-Use the session target from `.claude/gov-session.json`. If `$ARGUMENTS` is provided, use it to override the session target. If no session target is set and no arguments provided, stop and tell the user to run `/gov:target` first.
+Use the session target from `.govern.session.toml`. If `$ARGUMENTS` is provided, use it to override the session target. If no session target is set and no arguments provided, stop and tell the user to run `/gov:target` first.
 
 ## Target File Detection
 
-Read `.claude/gov-session.json`. If the session includes a `scenario` and `scenarioPath`, operate on the scenario file (see **Scenario-targeted clarify** below). Otherwise, operate on the feature spec (see **Feature-targeted clarify** below).
+Read `.govern.session.toml`. If the session includes a `scenario` and `scenario-path`, operate on the scenario file (see **Scenario-targeted clarify** below). Otherwise, operate on the feature spec (see **Feature-targeted clarify** below).
 
 ## Feature-targeted clarify
 

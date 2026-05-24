@@ -87,7 +87,7 @@ Before scaffolding, verify the target directory does not already exist. If it do
 ### Standard pipeline commands
 
 - [x] All ten command templates copied to `.claude/commands/gov/` with `{project}` replaced by `gov`
-- [x] Commands reference `.claude/gov-session.json` for session state
+- [x] Commands reference `.govern.session.toml` for session state (was `.claude/gov-session.json` pre-0.10.0; consolidated in spec 022 task 40)
 - [x] Pipeline gates enforce status transitions (draft → clarified → planned → done)
 - [x] Dependency checks enforced via AGENTS.md boundary rule
 

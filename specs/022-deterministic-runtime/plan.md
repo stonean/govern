@@ -109,7 +109,7 @@ Primitive subcommand names match their MCP tool names without the `gov-rt:` pref
 
 ### Fixture-based integration testing
 
-Integration tests live under `runtime/tests/` and exercise the runtime against fixture repos checked into `runtime/tests/fixtures/<name>/`. Each fixture is a minimal git-tracked directory tree resembling a real `govern`-adopting project: a `specs/<feature>/` with spec.md, plan.md, tasks.md as appropriate; a `framework/constitution.md`; a `.claude/gov-session.json`. Fixtures are committed real files — no setup scripts — so they can be inspected and diffed by reviewers.
+Integration tests live under `runtime/tests/` and exercise the runtime against fixture repos checked into `runtime/tests/fixtures/<name>/`. Each fixture is a minimal git-tracked directory tree resembling a real `govern`-adopting project: a `specs/<feature>/` with spec.md, plan.md, tasks.md as appropriate; a `framework/constitution.md`; a `.govern.session.toml` at the repo root carrying the walker-context seed (session-target keys plus, for fixtures whose procedure needs more args, any non-string TOML the primitives consume). Fixtures are committed real files — no setup scripts — so they can be inspected and diffed by reviewers.
 
 Each fixture exercises one slash command end-to-end. The test asserts:
 
@@ -125,7 +125,7 @@ The fixture repo is the integration substrate. Per-primitive unit tests under ea
 The spec's acceptance criterion "produces output consistent with the LLM-driven path against the same fixture, within the determinism bounds defined for each command" requires per-command "determinism bounds." For each of the six commands, the parity bound is stated in the rewritten command's frontmatter (a new `parity:` field with sub-keys):
 
 - **`/gov:status`** — strict byte-equality on the dashboard output.
-- **`/gov:target`** — strict byte-equality on `.claude/gov-session.json` after the run.
+- **`/gov:target`** — strict byte-equality on `.govern.session.toml` after the run (single repo-root path post-0.10.0 consolidation; was `.claude/gov-session.json` pre-0.10.0).
 - **`/gov:analyze`** — set-equality on the list of findings (each finding's rule ID, severity, file, line), but not on the per-finding prose (semantic extension point varies wording).
 - **`/gov:implement`** — set-equality on the set of files modified per task; checkbox state strict-equal; code content is the LLM extension point's responsibility, not the runtime's.
 - **`/gov:plan`** — frontmatter status transition strict-equal; plan/tasks body content is semantic (extension point).
@@ -242,7 +242,7 @@ That is 14, not 13 — `gate-confirm` is in the primitive library list in the sp
 
 ### No data persistence outside session file + markdown
 
-State management is the spec's already-resolved decision: in-memory within a run, markdown + `.claude/gov-session.json` are the durable journal. The plan reaffirms with concrete implementation: the interpreter holds parsed AST + walker position + pending payload in `interpreter::State`, a plain `struct` with no `Drop`-time side effects. Process death loses this state without consequence; the user re-invokes the slash command and the runtime re-derives position from the markdown.
+State management is the spec's already-resolved decision: in-memory within a run, markdown + `.govern.session.toml` (repo root, gitignored, TOML; consolidated in 0.10.0 from the pre-0.10.0 host- and project-name-specific `{cli-config-dir}/{project}-session.json` JSON) are the durable journal. The plan reaffirms with concrete implementation: the interpreter holds parsed AST + walker position + pending payload in `interpreter::State`, a plain `struct` with no `Drop`-time side effects. Process death loses this state without consequence; the user re-invokes the slash command and the runtime re-derives position from the markdown.
 
 ### Error semantics and exit codes
 

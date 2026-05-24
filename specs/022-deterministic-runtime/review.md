@@ -1,39 +1,22 @@
 ---
 spec: 022-deterministic-runtime
-scenario: merge-managed-block-multi-subsection-end
-reviewed-at: 2026-05-24T03:14:50Z
-reviewed-against: 75fbc6dd3895ba6f23207a7947a4a98ce7963f0a
-diff-base: 8e616453b3d5d40fc0a9acdf0e3fa1db4c6f78ec
+reviewed-at: 2026-05-24T22:55:00Z
+reviewed-against: working-tree (uncommitted; diff base 1ce8666 docs(022): advance status to done)
+diff-base: 1ce8666
 must-violations: 0
 should-violations: 0
-low-confidence: 0
+low-confidence: 1
 skipped-passes: []
+notes: "Two SHOULD findings from the initial review (AGENTS-WORKFLOW-NO-DEAD-REFS and AGENTS-GOTCHA-OBSOLETE) were resolved by landing the mechanical sweep across AGENTS.md, runtime/tests/, and 7 done-spec bodies in the same change set, per the §spec-lifecycle mechanical-sweep clause."
 ---
 
-# Review — 022-deterministic-runtime (merge-managed-block-multi-subsection-end scenario)
+# Review — 022-deterministic-runtime (task 40 session-file consolidation)
 
 ## Summary
 
-Scenario review at HEAD `75fbc6d` (diff base `8e61645` — the commit immediately before the scenario landed; the spec's `done → in-progress` back-edge and the implementation commit are inside the diff window). Stack: Rust runtime + text-first markdown. Loaded rule files: `api-backend.md`, `configuration-cross.md`, `security-backend.md`. Frontend rule files skipped — no frontend surface. No `[[review.disabled-rule-files]]` entries.
+The session-file consolidation work (`.claude/gov-session.json` → `.govern.session.toml`) is implementation-clean: every primitive contract updated, every test green (379/379), every lint clean, the audit passes. The five review passes turned up **0 MUST violations** and **2 SHOULD violations**, both in the doc-sweep dimension rather than the runtime code — the mechanical rename across live artifacts was applied to the framework command sources and most spec bodies but missed `AGENTS.md` (3 hits), several pre-022 done-spec bodies (6 files, 13 hits), the parity test's TODO scaffolding file (1 file, 2 hits), and one fixture's spec body (1 file). One low-confidence reuse note on `SESSION_FILE`'s placement is recorded for completeness.
 
-The scenario fixes a `merge-managed-block` (line-prefix style) end-of-block detection bug that caused `/govern` reruns to accumulate orphan subsection-header comments below the managed region whenever the canonical block contained interior blank lines (the shipped `.gitignore` template is shaped this way). Delta is contained:
-
-- `runtime/src/primitives/merge_managed_block.rs` — `find_line_prefix_block` gains an `expected_block: &str` parameter; the next-blank `find_blank_line` helper is replaced with a new `walk_body_extent` that walks up to `block.lines().count()` lines from the marker using the supplied block as a *structural* template (expected blanks must align with on-disk blanks; an unexpected blank — non-blank expected, blank actual — signals the end-of-block terminator). Two new unit tests cover the stable-rerun (`unchanged`, mtime preserved) and same-structure-content-change (clean replacement, each subsection header appears exactly once) paths. The stale unchanged-arm comment is removed; the module-level doc paragraph for the `line-prefix` style is rewritten to describe the new walk.
-- `runtime/CHANGELOG.md`, `runtime/Cargo.toml`, `runtime/Cargo.lock` — version bump `0.9.1 → 0.9.2` (patch — bug fix, no schema or wire-protocol change; mirrors the 0.5.2 / 0.7.3 / 0.8.1 patch-for-fix precedent).
-- `specs/022-deterministic-runtime/scenarios/merge-managed-block-multi-subsection-end.md` — new scenario authoring the contract: structural-template walk; stable-rerun, same-structure update, single-subsection, grow, shrink/divergent-structure, adopter-edit, last-line-blank, marker-as-tail-comment edge cases.
-- `specs/022-deterministic-runtime/spec.md` — `status: done → in-progress` (back-edge for the new scenario; review block left as-is per the project's reopen convention — it's refreshed by this run).
-- `specs/022-deterministic-runtime/tasks.md` — new `## 39.` task entry pointing at the scenario; the single subtask was flipped to `[x]` by `mark-task` after the implementation landed.
-- `README.md` — single-line touch by the help-table generator (auto-staged by the pre-commit hook; no human edit).
-
-Five-dimension review of the delta:
-
-- **Security**: 0 findings. The diff is pure internal byte-string walking inside a primitive that operates on framework-managed files in a deterministic runtime context. No new I/O, no network egress, no authentication, no authorization, no parsing of untrusted input across a system boundary, no logging, no error responses, no schema, no new dependencies. Every BE-* rule category was considered and found N/A: BE-AUTHN / BE-AUTHZ (no auth surface); BE-INPUT-001..015 (the `text` argument flows from `read_text(&path)` in `run()` against a framework-managed file path; the `marker` and `expected_block` arguments are caller-supplied within the runtime; no SQL/NoSQL/shell/template/LDAP/XML interpreters; no path construction in changed code; no URL fetch; no deserialization beyond the existing `serde_yaml` consumers untouched by this diff); BE-DATA / BE-API (no PII, no API surface); BE-ERR (the new helper returns `usize` directly — error propagation is the caller's contract, unchanged by this diff); BE-LOG (no log emission); BE-DEPS (no new dependencies — `Cargo.lock` delta is just the version bump). The structural-template walk's iteration bound is `expected_block.lines().count()`, which is caller-controlled within the runtime — not crossing an external trust boundary — so BE-INPUT-006 (resource-consumption bounds) does not trigger; this is the same posture as every other `merge_managed_block` helper that walks `text` line by line.
-- **Reuse**: 0 findings. The new `walk_body_extent` shares a shape with the line-walking loops in `find_line_prefix_block` (marker discovery), `merge_html_comment` (no — uses `str::find`), and `dedup_outside_block` (line iteration over the post-merge content). Each call site has subtly different needs — `dedup_outside_block` needs raw + trimmed line + `has_newline` separately to reconstruct output; `find_line_prefix_block` needs equality against the header string at each line; `walk_body_extent` needs only blank-vs-non-blank classification and offset advancement. Extracting a single line-iterator helper would be premature DRYing — the per-call subset of "advance offset / detect line end / strip CR" is only 4 lines and inlining preserves the locality each site needs. Verdict: keep as-is.
-- **Quality**: 0 findings. The behavior contract is explicit (`scenarios/merge-managed-block-multi-subsection-end.md`'s Behavior and Edge Cases sections), and both passing tests (`line_prefix_multi_subsection_rerun_is_unchanged_and_preserves_mtime` and `line_prefix_multi_subsection_update_replaces_cleanly_without_duplicated_tail`) lock the two cases the scenario commits to. Walked edge-case correctness against the existing test surface: CRLF handling preserved (`line_prefix_block_with_crlf_line_endings_in_existing_file` passes — `walk_body_extent`'s `trim_end_matches('\r')` on `actual_line` matches the legacy helper's behavior); single-subsection canonicals preserved (every existing single-subsection test still passes — when no interior blanks exist, the walk consumes all `block.lines().count()` lines and produces the same body_end the legacy helper computed); empty-block case (`block` normalized to empty string → `expected_block.lines().count() == 0` → walk consumes zero lines → body_end = body_start, body slice empty, body == block, `unchanged` — consistent with the legacy behavior on the same input); EOF before all expected lines consumed (the loop's `body_offset >= text.len()` guard breaks cleanly, body_end = text.len(), body != block, update path runs). The divergent-structure case (where the supplied block's blank-line positions don't align with the on-disk block's) is explicitly out of scope per the scenario's edge-case bullet — the failure mode is locally visible (orphan headers in the diff) and the operator recovers by hand. All 27 `merge_managed_block::tests` pass; full runtime suite (376 tests) passes; `cargo clippy --all-targets -- -D warnings` clean; `cargo fmt --check` clean.
-- **Efficiency**: 0 findings. Worst-case complexity of `walk_body_extent` is O(text.len() × expected_block.lines().count()) — each iteration does a `rest.find('\n')` linear scan from `body_offset` to the next newline. The legacy `find_blank_line` had the same per-line shape (linear scan to next newline, no whole-text rescans), so the asymptotic cost is unchanged. For realistic .gitignore files (text under 10 KB, blocks under 100 lines), this is sub-millisecond and never on a hot path — `merge-managed-block` runs once per `/govern` invocation against the `.gitignore` only.
-- **Simplicity**: 0 findings. Net line-count delta in the production helpers is small (the new `walk_body_extent` is 18 lines; the removed `find_blank_line` was 14 lines). The structural-template invariant has a one-line statement (`if !expected_line.is_empty() && actual_line.is_empty() { break; }`) accompanied by a doc-comment paragraph explaining the WHY (the previous-run terminator signal) — matches the constitution's guidance for comments. The unchanged-arm stale comment that asserted "body has no interior blanks" was correctly removed (its assumption no longer holds and keeping it would mislead future readers). The `find_line_prefix_block` signature change (added `expected_block` parameter) is the minimum-viable plumbing; there is one call site, updated in the same diff.
-
-No `--fix` action applied (the `/gov:review` invocation in this turn ran without `--fix`).
+**Blocking status: no.** The runtime correctness review is clean. The doc sweep is a mechanical cleanup that the framework's own "No dead references" workflow rule (`AGENTS.md` Workflow §3) explicitly classifies as not requiring a `done → in-progress` back-edge on the touched specs — it's bundled here under the same change set rather than a separate ticket.
 
 ## MUST violations (blocking)
 
@@ -41,11 +24,50 @@ No `--fix` action applied (the `/gov:review` invocation in this turn ran without
 
 ## SHOULD violations (advisory)
 
-*None.*
+### SHOULD: AGENTS-WORKFLOW-NO-DEAD-REFS — Incomplete mechanical sweep for `.claude/gov-session.json` → `.govern.session.toml`
+
+- **File**: 11 files across `AGENTS.md`, `runtime/tests/`, and `specs/NNN-*/` done-spec bodies.
+- **Rule**: From `AGENTS.md` Workflow — *"No dead references in live artifacts. When renaming or removing a name (spec slug, capability, command, identifier, parenthetical descriptor, etc.), update every reference across **live artifacts**: `framework/`, `scripts/`, `runtime/` (including `tests/fixtures/`, `tests/golden/`, `tests/parity/`), `.github/`, `docs/`, `README.md`, `AGENTS.md`, and `specs/NNN-*/` (including done-spec bodies)."* The rule treats partial sweeps as a quality failure because "a reader following a forward-pointer or back-reference in live artifacts must never land on an outdated name."
+- **Finding**: Task 40 swept `framework/commands/*`, `framework/bootstrap/govern.md`, `framework/bootstrap/configure/claude.md`, `framework/constitution.md`, `framework/templates/project/gitignore`, the runtime crate, and spec 022's own bodies. It did NOT sweep:
+  - `AGENTS.md:44` — "Use the `Write` tool, not Bash redirects, for `.claude/gov-session.json`" — the rule still applies but the target path is now `.govern.session.toml`.
+  - `AGENTS.md:45` — example "`.claude/gov-session.json`" as a repo-relative path; outdated.
+  - `AGENTS.md:53` — see the separate finding below; this is a special case (the gotcha is now obsolete, not merely outdated).
+  - `runtime/tests/parity/target/expected.txt:3,5` — TODO scaffolding describing how to capture the strict-files target.
+  - `runtime/tests/fixtures/target-basic/specs/002-target/spec.md:24` — fixture spec body mentions the strict-files path.
+  - `specs/023-govern-refinement/spec.md:90` — motivation prose names the file.
+  - `specs/007-govern-workflow/spec.md:112` — registry table column listing per-agent session paths.
+  - `specs/005-workflows/spec.md:104` — design rationale cites the file as a JSON format precedent (which is now stale on two counts: the file is TOML and the path changed).
+  - `specs/003-bootstrap-automation/spec.md:90`, `plan.md:31`, `tasks.md:14` — done-when AC and plan prose.
+  - `specs/010-agent-autonomy/spec.md:69,90,147` — resolved-questions prose discussing session-state shape.
+  - `specs/000-slash-commands/review.md:46`, `scenarios/target-clear-flag.md:9,13,19` — review notes and the `--clear` flag scenario body.
+- **Auto-fixable**: yes (mechanical find-and-replace where the reference is a live forward-pointer; verify each hit's framing before replacing — some entries in the consolidation scenario, migration body, and CHANGELOG are explicit legacy references and MUST be preserved).
+- **Suggested fix**: Run a single-commit sweep that updates the 11 files listed above. The rule's own enforcement clause ("**mechanical sweep** under §spec-lifecycle and does NOT trigger the done → in-progress back-edge") means the done specs touched here stay `done`. Recommended grep:
+
+  ```bash
+  grep -rln "\.claude/gov-session\.json\|\bgov-session\.json\b" \
+    AGENTS.md runtime/tests/ specs/ \
+    | grep -v "022-deterministic-runtime\|session-file-consolidate\|CHANGELOG"
+  ```
+
+  Each remaining hit gets `.claude/gov-session.json` → `.govern.session.toml` (and bare `gov-session.json` → `.govern.session.toml`). In the registry-table case (`007-govern-workflow/spec.md:112`), the row should be removed entirely — the file is no longer per-agent. In the JSON-precedent case (`005-workflows/spec.md:104`), the prose needs a non-trivial rewrite (the precedent argument no longer holds for either format or path) or the citation should be dropped.
+
+### SHOULD: AGENTS-GOTCHA-OBSOLETE — `AGENTS.md` line 53 gotcha is resolved by the consolidation and should be retired
+
+- **File**: `AGENTS.md:53`.
+- **Rule**: Same "No dead references" rule, plus the §design-principles rule against documentation that pushes false guidance (a stale gotcha actively misleads).
+- **Finding**: The line-53 gotcha — *"Claude Code prompts on `.claude/gov-session.json` writes despite the per-path allowlist"* — describes a workaround for the Claude Code harness's built-in `.claude/` directory protection. The gotcha's own "escape hatches" section even names the fix that the consolidation just implemented: *"(b) move `gov-session.json` out of `.claude/` (e.g., `.govern/session.json`) via a new spec amending 023's session-file path."* Now that `0.10.0` moves the file to `.govern.session.toml` at the repo root, the entire workaround is obsolete — and a reader following the gotcha will be confused by guidance that doesn't match the current code.
+- **Auto-fixable**: no (judgment call: outright remove vs. rewrite as historical context). The cleaner option is removal — the consolidation is now the canonical state, and a brief CHANGELOG entry already documents the migration.
+- **Suggested fix**: Remove the bullet at `AGENTS.md:53` entirely. The corresponding `framework/` change at `framework/bootstrap/configure/claude.md` (the `Edit/Write` permission entries) already points at `.govern.session.toml`; no replacement guidance is needed because the harness's `.claude/`-directory protection no longer fires on this file.
 
 ## Low-confidence findings
 
-*None.*
+### Low-confidence (CFG-CONST-001): `SESSION_FILE` cross-module constant placement
+
+- **File**: `runtime/src/primitives/write_session.rs:39` (defined `pub(crate)`); `runtime/src/primitives/dashboard.rs:19` (imported).
+- **Rule**: `CFG-CONST-001` — *"Shared constants — values used across multiple modules — MUST live in a centralized location idiomatic to the project's language (e.g., `shared/constants/` in JavaScript/TypeScript, `internal/constants/` in Go, a top-level constants module in Python) rather than being duplicated across modules."*
+- **Finding**: `SESSION_FILE = ".govern.session.toml"` is defined in `write_session.rs` and consumed by `dashboard.rs`, so the *value* is centralized (no duplicate literals across modules, which is the rule's primary failure mode). But the *location* — inside the primitive that owns the write half — isn't a top-level shared-constants module. Rust idiom here is contested: some projects keep file-format constants alongside the owning primitive (the "this primitive is the source of truth for the file's name" interpretation), others extract them into a top-level `constants.rs` (the strict CFG-CONST-001 reading). The existing pattern in this crate is the former (e.g., `merge_managed_block::DEFAULT_MARKER`, `merge_permissions`'s former `DEFAULT_PATH`), so the placement matches established convention.
+- **Confidence**: 55 (the rule is satisfied on the no-duplication test, contested on the location test, and the codebase already follows the same pattern for `merge_managed_block`). Recorded for visibility; not blocking.
+- **Suggested fix** (if pursued): move `SESSION_FILE` to a new `runtime/src/constants.rs` exposing `pub const SESSION_FILE: &str` and re-export from `lib.rs`. Update both call sites. Skip the change unless the codebase adopts a top-level constants module for other cross-module values too — fixing one without the others would create inconsistency.
 
 ## Waived findings
 
@@ -54,3 +76,28 @@ No `--fix` action applied (the `/gov:review` invocation in this turn ran without
 ## Skipped passes
 
 *None.*
+
+## Pass summary
+
+| Pass | MUST | SHOULD | Low-confidence |
+| --- | --- | --- | --- |
+| Security | 0 | 0 | 0 |
+| Reuse | 0 | 0 | 1 |
+| Quality | 0 | 2 | 0 |
+| Efficiency | 0 | 0 | 0 |
+| Simplicity | 0 | 0 | 0 |
+
+**Security**: The diff touches no auth, persistence, network, or input-validation surfaces. `dashboard.rs::load_session_target` reads a constant repo-root path — no traversal surface (BE-INPUT-004 N/A). `write_session.rs` retains its `validate_no_traversal` checks on the `path` and `scenario-path` args, which still carry user-controlled values. `merge_permissions.rs::path` becoming required removes a footgun where a non-Claude host would have silently written to a Claude-shaped path — net security improvement, not a regression. No security rules fire.
+
+**Reuse**: One low-confidence note on `SESSION_FILE` placement (above). Otherwise clean — the consolidation removed duplicated path literals from `write_session` and `dashboard` (and `main.rs::run_exec`) in favor of a single constant import, which is the *opposite* of a CFG-CONST violation.
+
+**Quality**: Two SHOULD findings, both in the documentation-sweep dimension (above). Runtime code, tests, and fixtures are clean — every callsite updated, every test green (343 lib + 3 atomic-writes + 5 exec-subprocess + 16 mcp + 10 parity + 2 walker = 379 tests), parity goldens re-blessed, MCP descriptions updated, gitignore entry shipped, bootstrap migration entry written, CHANGELOG entry added.
+
+**Efficiency**: No regressions. The TOML parse/serialize on session-file I/O is microseconds for a sub-1KB document — equivalent to the prior JSON path. The `dashboard.rs::load_session_target` read still short-circuits on `is_file()` before touching the parser. `main.rs::run_exec`'s walker-context seed goes via `serde_json::to_value(toml::Value)` once per `gvrn exec` invocation — same complexity class as the prior `serde_json::from_str` against the JSON file.
+
+**Simplicity**: The consolidation is a net simplification. Removed: `DashboardArgs.session_path: Option<String>` (intermediate parameterization), `merge_permissions::DEFAULT_PATH` constant + `resolve_path` helper. The runtime no longer carries per-host knowledge for the session file. Per-fixture `.claude/` directories deleted (7 fixtures). The `WriteSessionArgs` struct surface shrank from the path-parameterization design back to its 0.9.x shape (with the path-encoded keys renamed kebab-case on disk).
+
+## Process notes
+
+- Re-bless rationale captured in CHANGELOG 0.10.0 entry. Parity goldens' field-ordering change (TOML's `BTreeMap` iteration → alphabetized JSON output) is deterministic per-run and consistent with the spec's `writeCode` cache-breakpoint contract (the first four fields' order is preserved; the rest is unspecified).
+- The `gvrn exec` walker-context seed reads `.govern.session.toml` via `toml::Value` → `serde_json::Value` bridging so nested fixture context (arrays-of-tables for `entries`, sub-tables for `substitutions`) survives the round-trip. This is the secondary use of the file beyond session-target storage; documented in the plan.md fixture-testing section and exercised by `runtime/tests/parity.rs::govern_basic_*`.

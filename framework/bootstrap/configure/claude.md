@@ -24,8 +24,8 @@ Configure `{cli-config-dir}/settings.local.json` with the permissions needed for
    - `Write`
 
    **Govern state files (no per-write confirmation):**
-   - `Edit({cli-config-dir}/{project}-session.json)`
-   - `Write({cli-config-dir}/{project}-session.json)`
+   - `Edit(.govern.session.toml)`
+   - `Write(.govern.session.toml)`
 
    **Web access:**
    - `WebFetch`

@@ -82,7 +82,7 @@ Behavior with `--auto`:
 
 Auto-mode commit policy: commit, do not push. Push is a hard-to-reverse, externally visible action; it stays gated even with `--auto`. The flag's job is to remove per-task confirmation friction, not to publish changes silently. The instructions document this explicitly.
 
-`gov-session.json` is unchanged — autonomy is not session state.
+The session file is unchanged — autonomy is not session state.
 
 ### Cost-conscious cross-reference: location
 
@@ -101,7 +101,7 @@ Add a new short subsection `### Concurrent Features` under `## Pipeline Boundari
 - Pipeline Boundaries is already where serial-by-design rules live (the bullet list).
 - AGENTS.md is the adopter's project-level operating doc; constitutional invariants are out of scope for it.
 
-Content: one paragraph stating that `gov-session.json` holds a single target by design, and that concurrent work on independent features uses two independent sessions in two terminals, with isolation provided by `git worktree` and platform features (Claude Code's `isolation: "worktree"` agent parameter, Cursor's worktree integration, etc.). 3–5 sentences.
+Content: one paragraph stating that the session file holds a single target by design, and that concurrent work on independent features uses two independent sessions in two terminals, with isolation provided by `git worktree` and platform features (Claude Code's `isolation: "worktree"` agent parameter, Cursor's worktree integration, etc.). 3–5 sentences.
 
 ### Skills index in `AGENTS.md` template
 
@@ -205,7 +205,7 @@ The directory rename is recorded as a single conceptual change but executes as `
 
 ### Stuck-detection threshold of 3, not configurable
 
-A fixed threshold keeps the rule simple and predictable. A configurable threshold would require a place to store the value (somewhere in `gov-session.json`? `AGENTS.md`?) and a way to surface it in command output. None of those carry their weight for v1. If the threshold proves wrong in practice, change the constant and reissue.
+A fixed threshold keeps the rule simple and predictable. A configurable threshold would require a place to store the value (somewhere in the session file? `AGENTS.md`?) and a way to surface it in command output. None of those carry their weight for v1. If the threshold proves wrong in practice, change the constant and reissue.
 
 ### Stuck detection reads `tasks.md` commits, not affected-files commits
 

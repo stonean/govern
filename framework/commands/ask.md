@@ -18,11 +18,11 @@ Two back-edges keep the spec lifecycle honest, both owned by `/ask`:
 
 ## Context
 
-Use the session target from `{cli-config-dir}/{project}-session.json`. If `$ARGUMENTS` is provided, use it as the initial input text. If no session target is set and no arguments provided, stop and tell the user to run `/{project}:target` first.
+Use the session target from `.govern.session.toml`. If `$ARGUMENTS` is provided, use it as the initial input text. If no session target is set and no arguments provided, stop and tell the user to run `/{project}:target` first.
 
 ## Target File Detection
 
-Read `{cli-config-dir}/{project}-session.json`. If the session includes a `scenario` and `scenarioPath`, the target artifact is the scenario file and the input is always treated as a question (scenarios do not nest under scenarios; the classifier is bypassed). Otherwise, the target artifact is the feature's `spec.md`. If that file does not exist, stop and report: "Spec does not exist. Run `/{project}:specify` first."
+Read `.govern.session.toml`. If the session includes a `scenario` and `scenario-path`, the target artifact is the scenario file and the input is always treated as a question (scenarios do not nest under scenarios; the classifier is bypassed). Otherwise, the target artifact is the feature's `spec.md`. If that file does not exist, stop and report: "Spec does not exist. Run `/{project}:specify` first."
 
 ## Scope Boundaries
 
@@ -37,7 +37,7 @@ Read `{cli-config-dir}/{project}-session.json`. If the session includes a `scena
 
 ### Confirm target
 
-1. Read `{cli-config-dir}/{project}-session.json` to get the session target's feature and optional scenario.
+1. Read `.govern.session.toml` to get the session target's feature and optional scenario.
 2. Read the target artifact (scenario file if targeted, otherwise `spec.md`).
 3. **Recompute dependencies (safety net).** If the target is a spec, run `scripts/gen-spec-deps.sh --dry-run` against it. If it reports a diff, run it for real to sync `dependencies:` from body inline links. The pre-commit hook normally keeps this in sync; this step catches uncommitted body edits. (Skip on scenario targets — scenarios have no `dependencies` field.)
 4. If the target is a spec, read its frontmatter `status` field now — the value is needed for the gate, the impact display, the classifier's status tiebreaker, and the post-record mutation.
@@ -139,7 +139,7 @@ Informational; no separate confirmation prompt.
 1. Invoke `create-scenario` (MCP: `create-scenario`) to write `specs/{feature}/scenarios/{slug}.md` from the scenario template with the accepted `section`, Context, Behavior, and (optional) Edge Cases. The primitive creates the `scenarios/` subdirectory if absent and refuses on slug conflict. Otherwise, follow the markdown-only path: copy `specs/templates/spec/scenario.md` and substitute the fields by hand.
 2. Invoke `append-task` (MCP: `append-task`) to append a numbered task block to `specs/{feature}/tasks.md` referencing the new scenario. The default body is a single checkbox `- [ ] Implement the behavior described in scenarios/{slug}.md`; the done-when condition is "the scenario's described behavior is correctly implemented and tested." Otherwise, follow the markdown-only path: append the task block by hand, computing the next task number as `max(existing) + 1`.
 3. If the spec's `status` is `done`, invoke `set-status` (MCP: `set-status`) to flip `done → in-progress`. (For other spec statuses, no status mutation occurs.) Otherwise, edit the frontmatter directly.
-4. Invoke `write-session` (MCP: `write-session`) to set the new scenario as the session target: pass the feature slug as the feature argument, the repo-relative spec directory as the path argument, the new scenario slug as the scenario argument, and `specs/{feature}/scenarios/{slug}.md` as the scenario-path argument. The primitive rewrites `{cli-config-dir}/{project}-session.json` atomically (tempfile + rename). On the markdown-only path, rewrite the JSON directly with top-level fields feature, path, scenario, scenarioPath, setAt (ISO 8601 UTC) in that order through the same tempfile + rename pattern.
+4. Invoke `write-session` (MCP: `write-session`) to set the new scenario as the session target: pass the feature slug as the feature argument, the repo-relative spec directory as the path argument, the new scenario slug as the scenario argument, and `specs/{feature}/scenarios/{slug}.md` as the scenario-path argument. The primitive rewrites `.govern.session.toml` atomically (tempfile + rename). On the markdown-only path, rewrite the TOML directly with top-level keys `feature`, `path`, `scenario`, `scenario-path`, `set-at` (ISO 8601 UTC) in that order through the same tempfile + rename pattern.
 5. Invoke `lint-markdown` (MCP: `lint-markdown`) on every modified file. Otherwise, follow the markdown-only path: run `npx markdownlint-cli2` directly.
 
 ### Status mutation summary

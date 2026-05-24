@@ -6,17 +6,17 @@ section: "Command Set"
 
 ## Context
 
-`/gov:target` (Behavior → Command Set → Utility commands) sets the working feature for the session by writing `.claude/gov-session.json`. After a spec advances to `done`, the session still points at the now-completed feature (and optionally scenario), producing awkward `/gov:status` output ("Target: 000-slash-commands / done / next: done (spec is complete)") and trapping `/gov:ask` and `/gov:implement` on stale state until the user manually picks a new target.
+`/gov:target` (Behavior → Command Set → Utility commands) sets the working feature for the session by writing `.govern.session.toml`. After a spec advances to `done`, the session still points at the now-completed feature (and optionally scenario), producing awkward `/gov:status` output ("Target: 000-slash-commands / done / next: done (spec is complete)") and trapping `/gov:ask` and `/gov:implement` on stale state until the user manually picks a new target.
 
 The only reset path today is `/gov:target <other-feature>`, which mutates the session toward a different target rather than clearing it. There is no first-class "no target" state reachable through the command — even though the `dashboard` primitive already handles `session-target: null` and the status renderer already prints "No session target. Run /gov:target to select one." when that's the case (per `framework/commands/status.md` step 2).
 
-The user-visible gap: closing out a spec leaves the session pointer dangling, and clearing it requires hand-editing `.claude/gov-session.json`.
+The user-visible gap: closing out a spec leaves the session pointer dangling, and clearing it requires hand-editing `.govern.session.toml`.
 
 ## Behavior
 
 `/gov:target` accepts a `--clear` flag (mutually exclusive with a feature argument). When set:
 
-- Remove `.claude/gov-session.json` (delete the file). The `dashboard` primitive's documented "Session file absent → session-target: null" behavior is the reset state — there's no separate empty-session format to invent.
+- Remove `.govern.session.toml` (delete the file). The `dashboard` primitive's documented "Session file absent → session-target: null" behavior is the reset state — there's no separate empty-session format to invent.
 - Emit a one-line confirmation: `Session cleared. Run /gov:target to set a new target.`
 - Exit 0.
 

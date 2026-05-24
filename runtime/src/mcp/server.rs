@@ -414,7 +414,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "dashboard",
-        description = "Single-call pipeline-state surface for /gov:status. Returns the per-spec inventory (status, deps, tags, open-question count, artifact existence, scenarios count, blocked-by), the repo-wide tags-union, the .govern.toml review-state summary, and the optional session target."
+        description = "Single-call pipeline-state surface for /{project}:status. Returns the per-spec inventory (status, deps, tags, open-question count, artifact existence, scenarios count, blocked-by), the repo-wide tags-union, the .govern.toml review-state summary, and the optional session target read from .govern.session.toml."
     )]
     async fn dashboard(
         &self,
@@ -427,7 +427,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "write-session",
-        description = "Atomically rewrite `.claude/gov-session.json` with the session-target record. Pairs with `dashboard`'s read of the same file; allowing this MCP tool once suppresses the per-invocation Write permission prompt the host-write path triggers."
+        description = "Atomically rewrite `.govern.session.toml` (repo root, gitignored, single path for every adopter) with the session-target record. Pairs with `dashboard`'s read of the same file; allowing this MCP tool once suppresses the per-invocation Write permission prompt the host-write path triggers."
     )]
     async fn write_session(
         &self,

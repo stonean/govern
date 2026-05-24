@@ -1,3 +1,6 @@
 # Claude Code local settings (keep commands tracked for project-wide access)
 .claude/*
 !.claude/commands/
+
+# govern session state — per-user, ephemeral; managed by /gov:target.
+.govern.session.toml

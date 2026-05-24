@@ -1,12 +1,13 @@
-//! `dashboard` — single-call pipeline-state surface for `/gov:status`.
+//! `dashboard` — single-call pipeline-state surface for `/{project}:status`.
 //!
-//! Returns everything `/gov:status` needs to render the full pipeline view
-//! in one MCP round-trip: per-spec inventory (status, deps, tags,
+//! Returns everything `/{project}:status` needs to render the full pipeline
+//! view in one MCP round-trip: per-spec inventory (status, deps, tags,
 //! open-question count, artifact existence, scenarios count, blocked-by),
 //! the repo-wide `tags-union`, the `.govern.toml` review-state summary,
 //! and the optional session target (with scenario detail when one is
-//! targeted). Read-only with respect to filesystem state; no atomic-write
-//! concerns.
+//! targeted). The session is read from `.govern.session.toml` at the repo
+//! root — host-agnostic, project-name-agnostic, no caller-supplied path.
+//! Read-only with respect to filesystem state; no atomic-write concerns.
 //!
 //! Defined by `specs/022-deterministic-runtime/scenarios/dashboard-primitive.md`.
 
@@ -15,6 +16,7 @@ use std::path::Path;
 
 use serde::Deserialize;
 
+use crate::primitives::write_session::SESSION_FILE;
 use crate::primitives::{
     PrimitiveError, Result, is_feature_slug, read_text, section_lines, split_frontmatter,
 };
@@ -36,9 +38,8 @@ const UNBLOCKING_STATUSES: &[&str] = &["clarified", "planned", "in-progress", "d
 /// directory under `specs/` lacks a `spec.md` (the directory naming
 /// convention promises one), [`PrimitiveError::Io`] on filesystem
 /// failures, [`PrimitiveError::Yaml`] when any spec's frontmatter is
-/// malformed, [`PrimitiveError::Json`] when `.claude/gov-session.json`
-/// is malformed, or [`PrimitiveError::Toml`] when `.govern.toml`
-/// is malformed.
+/// malformed, or [`PrimitiveError::Toml`] when `.govern.toml` or
+/// `.govern.session.toml` is malformed.
 pub fn run(_args: &DashboardArgs, repo: &Path) -> Result<DashboardResult> {
     let specs = load_specs(repo)?;
     let tags_union = compute_tags_union(&specs);
@@ -249,32 +250,34 @@ fn load_config(repo: &Path) -> Result<DashboardConfig> {
 
 /// Minimal session-file shape. The runtime exec subcommand seeds walker
 /// context from the same file; the MCP surface reads it directly so MCP
-/// callers don't need a second tool call.
+/// callers don't need a second tool call. TOML keys are kebab-case
+/// (`scenario-path`, `set-at`); the legacy JSON keys (`scenarioPath`,
+/// `setAt`) are not accepted — adopters with the legacy `.claude/*-session.json`
+/// file complete the migration via the `/govern` bootstrap pass.
 #[derive(Deserialize)]
 struct SessionFile {
     feature: String,
     #[serde(default)]
     scenario: Option<String>,
-    #[serde(default, rename = "scenarioPath")]
+    #[serde(default, rename = "scenario-path")]
     scenario_path: Option<String>,
 }
 
-/// Read `.claude/gov-session.json` (when present) and populate the
+/// Read `<repo>/.govern.session.toml` (when present) and populate the
 /// session-target field. When the targeted scenario file exists, also
 /// reads it to populate `scenario-detail`. The session field is echoed
-/// as-recorded; `/gov:target` is the corrective action for stale slugs,
-/// not the dashboard.
+/// as-recorded; `/{project}:target` is the corrective action for stale
+/// slugs, not the dashboard.
 fn load_session_target(repo: &Path) -> Result<Option<DashboardSessionTarget>> {
-    let session_path = repo.join(".claude").join("gov-session.json");
+    let session_path = repo.join(SESSION_FILE);
     if !session_path.is_file() {
         return Ok(None);
     }
     let content = read_text(&session_path)?;
-    let session: SessionFile =
-        serde_json::from_str(&content).map_err(|source| PrimitiveError::Json {
-            path: session_path.clone(),
-            source,
-        })?;
+    let session: SessionFile = toml::from_str(&content).map_err(|source| PrimitiveError::Toml {
+        path: session_path.clone(),
+        source,
+    })?;
     let scenario_detail = match (&session.scenario, &session.scenario_path) {
         (Some(_), Some(rel_path)) => load_scenario_detail(repo, rel_path)?,
         _ => None,
@@ -356,10 +359,11 @@ mod tests {
         std::fs::write(dir.join("spec.md"), content).unwrap();
     }
 
-    fn write_session(repo: &Path, body: &str) {
-        let dir = repo.join(".claude");
-        std::fs::create_dir_all(&dir).unwrap();
-        std::fs::write(dir.join("gov-session.json"), body).unwrap();
+    /// Write the canonical session TOML at `<repo>/.govern.session.toml`.
+    /// All tests use the same path — the consolidation removed every
+    /// per-host / per-project variability.
+    fn write_session_toml(repo: &Path, body: &str) {
+        std::fs::write(repo.join(".govern.session.toml"), body).unwrap();
     }
 
     #[test]
@@ -557,15 +561,60 @@ reason = "Deferred until v2 perf budget lands."
     #[test]
     fn session_feature_only_populates_target() {
         let tmp = TempDir::new().unwrap();
-        write_session(
+        write_session_toml(
             tmp.path(),
-            r#"{"feature":"022-deterministic-runtime","path":"specs/022-deterministic-runtime"}"#,
+            "feature = \"022-deterministic-runtime\"\npath = \"specs/022-deterministic-runtime\"\nset-at = \"2026-05-23T12:34:56Z\"\n",
         );
         let result = run(&DashboardArgs::default(), tmp.path()).unwrap();
         let target = result.session_target.unwrap();
         assert_eq!(target.feature, "022-deterministic-runtime");
         assert!(target.scenario.is_none());
         assert!(target.scenario_detail.is_none());
+    }
+
+    #[test]
+    fn dashboard_reads_session_from_same_path_regardless_of_project_name() {
+        // Headline of the consolidation: the dashboard reads
+        // `.govern.session.toml` at the repo root. The path doesn't depend
+        // on project name (`gov` vs `anvil`) or AI CLI (`.claude/` vs
+        // `.augment/`). The legacy `.claude/{project}-session.json` files
+        // are not consulted — adopters migrate via /govern.
+        let tmp = TempDir::new().unwrap();
+        write_session_toml(
+            tmp.path(),
+            "feature = \"002-observability\"\npath = \"specs/002-observability\"\nset-at = \"2026-05-23T12:34:56Z\"\n",
+        );
+        // No `.claude/` or `.augment/` directory needs to exist.
+        assert!(!tmp.path().join(".claude").exists());
+        let result = run(&DashboardArgs::default(), tmp.path()).unwrap();
+        let target = result.session_target.unwrap();
+        assert_eq!(target.feature, "002-observability");
+    }
+
+    #[test]
+    fn legacy_json_session_file_is_ignored() {
+        // An adopter who hasn't yet run /govern post-consolidation may
+        // still have `.claude/gov-session.json` on disk. The dashboard
+        // does not read it — only `.govern.session.toml`. Adopters in
+        // this state see "no target" until they re-/gov:target or
+        // /govern migrates them.
+        let tmp = TempDir::new().unwrap();
+        std::fs::create_dir_all(tmp.path().join(".claude")).unwrap();
+        std::fs::write(
+            tmp.path().join(".claude/gov-session.json"),
+            r#"{"feature":"legacy-feature","path":"specs/legacy"}"#,
+        )
+        .unwrap();
+        let result = run(&DashboardArgs::default(), tmp.path()).unwrap();
+        assert!(result.session_target.is_none());
+    }
+
+    #[test]
+    fn malformed_session_toml_is_operational_error() {
+        let tmp = TempDir::new().unwrap();
+        write_session_toml(tmp.path(), "feature = [unclosed array\n");
+        let err = run(&DashboardArgs::default(), tmp.path()).unwrap_err();
+        assert!(matches!(err, PrimitiveError::Toml { .. }));
     }
 
     #[test]
@@ -584,9 +633,9 @@ reason = "Deferred until v2 perf budget lands."
             "---\nsection: \"Follow-on scenarios\"\n---\n\n# Widget\n\n## Context\n\nWidget exists to demonstrate gizmos.\n\n## Open Questions\n\n- One unresolved item.\n",
         )
         .unwrap();
-        write_session(
+        write_session_toml(
             tmp.path(),
-            r#"{"feature":"022-foo","path":"specs/022-foo","scenario":"widget","scenarioPath":"specs/022-foo/scenarios/widget.md"}"#,
+            "feature = \"022-foo\"\npath = \"specs/022-foo\"\nscenario = \"widget\"\nscenario-path = \"specs/022-foo/scenarios/widget.md\"\nset-at = \"2026-05-23T12:34:56Z\"\n",
         );
         let result = run(&DashboardArgs::default(), tmp.path()).unwrap();
         let target = result.session_target.unwrap();
@@ -604,9 +653,9 @@ reason = "Deferred until v2 perf budget lands."
     #[test]
     fn session_with_stale_scenario_returns_target_without_detail() {
         let tmp = TempDir::new().unwrap();
-        write_session(
+        write_session_toml(
             tmp.path(),
-            r#"{"feature":"022-foo","path":"specs/022-foo","scenario":"ghost","scenarioPath":"specs/022-foo/scenarios/ghost.md"}"#,
+            "feature = \"022-foo\"\npath = \"specs/022-foo\"\nscenario = \"ghost\"\nscenario-path = \"specs/022-foo/scenarios/ghost.md\"\nset-at = \"2026-05-23T12:34:56Z\"\n",
         );
         let result = run(&DashboardArgs::default(), tmp.path()).unwrap();
         let target = result.session_target.unwrap();

@@ -26,7 +26,7 @@ Parse `$ARGUMENTS` for flags and an optional feature identifier:
 - **Feature identifier** — a feature number, partial name, or full directory name. Overrides the session target.
 - **`--all`** — scan all feature directories under `specs/` instead of a single target. Report results grouped by feature.
 
-If `--all` is not present, use the feature identifier if provided, otherwise fall back to the session target from `.claude/gov-session.json`. If no target can be resolved, stop and tell the user to run `/gov:target` first or use `--all`.
+If `--all` is not present, use the feature identifier if provided, otherwise fall back to the session target from `.govern.session.toml`. If no target can be resolved, stop and tell the user to run `/gov:target` first or use `--all`.
 
 ## Scope Boundaries
 

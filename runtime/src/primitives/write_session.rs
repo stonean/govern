@@ -1,8 +1,9 @@
-//! `write-session` — atomically rewrite `.claude/gov-session.json`.
+//! `write-session` — atomically rewrite the session state file at
+//! `<repo>/.govern.session.toml`.
 //!
 //! Mirrors the write-side of [`crate::primitives::dashboard::load_session_target`].
 //! The session file is the second of the two durable journals named by
-//! spec 022 (markdown + `.claude/gov-session.json`, per
+//! spec 022 (markdown + `.govern.session.toml`, per
 //! `specs/022-deterministic-runtime/plan.md` §No data persistence outside
 //! session file + markdown); the read path is exposed by `dashboard`, and
 //! this primitive is the matching write path.
@@ -13,6 +14,16 @@
 //! reliably suppressed. Routing the write through an MCP tool moves the
 //! consent into the MCP tool-permission lane, so a single allow covers
 //! every subsequent target/scenario-switch.
+//!
+//! The previous shape — host-specific JSON at `{cli-config-dir}/{project}-session.json`
+//! (e.g., `.claude/gov-session.json`) — coupled the session location to
+//! both the AI CLI (`.claude/` vs `.augment/`) and the adopting project's
+//! name (`gov-session.json` vs `anvil-session.json`). Consolidating onto
+//! `.govern.session.toml` at the repo root makes the path host-agnostic,
+//! project-name-agnostic, and uniform across every adopter; the runtime
+//! no longer hardcodes any AI CLI's config directory.
+
+#![allow(clippy::expect_used)]
 
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -22,13 +33,17 @@ use serde::Serialize;
 use crate::primitives::{PrimitiveError, Result, rel_path, validate_no_traversal, write_atomic};
 use crate::schema::primitives::{WriteSessionArgs, WriteSessionResult};
 
+/// Repo-relative path of the session file. Hardcoded — there is no host
+/// variability to parameterize anymore; the file lives at the repo root
+/// for every adopter.
+pub(crate) const SESSION_FILE: &str = ".govern.session.toml";
+
 /// Execute the `write-session` primitive against `repo`.
 ///
-/// Resolves the session path to `repo.join(".claude/gov-session.json")`,
-/// creates the `.claude/` parent if absent, and writes the JSON record
-/// atomically via tempfile + rename — same pattern every other
-/// state-modifying primitive (`mark-task`, `mark-criterion`, `set-status`)
-/// already uses.
+/// Writes a fresh TOML document at `<repo>/.govern.session.toml` via
+/// tempfile + rename — same atomic-write pattern every other
+/// state-modifying primitive (`mark-task`, `mark-criterion`,
+/// `set-status`) uses.
 ///
 /// # Errors
 ///
@@ -71,7 +86,7 @@ pub(crate) fn run_with_now(
         _ => {}
     }
 
-    let session_path = repo.join(".claude").join("gov-session.json");
+    let session_path = repo.join(SESSION_FILE);
     let created = !session_path.exists();
 
     let record = SessionRecord {
@@ -81,12 +96,11 @@ pub(crate) fn run_with_now(
         scenario_path: args.scenario_path.as_deref(),
         set_at: iso8601_utc(now),
     };
-    let mut body =
-        serde_json::to_string_pretty(&record).map_err(|source| PrimitiveError::Json {
-            path: session_path.clone(),
-            source,
-        })?;
-    body.push('\n');
+    // `toml::to_string` over a struct of `&str` / `Option<&str>` / `String`
+    // is infallible — no non-string keys, no I/O, no exotic types — so the
+    // `expect` documents the invariant rather than handling a reachable
+    // failure mode. Same pattern as `merge_permissions::serialize_pretty`.
+    let body = toml::to_string(&record).expect("session TOML serializes infallibly");
 
     write_atomic(&session_path, &body)?;
 
@@ -97,8 +111,8 @@ pub(crate) fn run_with_now(
 }
 
 /// On-disk shape of the session file. Field order is the wire contract —
-/// the parity byte-equality check on `.claude/gov-session.json` depends
-/// on it. `scenarioPath` is camelCase to match the reader in
+/// the parity byte-equality check on `.govern.session.toml` depends on
+/// it. All keys are kebab-case to match the reader in
 /// [`crate::primitives::dashboard`].
 #[derive(Serialize)]
 struct SessionRecord<'a> {
@@ -106,16 +120,16 @@ struct SessionRecord<'a> {
     path: &'a str,
     #[serde(skip_serializing_if = "Option::is_none")]
     scenario: Option<&'a str>,
-    #[serde(skip_serializing_if = "Option::is_none", rename = "scenarioPath")]
+    #[serde(skip_serializing_if = "Option::is_none", rename = "scenario-path")]
     scenario_path: Option<&'a str>,
-    #[serde(rename = "setAt")]
+    #[serde(rename = "set-at")]
     set_at: String,
 }
 
 /// Format `now` as an RFC 3339 / ISO 8601 UTC timestamp
-/// (`YYYY-MM-DDTHH:MM:SSZ`). Matches the field shape every existing
-/// fixture under `runtime/tests/fixtures/*/.claude/gov-session.json`
-/// uses for `setAt`.
+/// (`YYYY-MM-DDTHH:MM:SSZ`). Matches the field shape `setAt` used
+/// pre-consolidation; the TOML key is now `set-at`, but the value
+/// remains an ISO 8601 UTC string.
 ///
 /// Uses Howard Hinnant's date algorithms — the standard branchless
 /// civil-from-days computation. Valid for any date the underlying
@@ -194,13 +208,15 @@ mod tests {
     fn writes_canonical_shape_without_scenario() {
         let tmp = tempdir().unwrap();
         let result = run_with_now(&base_args(), tmp.path(), fixed_now()).unwrap();
-        assert_eq!(result.path, ".claude/gov-session.json");
+        assert_eq!(result.path, ".govern.session.toml");
         assert!(result.created, "fresh file is reported as created");
 
-        let body = fs::read_to_string(tmp.path().join(".claude/gov-session.json")).unwrap();
+        let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
         assert_eq!(
             body,
-            "{\n  \"feature\": \"022-deterministic-runtime\",\n  \"path\": \"specs/022-deterministic-runtime\",\n  \"setAt\": \"2026-05-23T12:34:56Z\"\n}\n"
+            "feature = \"022-deterministic-runtime\"\n\
+             path = \"specs/022-deterministic-runtime\"\n\
+             set-at = \"2026-05-23T12:34:56Z\"\n"
         );
     }
 
@@ -215,54 +231,61 @@ mod tests {
         let result = run_with_now(&args, tmp.path(), fixed_now()).unwrap();
         assert!(result.created);
 
-        let body = fs::read_to_string(tmp.path().join(".claude/gov-session.json")).unwrap();
+        let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
         assert!(
-            body.contains("\"scenario\": \"write-session-primitive\""),
+            body.contains("scenario = \"write-session-primitive\""),
             "{body}"
         );
         assert!(
-            body.contains("\"scenarioPath\": \"specs/022-deterministic-runtime/scenarios/write-session-primitive.md\""),
+            body.contains("scenario-path = \"specs/022-deterministic-runtime/scenarios/write-session-primitive.md\""),
             "{body}"
         );
-        // Field order: feature, path, scenario, scenarioPath, setAt.
-        let feat = body.find("\"feature\"").unwrap();
-        let p = body.find("\"path\"").unwrap();
-        let scen = body.find("\"scenario\"").unwrap();
-        let scen_path = body.find("\"scenarioPath\"").unwrap();
-        let set_at = body.find("\"setAt\"").unwrap();
+        // Key order: feature, path, scenario, scenario-path, set-at.
+        let feat = body.find("feature =").unwrap();
+        let p = body.find("path =").unwrap();
+        let scen = body.find("scenario =").unwrap();
+        let scen_path = body.find("scenario-path =").unwrap();
+        let set_at = body.find("set-at =").unwrap();
         assert!(feat < p && p < scen && scen < scen_path && scen_path < set_at);
     }
 
     #[test]
     fn overwrites_existing_file_and_reports_not_created() {
         let tmp = tempdir().unwrap();
-        let claude_dir = tmp.path().join(".claude");
-        fs::create_dir_all(&claude_dir).unwrap();
         fs::write(
-            claude_dir.join("gov-session.json"),
-            "{\"feature\":\"old-feature\",\"path\":\"specs/old\",\"setAt\":\"2026-01-01T00:00:00Z\"}\n",
+            tmp.path().join(".govern.session.toml"),
+            "feature = \"old-feature\"\npath = \"specs/old\"\nset-at = \"2026-01-01T00:00:00Z\"\n",
         )
         .unwrap();
 
         let result = run_with_now(&base_args(), tmp.path(), fixed_now()).unwrap();
         assert!(!result.created, "existing file is reported as overwritten");
 
-        let body = fs::read_to_string(tmp.path().join(".claude/gov-session.json")).unwrap();
+        let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
         assert!(body.contains("022-deterministic-runtime"));
         assert!(!body.contains("old-feature"));
     }
 
     #[test]
-    fn creates_dot_claude_directory_when_absent() {
+    fn writes_at_repo_root_regardless_of_project_name() {
+        // The point of the consolidation: the path doesn't change with
+        // project name, AI CLI, or anything else. It is always
+        // `.govern.session.toml` at the repo root.
         let tmp = tempdir().unwrap();
+        let mut args = base_args();
+        args.feature = "002-observability".into();
+        args.path = "specs/002-observability".into();
+        let result = run_with_now(&args, tmp.path(), fixed_now()).unwrap();
+        assert_eq!(result.path, ".govern.session.toml");
+        assert!(tmp.path().join(".govern.session.toml").is_file());
+        // No host-specific or project-specific sibling exists.
         assert!(!tmp.path().join(".claude").exists());
-        run_with_now(&base_args(), tmp.path(), fixed_now()).unwrap();
-        assert!(tmp.path().join(".claude").is_dir());
-        assert!(tmp.path().join(".claude/gov-session.json").is_file());
+        assert!(!tmp.path().join(".claude/gov-session.json").exists());
+        assert!(!tmp.path().join(".claude/anvil-session.json").exists());
     }
 
     #[test]
-    fn clearing_scenario_omits_both_fields() {
+    fn clearing_scenario_omits_both_keys() {
         let tmp = tempdir().unwrap();
         // First write with a scenario set.
         let mut with_scenario = base_args();
@@ -271,11 +294,11 @@ mod tests {
             Some("specs/022-deterministic-runtime/scenarios/write-session-primitive.md".into());
         run_with_now(&with_scenario, tmp.path(), fixed_now()).unwrap();
 
-        // Then overwrite without — both fields must vanish.
+        // Then overwrite without — both keys must vanish.
         run_with_now(&base_args(), tmp.path(), fixed_now()).unwrap();
-        let body = fs::read_to_string(tmp.path().join(".claude/gov-session.json")).unwrap();
+        let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
         assert!(!body.contains("scenario"), "{body}");
-        assert!(!body.contains("scenarioPath"), "{body}");
+        assert!(!body.contains("scenario-path"), "{body}");
     }
 
     #[test]
@@ -296,7 +319,7 @@ mod tests {
             other => panic!("expected MissingArgument, got {other:?}"),
         }
         // Disk is unchanged (no file created).
-        assert!(!tmp.path().join(".claude/gov-session.json").exists());
+        assert!(!tmp.path().join(".govern.session.toml").exists());
     }
 
     #[test]
@@ -341,13 +364,11 @@ mod tests {
     fn dropping_named_tempfile_leaves_existing_session_unchanged() {
         use std::io::Write;
         let tmp = tempdir().unwrap();
-        let claude_dir = tmp.path().join(".claude");
-        fs::create_dir_all(&claude_dir).unwrap();
-        let session_path = claude_dir.join("gov-session.json");
-        let original = "{\"feature\":\"unchanged\"}\n";
+        let session_path = tmp.path().join(".govern.session.toml");
+        let original = "feature = \"unchanged\"\n";
         fs::write(&session_path, original).unwrap();
         {
-            let mut tf = tempfile::NamedTempFile::new_in(&claude_dir).unwrap();
+            let mut tf = tempfile::NamedTempFile::new_in(tmp.path()).unwrap();
             tf.write_all(b"INTERRUPTED").unwrap();
         }
         assert_eq!(fs::read_to_string(&session_path).unwrap(), original);

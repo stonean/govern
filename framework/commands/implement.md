@@ -20,7 +20,7 @@ Pipeline gate: planned → in-progress → done. Walks through `tasks.md` step b
 
 ## Context
 
-Use the session target from `{cli-config-dir}/{project}-session.json`. If `$ARGUMENTS` is provided, use it to override the session target. If no session target is set and no arguments provided, stop and tell the user to run `/{project}:target` first.
+Use the session target from `.govern.session.toml`. If `$ARGUMENTS` is provided, use it to override the session target. If no session target is set and no arguments provided, stop and tell the user to run `/{project}:target` first.
 
 ### Flags
 
@@ -76,7 +76,7 @@ The full setup, walk-through, completion gate, and stuck-detection details are d
 
 ### Setup details
 
-- Read `{cli-config-dir}/{project}-session.json` for the session target, including optional `scenario` and `scenarioPath` fields.
+- Read `.govern.session.toml` for the session target, including optional `scenario` and `scenario-path` fields.
 - Read `specs/{feature}/tasks.md` for the ordered task list (primitive: `read-tasks`).
 - Read `specs/{feature}/plan.md` for technical decisions and affected files.
 - Read the spec file for acceptance criteria and contracts.

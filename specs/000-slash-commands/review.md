@@ -43,7 +43,7 @@ _None._ All five passes ran.
 
 ### Security
 
-The `--clear` step deletes `.claude/gov-session.json`, a session-state pointer that contains a feature slug and an optional scenario slug — no secrets, no PII, no auth tokens. The deletion is operator-invoked and path-fixed; there is no input-driven path traversal surface. The shipped security rules describe HTTP, persistence, auth, and DOM patterns — none of which apply to a single file unlink in agent-interpreted prose.
+The `--clear` step deletes `.govern.session.toml`, a session-state pointer that contains a feature slug and an optional scenario slug — no secrets, no PII, no auth tokens. The deletion is operator-invoked and path-fixed; there is no input-driven path traversal surface. The shipped security rules describe HTTP, persistence, auth, and DOM patterns — none of which apply to a single file unlink in agent-interpreted prose.
 
 ### Reuse
 
