@@ -2,6 +2,12 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.9.2] — 2026-05-23
+
+### Fixed
+
+- **`merge-managed-block` (line-prefix) detects the end of a multi-subsection canonical correctly.** The primitive's `find_line_prefix_block` helper previously used a "next blank line is the terminator" heuristic to bound the on-disk canonical block. That heuristic mis-truncated canonicals containing interior blank lines between subsections — the shipped `.gitignore` template ([`framework/templates/project/gitignore`](../framework/templates/project/gitignore)) is exactly this shape — so the `body == block` comparison could never succeed on multi-subsection canonicals and the *updated* arm's `after = &text[body_end..]` re-emitted the tail subsections as adopter-area content. The cross-boundary dedup pass stripped non-comment body lines but preserved subsection-header comment lines, so each `/govern` rerun left an orphan trail of empty `# Environment and secrets` / `# Claude Code …` / `# IDE` / `# OS` headers below the real block. The helper now walks up to `block.lines().count()` lines from the marker using the supplied block as a *structural* template: expected blank lines (interior subsection separators) match against on-disk blanks; an unexpected blank (non-blank expected, blank found) signals the end-of-block terminator. Two new unit tests under `runtime/src/primitives/merge_managed_block.rs::tests` cover the regression — a stable-rerun assertion (`action == "unchanged"`, `dedup_removed == 0`, mtime preserved) and a content-changed-update assertion (clean replacement, each subsection header appears exactly once). All 27 existing `merge_managed_block` unit tests pass unchanged. Closes spec 022's `merge-managed-block-multi-subsection-end` scenario.
+
 ## [0.9.1] — 2026-05-23
 
 ### Fixed

@@ -9,9 +9,14 @@
 //!   behavior): paired `<!-- BEGIN {marker} -->` / `<!-- END {marker}
 //!   -->` markers; body between them is the managed region.
 //! - **`line-prefix`**: a single `# {marker}` line preamble followed
-//!   by the block, terminated by the next blank line or EOF. Matches
-//!   `.gitignore` and `.gitattributes` conventions where a `#` line
-//!   serves as both a comment and an inline section header.
+//!   by the block. The block's extent on disk is identified by walking
+//!   up to `block.lines().count()` lines using the supplied block as a
+//!   structural template; an unexpected blank line (where the supplied
+//!   block has non-blank content) is the end-of-block terminator. This
+//!   matches `.gitignore` / `.gitattributes` conventions where a `#`
+//!   line serves as both a comment and an inline section header, and
+//!   correctly handles blocks containing interior blank lines between
+//!   subsections (the shipped `.gitignore` template is shaped this way).
 //!
 //! In either style the primitive chooses one of four actions:
 //!
@@ -223,13 +228,35 @@ fn merge_html_comment(
     }
 }
 
-/// Locate a `# {marker}` line in `text` and the body that follows it
-/// (up to the next blank line or EOF). Returns `Some((line_start,
-/// body_end, body))` where `line_start` is the byte offset of the
-/// `#` character, `body_end` is the byte offset of the blank-line
-/// terminator (or `text.len()` at EOF), and `body` is the body trimmed
-/// of leading/trailing newlines.
-fn find_line_prefix_block<'a>(text: &'a str, marker: &str) -> Option<(usize, usize, &'a str)> {
+/// Locate a `# {marker}` line in `text` and the body that follows it.
+/// Returns `Some((line_start, body_end, body))` where `line_start` is
+/// the byte offset of the `#` character, `body_end` is the byte offset
+/// immediately past the on-disk canonical block's last line (including
+/// its terminating newline), and `body` is the body trimmed of
+/// leading/trailing newlines.
+///
+/// The body extent is determined by walking up to
+/// `expected_block.lines().count()` lines from the position past the
+/// marker line, using `expected_block` as a *structural* template:
+/// expected blank lines (interior subsection separators) are matched
+/// against on-disk blanks, and expected non-blank lines may match any
+/// non-blank on-disk content. The walk terminates early when the
+/// structure mismatches — specifically, when the expected line is
+/// non-blank but the on-disk line is blank, signalling the end-of-block
+/// blank-line terminator the previous run wrote. The content of each
+/// on-disk line is not required to match `expected_block`; the caller
+/// performs the byte-equality check against the returned `body`.
+///
+/// This replaces an earlier "next blank line is the terminator"
+/// heuristic that mis-truncated multi-subsection canonicals (those with
+/// interior blank lines between subsections), causing repeated runs to
+/// leave orphan subsection headers below the managed region. See
+/// `scenarios/merge-managed-block-multi-subsection-end.md`.
+fn find_line_prefix_block<'a>(
+    text: &'a str,
+    marker: &str,
+    expected_block: &str,
+) -> Option<(usize, usize, &'a str)> {
     let header = format!("# {marker}");
     let mut offset = 0;
     while offset < text.len() {
@@ -240,7 +267,7 @@ fn find_line_prefix_block<'a>(text: &'a str, marker: &str) -> Option<(usize, usi
         if line == header {
             let line_start = offset;
             let body_start = offset + line_end + usize::from(line_end < rest.len());
-            let body_end = find_blank_line(text, body_start);
+            let body_end = walk_body_extent(text, body_start, expected_block);
             let body = text[body_start..body_end].trim_matches('\n');
             return Some((line_start, body_end, body));
         }
@@ -249,22 +276,29 @@ fn find_line_prefix_block<'a>(text: &'a str, marker: &str) -> Option<(usize, usi
     None
 }
 
-/// From `start`, find the byte offset of the first blank line, or
-/// `text.len()` if none is found before EOF. A blank line is a `\n` or
-/// `\r\n` not preceded by any other content on that line.
-fn find_blank_line(text: &str, start: usize) -> usize {
-    let mut offset = start;
-    while offset < text.len() {
-        let rest = &text[offset..];
+/// Walk up to `expected_block.lines().count()` lines from `body_start`,
+/// using `expected_block` as a structural template. Terminate early
+/// when the expected line is non-blank but the on-disk line is blank —
+/// the blank is the end-of-block terminator the previous run wrote.
+/// Returns the byte offset immediately past the last consumed line's
+/// newline (or `text.len()` at EOF).
+fn walk_body_extent(text: &str, body_start: usize, expected_block: &str) -> usize {
+    let mut body_offset = body_start;
+    for expected_line in expected_block.lines() {
+        if body_offset >= text.len() {
+            break;
+        }
+        let rest = &text[body_offset..];
         let line_end = rest.find('\n').map_or(rest.len(), |i| i);
         let raw_line = &rest[..line_end];
-        let line = raw_line.trim_end_matches('\r');
-        if line.is_empty() {
-            return offset;
+        let actual_line = raw_line.trim_end_matches('\r');
+        if !expected_line.is_empty() && actual_line.is_empty() {
+            break;
         }
-        offset += line_end + usize::from(line_end < rest.len());
+        let has_newline = line_end < rest.len();
+        body_offset += line_end + usize::from(has_newline);
     }
-    text.len()
+    body_offset
 }
 
 fn merge_line_prefix(
@@ -283,7 +317,7 @@ fn merge_line_prefix(
 
     // Phase 1: install or update the managed block.
     let (post_merge, merge_action, block_start, block_end) =
-        match find_line_prefix_block(text, marker) {
+        match find_line_prefix_block(text, marker, block) {
             None => {
                 // Pad so the appended block is separated by exactly one
                 // blank line. Empty file or file already ending in a
@@ -307,11 +341,6 @@ fn merge_line_prefix(
             }
             Some((line_start, body_end, body)) => {
                 if body == block {
-                    // `body` was returned by `find_line_prefix_block`,
-                    // which truncates at the first blank line. Equality
-                    // with `block` therefore implies `block` has no
-                    // interior blanks, so the on-disk bounds returned by
-                    // the helper are accurate for the dedup phase.
                     let block_end = body_end;
                     (text.to_string(), "unchanged", line_start, block_end)
                 } else {
@@ -876,6 +905,118 @@ Thumbs.db";
         assert!(
             !body.starts_with(".claude/*\n"),
             "adopter-area .claude/* dupe must be removed: got {body:?}"
+        );
+    }
+
+    #[test]
+    fn line_prefix_multi_subsection_rerun_is_unchanged_and_preserves_mtime() {
+        // Regression: a multi-subsection canonical (the shipped `.gitignore`
+        // template shape) re-applied against a file that already contains
+        // the same canonical must reach `unchanged` — not rewrite the file
+        // every run leaving orphan subsection headers in its wake. See
+        // scenarios/merge-managed-block-multi-subsection-end.md.
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join(".gitignore");
+        let canonical = "\
+# Environment and secrets
+.env
+.env.*
+
+# Claude Code local settings (keep commands tracked for project-wide access)
+.claude/*
+!.claude/commands/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db";
+        let on_disk = format!("node_modules/\n\n# govern-managed\n{canonical}\n");
+        fs::write(&path, &on_disk).unwrap();
+        let mtime_before = fs::metadata(&path).unwrap().modified().unwrap();
+
+        let result = run(&args(&path, canonical, Some("line-prefix")), tmp.path()).unwrap();
+        assert_eq!(result.action, "unchanged");
+        assert_eq!(result.dedup_removed, Some(0));
+        assert_eq!(
+            fs::metadata(&path).unwrap().modified().unwrap(),
+            mtime_before,
+            "unchanged must not rewrite the multi-subsection canonical"
+        );
+        assert_eq!(fs::read_to_string(&path).unwrap(), on_disk);
+    }
+
+    #[test]
+    fn line_prefix_multi_subsection_update_replaces_cleanly_without_duplicated_tail() {
+        // Regression: when the multi-subsection canonical's content changes
+        // while preserving its structure (same line count, same blank-line
+        // positions), the update path must replace exactly the on-disk
+        // block — not leave the tail subsections duplicated below the new
+        // block as orphan headers after the dedup pass strips matching
+        // body lines.
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join(".gitignore");
+        let old_canonical = "\
+# Environment and secrets
+.env
+.env.*
+
+# Claude Code local settings (keep commands tracked for project-wide access)
+.claude/*
+!.claude/commands/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db";
+        // Same structure (4 subsections, identical blank positions) but
+        // one comment-line wording tweaked. This is the realistic update
+        // path: framework template wording evolves between releases.
+        let new_canonical = "\
+# Environment and secrets
+.env
+.env.*
+
+# Claude Code local settings — commands stay tracked for project-wide access
+.claude/*
+!.claude/commands/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db";
+        let on_disk = format!("node_modules/\n\n# govern-managed\n{old_canonical}\n\nuser-tail/\n");
+        fs::write(&path, &on_disk).unwrap();
+
+        let result = run(&args(&path, new_canonical, Some("line-prefix")), tmp.path()).unwrap();
+        assert_eq!(result.action, "updated");
+
+        let body = fs::read_to_string(&path).unwrap();
+        let expected =
+            format!("node_modules/\n\n# govern-managed\n{new_canonical}\n\nuser-tail/\n");
+        assert_eq!(
+            body, expected,
+            "multi-subsection update must replace cleanly with no orphan tail"
+        );
+        // Sanity-check: each subsection header appears exactly once (the
+        // duplicated-tail symptom would show two copies of `# IDE` / `# OS`).
+        assert_eq!(
+            body.matches("# IDE\n").count(),
+            1,
+            "subsection header must appear exactly once: {body:?}"
+        );
+        assert_eq!(
+            body.matches("# OS\n").count(),
+            1,
+            "subsection header must appear exactly once: {body:?}"
         );
     }
 
