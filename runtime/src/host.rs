@@ -14,6 +14,17 @@ use std::path::Path;
 
 use serde::Deserialize;
 
+/// Default `cli-config-dir` when `.govern.toml`'s `[host]` block is
+/// missing the key. Matches the framework repo's own layout, so this
+/// repo's behavior is unchanged when no `[host]` block is declared.
+const DEFAULT_CLI_CONFIG_DIR: &str = ".claude";
+
+/// Last-resort `project` fallback when the repo path has no
+/// extractable file-name component (UTF-8-invalid name, root path,
+/// trailing `..`). The normal fallback is the repo's directory
+/// basename; this constant only fires on the degenerate path shape.
+const FALLBACK_PROJECT: &str = "gov";
+
 /// Resolved host config — the values both command-resolution callsites
 /// need at lookup time. `cli_config_dir` is the host's per-user
 /// config-dir name (e.g., `.claude` for Claude Code, `.augment` for
@@ -68,9 +79,9 @@ impl Host {
         let project = repo
             .file_name()
             .and_then(|s| s.to_str())
-            .map_or_else(|| "gov".to_owned(), str::to_owned);
+            .map_or_else(|| FALLBACK_PROJECT.to_owned(), str::to_owned);
         Self {
-            cli_config_dir: ".claude".to_owned(),
+            cli_config_dir: DEFAULT_CLI_CONFIG_DIR.to_owned(),
             project,
         }
     }

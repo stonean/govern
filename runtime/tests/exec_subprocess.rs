@@ -12,6 +12,9 @@ use std::process::{Command, Stdio};
 
 use serde_json::Value;
 
+mod common;
+use common::copy_dir_recursive;
+
 fn runtime_binary() -> PathBuf {
     // CARGO_MANIFEST_DIR is the runtime crate. The release binary lives
     // under target/release/gvrn relative to it.
@@ -364,20 +367,6 @@ fn exec_resolves_command_via_parameterized_host_block() {
         .collect();
     assert_eq!(types, vec!["progress", "complete"]);
     assert_eq!(envelopes[0]["primitive"], "read-spec");
-}
-
-fn copy_dir_recursive(src: &Path, dst: &Path) {
-    for entry in fs::read_dir(src).unwrap() {
-        let entry = entry.unwrap();
-        let src_path = entry.path();
-        let dst_path = dst.join(entry.file_name());
-        if entry.file_type().unwrap().is_dir() {
-            fs::create_dir_all(&dst_path).unwrap();
-            copy_dir_recursive(&src_path, &dst_path);
-        } else {
-            fs::copy(&src_path, &dst_path).unwrap();
-        }
-    }
 }
 
 #[test]

@@ -5,7 +5,7 @@ review:
   last-run: 2026-05-24T23:30:00Z
   reviewed-against: 8d42f50
   must-violations: 0
-  should-violations: 2
+  should-violations: 0
   low-confidence: 2
   blocking: false
 ---

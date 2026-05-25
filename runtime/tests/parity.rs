@@ -35,6 +35,9 @@ use std::process::{Command, Stdio};
 
 use serde::Deserialize;
 
+mod common;
+use common::copy_dir_recursive;
+
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 struct CommandFrontmatter {
@@ -355,23 +358,6 @@ fn ensure_binary_built() {
         .status()
         .expect("cargo build --release must succeed");
     assert!(status.success(), "cargo build failed");
-}
-
-fn copy_dir_recursive(src: &Path, dst: &Path) {
-    fs::create_dir_all(dst).unwrap();
-    for entry in fs::read_dir(src).unwrap() {
-        let entry = entry.unwrap();
-        let from = entry.path();
-        let to = dst.join(entry.file_name());
-        if from.is_dir() {
-            copy_dir_recursive(&from, &to);
-        } else {
-            if let Some(parent) = to.parent() {
-                fs::create_dir_all(parent).unwrap();
-            }
-            fs::copy(&from, &to).unwrap();
-        }
-    }
 }
 
 fn stage_fixture(command: &str, fixture: &str) -> tempfile::TempDir {
