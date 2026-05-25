@@ -4,10 +4,10 @@ status: in-progress
 dependencies: [000-slash-commands, 009-scenario-targeting, 013-text-first-artifacts, 023-govern-refinement]
 tags: [pipeline, commands]
 review:
-  last-run: 2026-05-10T00:00:00Z
-  reviewed-against: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
+  last-run: 2026-05-24T21:40:00Z
+  reviewed-against: 36461bdd3456c3cd666546aeeedf21452c072640
   must-violations: 0
-  should-violations: 0
+  should-violations: 1
   low-confidence: 0
   blocking: false
 ---

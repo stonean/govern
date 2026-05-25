@@ -63,7 +63,7 @@ When the target is a spec with `status: done`, inspect the feature directory for
    ```
 
 4. On **confirm**, invoke `set-status` (MCP: `set-status`) with `from: done`, `to: in-progress` to flip the frontmatter. Otherwise, edit the frontmatter directly. Display: "Spec reopened to `in-progress`. The on-disk delta is now tracked. Run `/gov:plan` or `/gov:implement` next." Exit without entering the classifier and without recording any new input.
-5. On **decline**, exit without modifying any file. The spec remains `done` and the on-disk delta is left alone. The user can re-invoke `/gov:ask` later to either accept the re-open or pass a new input that routes through the scenario branch.
+5. On **decline**, continue to **Gather the input** without modifying any file. The spec remains `done` and the on-disk delta is left alone. If the user has new content to add (the delta is forward-looking and not what they're capturing now), it routes through the existing classifier; if they have nothing more, the Gather step exits naturally. The user can also re-invoke `/gov:ask` later to accept the re-open.
 
 This precondition fires only on `done` specs. The prompt offers an opt-out so the user can decline and continue into the scenario branch with a new input — useful when the delta represents forward-looking work the user does *not* want to reflect in the spec's status yet.
 
