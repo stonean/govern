@@ -4,10 +4,11 @@
 //!
 //! The runtime resolves command files at two callsites
 //! (`main::run_exec` and `interpreter::payload::locate_command_file`),
-//! both of which used to hardcode `.claude/commands/gov/`. This module
-//! reads the host's values from `.govern.toml`'s `[host]` block and
-//! falls back to defaults that preserve the framework repo's behavior
-//! (`.claude` / the repo directory basename) when the block is absent.
+//! both of which used to bake in Claude Code's config-dir name and
+//! this repo's slash-command namespace. This module reads the host's
+//! values from `.govern.toml`'s `[host]` block and falls back to
+//! defaults that preserve the framework repo's behavior (`.claude`
+//! and the repo directory basename) when the block is absent.
 
 use std::path::Path;
 

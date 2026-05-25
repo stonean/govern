@@ -54,5 +54,6 @@ run_check "Family 9 — primitive-promotion candidates" "scripts/audit/primitive
 run_check "Family 10 — migration coverage" "scripts/audit/migration-coverage.sh"
 run_check "Family 11 — consolidation-pair drift" "scripts/audit/consolidation-pair.sh"
 run_check "Family 12 — fixture session-file shape" "scripts/audit/fixture-session-shape.sh"
+run_check "Family 13 — runtime hardcoded paths" "scripts/audit/runtime-hardcoded-paths.sh"
 
 exit "$drift"
