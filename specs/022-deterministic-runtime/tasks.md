@@ -361,9 +361,9 @@ The fix is consolidation, not parameterization: drop the host-/project-specific 
 ## 41. Implement scenario: [commands-dir-parameterization](scenarios/commands-dir-parameterization.md)
 
 - [x] Pick the source-of-truth shape per the scenario's "Design picks to evaluate" (recommended: Option 1 — `.govern.toml` `[host]` block); record the decision in the scenario's Resolved Questions
-- [ ] Add the `Host { cli_config_dir, project }` config loader; default to `.claude` / repo directory basename when `.govern.toml` is missing the block
-- [ ] Replace the hardcoded `.claude/commands/gov/` candidate in `runtime/src/main.rs` (`run_exec`'s candidate list) with `format!("{}/commands/{}/{}.md", host.cli_config_dir, host.project, command_name)`
-- [ ] Replace the same hardcoded path in `runtime/src/interpreter/payload.rs` `locate_command_file` with the same parameterized form; thread the `Host` value through the callsite
+- [x] Add the `Host { cli_config_dir, project }` config loader; default to `.claude` / repo directory basename when `.govern.toml` is missing the block
+- [x] Replace the hardcoded `.claude/commands/gov/` candidate in `runtime/src/main.rs` (`run_exec`'s candidate list) with `format!("{}/commands/{}/{}.md", host.cli_config_dir, host.project, command_name)`
+- [x] Replace the same hardcoded path in `runtime/src/interpreter/payload.rs` `locate_command_file` with the same parameterized form; thread the `Host` value through the callsite
 - [ ] Update `framework/bootstrap/govern.md` to write the `[host]` block into the adopter's `.govern.toml` idempotently on every `/govern` run
 - [ ] Add a parity fixture under `runtime/tests/fixtures/` shaped like an Auggie adopter project (`.augment/commands/anvil/*.md`, no `framework/commands/` tree, `.govern.toml` declares `cli-config-dir = ".augment"` and `project = "anvil"`); assert `gvrn exec <name>` resolves the command file via the parameterized path
 - [ ] Update `framework/audit/runtime-hardcoded-paths.sh` (or add one if it doesn't exist) to fail on new occurrences of `.claude/commands/gov/` outside frozen-archaeology specs

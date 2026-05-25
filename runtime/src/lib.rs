@@ -18,6 +18,7 @@
 //! surface may land in a future major release; until then, treat the
 //! items below as private to the runtime.
 
+pub mod host;
 pub mod interpreter;
 pub mod io;
 pub mod mcp;

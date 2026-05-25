@@ -202,15 +202,19 @@ fn run_parse(path: &std::path::Path, check_only: bool) -> ExitCode {
 }
 
 fn run_exec(command: &str, args: &[String], repo: &std::path::Path) -> ExitCode {
+    use gvrn::host::Host;
     use gvrn::interpreter::{WalkOutcome, Walker};
     use gvrn::parser;
     use serde_json::{Map, Value};
 
+    let host = Host::load(repo);
     let candidates = [
         repo.join("framework/commands")
             .join(format!("{command}.md")),
-        repo.join(".claude/commands/gov")
-            .join(format!("{command}.md")),
+        repo.join(format!(
+            "{}/commands/{}/{command}.md",
+            host.cli_config_dir, host.project
+        )),
         // Bootstrap procedures (`/govern` and its successors) live outside
         // the project-installable command namespace because they're invoked
         // before any framework files exist in the adopter's project. See

@@ -21,6 +21,7 @@ use std::sync::OnceLock;
 use regex::Regex;
 use serde_json::{Map, Value};
 
+use crate::host::Host;
 use crate::primitives::read_tasks;
 use crate::schema::extensions::{
     PlanRelevantFile, WriteCodeRequest, WriteCodeTask, WriteSpecBodyRequest,
@@ -376,9 +377,13 @@ fn load_constitution_excerpts(command_name: &str, repo: &Path) -> Vec<String> {
 }
 
 fn locate_command_file(command_name: &str, repo: &Path) -> Option<PathBuf> {
+    let host = Host::load(repo);
     for rel in [
         format!("framework/commands/{command_name}.md"),
-        format!(".claude/commands/gov/{command_name}.md"),
+        format!(
+            "{}/commands/{}/{command_name}.md",
+            host.cli_config_dir, host.project
+        ),
         format!("framework/bootstrap/{command_name}.md"),
     ] {
         let candidate = repo.join(rel);
