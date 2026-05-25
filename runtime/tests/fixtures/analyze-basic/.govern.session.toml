@@ -1,0 +1,6 @@
+feature = "003-analyze"
+path = "specs/003-analyze/spec.md"
+paths = ["specs/003-analyze/spec.md"]
+script = "scripts/gen-noop.sh"
+rule-files = ["framework/rules/configuration.md"]
+set-at = "2026-05-11T00:00:00Z"

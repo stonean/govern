@@ -1,0 +1,5 @@
+feature = "001-basic"
+path = "specs/001-basic"
+scenario = "dashboard-test"
+scenario-path = "specs/001-basic/scenarios/dashboard-test.md"
+set-at = "2026-05-22T00:00:00Z"

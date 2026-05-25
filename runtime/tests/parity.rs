@@ -652,10 +652,9 @@ fn run_parity_case(command: &str, fixture: &str) {
 
     let output = child.wait_with_output().expect("wait for runtime");
     let stderr = String::from_utf8_lossy(&output.stderr);
-    let stdout_preview = String::from_utf8_lossy(&output.stdout);
     assert!(
         output.status.success(),
-        "runtime exec {command} exited with {:?}\nstderr:\n{stderr}\nstdout:\n{stdout_preview}",
+        "runtime exec {command} exited with {:?}\nstderr:\n{stderr}",
         output.status
     );
 

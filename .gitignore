@@ -3,4 +3,7 @@
 !.claude/commands/
 
 # govern session state — per-user, ephemeral; managed by /gov:target.
-.govern.session.toml
+# Anchored to the repo root (leading `/`) so the parity fixtures'
+# `.govern.session.toml` files at `runtime/tests/fixtures/*/` stay
+# tracked — they're walker-context seeds, not per-user state.
+/.govern.session.toml

@@ -1,0 +1,4 @@
+feature = "006-specify"
+path = "specs/006-specify"
+paths = ["specs/006-specify/spec.md"]
+set-at = "2026-05-11T00:00:00Z"

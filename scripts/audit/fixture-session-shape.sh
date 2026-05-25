@@ -8,6 +8,10 @@
 #       `setAt` — those were renamed to kebab-case in the 0.10.0
 #       consolidation, and a fixture still using them would round-trip
 #       silently broken (the runtime's reader is kebab-case-only).
+#   12c is tracked in git — a fixture file present on disk but ignored
+#       by .gitignore passes local cargo test but fails on CI checkout
+#       (observed against gvrn 0.10.0 when `.govern.session.toml`
+#       matched both the repo-root pattern and the fixture paths).
 #
 # This is the test-data complement to Family 11 (consolidation-pair):
 # Family 11 catches the live framework artifacts drifting; this one
@@ -80,6 +84,17 @@ except Exception as e:
         "rename to the kebab-case equivalent (scenario-path or set-at)"
     fi
   done
+
+  # 12c — the file MUST be tracked in git. A fixture present on disk
+  # but untracked (typically because `.gitignore` matched it during
+  # `git add`) passes local cargo test (the file is there) but fails
+  # on CI checkout (the file isn't). `git ls-files --error-unmatch`
+  # exits non-zero for untracked paths.
+  if ! git ls-files --error-unmatch "$f" >/dev/null 2>&1; then
+    emit "$f" \
+      "fixture session file exists on disk but is not tracked in git — will be missing on CI checkout" \
+      "anchor the .gitignore pattern (e.g., '/.govern.session.toml' instead of '.govern.session.toml'), then 'git add -f' the fixture and commit"
+  fi
 done <<< "$SESSION_FILES"
 
 exit "$drift"
