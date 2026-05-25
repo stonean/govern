@@ -175,7 +175,7 @@ Informational; no separate confirmation prompt.
 | Spec | `done` | question | Status tiebreaker auto-routes to scenario instead. The classifier never selects "question" on a `done` spec. |
 | Spec | `draft` / `clarified` / `planned` / `in-progress` | scenario | Show reopen-not-needed impact (the spec is already accepting work), create scenario, append task, update session target. No status mutation. |
 | Spec | `done` | scenario | Show reopen impact, create scenario, append task, revert `status` to `in-progress` in the same write, update session target. |
-| Spec | `done` (on-disk delta, user confirms re-open precondition) | (precondition) | Flip `status` to `in-progress` via `set-status`. No question, no scenario, no task — the existing on-disk edits already capture the work. |
+| Spec | `done` (on-disk delta, user confirms re-open precondition) | (precondition) | Flip `status` to `in-progress` via `set-status` (otherwise, edit the frontmatter directly). No question, no scenario, no task — the existing on-disk edits already capture the work. |
 | Scenario | (no status field) | (forced question) | Append question to the scenario's Open Questions section. The parent spec's status is not read or mutated. |
 
 ### Prompt for another
