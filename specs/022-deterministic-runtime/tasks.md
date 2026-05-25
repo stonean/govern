@@ -366,6 +366,6 @@ The fix is consolidation, not parameterization: drop the host-/project-specific 
 - [x] Replace the same hardcoded path in `runtime/src/interpreter/payload.rs` `locate_command_file` with the same parameterized form; thread the `Host` value through the callsite
 - [x] Update `framework/bootstrap/govern.md` to write the `[host]` block into the adopter's `.govern.toml` idempotently on every `/govern` run
 - [x] Add a parity fixture under `runtime/tests/fixtures/` shaped like an Auggie adopter project (`.augment/commands/anvil/*.md`, no `framework/commands/` tree, `.govern.toml` declares `cli-config-dir = ".augment"` and `project = "anvil"`); assert `gvrn exec <name>` resolves the command file via the parameterized path
-- [x] Update `framework/audit/runtime-hardcoded-paths.sh` (or add one if it doesn't exist) to fail on new occurrences of `.claude/commands/gov/` outside frozen-archaeology specs
+- [x] Update `framework/audit/runtime-hardcoded-paths.sh` (or add one if it doesn't exist) to fail on new occurrences of `.claude/commands/gov/` in `runtime/src/` (spec bodies, tests, and fixtures are out of scope — the audit guards the runtime source)
 - [x] Run `cargo test` and `scripts/audit/run-all.sh`; both green
 - **Done when**: the runtime resolves command files via `.govern.toml`'s `[host]` block at both callsites; the Auggie-shaped fixture passes parity; no hardcoded `.claude/commands/gov/` string remains in `runtime/src/`; the default-fallback path keeps this repo's behavior unchanged.

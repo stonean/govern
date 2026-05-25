@@ -14,8 +14,8 @@
 # audit is the safety net.
 #
 # Scoped to `runtime/src/**` only. Specs, scenarios, and migration
-# bodies may reference the historical path in prose; tests and
-# fixtures may reference it for archaeology. The runtime source is the
+# bodies may reference the prior path in prose; tests and fixtures
+# may reference it as regression context. The runtime source is the
 # one place the literal must not reappear.
 
 set -uo pipefail
