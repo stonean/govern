@@ -29,6 +29,7 @@ Read `.govern.session.toml`. If the session includes a `scenario` and `scenario-
 - This command reads the target artifact, appends to its `## Open Questions` section or writes a new `scenarios/{slug}.md` file and appends a linked task to `tasks.md`, and — when a back-edge applies — updates the spec's frontmatter `status` field. No other artifact contents are modified. Plan files and source code are never read or written.
 - Spec `status` is read from the YAML frontmatter at the top of the file. It is mutated by this command only on a back-edge (clarified+ → draft or done → in-progress).
 - For the impact display, this command may read sibling specs' frontmatter (only) under `specs/` to detect dependents. It does not read sibling spec bodies.
+- For the `done`-spec re-open precondition, this command may run `git status --porcelain` scoped to the feature directory to detect uncommitted scenario/task edits. It does not read the diff bodies or run any other git command.
 - Reference: §spec-requirements, §spec-lifecycle, §scenarios, §text-first-artifacts, §bug-handling (constitution loaded by `/{project}:target` — do not re-read).
 
 ## Instructions
@@ -42,6 +43,29 @@ Read `.govern.session.toml`. If the session includes a `scenario` and `scenario-
 3. **Recompute dependencies (safety net).** If the target is a spec, run `scripts/gen-spec-deps.sh --dry-run` against it. If it reports a diff, run it for real to sync `dependencies:` from body inline links. The pre-commit hook normally keeps this in sync; this step catches uncommitted body edits. (Skip on scenario targets — scenarios have no `dependencies` field.)
 4. If the target is a spec, read its frontmatter `status` field now — the value is needed for the gate, the impact display, the classifier's status tiebreaker, and the post-record mutation.
 5. Display the feature name, scenario name (if targeted), status, and a brief summary of what the artifact covers.
+
+### Re-open precondition (spec target, status = done)
+
+When the target is a spec with `status: done`, inspect the feature directory for an on-disk delta before gathering input. The user may have already added scenario or task content informally (during conversation, manual editing, etc.) and only needs the status flipped to match — there is no new input to classify. Detection is a host responsibility; the optional mutation uses the `set-status` primitive when registered. Scenario-targeted `/{project}:ask` skips this section (scenarios have no status field).
+
+1. Run `git status --porcelain -- specs/{feature}/scenarios/ specs/{feature}/spec.md specs/{feature}/tasks.md` and parse the output. The delta consists of:
+   - Untracked files under `specs/{feature}/scenarios/` (status `??`).
+   - Modified `specs/{feature}/spec.md` or `specs/{feature}/tasks.md` (any porcelain status code with `M` in either the index column or the working-tree column).
+2. If the delta is empty, skip this section and continue to **Gather the input**.
+3. If the delta is non-empty, display the prior status (`done`) and each delta path with its filesystem mtime, then prompt:
+
+   ```text
+   Spec is `done` but the feature directory has un-tracked scenario or task edits:
+     {path-1}  ({untracked|modified}, mtime {ts})
+     {path-2}  ({untracked|modified}, mtime {ts})
+     ...
+   Revert status to `in-progress` to reflect the on-disk delta?
+   ```
+
+4. On **confirm**, invoke `set-status` (MCP: `set-status`) with `from: done`, `to: in-progress` to flip the frontmatter. Otherwise, edit the frontmatter directly. Display: "Spec reopened to `in-progress`. The on-disk delta is now tracked. Run `/{project}:plan` or `/{project}:implement` next." Exit without entering the classifier and without recording any new input.
+5. On **decline**, exit without modifying any file. The spec remains `done` and the on-disk delta is left alone. The user can re-invoke `/{project}:ask` later to either accept the re-open or pass a new input that routes through the scenario branch.
+
+This precondition fires only on `done` specs. The prompt offers an opt-out so the user can decline and continue into the scenario branch with a new input — useful when the delta represents forward-looking work the user does *not* want to reflect in the spec's status yet.
 
 ### Gather the input
 
@@ -151,6 +175,7 @@ Informational; no separate confirmation prompt.
 | Spec | `done` | question | Status tiebreaker auto-routes to scenario instead. The classifier never selects "question" on a `done` spec. |
 | Spec | `draft` / `clarified` / `planned` / `in-progress` | scenario | Show reopen-not-needed impact (the spec is already accepting work), create scenario, append task, update session target. No status mutation. |
 | Spec | `done` | scenario | Show reopen impact, create scenario, append task, revert `status` to `in-progress` in the same write, update session target. |
+| Spec | `done` (on-disk delta, user confirms re-open precondition) | (precondition) | Flip `status` to `in-progress` via `set-status`. No question, no scenario, no task — the existing on-disk edits already capture the work. |
 | Scenario | (no status field) | (forced question) | Append question to the scenario's Open Questions section. The parent spec's status is not read or mutated. |
 
 ### Prompt for another

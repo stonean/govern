@@ -69,3 +69,13 @@ Done when: the generator runs to completion and the regenerated files contain th
 - [x] Fix any reported issues at the source (not in generated files); if a fix is needed in a generated file, fix it in the source and rerun the generator
 
 Done when: `npx markdownlint-cli2` exits 0 across all modified files.
+
+## 8. Implement [reopen-after-informal-edits](scenarios/reopen-after-informal-edits.md)
+
+- [x] Pick Option A, Option B, or both per the scenario's "Recommended pick"; record the decision in the scenario's Resolved Questions
+- [x] If Option B: update `framework/commands/ask.md` to add the on-disk delta detection precondition on `done` specs, with the prompt wording in the scenario's Behavior section; revert `status: done → in-progress` on confirm, leave files untouched on decline
+- [x] If Option A: update agent-facing guidance (AGENTS.md and/or constitution) so the agent invokes `set-status` directly for re-open-only intent and does not prompt `/gov:ask`
+- [x] Regenerate `.claude/commands/gov/ask.md` via `./scripts/gen-claude-commands.sh` if `ask.md` is touched
+- [x] Run `npx markdownlint-cli2` on every modified file
+
+Done when: the targeted host (agent for A, command for B, or both) re-opens a `done` spec from an on-disk delta without requiring synthetic classifier input and without creating an unwanted scenario file.

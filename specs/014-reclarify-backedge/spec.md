@@ -1,6 +1,6 @@
 ---
 title: "014-reclarify-backedge — spec"
-status: done
+status: in-progress
 dependencies: [000-slash-commands, 009-scenario-targeting, 013-text-first-artifacts, 023-govern-refinement]
 tags: [pipeline, commands]
 review:
