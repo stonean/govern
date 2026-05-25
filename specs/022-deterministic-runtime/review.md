@@ -1,103 +1,157 @@
 ---
 spec: 022-deterministic-runtime
-reviewed-at: 2026-05-24T22:55:00Z
-reviewed-against: working-tree (uncommitted; diff base 1ce8666 docs(022): advance status to done)
-diff-base: 1ce8666
+scenario: commands-dir-parameterization
+reviewed-at: 2026-05-24T23:30:00Z
+reviewed-against: 8d42f50
+diff-base: 36461bd
 must-violations: 0
-should-violations: 0
-low-confidence: 1
+should-violations: 2
+low-confidence: 2
+waived-violations: 0
 skipped-passes: []
-notes: "Two SHOULD findings from the initial review (AGENTS-WORKFLOW-NO-DEAD-REFS and AGENTS-GOTCHA-OBSOLETE) were resolved by landing the mechanical sweep across AGENTS.md, runtime/tests/, and 7 done-spec bodies in the same change set, per the §spec-lifecycle mechanical-sweep clause."
 ---
 
-# Review — 022-deterministic-runtime (task 40 session-file consolidation)
+# Review — 022-deterministic-runtime (scenario: commands-dir-parameterization)
 
 ## Summary
 
-The session-file consolidation work (`.claude/gov-session.json` → `.govern.session.toml`) is implementation-clean: every primitive contract updated, every test green (379/379), every lint clean, the audit passes. The five review passes turned up **0 MUST violations** and **2 SHOULD violations**, both in the doc-sweep dimension rather than the runtime code — the mechanical rename across live artifacts was applied to the framework command sources and most spec bodies but missed `AGENTS.md` (3 hits), several pre-022 done-spec bodies (6 files, 13 hits), the parity test's TODO scaffolding file (1 file, 2 hits), and one fixture's spec body (1 file). One low-confidence reuse note on `SESSION_FILE`'s placement is recorded for completeness.
+Scenario-targeted review of the `commands-dir-parameterization` scenario
+(task 41). Scope: 7 commits from `36461bd..8d42f50` covering the new `Host`
+config loader (`runtime/src/host.rs`), the two parameterized callsites in
+`run_exec` and `locate_command_file`, the bootstrap procedure's new
+`merge-managed-block` step, the Auggie-shaped fixture + integration test,
+Family 13 of the audit suite, and a small terminology sweep in two live
+framework files.
 
-**Blocking status: no.** The runtime correctness review is clean. The doc sweep is a mechanical cleanup that the framework's own "No dead references" workflow rule (`AGENTS.md` Workflow §3) explicitly classifies as not requiring a `done → in-progress` back-edge on the touched specs — it's bundled here under the same change set rather than a separate ticket.
+Zero MUST violations. Two SHOULD findings (one configuration-cross
+convention, one test-infra reuse). Two low-confidence quality notes
+(pre-existing test-helper hazard and defensive input validation). The
+scenario's described behavior is correctly implemented and verified by
+unit tests, integration tests, and parity goldens — all green.
+
+`blocking: false`. The spec is clear to advance to `done`.
 
 ## MUST violations (blocking)
 
-*None.*
+_None._
 
 ## SHOULD violations (advisory)
 
-### SHOULD: AGENTS-WORKFLOW-NO-DEAD-REFS — Incomplete mechanical sweep for `.claude/gov-session.json` → `.govern.session.toml`
+### SHOULD: CFG-CONST-003 — extract `Host::defaults` literals to module-level `const`
 
-- **File**: 11 files across `AGENTS.md`, `runtime/tests/`, and `specs/NNN-*/` done-spec bodies.
-- **Rule**: From `AGENTS.md` Workflow — *"No dead references in live artifacts. When renaming or removing a name (spec slug, capability, command, identifier, parenthetical descriptor, etc.), update every reference across **live artifacts**: `framework/`, `scripts/`, `runtime/` (including `tests/fixtures/`, `tests/golden/`, `tests/parity/`), `.github/`, `docs/`, `README.md`, `AGENTS.md`, and `specs/NNN-*/` (including done-spec bodies)."* The rule treats partial sweeps as a quality failure because "a reader following a forward-pointer or back-reference in live artifacts must never land on an outdated name."
-- **Finding**: Task 40 swept `framework/commands/*`, `framework/bootstrap/govern.md`, `framework/bootstrap/configure/claude.md`, `framework/constitution.md`, `framework/templates/project/gitignore`, the runtime crate, and spec 022's own bodies. It did NOT sweep:
-  - `AGENTS.md:44` — "Use the `Write` tool, not Bash redirects, for `.claude/gov-session.json`" — the rule still applies but the target path is now `.govern.session.toml`.
-  - `AGENTS.md:45` — example "`.claude/gov-session.json`" as a repo-relative path; outdated.
-  - `AGENTS.md:53` — see the separate finding below; this is a special case (the gotcha is now obsolete, not merely outdated).
-  - `runtime/tests/parity/target/expected.txt:3,5` — TODO scaffolding describing how to capture the strict-files target.
-  - `runtime/tests/fixtures/target-basic/specs/002-target/spec.md:24` — fixture spec body mentions the strict-files path.
-  - `specs/023-govern-refinement/spec.md:90` — motivation prose names the file.
-  - `specs/007-govern-workflow/spec.md:112` — registry table column listing per-agent session paths.
-  - `specs/005-workflows/spec.md:104` — design rationale cites the file as a JSON format precedent (which is now stale on two counts: the file is TOML and the path changed).
-  - `specs/003-bootstrap-automation/spec.md:90`, `plan.md:31`, `tasks.md:14` — done-when AC and plan prose.
-  - `specs/010-agent-autonomy/spec.md:69,90,147` — resolved-questions prose discussing session-state shape.
-  - `specs/000-slash-commands/review.md:46`, `scenarios/target-clear-flag.md:9,13,19` — review notes and the `--clear` flag scenario body.
-- **Auto-fixable**: yes (mechanical find-and-replace where the reference is a live forward-pointer; verify each hit's framing before replacing — some entries in the consolidation scenario, migration body, and CHANGELOG are explicit legacy references and MUST be preserved).
-- **Suggested fix**: Run a single-commit sweep that updates the 11 files listed above. The rule's own enforcement clause ("**mechanical sweep** under §spec-lifecycle and does NOT trigger the done → in-progress back-edge") means the done specs touched here stay `done`. Recommended grep:
+- **File**: `runtime/src/host.rs:67-75`
+- **Rule**: `framework/rules/configuration-cross.md` §CFG-CONST-003 —
+  "Operator-tunable values (timeouts, retry counts, batch sizes,
+  thresholds, rate limits, expiry durations) MUST be backed by a named
+  constant or an environment variable. They MUST NOT appear as bare
+  literals in business logic."
+- **Finding**: `Host::defaults` inlines two operator-tunable defaults as
+  string literals (`".claude"` for `cli_config_dir`, `"gov"` for the
+  `project` fallback when `repo.file_name()` is unavailable). The
+  codebase convention is to extract module-level defaults as `const`
+  (e.g., `merge_managed_block.rs` has `const DEFAULT_MARKER: &str =
+  "govern-managed";`). The rule's MUST language is targeted at numeric
+  tunables in its examples, so this lands as SHOULD rather than MUST,
+  but the codebase precedent and the spirit of the rule (single source
+  of truth, discoverability) argue for the extraction.
+- **Auto-fixable**: yes
+- **Suggested fix**:
 
-  ```bash
-  grep -rln "\.claude/gov-session\.json\|\bgov-session\.json\b" \
-    AGENTS.md runtime/tests/ specs/ \
-    | grep -v "022-deterministic-runtime\|session-file-consolidate\|CHANGELOG"
+  ```rust
+  const DEFAULT_CLI_CONFIG_DIR: &str = ".claude";
+  const FALLBACK_PROJECT: &str = "gov";
+
+  fn defaults(repo: &Path) -> Self {
+      let project = repo
+          .file_name()
+          .and_then(|s| s.to_str())
+          .map_or_else(|| FALLBACK_PROJECT.to_owned(), str::to_owned);
+      Self {
+          cli_config_dir: DEFAULT_CLI_CONFIG_DIR.to_owned(),
+          project,
+      }
+  }
   ```
 
-  Each remaining hit gets `.claude/gov-session.json` → `.govern.session.toml` (and bare `gov-session.json` → `.govern.session.toml`). In the registry-table case (`007-govern-workflow/spec.md:112`), the row should be removed entirely — the file is no longer per-agent. In the JSON-precedent case (`005-workflows/spec.md:104`), the prose needs a non-trivial rewrite (the precedent argument no longer holds for either format or path) or the citation should be dropped.
+### SHOULD: REUSE — `copy_dir_recursive` duplicated across integration test crates
 
-### SHOULD: AGENTS-GOTCHA-OBSOLETE — `AGENTS.md` line 53 gotcha is resolved by the consolidation and should be retired
-
-- **File**: `AGENTS.md:53`.
-- **Rule**: Same "No dead references" rule, plus the §design-principles rule against documentation that pushes false guidance (a stale gotcha actively misleads).
-- **Finding**: The line-53 gotcha — *"Claude Code prompts on `.claude/gov-session.json` writes despite the per-path allowlist"* — describes a workaround for the Claude Code harness's built-in `.claude/` directory protection. The gotcha's own "escape hatches" section even names the fix that the consolidation just implemented: *"(b) move `gov-session.json` out of `.claude/` (e.g., `.govern/session.json`) via a new spec amending 023's session-file path."* Now that `0.10.0` moves the file to `.govern.session.toml` at the repo root, the entire workaround is obsolete — and a reader following the gotcha will be confused by guidance that doesn't match the current code.
-- **Auto-fixable**: no (judgment call: outright remove vs. rewrite as historical context). The cleaner option is removal — the consolidation is now the canonical state, and a brief CHANGELOG entry already documents the migration.
-- **Suggested fix**: Remove the bullet at `AGENTS.md:53` entirely. The corresponding `framework/` change at `framework/bootstrap/configure/claude.md` (the `Edit/Write` permission entries) already points at `.govern.session.toml`; no replacement guidance is needed because the harness's `.claude/`-directory protection no longer fires on this file.
+- **File**: `runtime/tests/exec_subprocess.rs:369-381` (duplicates
+  `runtime/tests/parity.rs:360-378`)
+- **Rule**: `AGENTS.md` "no dead references in live artifacts" implies
+  one canonical source for shared logic; the codebase convention is
+  module-level reuse via the runtime crate.
+- **Finding**: My new integration test added a `copy_dir_recursive`
+  helper that does essentially the same thing as the one in
+  `parity.rs`. Rust's integration-test model (each `tests/*.rs` is its
+  own crate) makes inline duplication a tempting shortcut, but the
+  idiomatic fix is a `tests/common/mod.rs` shared module that both
+  crates import. The duplication is small (~10 lines) and pre-existing
+  in shape (parity.rs's version was already an island), so the
+  practical fix is to introduce `tests/common/` and migrate both
+  callers in a follow-on commit — not bundled with task 41.
+- **Auto-fixable**: no (architectural — needs a small refactor)
+- **Suggested fix**: Create `runtime/tests/common/mod.rs` with the
+  shared `copy_dir_recursive` (and any other test helpers that recur).
+  Each integration test crate then declares `mod common;` and imports
+  `common::copy_dir_recursive`.
 
 ## Low-confidence findings
 
-### Low-confidence (CFG-CONST-001): `SESSION_FILE` cross-module constant placement
+### LOW: ensure_binary_built only rebuilds when the binary is absent (pre-existing)
 
-- **File**: `runtime/src/primitives/write_session.rs:39` (defined `pub(crate)`); `runtime/src/primitives/dashboard.rs:19` (imported).
-- **Rule**: `CFG-CONST-001` — *"Shared constants — values used across multiple modules — MUST live in a centralized location idiomatic to the project's language (e.g., `shared/constants/` in JavaScript/TypeScript, `internal/constants/` in Go, a top-level constants module in Python) rather than being duplicated across modules."*
-- **Finding**: `SESSION_FILE = ".govern.session.toml"` is defined in `write_session.rs` and consumed by `dashboard.rs`, so the *value* is centralized (no duplicate literals across modules, which is the rule's primary failure mode). But the *location* — inside the primitive that owns the write half — isn't a top-level shared-constants module. Rust idiom here is contested: some projects keep file-format constants alongside the owning primitive (the "this primitive is the source of truth for the file's name" interpretation), others extract them into a top-level `constants.rs` (the strict CFG-CONST-001 reading). The existing pattern in this crate is the former (e.g., `merge_managed_block::DEFAULT_MARKER`, `merge_permissions`'s former `DEFAULT_PATH`), so the placement matches established convention.
-- **Confidence**: 55 (the rule is satisfied on the no-duplication test, contested on the location test, and the codebase already follows the same pattern for `merge_managed_block`). Recorded for visibility; not blocking.
-- **Suggested fix** (if pursued): move `SESSION_FILE` to a new `runtime/src/constants.rs` exposing `pub const SESSION_FILE: &str` and re-export from `lib.rs`. Update both call sites. Skip the change unless the codebase adopts a top-level constants module for other cross-module values too — fixing one without the others would create inconsistency.
+- **File**: `runtime/tests/exec_subprocess.rs:27-43` (pre-existing helper;
+  inherited by my new test)
+- **Confidence**: 65
+- **Finding**: `ensure_binary_built` short-circuits when
+  `runtime/target/release/gvrn` exists, regardless of whether the
+  source has changed. During this task's development, the helper
+  silently ran my new test against a stale binary that pre-dated the
+  `Host::load` wiring — the test failed with "command file not found"
+  until I manually invoked `cargo build --release`. The fix is to
+  always invoke `cargo build --release` (cargo's incremental
+  compilation is fast enough that "the build is no-op when nothing
+  changed" remains true). This is pre-existing scaffolding, not a
+  regression from my work, but my new test inherits the hazard.
+- **Suggested fix**: Drop the `if binary.exists()` early-return in
+  `ensure_binary_built` and let cargo decide whether to rebuild.
+
+### LOW: BE-INPUT-004 — `.govern.toml` `[host]` values flow into filesystem paths without canonicalization
+
+- **File**: `runtime/src/host.rs:38-60`, `runtime/src/main.rs:209-220`,
+  `runtime/src/interpreter/payload.rs:378-393`
+- **Confidence**: 40
+- **Finding**: `Host::load` reads `cli_config_dir` and `project` from
+  `.govern.toml` and joins them into command-resolution paths without
+  validating that neither contains `..`, path separators, or other
+  traversal-shaped components. The current threat model treats
+  `.govern.toml` as trusted local config (the adopter authored it; if
+  they wanted to read random files, they could edit the source
+  directly), so this is not a live security concern. The defensive
+  posture would be to require each value to be a single
+  path-component without traversal tokens — closes the door if the
+  runtime is ever used in a context where `.govern.toml` is
+  untrusted (e.g., CI running against PR-submitted config). Not
+  flagged as MUST because the rule's "user-supplied values" language
+  targets HTTP/RPC request input, not local config files.
+- **Suggested fix**: Add a `validate(&self)` method to `Host` that
+  rejects values containing `..` or path separators, called from
+  `Host::load` before returning; surface validation failures as a
+  warning and fall back to defaults.
 
 ## Waived findings
 
-*None.*
+_None._
 
 ## Skipped passes
 
-*None.*
+_None._
 
-## Pass summary
+## Pass-by-pass results
 
-| Pass | MUST | SHOULD | Low-confidence |
-| --- | --- | --- | --- |
-| Security | 0 | 0 | 0 |
-| Reuse | 0 | 0 | 1 |
-| Quality | 0 | 2 | 0 |
-| Efficiency | 0 | 0 | 0 |
-| Simplicity | 0 | 0 | 0 |
-
-**Security**: The diff touches no auth, persistence, network, or input-validation surfaces. `dashboard.rs::load_session_target` reads a constant repo-root path — no traversal surface (BE-INPUT-004 N/A). `write_session.rs` retains its `validate_no_traversal` checks on the `path` and `scenario-path` args, which still carry user-controlled values. `merge_permissions.rs::path` becoming required removes a footgun where a non-Claude host would have silently written to a Claude-shaped path — net security improvement, not a regression. No security rules fire.
-
-**Reuse**: One low-confidence note on `SESSION_FILE` placement (above). Otherwise clean — the consolidation removed duplicated path literals from `write_session` and `dashboard` (and `main.rs::run_exec`) in favor of a single constant import, which is the *opposite* of a CFG-CONST violation.
-
-**Quality**: Two SHOULD findings, both in the documentation-sweep dimension (above). Runtime code, tests, and fixtures are clean — every callsite updated, every test green (343 lib + 3 atomic-writes + 5 exec-subprocess + 16 mcp + 10 parity + 2 walker = 379 tests), parity goldens re-blessed, MCP descriptions updated, gitignore entry shipped, bootstrap migration entry written, CHANGELOG entry added.
-
-**Efficiency**: No regressions. The TOML parse/serialize on session-file I/O is microseconds for a sub-1KB document — equivalent to the prior JSON path. The `dashboard.rs::load_session_target` read still short-circuits on `is_file()` before touching the parser. `main.rs::run_exec`'s walker-context seed goes via `serde_json::to_value(toml::Value)` once per `gvrn exec` invocation — same complexity class as the prior `serde_json::from_str` against the JSON file.
-
-**Simplicity**: The consolidation is a net simplification. Removed: `DashboardArgs.session_path: Option<String>` (intermediate parameterization), `merge_permissions::DEFAULT_PATH` constant + `resolve_path` helper. The runtime no longer carries per-host knowledge for the session file. Per-fixture `.claude/` directories deleted (7 fixtures). The `WriteSessionArgs` struct surface shrank from the path-parameterization design back to its 0.9.x shape (with the path-encoded keys renamed kebab-case on disk).
-
-## Process notes
-
-- Re-bless rationale captured in CHANGELOG 0.10.0 entry. Parity goldens' field-ordering change (TOML's `BTreeMap` iteration → alphabetized JSON output) is deterministic per-run and consistent with the spec's `writeCode` cache-breakpoint contract (the first four fields' order is preserved; the rest is unspecified).
-- The `gvrn exec` walker-context seed reads `.govern.session.toml` via `toml::Value` → `serde_json::Value` bridging so nested fixture context (arrays-of-tables for `entries`, sub-tables for `substitutions`) survives the round-trip. This is the secondary use of the file beyond session-target storage; documented in the plan.md fixture-testing section and exercised by `runtime/tests/parity.rs::govern_basic_*`.
+| Pass | MUST | SHOULD | Low-confidence | Notes |
+| --- | --- | --- | --- | --- |
+| Security | 0 | 0 | 1 | BE-INPUT-004 (defensive) — see above |
+| Reuse | 0 | 1 | 0 | `copy_dir_recursive` duplication |
+| Quality | 0 | 0 | 1 | `ensure_binary_built` pre-existing hazard |
+| Efficiency | 0 | 0 | 0 | `Host::load` once per `gvrn exec`; not in a hot path |
+| Simplicity | 0 | 1 | 0 | CFG-CONST-003 const extraction |
