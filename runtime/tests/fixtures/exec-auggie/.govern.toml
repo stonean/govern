@@ -1,0 +1,9 @@
+# Auggie-shaped adopter project — exercises the [host] block override
+# at command-resolution time. The runtime would otherwise default to
+# `.claude` / repo directory basename, neither of which resolve under
+# this fixture's `.augment/commands/anvil/` layout.
+
+# govern (host)
+[host]
+cli-config-dir = ".augment"
+project = "anvil"
