@@ -79,7 +79,7 @@ For each scenario file (`scenarios/{slug}.md`):
 
 - A YAML frontmatter block exists at the top of the file.
 - The frontmatter parses as valid YAML.
-- Either the `section` field (new schema) or the legacy `spec-ref` field is present and non-empty. New scenarios written by `/{project}:ask` use `section`. Pre-017 scenarios keep `spec-ref` per the frozen-archaeology rule; either field satisfies the check.
+- Either the `section` field (new schema) or the legacy `spec-ref` field is present and non-empty. New scenarios written by `/{project}:ask` use `section`; pre-017 scenarios written before `section` existed may still carry `spec-ref`. Either field satisfies the check.
 
 Reference: the schema is canonically declared in `framework/constitution.md` §text-first-artifacts.
 

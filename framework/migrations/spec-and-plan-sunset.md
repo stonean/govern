@@ -23,4 +23,4 @@ The lightweight track was removed in spec 023. Adopters who scaffolded under the
 
 4. **Summary line.** When N > 0 files were renamed, report `migrated N spec-and-plan.md files` in the post-scaffolding output. Omit the line when N = 0.
 
-Files at `status: done` are also renamed (the rename is just a filename change; body and frontmatter are unchanged, so the frozen-archaeology rule is preserved by the byte-for-byte identity of the file content).
+Files at `status: done` are also renamed (the rename is a pure filename change — body and frontmatter are byte-identical, so it qualifies as a mechanical edit under [§spec-lifecycle](../constitution.md#spec-lifecycle) and the spec stays `done`).
