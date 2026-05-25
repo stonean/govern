@@ -260,8 +260,7 @@ fn run_exec(command: &str, args: &[String], repo: &std::path::Path) -> ExitCode 
     let mut context = Map::new();
     let session_path = repo.join(".govern.session.toml");
     if let Ok(text) = std::fs::read_to_string(&session_path)
-        && let Ok(toml_value) = text.parse::<toml::Value>()
-        && let Ok(Value::Object(map)) = serde_json::to_value(toml_value)
+        && let Ok(Value::Object(map)) = toml::from_str::<Value>(&text)
     {
         context.extend(map);
     }

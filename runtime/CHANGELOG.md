@@ -2,6 +2,18 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.11.2] — 2026-05-24
+
+### Changed
+
+- **Bump `toml` 0.8 → 1.x (post-1.0 stable line).** The `toml` crate's first stable major (1.1.2, spec TOML 1.1.0) is now the runtime's TOML parser. The session-file TOML→JSON bridge in `runtime/src/main.rs::run_exec` now deserializes directly into `serde_json::Value` (`toml::from_str::<Value>(&text)`) rather than parsing into `toml::Value` first and re-serializing — the indirect path tripped on `toml::Value`'s reworked Serialize impl in 1.x (table values were nested in a wrapper rather than flattened). The direct deserialization is also a simplification — fewer hops, one less crate-internal contract to track. No public API changes; the `PrimitiveError::Toml` variant's source type updates from `toml v0.8`'s `toml::de::Error` to the structurally-identical `toml v1.x` equivalent.
+
+- **20 in-range dependency refreshes via `cargo update`.** Brings every direct-dep within its current Cargo.toml version range to the latest published version (mostly transitive bumps: `icu_*` 2.1 → 2.2, `wasm-bindgen` 0.2.121 → 0.2.122, `wit-bindgen` 0.46 → 0.57, `web-sys` 0.3.98 → 0.3.99). One direct-dep increment: `serde_json` 1.0.149 → 1.0.150. No code changes required; all 359 lib + 6 + 16 + 10 + 3 + 2 tests pass against the refreshed graph.
+
+### Verified current
+
+`cargo update --dry-run` reports zero pending updates after this release. Every direct dependency declared in `runtime/Cargo.toml` matches the latest published version compatible with its version range (`anyhow`, `clap`, `flate2`, `git2`, `pulldown-cmark`, `regex`, `reqwest`, `rmcp`, `schemars`, `serde`, `serde_json`, `serde_norway`, `sha2`, `tar`, `tempfile`, `thiserror`, `toml`, `tokio`, `walkdir`, `zip`). The only major bump deferred is `zip 8 → 9.0.0-pre2`, held back because 9.x has not yet shipped a stable release.
+
 ## [0.11.1] — 2026-05-24
 
 ### Changed
