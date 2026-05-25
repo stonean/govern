@@ -582,7 +582,7 @@ fn read_parity_spec(command: &str, fixture: &str) -> ParitySpec {
         .or_else(|| body.find("\n---\r\n"))
         .unwrap_or_else(|| panic!("no closing frontmatter fence in {}", path.display()));
     let frontmatter = &body[..end];
-    let parsed: CommandFrontmatter = serde_yaml::from_str(frontmatter).unwrap_or_else(|err| {
+    let parsed: CommandFrontmatter = serde_norway::from_str(frontmatter).unwrap_or_else(|err| {
         panic!(
             "failed to parse parity frontmatter in {}: {err}",
             path.display()

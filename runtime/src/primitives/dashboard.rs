@@ -123,7 +123,7 @@ fn load_one_spec(repo: &Path, slug: &str) -> Result<DashboardSpec> {
     let content = read_text(&spec_path)?;
     let (fm_text, body) = split_frontmatter(&content, &spec_path)?;
     let frontmatter: Frontmatter =
-        serde_yaml::from_str(fm_text).map_err(|source| PrimitiveError::Yaml {
+        serde_norway::from_str(fm_text).map_err(|source| PrimitiveError::Yaml {
             path: spec_path.clone(),
             source,
         })?;
@@ -300,7 +300,7 @@ fn load_scenario_detail(repo: &Path, rel_path: &str) -> Result<Option<DashboardS
     let content = read_text(&path)?;
     let (fm_text, body) = split_frontmatter(&content, &path)?;
     let frontmatter: ScenarioFrontmatter =
-        serde_yaml::from_str(fm_text).map_err(|source| PrimitiveError::Yaml {
+        serde_norway::from_str(fm_text).map_err(|source| PrimitiveError::Yaml {
             path: path.clone(),
             source,
         })?;

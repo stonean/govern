@@ -59,7 +59,7 @@ pub enum PrimitiveError {
         path: PathBuf,
         /// Underlying YAML error.
         #[source]
-        source: serde_yaml::Error,
+        source: serde_norway::Error,
     },
     /// File has no leading `---` frontmatter block.
     #[error("frontmatter missing in {path} (no leading `---` block)")]

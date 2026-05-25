@@ -6,7 +6,7 @@
 
 use std::path::{Path, PathBuf};
 
-use serde_yaml::Value as YamlValue;
+use serde_norway::Value as YamlValue;
 
 use crate::primitives::{Result, read_text, split_frontmatter};
 use crate::schema::primitives::{
@@ -29,7 +29,7 @@ pub fn run(args: &ValidateFrontmatterArgs, repo: &Path) -> Result<ValidateFrontm
     let (fm_text, _body) = split_frontmatter(&content, &path)?;
 
     let mut findings: Vec<FrontmatterFinding> = Vec::new();
-    let parsed: YamlValue = match serde_yaml::from_str(fm_text) {
+    let parsed: YamlValue = match serde_norway::from_str(fm_text) {
         Ok(v) => v,
         Err(e) => {
             findings.push(FrontmatterFinding {

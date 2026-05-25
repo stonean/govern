@@ -29,7 +29,7 @@ pub fn run(args: &ReadSpecArgs, repo: &Path) -> Result<ReadSpecResult> {
     let content = read_text(&spec_path)?;
     let (fm_text, body) = split_frontmatter(&content, &spec_path)?;
     let frontmatter: Frontmatter =
-        serde_yaml::from_str(fm_text).map_err(|source| PrimitiveError::Yaml {
+        serde_norway::from_str(fm_text).map_err(|source| PrimitiveError::Yaml {
             path: spec_path.clone(),
             source,
         })?;

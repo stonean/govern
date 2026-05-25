@@ -1,6 +1,6 @@
 [package]
 name = "gvrn"
-version = "0.11.0"
+version = "0.11.1"
 edition = "2024"
 rust-version = "1.88"
 description = "Deterministic runtime for the govern pipeline (spec 022)."
@@ -33,7 +33,7 @@ rmcp = { version = "1", features = ["server", "client", "macros", "transport-io"
 schemars = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
-serde_yaml = "0.9"
+serde_norway = "0.9"
 sha2 = "0.11"
 tar = "0.4"
 tempfile = "3"

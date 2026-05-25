@@ -50,7 +50,7 @@ pub fn run(args: &TraverseDepsArgs, repo: &Path) -> Result<TraverseDepsResult> {
     let content = read_text(&spec_path)?;
     let (fm_text, _body) = split_frontmatter(&content, &spec_path)?;
     let frontmatter: Frontmatter =
-        serde_yaml::from_str(fm_text).map_err(|source| PrimitiveError::Yaml {
+        serde_norway::from_str(fm_text).map_err(|source| PrimitiveError::Yaml {
             path: spec_path.clone(),
             source,
         })?;
@@ -94,7 +94,7 @@ fn read_status(spec_path: &Path) -> Result<String> {
     let content = read_text(spec_path)?;
     let (fm_text, _body) = split_frontmatter(&content, spec_path)?;
     let parsed: Frontmatter =
-        serde_yaml::from_str(fm_text).map_err(|source| PrimitiveError::Yaml {
+        serde_norway::from_str(fm_text).map_err(|source| PrimitiveError::Yaml {
             path: spec_path.into(),
             source,
         })?;
@@ -115,7 +115,7 @@ fn read_dependencies(spec_path: &Path) -> Vec<String> {
     let Ok((fm_text, _)) = split_frontmatter(&content, spec_path) else {
         return Vec::new();
     };
-    serde_yaml::from_str::<Frontmatter>(fm_text)
+    serde_norway::from_str::<Frontmatter>(fm_text)
         .map(|fm| fm.dependencies)
         .unwrap_or_default()
 }

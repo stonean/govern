@@ -2,6 +2,12 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.11.1] — 2026-05-24
+
+### Changed
+
+- **Swap deprecated `serde_yaml` for the actively-maintained `serde_norway` fork.** Frontmatter parsing (5 callsites under `runtime/src/primitives/{dashboard,read_spec,traverse_deps,validate_frontmatter}.rs` plus the shared `PrimitiveError::Yaml` variant in `runtime/src/primitives/mod.rs`, plus one test-side parse in `runtime/tests/parity.rs`) moves from `serde_yaml v0.9.34+deprecated` (last release March 2024; dtolnay no longer maintaining) to `serde_norway v0.9.42`. The fork is API-compatible — pure `serde_yaml::` → `serde_norway::` mechanical swap, no behavior changes — and currently the most actively-maintained option in the post-deprecation YAML-for-Rust landscape. All 359 lib + 6 exec_subprocess + 16 parity + 10 atomic + 3 mcp + 2 walker tests pass against the new dep unchanged.
+
 ## [0.11.0] — 2026-05-24
 
 ### Added
