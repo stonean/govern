@@ -24,7 +24,7 @@ Root cause: no syntactic distinction in the markdown source between "depends on"
 
 ## Edge Cases
 
-- **Adopter projects on an older shipped `gen-spec-deps.sh`** (the script ships to adopters with `create` strategy per AC23 — it does not auto-update): the opt-out is a no-op on their copy; existing behavior is unchanged. Adopters opt in by re-running `/govern` and accepting the new script, or by hand-merging the change.
+- **Adopter projects on an older shipped `gen-spec-deps.sh`** (the script ships to adopters with `update` strategy per AC23 — every `/govern` run refreshes it from upstream): adopters pick up the opt-out automatically on the next `/govern` run. Adopters who have pinned the script in `.govern.toml` `pinned.files` keep their existing copy and see no behavior change until they unpin or hand-merge.
 - **Migration of existing specs in this repo**: any inline link currently treated as a dep that the author wants to demote becomes a one-shot edit (move under the opt-out marker), then the next pre-commit run rewrites the frontmatter. No data migration; the body is authoritative.
 - **Empty `## See also` section (or whatever opt-out form is chosen)**: produces no edges and no error.
 

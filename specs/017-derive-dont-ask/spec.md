@@ -118,7 +118,7 @@ Per Q2 (twin constitutions collapsed) and Q7 (spec-deps derivation), three new g
 
 `framework/bootstrap/hooks/pre-commit` ships with the framework. Runs only adopter-relevant generators — initially `gen-spec-deps.sh`. The slot is extensible for future adopter-relevant generators.
 
-`/govern` manages the adopter hook (see Q7 resolution for the install/update/skip behavior). `scripts/gen-spec-deps.sh` ships to adopters with `create` strategy on first `/govern` run; adopters can edit it without `/govern` clobbering.
+`/govern` manages the adopter hook (see Q7 resolution for the install/update/skip behavior). `scripts/gen-spec-deps.sh` ships to adopters with `update` strategy so every `/govern` run refreshes it from upstream and adopters pick up generator fixes automatically; adopters who have customized the script can list it in `.govern.toml` `pinned.files` to opt out of overwrites.
 
 ### CI safety net
 
@@ -148,7 +148,7 @@ Both repos run all generators in dry-run mode in CI; non-empty diff fails the bu
 - [x] AC20: This spec's own frontmatter has `title:` and `tags:` removed by the final task
 - [x] AC21: `framework/bootstrap/hooks/pre-commit` and `framework/bootstrap/hooks/install.sh` ship with the framework; the shipped hook calls only adopter-relevant generators (initially `gen-spec-deps.sh`)
 - [x] AC22: `/govern` installs the adopter hook on first run when no existing hook system is detected; updates on subsequent runs; warns and skips with a manual integration snippet when an existing hook system is detected (`.githooks/pre-commit` not from `/govern`, husky, lefthook, pre-commit-py, or `core.hooksPath` pointing elsewhere); respects `.govern.toml` pinning
-- [x] AC23: `scripts/gen-spec-deps.sh` ships to adopter projects with `create` strategy on first `/govern` run; the shipped pre-commit hook references it via the project-relative path
+- [x] AC23: `scripts/gen-spec-deps.sh` ships to adopter projects with `update` strategy on every `/govern` run (pinnable via `.govern.toml`); the shipped pre-commit hook references it via the project-relative path
 - [x] AC24: A CI workflow runs all generators in dry-run mode and fails the build on non-empty diff, in both this repo and (as a shipped example) adopter projects; protects against contributors or adopters whose hook was skipped or never installed
 
 ## Open Questions
@@ -173,7 +173,7 @@ Both repos run all generators in dry-run mode in CI; non-empty diff fails the bu
   - `.githooks/pre-commit` exists from a prior `/govern` run → overwrite (`update` strategy, pinnable via `.govern.toml`).
   - Existing hook system detected (`.githooks/pre-commit` not from `/govern`, husky, lefthook, pre-commit-py, or `core.hooksPath` pointing elsewhere) → do not install; report a warning with a manual integration snippet; continue.
 
-  `scripts/gen-spec-deps.sh` ships to adopters with `create` strategy on first `/govern` run so adopters can edit it without `/govern` clobbering. The shipped pre-commit hook calls it via the project-relative path.
+  `scripts/gen-spec-deps.sh` ships to adopters with `update` strategy so every `/govern` run refreshes it from upstream and adopters pick up generator fixes automatically. Adopters who have customized the script can list it in `.govern.toml` `pinned.files` to opt out of overwrites. The shipped pre-commit hook calls it via the project-relative path.
 
   **CI safety net for both surfaces.** The same generators run in dry-run mode in CI; non-empty diff fails the build. Catches contributors who never installed the hook locally and adopters whose hook was skipped due to existing-hook detection.
 

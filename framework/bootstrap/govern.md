@@ -438,6 +438,7 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 | `framework/rules/security-backend.md` | `specs/rules/security-backend.md` |
 | `framework/rules/security-frontend.md` | `specs/rules/security-frontend.md` |
 | `framework/bootstrap/hooks/govern-pre-commit` | `.githooks/govern-pre-commit` |
+| `scripts/gen-spec-deps.sh` | `scripts/gen-spec-deps.sh` |
 | `.markdownlint-cli2.jsonc` | `.markdownlint-cli2.jsonc` |
 | `framework/templates/spec/spec.md` | `specs/templates/spec.md` |
 | `framework/templates/spec/plan.md` | `specs/templates/plan.md` |
@@ -455,7 +456,6 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 | `framework/templates/project/errors.md` | `specs/errors.md` |
 | `framework/templates/project/events.md` | `specs/events.md` |
 | `framework/templates/project/inbox.md` | `specs/inbox.md` |
-| `scripts/gen-spec-deps.sh` | `scripts/gen-spec-deps.sh` |
 | `framework/bootstrap/hooks/pre-commit` | `.githooks/pre-commit` |
 
 ### Shared files with conflict handling
@@ -676,7 +676,7 @@ Detection runs in this order — first match wins:
 
 The detection ladder no longer treats `.githooks/pre-commit` itself as a govern-managed file — under the new model the outer file is adopter-owned, so its presence is not a signal that govern installed it. Migration of pre-existing govern-installed hooks (from spec-017 adopters) is handled by the **Migration from spec-017 hook** subsection below, which runs before the detection ladder.
 
-`scripts/gen-spec-deps.sh` ships in the **Shared Files** manifest with `create` strategy. First run installs it; subsequent runs leave it alone (so adopters can edit the script without `/govern` clobbering).
+`scripts/gen-spec-deps.sh` ships in the **Shared Files** manifest with `update` strategy. Every `/govern` run refreshes it from upstream so adopters pick up generator fixes automatically. Adopters who have customized the script can list it in `.govern.toml` `pinned.files` to opt out of overwrites.
 
 ### Migration from spec-017 hook
 

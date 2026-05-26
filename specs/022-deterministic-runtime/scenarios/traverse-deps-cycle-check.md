@@ -10,7 +10,7 @@ Spec 022 declares the `traverse-deps` primitive (spec.md:76) as "verify spec dep
 
 The upstream fix lives in spec 017's [detect-dependency-cycles](../../017-derive-dont-ask/scenarios/detect-dependency-cycles.md) — `gen-spec-deps.sh` will fail when its generated graph has a cycle, blocking the commit. That covers the common case (cycle introduced during normal author flow). It does *not* cover:
 
-- adopter projects on an older shipped `gen-spec-deps.sh` (the script ships with `create` strategy and is not auto-updated);
+- adopter projects on an older shipped `gen-spec-deps.sh` (the script ships with `update` strategy, but adopters who have pinned it in `.govern.toml` `pinned.files` or have not yet re-run `/govern` since the cycle-detection fix landed are still on the older copy);
 - projects where the pre-commit hook was skipped or never installed;
 - frontmatter `dependencies` lists that have drifted from body links (uncommitted edits, hand-edited frontmatter on a one-off basis);
 - any future path that produces a cycle outside the generator's purview.

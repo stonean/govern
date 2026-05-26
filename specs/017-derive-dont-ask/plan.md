@@ -58,7 +58,7 @@ Per spec Q7 expansion: `framework/bootstrap/hooks/pre-commit` and `framework/boo
 
 The sentinel comment is a single line near the top of the shipped hook (e.g., `# managed-by: govern`) that the detection logic looks for to distinguish a govern-installed hook from a hand-rolled one. The same sentinel survives `/govern` updates because it's part of the shipped file.
 
-`scripts/gen-spec-deps.sh` ships to adopters with `create` strategy — first `/govern` run installs it, subsequent runs leave it alone. Adopters can edit the generator without `/govern` clobbering. The shipped pre-commit hook references it via the project-relative path (`scripts/gen-spec-deps.sh`).
+`scripts/gen-spec-deps.sh` ships to adopters with `update` strategy — every `/govern` run refreshes it from upstream so adopters pick up generator fixes automatically. Adopters who have customized the script can list it in `.govern.toml` `pinned.files` to opt out of overwrites. The shipped pre-commit hook references it via the project-relative path (`scripts/gen-spec-deps.sh`).
 
 ### Generated artifacts use marker comments
 
@@ -195,7 +195,7 @@ A second workflow file (`.github/workflows/adopter-generators.yml`) ships as a t
 
 | File | Action | Purpose |
 | --- | --- | --- |
-| `framework/bootstrap/govern.md` | Modify | Add Hook Installation section; add `framework/rules/configuration-cross.md` to Shared Files (update strategy); add `framework/bootstrap/hooks/pre-commit` and `scripts/gen-spec-deps.sh` to Shared Files (create strategy for the script, update for the hook); add `framework/bootstrap/hooks/install.sh` to per-agent scaffolding logic |
+| `framework/bootstrap/govern.md` | Modify | Add Hook Installation section; add `framework/rules/configuration-cross.md` to Shared Files (update strategy); add `framework/bootstrap/hooks/pre-commit` to Shared Files (create strategy) and `scripts/gen-spec-deps.sh` to Shared Files (update strategy, pinnable via `.govern.toml`); add `framework/bootstrap/hooks/install.sh` to per-agent scaffolding logic |
 | `framework/bootstrap/configure/claude.md` | Modify | Add Bash permissions for hook install/run paths (`Bash(git config *)`, `Bash(.githooks/*)`, `Bash(scripts/gen-*)`) |
 | `framework/bootstrap/configure/auggie.md` | Modify | Same permission additions in Auggie's format |
 

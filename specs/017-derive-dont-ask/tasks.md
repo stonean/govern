@@ -266,7 +266,7 @@ Done when: the template exists and documents adopter usage. ✓
 - [x] Sentinel-based detection of govern-managed hooks via `# managed-by: govern` comment
 - [x] Add `framework/rules/configuration-cross.md` → `specs/rules/configuration-cross.md` to update-strategy manifest
 - [x] Add `framework/bootstrap/hooks/pre-commit` → `.githooks/pre-commit` to update-strategy manifest (subject to detection)
-- [x] Add `scripts/gen-spec-deps.sh` → `scripts/gen-spec-deps.sh` to create-strategy manifest
+- [x] Add `scripts/gen-spec-deps.sh` → `scripts/gen-spec-deps.sh` to update-strategy manifest (pinnable via `.govern.toml`)
 - [x] Document manual integration snippet for adopters with existing hook systems
 - [x] Document `.govern.toml` pinning for the hook file
 - [x] Update Post-Scaffolding Output to include hook installation status line
