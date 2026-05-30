@@ -19,29 +19,29 @@ Tech-stack alignment was skipped via `.govern.toml [review] tech-stack-verified 
 
 ## MUST violations (blocking)
 
-_None._
+*None.*
 
 ## SHOULD violations (advisory)
 
-_None._
+*None.*
 
 ## Low-confidence findings
 
-_None._
+*None.*
 
 ## Waived findings
 
-_None._
+*None.*
 
 ## Skipped passes
 
-_None._
+*None.*
 
 ## Pass notes
 
 ### Security
 
-`configuration-cross.md` CFG-CONST-* and CFG-ENV-* triggers fire on plans/specs that introduce operator-tunable constants or env vars. The data-model.md change tightens a category-token regex; the tasks.md change fixes a typo. Neither introduces a new constant, env var, or configuration value. No findings.
+`configuration-cross.md` `CFG-CONST-*` and `CFG-ENV-*` triggers fire on plans/specs that introduce operator-tunable constants or env vars. The data-model.md change tightens a category-token regex; the tasks.md change fixes a typo. Neither introduces a new constant, env var, or configuration value. No findings.
 
 ### Reuse
 

@@ -1,8 +1,26 @@
 {
+  // Linted by default when markdownlint-cli2 is invoked with no CLI globs
+  // (as CI does). Without this key the bare invocation matches zero files.
+  "globs": ["**/*.md"],
+  // Respect .gitignore so build artifacts (e.g. runtime/target/) are skipped.
+  "gitignore": true,
+  "ignores": [
+    "CLAUDE.md",
+    // Test fixtures and golden snapshots mirror arbitrary adopter content;
+    // they are inputs to the runtime tests, not authored documentation.
+    "runtime/tests/**"
+  ],
   "config": {
     "default": true,
     "MD013": false,
     "MD033": false,
+    // Pipeline command sources interleave standalone `<!-- audit:ignore-promotion -->`
+    // markers between numbered steps. The promotion audit
+    // (scripts/audit/primitive-promotion-candidates.sh) requires each marker on its
+    // own line immediately preceding a step at column 0 — which structurally breaks
+    // MD029's ordered-list continuity check. Numbering style is cosmetic for these
+    // procedure docs, so MD029 yields to the audit's hard requirement.
+    "MD029": false,
     "MD024": {
       "siblings_only": true
     },
@@ -12,6 +30,5 @@
     "MD060": {
       "style": "compact"
     }
-  },
-  "ignores": ["CLAUDE.md"]
+  }
 }
