@@ -26,7 +26,8 @@ advances to `done`.
   advisory.
 - **Scope** — files referenced by the target's `plan.md` under `Affected Files`,
   plus any files modified since the spec advanced to `in-progress` (whichever
-  set is larger).
+  set is larger). `specs/inbox.md` is also read (diffed against `diff-base`) to
+  surface issues captured during the work window — see §Behavior step 4.
 - **Config** — two `.govern.toml` keys influence this command:
   - `[review] tech-stack-verified` (boolean, default `false`): when
     `true`, the tech-stack alignment check (see Behavior step 1) is
@@ -261,6 +262,7 @@ diff-base: <sha-where-status-became-in-progress>
 must-violations: 0
 should-violations: 3
 low-confidence: 2
+captured-issues: 1
 skipped-passes: []
 ---
 
@@ -280,10 +282,27 @@ skipped-passes: []
 
 ## Waived findings
 
+## Captured issues (pending /gov:groom)
+
+<empty section when none; otherwise one bullet per item appended to specs/inbox.md since diff-base>
+
 ## Skipped passes
 
 <empty when none>
 ```
+
+The **Captured issues** section surfaces issues the agent recorded to
+`specs/inbox.md` automatically during the work being reviewed (per
+§brownfield-inbox Automatic issue capture). Populate it by diffing
+`specs/inbox.md` against `diff-base` (`git diff <diff-base>..HEAD -- specs/inbox.md`)
+and listing every line added in that window. These are **informational** —
+they are incidental findings parked for `/gov:groom`, not review
+findings against the loaded rules. They do **not** count toward
+`must-violations` / `should-violations`, do **not** affect `review.blocking`,
+and do **not** change the exit code. The section is the "presented as part of
+the review" half of the capture contract: it makes mid-task captures visible at
+the gate so none is forgotten. When the inbox shows no additions in the window,
+write `captured-issues: 0` and leave the section empty.
 
 Each finding follows this shape:
 
@@ -477,9 +496,13 @@ Stdout summary (always), followed by the path to `review.md`:
   efficiency  ✓ 0 MUST   0 SHOULD
   simplicity  ✓ 0 MUST   0 SHOULD
 
+  captured    1 issue logged during work — run /gov:groom to route
   blocking: no
   report:   specs/042-example-feature/review.md
 ```
+
+The `captured` line is omitted when no issues were appended to the inbox in the
+review window. It is informational and never affects the exit code.
 
 When MUST violations are present:
 

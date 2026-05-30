@@ -46,7 +46,8 @@ Default is unset — without the flag, the user confirms each task as today.
 - The runtime write boundary is derived in step 2 from git history; the plan's **Affected Files** section is a planning aid, not authoritative.
 - Do NOT read or modify files belonging to other features' spec directories.
 - Do NOT read source code speculatively — only read files relevant to the current task.
-- Reference: §implement-phase, §pipeline-boundaries, §text-first-artifacts, plus the rule-file directory's `configuration-cross.md` (`specs/rules/configuration-cross.md` in adopter projects; `framework/rules/configuration-cross.md` in govern's own repo) for constants and env-vars (constitution loaded by `/gov:target` — do not re-read).
+- Reference: §implement-phase, §pipeline-boundaries, §text-first-artifacts, §brownfield-inbox (Automatic issue capture), plus the rule-file directory's `configuration-cross.md` (`specs/rules/configuration-cross.md` in adopter projects; `framework/rules/configuration-cross.md` in govern's own repo) for constants and env-vars (constitution loaded by `/gov:target` — do not re-read).
+- Appending an incidentally-discovered issue to `specs/inbox.md` (per §brownfield-inbox Automatic issue capture) is a govern-artifact write, in the same category as the `mark-task` write to `tasks.md` — it is **not** subject to the runtime write boundary and does not trigger an out-of-boundary halt.
 
 ## Instructions
 
@@ -68,7 +69,7 @@ Default is unset — without the flag, the user confirms each task as today.
 7. Invoke `mark-task` (MCP: `mark-task`) to flip the first incomplete subtask's checkbox from unchecked to checked in `tasks.md` (atomic write via tempfile + rename). The primitive returns the previous and current states; a previous value of `true` surfaces as a no-op result.
 
 <!-- audit:ignore-promotion -->
-8. Render the completion summary (host responsibility): list the task processed, surface the cross-spec impact diff (any changes outside `specs/{feature}/`), remind the user to commit, and prompt for the next pipeline gate. The in-progress → done transition is its own invocation — re-run `/gov:implement` after every task has been marked complete and review is clean.
+8. Render the completion summary (host responsibility): list the task processed, surface the cross-spec impact diff (any changes outside `specs/{feature}/`), surface any issues captured to `specs/inbox.md` during this run (per §brownfield-inbox Automatic issue capture — list each captured item and suggest `/gov:groom` to route them), remind the user to commit, and prompt for the next pipeline gate. The in-progress → done transition is its own invocation — re-run `/gov:implement` after every task has been marked complete and review is clean.
 
 ## Markdown-only reference
 
@@ -99,10 +100,11 @@ If the spec's status is already in-progress, run `git log --oneline -- specs/{fe
 2. Read the relevant technical decisions from the plan.
 3. Read only the existing code files relevant to this task from the plan's affected files.
 4. Implement the task: write code, tests, and migrations as needed. Follow conventions in `AGENTS.md` and `specs/system.md`; respect the contracts defined in the spec. If a write would land outside the runtime boundary, notify the user, explain why, and wait for confirmation before proceeding. Once accepted, the file is part of the boundary for the rest of the session.
-5. Verify the "done when" condition is met.
-6. Mark the task as complete in `tasks.md` — update each checkbox to `- [x]`, including nested sub-item checkboxes, before proceeding.
-7. Prompt the user to commit and push changes. With `--auto` set, skip the prompt: commit on your own, do not push.
-8. Before starting the next task, assess whether sufficient context remains to complete it. If context is low, suggest starting a new session.
+5. **Capture incidental issues.** If implementing this task surfaces an issue outside the task's scope — a security weakness, a memory or resource leak, a violated convention, a latent bug in adjacent code — append it to `specs/inbox.md` automatically, without prompting, and keep working (per §brownfield-inbox Automatic issue capture). Do not derail to fix out-of-scope findings; an issue *inside* this task's scope is fixed as part of the task, not logged. The append follows the inbox auto-capture form (see `specs/inbox.md`).
+6. Verify the "done when" condition is met.
+7. Mark the task as complete in `tasks.md` — update each checkbox to `- [x]`, including nested sub-item checkboxes, before proceeding.
+8. Prompt the user to commit and push changes. With `--auto` set, skip the prompt: commit on your own, do not push.
+9. Before starting the next task, assess whether sufficient context remains to complete it. If context is low, suggest starting a new session.
 
 ### Completion gate (after all tasks)
 
@@ -115,5 +117,5 @@ If the spec's status is already in-progress, run `git log --oneline -- specs/{fe
    - All `.md` files in the feature directory pass `npx markdownlint-cli2`.
 4. If any validation check fails, report the specific failures and do not propose the transition. The user fixes the issues and re-runs the command.
 5. **Pre-done review gate.** Read the target spec's frontmatter `review:` block before asking for the done transition. If `review.last-run` is missing, null, or the review block is absent, halt with: `blocked: spec has not been reviewed — run /gov:review before completing`. If `review.blocking: true`, halt with: `blocked: spec has {must-violations} MUST violation(s) — see specs/NNN-feature/review.md` followed by guidance to either resolve the violations and re-run `/gov:review`, or run `/gov:review --waive <rule-id> --reason "..."` for each waivable finding. Otherwise, proceed.
-6. If all checks pass, present a summary and ask the user to approve the transition to done. Do not update the status until the user confirms.
+6. If all checks pass, present a summary — including any issues captured to `specs/inbox.md` during this feature's implementation (per §brownfield-inbox Automatic issue capture), each listed with a pointer to run `/gov:groom` to route them — and ask the user to approve the transition to done. Do not update the status until the user confirms.
 7. On confirmation, update the spec's frontmatter status from in-progress to done.
