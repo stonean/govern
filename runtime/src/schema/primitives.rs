@@ -621,7 +621,7 @@ pub struct MarkdownViolation {
 pub struct LintMarkdownResult {
     /// All violations.
     pub violations: Vec<MarkdownViolation>,
-    /// Whether the lint produced no violations.
+    /// Whether the lint produced no violations and exited zero.
     pub clean: bool,
     /// `markdownlint-cli2` exit code.
     pub exit_code: i32,

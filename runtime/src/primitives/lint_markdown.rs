@@ -49,7 +49,13 @@ pub fn run(args: &LintMarkdownArgs, repo: &Path) -> Result<LintMarkdownResult> {
         }
     }
 
-    let clean = violations.is_empty();
+    // `clean` requires both no parsed violations AND a zero exit code. A
+    // non-zero exit with an empty violations vec means markdownlint reported a
+    // problem in a line shape the parser did not recognize, or a config/runtime
+    // error — neither is clean. Deriving solely from `violations.is_empty()`
+    // silently passed such runs. Mirrors run-generator's exit-code-derived
+    // `drift`.
+    let clean = violations.is_empty() && exit_code == 0;
     Ok(LintMarkdownResult {
         violations,
         clean,
@@ -57,12 +63,14 @@ pub fn run(args: &LintMarkdownArgs, repo: &Path) -> Result<LintMarkdownResult> {
     })
 }
 
-/// Parse one markdownlint-cli2 violation line. The default output format is
-/// `path:line[:col] RULE/aliases description`; we accept either form.
+/// Parse one markdownlint-cli2 violation line. Output shape is
+/// `path:line[:col] [severity] RULE/aliases description`. The optional
+/// `severity` token (`error`/`warning`) is emitted by markdownlint-cli2
+/// v0.22.1+; older output omits it. Both forms are accepted.
 fn parse_violation_line(line: &str) -> Option<MarkdownViolation> {
     static PATTERN: OnceLock<Regex> = OnceLock::new();
     let re = PATTERN.get_or_init(|| {
-        Regex::new(r"^(?P<path>[^:]+(?:\.md|\.markdown)):(?P<line>\d+)(?::\d+)?\s+(?P<rule>MD\d+)(?:/\S+)?\s+(?P<message>.+)$")
+        Regex::new(r"^(?P<path>[^:]+(?:\.md|\.markdown)):(?P<line>\d+)(?::\d+)?\s+(?:(?:error|warning)\s+)?(?P<rule>MD\d+)(?:/\S+)?\s+(?P<message>.+)$")
             .unwrap_or_else(|err| panic!("markdownlint violation regex must compile: {err}"))
     });
     let caps = re.captures(line.trim())?;
@@ -102,6 +110,33 @@ mod tests {
         assert_eq!(v.path, "docs/spec.md");
         assert_eq!(v.line, 42);
         assert_eq!(v.rule, "MD009");
+    }
+
+    #[test]
+    fn parses_violation_with_severity_token() {
+        // markdownlint-cli2 v0.22.1+ inserts an `error`/`warning` severity
+        // token between the location and the rule. This is the exact shape that
+        // was silently dropped before the regex accepted the optional token.
+        let v = parse_violation_line(
+            "specs/028-multi-format-agents/spec.md:34 error MD028/no-blanks-blockquote Blank line inside blockquote",
+        )
+        .unwrap();
+        assert_eq!(v.path, "specs/028-multi-format-agents/spec.md");
+        assert_eq!(v.line, 34);
+        assert_eq!(v.rule, "MD028");
+        assert!(v.message.contains("Blank line inside blockquote"));
+    }
+
+    #[test]
+    fn parses_violation_with_severity_and_column() {
+        let v = parse_violation_line(
+            "docs/spec.md:42:3 warning MD009/no-trailing-spaces Trailing spaces",
+        )
+        .unwrap();
+        assert_eq!(v.path, "docs/spec.md");
+        assert_eq!(v.line, 42);
+        assert_eq!(v.rule, "MD009");
+        assert!(v.message.contains("Trailing spaces"));
     }
 
     #[test]

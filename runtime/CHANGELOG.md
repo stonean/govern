@@ -2,6 +2,14 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.11.3] — 2026-06-09
+
+### Fixed
+
+- **`lint-markdown` silently dropped every violation.** markdownlint-cli2 v0.22.1 emits a severity token (`error`/`warning`) between the location and the rule ID — `path:line error MD028/alias message` — but `parse_violation_line`'s regex expected the rule immediately after the location (`path:line MD028 …`). No real output line matched, so `violations` came back empty even when markdownlint exited non-zero. The regex now accepts an optional `(?:error|warning)` token before the rule. Both the `gvrn lint-markdown` CLI and the `lint-markdown` MCP tool share the same `run()`, so both paths are fixed.
+
+- **`clean` ignored the exit code.** It was derived solely from `violations.is_empty()`, contradicting the module's documented contract ("exit code 1 and 2+ both flow through as `clean: false`"). A parse miss — or any config/runtime error that produced no recognizable violation lines — therefore reported `clean: true` against a non-zero exit. `clean` is now `violations.is_empty() && exit_code == 0`, mirroring `run-generator`'s exit-code-derived `drift`, so a non-zero exit can never be reported as clean even if output-format drift defeats the parser again. Two parser tests cover the severity-token form (with and without a column).
+
 ## [0.11.2] — 2026-05-24
 
 ### Changed
