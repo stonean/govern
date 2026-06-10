@@ -44,9 +44,9 @@ Bootstrap flow (added after mid-implement discovery — see plan §Technical Dec
 
 ## 5. Branch Permission Setup + MCP registration in govern.md
 
-- [ ] Branch §Permission Setup to seed `.agents/settings.json` from the `antigravity` `settings_template`
-- [ ] Branch the MCP-registration step to write `.agents/mcp_config.json` (additive) for `antigravity`, vs `.mcp.json` for `claude-style`
-- [ ] Document the additive merge for both `.agents/` files (host/markdown path)
+- [x] Branch §Permission Setup to seed `.agents/settings.json` from the `antigravity` `settings_template`
+- [x] Branch the MCP-registration step — N/A: govern.md has no MCP-registration step (`.mcp.json` is not scaffolded for any agent; gvrn is an optional out-of-band install). The `.agents/mcp_config.json` wiring is documented in §Permission Setup as a README/runtime concern and ships in the README (Task 7), parallel to `.mcp.json`
+- [x] Document the additive merge for both `.agents/` files (host/markdown path) — settings.json in §Permission Setup + configure/antigravity.md; mcp_config.json additive note in §Permission Setup
 - Done when: govern.md describes the two-file gvrn wiring and the settings seed for Antigravity, additively
 
 ## 6. Add `.agents/` to the managed `.gitignore` block

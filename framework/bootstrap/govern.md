@@ -133,11 +133,13 @@ The user must end up with at least one selected agent in every path. Removing an
 
 For each selected agent, before fetching any files:
 
-1. Read `{config_dir}/settings.local.json` (create it if missing, with the agent's `settings_template` from the registry).
-2. Merge the agent's `settings_template` entries into the existing file: add any entries that are missing, do not deduplicate or reorder anything else, and do not overwrite entries the user or `/{project}:configure` previously added.
+1. Read the agent's settings file — `{config_dir}/settings.local.json` for `claude-style`, or `{config_dir}/settings.json` for `antigravity` (create it if missing, with the agent's `settings_template` from the registry).
+2. Merge the agent's `settings_template` entries into the existing file additively: add any entries that are missing, do not deduplicate or reorder anything else, and do not overwrite entries the user or `/{project}:configure` previously added. For `claude-style` the entries live under `permissions.allow`/`permissions.deny` (Claude) or `toolPermissions` (Auggie); for `antigravity` they live under `permissions.allow`/`permissions.deny`/`permissions.ask`.
 3. Write the file if anything was added.
 
-This prevents repeated permission prompts during the fetch and scaffolding phases. The full permission set is applied later by `/{project}:configure`.
+This prevents repeated permission prompts during the fetch and scaffolding phases. The full permission set is applied later by `/{project}:configure` (which writes the same per-layout settings file).
+
+The gvrn runtime itself is wired separately and is **not** scaffolded by `/govern`: `claude-style` registers the server via `.mcp.json`, `antigravity` via `{config_dir}/mcp_config.json` (`{ "mcpServers": { "gvrn": { "command": "gvrn", "args": ["mcp"] } } }`, additive). Both are an optional install documented in the README's Runtime section.
 
 ## govern.md Self-Update Check
 
