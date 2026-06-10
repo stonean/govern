@@ -18,7 +18,14 @@ cd "$ROOT"
 
 scripts/gen-spec-deps.sh
 
-# Stage any generator-produced changes.
-for f in specs/[0-9][0-9][0-9]-*/spec.md; do
-  git add "$f"
-done
+# Re-stage only spec files already part of this commit, so the derived
+# `dependencies:` rewrite is captured without sweeping in untracked `/specify`
+# drafts or unstaged edits to other tracked specs
+# (spec 017 / tracked-specs-not-worktree).
+staged_specs="$(git diff --cached --name-only -- specs \
+  | { grep -E '^specs/[0-9][0-9][0-9]-[^/]+/(spec|spec-and-plan)\.md$' || true; })"
+if [ -n "$staged_specs" ]; then
+  printf '%s\n' "$staged_specs" | while IFS= read -r f; do
+    [ -f "$f" ] && git add "$f"
+  done
+fi

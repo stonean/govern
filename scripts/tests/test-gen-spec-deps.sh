@@ -23,6 +23,9 @@
 #     L. self-cycle reported as a 1-cycle
 #     M. multiple disjoint cycles all reported in one run
 #
+#   tracked-specs-not-worktree (spec 017 scenario):
+#     N. untracked draft specs are skipped; only git-tracked specs are processed
+#
 # Usage: scripts/tests/test-gen-spec-deps.sh
 
 set -euo pipefail
@@ -457,6 +460,60 @@ test_M_multiple_disjoint_cycles() {
   rm -rf "$tmp"
 }
 
+# ---------- tracked-specs-not-worktree ----------
+
+# When run inside a git repo, the generator processes only git-tracked (indexed)
+# specs; an untracked, in-progress draft sitting in the worktree is left
+# untouched and never enters the dependency graph. Outside a git repo the
+# worktree-glob fallback covers every spec (the path tests A–M exercise).
+test_N_untracked_draft_ignored() {
+  local tmp; tmp="$(make_fixture)"
+  git -C "$tmp" init -q
+  git -C "$tmp" config user.email "test@example.com"
+  git -C "$tmp" config user.name "test"
+
+  # 001 (tracked) and 002 (untracked draft) both link to 003 in their bodies.
+  write_spec "$tmp" "001-alpha" <<'EOF'
+---
+status: clarified
+dependencies: []
+---
+
+# Alpha
+
+Depends on [003-gamma](../003-gamma/spec.md).
+EOF
+  write_spec "$tmp" "003-gamma" <<'EOF'
+---
+status: clarified
+dependencies: []
+---
+
+# Gamma
+EOF
+  git -C "$tmp" add specs/001-alpha/spec.md specs/003-gamma/spec.md
+  git -C "$tmp" commit -q -m init
+
+  # 002-beta is written but never `git add`ed — an in-progress draft.
+  write_spec "$tmp" "002-beta" <<'EOF'
+---
+status: draft
+dependencies: []
+---
+
+# Beta
+
+Depends on [003-gamma](../003-gamma/spec.md).
+EOF
+
+  "$GEN" --root="$tmp" > /dev/null
+  assert_deps "$tmp/specs/001-alpha/spec.md" "dependencies: [003-gamma]" \
+    "N: tracked spec is processed"
+  assert_deps "$tmp/specs/002-beta/spec.md" "dependencies: []" \
+    "N: untracked draft is left untouched (deps not derived)"
+  rm -rf "$tmp"
+}
+
 # ---------- runner ----------
 
 run_all() {
@@ -474,6 +531,7 @@ run_all() {
   test_K_mixed_reports_only_cycle
   test_L_self_cycle
   test_M_multiple_disjoint_cycles
+  test_N_untracked_draft_ignored
 
   if [ "$failures" -gt 0 ]; then
     echo "$failures test(s) failed" >&2

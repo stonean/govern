@@ -43,12 +43,29 @@ fi
 
 shopt -s nullglob
 
+# Enumerate feature-spec files scoped to the git index (tracked + staged), so
+# the README table never lists an untracked `/specify` draft that is not part of
+# the committed tree (spec 017 / tracked-specs-not-worktree). Falls back to a
+# worktree glob outside a git repo. Mirrors gen-spec-deps.sh.
+list_specs() {
+  if git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+    git -C "$ROOT" ls-files -- specs \
+      | { grep -E '^specs/[0-9][0-9][0-9]-[^/]+/(spec|spec-and-plan)\.md$' || true; } \
+      | while IFS= read -r rel; do printf '%s/%s\n' "$ROOT" "$rel"; done
+  else
+    local f
+    for f in "$ROOT"/specs/[0-9][0-9][0-9]-*/spec.md "$ROOT"/specs/[0-9][0-9][0-9]-*/spec-and-plan.md; do
+      [ -e "$f" ] && printf '%s\n' "$f"
+    done
+  fi
+}
+
 # Build the table body.
 table="$(
   printf '| Spec | Status | Dependencies | Description |\n'
   printf '| --- | --- | --- | --- |\n'
 
-  for spec in $(printf '%s\n' "$ROOT"/specs/[0-9][0-9][0-9]-*/spec.md "$ROOT"/specs/[0-9][0-9][0-9]-*/spec-and-plan.md | sort); do
+  while IFS= read -r spec; do
     [ -f "$spec" ] || continue
     slug="$(basename "$(dirname "$spec")")"
     relpath="specs/$slug/$(basename "$spec")"
@@ -106,7 +123,7 @@ table="$(
         printf("| [%s](%s) | %s | %s | %s |\n", slug, relpath, status, deps_display, desc)
       }
     ' "$spec"
-  done
+  done < <(list_specs | sort)
 )"
 
 # Splice the new table between the markers.

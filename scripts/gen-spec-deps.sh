@@ -44,11 +44,30 @@ done
 
 shopt -s nullglob
 
+# Enumerate feature-spec files to process, scoped to the git index (tracked +
+# staged) rather than a worktree glob. Untracked, in-progress drafts — e.g. a
+# `/specify` spec the author has not `git add`ed yet — are intentionally
+# excluded so they are never rewritten, never enter the dependency/cycle graph,
+# and never block an unrelated commit (spec 017 / tracked-specs-not-worktree).
+# Falls back to a worktree glob only outside a git repo, where there is no index.
+list_specs() {
+  if git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+    git -C "$ROOT" ls-files -- specs \
+      | { grep -E '^specs/[0-9][0-9][0-9]-[^/]+/(spec|spec-and-plan)\.md$' || true; } \
+      | while IFS= read -r rel; do printf '%s/%s\n' "$ROOT" "$rel"; done
+  else
+    local f
+    for f in "$ROOT"/specs/[0-9][0-9][0-9]-*/spec.md "$ROOT"/specs/[0-9][0-9][0-9]-*/spec-and-plan.md; do
+      [ -e "$f" ] && printf '%s\n' "$f"
+    done
+  fi
+}
+
 graph_file="$(mktemp)"
 trap 'rm -f "$graph_file"' EXIT
 
 changed=0
-for spec in "$ROOT"/specs/[0-9][0-9][0-9]-*/spec.md "$ROOT"/specs/[0-9][0-9][0-9]-*/spec-and-plan.md; do
+while IFS= read -r spec; do
   [ -f "$spec" ] || continue
   own_slug="$(basename "$(dirname "$spec")")"
 
@@ -144,7 +163,7 @@ for spec in "$ROOT"/specs/[0-9][0-9][0-9]-*/spec.md "$ROOT"/specs/[0-9][0-9][0-9
 
   # Record this spec's outgoing edges (post-rewrite) for the cycle check.
   echo "$own_slug|$deps_csv" >> "$graph_file"
-done
+done < <(list_specs)
 
 if [ "$changed" -eq 0 ]; then
   echo "No changes (all specs in sync)"
