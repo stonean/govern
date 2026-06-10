@@ -1,9 +1,9 @@
 ---
-status: in-progress
+status: done
 dependencies: [012-multi-agent-govern, 022-deterministic-runtime]
 review:
-  last-run: null
-  reviewed-against: null
+  last-run: 2026-06-10T02:46:51Z
+  reviewed-against: 072593cdf6334cb5ff8554f9c0db07fb38c27c79
   must-violations: 0
   should-violations: 0
   low-confidence: 0
@@ -51,7 +51,7 @@ but only delivered for `.claude`-style agents.
 
 [012-multi-agent-govern](../012-multi-agent-govern/spec.md) collapsed the
 per-CLI `govern.md` variants into one unified file driven by an **Agent
-Registry** (`framework/bootstrap/govern.md` §Agent Registry). Its closing
+Registry** (defined in `framework/bootstrap/govern.md`). Its closing
 contract — *"Adding a new agent is a one-row addition to the registry"* plus a
 `configure/{key}.md` file and a README curl snippet, with *"No other changes are
 required"* — holds only because Claude and Auggie share layout assumptions baked
