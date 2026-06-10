@@ -45,32 +45,47 @@ The same `govern.md` supports every agent the framework knows about. The set of 
 
 The registry lists every supported agent. Per-agent paths and behaviors are derived from these rows — the rest of this file references registry values, not agent names.
 
-| `key` | `name` | `config_dir` | `settings_template` | `rules_file_note` |
-| --- | --- | --- | --- | --- |
-| `claude` | Claude Code | `.claude` | `{ "permissions": { "allow": ["Bash(curl *)", "Bash(ls *)", "Bash(tar *)", "Bash(mktemp *)", "Bash(git status *)", "Bash(git config *)", "Bash(chmod *)", "Bash(awk *)", "Read(/private/var/folders/**/T/govern-*/**)", "Read(//private/var/folders/**/T/govern-*/**)", "Read(/var/folders/**/T/govern-*/**)", "Read(//var/folders/**/T/govern-*/**)", "Read(/tmp/govern-*/**)", "Read(//tmp/govern-*/**)"], "deny": [] } }` | Claude Code reads `CLAUDE.md` natively. |
-| `auggie` | Auggie | `.augment` | `{ "toolPermissions": [ { "toolName": "launch-process", "shellInputRegex": "^curl ", "permission": { "type": "allow" } }, { "toolName": "launch-process", "shellInputRegex": "^ls ", "permission": { "type": "allow" } }, { "toolName": "launch-process", "shellInputRegex": "^tar ", "permission": { "type": "allow" } }, { "toolName": "launch-process", "shellInputRegex": "^mktemp ", "permission": { "type": "allow" } }, { "toolName": "launch-process", "shellInputRegex": "^git status ", "permission": { "type": "allow" } }, { "toolName": "launch-process", "shellInputRegex": "^git config ", "permission": { "type": "allow" } }, { "toolName": "launch-process", "shellInputRegex": "^chmod ", "permission": { "type": "allow" } }, { "toolName": "launch-process", "shellInputRegex": "^awk ", "permission": { "type": "allow" } } ] }` | Auggie reads `CLAUDE.md` natively — no second rules file is needed. |
+| `key` | `name` | `config_dir` | `layout` | `settings_template` | `rules_file_note` |
+| --- | --- | --- | --- | --- | --- |
+| `claude` | Claude Code | `.claude` | `claude-style` | `{ "permissions": { "allow": ["Bash(curl *)", "Bash(ls *)", "Bash(tar *)", "Bash(mktemp *)", "Bash(git status *)", "Bash(git config *)", "Bash(chmod *)", "Bash(awk *)", "Read(/private/var/folders/**/T/govern-*/**)", "Read(//private/var/folders/**/T/govern-*/**)", "Read(/var/folders/**/T/govern-*/**)", "Read(//var/folders/**/T/govern-*/**)", "Read(/tmp/govern-*/**)", "Read(//tmp/govern-*/**)"], "deny": [] } }` | Claude Code reads `CLAUDE.md` natively. |
+| `auggie` | Auggie | `.augment` | `claude-style` | `{ "toolPermissions": [ { "toolName": "launch-process", "shellInputRegex": "^curl ", "permission": { "type": "allow" } }, { "toolName": "launch-process", "shellInputRegex": "^ls ", "permission": { "type": "allow" } }, { "toolName": "launch-process", "shellInputRegex": "^tar ", "permission": { "type": "allow" } }, { "toolName": "launch-process", "shellInputRegex": "^mktemp ", "permission": { "type": "allow" } }, { "toolName": "launch-process", "shellInputRegex": "^git status ", "permission": { "type": "allow" } }, { "toolName": "launch-process", "shellInputRegex": "^git config ", "permission": { "type": "allow" } }, { "toolName": "launch-process", "shellInputRegex": "^chmod ", "permission": { "type": "allow" } }, { "toolName": "launch-process", "shellInputRegex": "^awk ", "permission": { "type": "allow" } } ] }` | Auggie reads `CLAUDE.md` natively — no second rules file is needed. |
+| `antigravity` | Antigravity | `.agents` | `antigravity` | `{ "permissions": { "allow": [ "command(curl)", "command(ls)", "command(tar)", "command(mktemp)", "command(git status)", "command(git config)", "command(chmod)", "command(awk)" ], "deny": [], "ask": [] } }` | Antigravity reads `AGENTS.md` natively — no second rules file is needed. |
 
 ### Derived values
 
-For each agent, these paths are computed by convention from the row above. They are **not** stored in the table.
+For each agent, these paths and behaviors are computed by convention from its row — they are **not** stored in the table. Values that are the same for every agent are layout-independent; the rest are selected by the row's `layout` field.
+
+**Layout-independent (every agent):**
 
 | Derived value | Formula |
 | --- | --- |
 | Configure source path | `framework/bootstrap/configure/{key}.md` |
-| Project commands directory | `{config_dir}/commands/{project}/` |
-| `govern` install path | `{config_dir}/commands/govern.md` |
+
+**Layout-derived (selected by `layout`):**
+
+| Derived value | `claude-style` | `antigravity` |
+| --- | --- | --- |
+| Command/skill path | `{config_dir}/commands/{project}/<name>.md` | `{config_dir}/skills/{project}-<name>/SKILL.md` |
+| Invocation | `/{project}:<name>` | `/{project}-<name>` |
+| `govern` install path | `{config_dir}/commands/govern.md` | `{config_dir}/skills/govern/SKILL.md` |
+| MCP-wiring file | `.mcp.json` | `{config_dir}/mcp_config.json` |
+| Settings file | `{config_dir}/settings.local.json` | `{config_dir}/settings.json` |
+| Permission shape | `permissions.allow/deny` (Claude) / `toolPermissions[]` (Auggie) | `permissions.allow/deny/ask` (action grammar) |
+| Native rule-loading dir | — (rules read from shared `specs/rules/`) | `{config_dir}/rules/<name>.md` |
+| Native rules file | `CLAUDE.md` | `AGENTS.md` |
+| Slash-command cleanup glob | `*.md` in the commands dir | `{project}-*/` skill dirs in `skills/` |
 
 The session state file is `.govern.session.toml` at the repo root for every adopter — not a derived per-agent value. It's gitignored and host-agnostic.
 
 ### Adding a new agent
 
-A new agent is one row above plus two satellite files:
+A `claude-style` agent (markdown commands under `{config_dir}/commands/{project}/`, reads `CLAUDE.md`) is still a one-row append plus two satellite files:
 
-1. Append a row with the five required fields.
+1. Append a row with the six fields (`layout: claude-style`).
 2. Add `framework/bootstrap/configure/{key}.md` with the agent's full permission set in its native settings format.
 3. Add a curl snippet for the new agent to the README's adoption section.
 
-No other changes are required.
+An agent on a **different layout** (a new value in the `layout` column) additionally needs its branch added to §Derived values and the layout-keyed steps in §Per-Agent Scaffolding, §Permission Setup, and the MCP-registration step — the work this `antigravity` layout introduced.
 
 ## Inputs
 

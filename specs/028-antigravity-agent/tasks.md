@@ -4,10 +4,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 1. Generalize the registry with `layout` profiles
 
-- [ ] Add a `layout` column to `framework/bootstrap/govern.md` §Agent Registry; set existing rows `claude` / `auggie` to `claude-style`
-- [ ] Add the `antigravity` row (`config_dir: .agents`, `layout: antigravity`, `settings_template`, `rules_file_note`) per [data-model.md](data-model.md)
-- [ ] Rewrite §Derived values as a profile table (command/skill path, invocation, `govern` install path, MCP file, settings file, permission shape, rules location, native rules file, cleanup glob)
-- [ ] Update §"Adding a new agent" to note that a `claude-style` agent stays a one-row append
+- [x] Add a `layout` column to `framework/bootstrap/govern.md` §Agent Registry; set existing rows `claude` / `auggie` to `claude-style`
+- [x] Add the `antigravity` row (`config_dir: .agents`, `layout: antigravity`, `settings_template`, `rules_file_note`) per [data-model.md](data-model.md)
+- [x] Rewrite §Derived values as a profile table (command/skill path, invocation, `govern` install path, MCP file, settings file, permission shape, rules location, native rules file, cleanup glob)
+- [x] Update §"Adding a new agent" to note that a `claude-style` agent stays a one-row append
 - Done when: the registry + derived-values sections describe all three agents by profile, and a hypothetical `.claude`-style agent is still a pure row append
 
 ## 2. Branch §Per-Agent Scaffolding for the `antigravity` layout

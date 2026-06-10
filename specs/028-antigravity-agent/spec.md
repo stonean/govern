@@ -1,5 +1,5 @@
 ---
-status: planned
+status: in-progress
 dependencies: [012-multi-agent-govern, 022-deterministic-runtime]
 review:
   last-run: null
