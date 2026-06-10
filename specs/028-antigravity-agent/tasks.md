@@ -51,19 +51,19 @@ Bootstrap flow (added after mid-implement discovery — see plan §Technical Dec
 
 ## 6. Add `.agents/` to the managed `.gitignore` block
 
-- [ ] Add `.agents/` to `framework/templates/project/gitignore`
-- [ ] Add `.agents/` to the `merge-managed-block` content described in govern.md §Shared Files
+- [x] Add `.agents/` to `framework/templates/project/gitignore` (`.agents/*` + `!.agents/skills/`, mirroring the Claude `commands` carve-out)
+- [x] Add `.agents/` to the `merge-managed-block` content described in govern.md §Shared Files (the canonical block is the template above; updated the illustrative pattern lists in govern.md too)
 - Done when: a fresh adoption gitignores `.agents/` alongside `.claude/`
 
 ## 7. Document the Antigravity bootstrap in README
 
-- [ ] Add an Antigravity curl snippet (install the `govern` skill into `.agents/skills/govern/SKILL.md`)
-- [ ] Add Antigravity to the supported-agents list / paths summary
+- [x] Add an Antigravity curl snippet (install the `govern` skill into `.agents/skills/govern/SKILL.md`) — a transform snippet (strip govern.md frontmatter + prepend `name: govern`), since the `govern` skill is not govern.md verbatim
+- [x] Add Antigravity to the supported-agents list / paths summary
 - Done when: README documents adopting Antigravity with no second curl needed for additional agents
 
 ## 8. Cross-spec signpost on 012
 
-- [ ] Add a signpost note to `specs/012-multi-agent-govern/spec.md` pointing to 028 (registry generalized to layout profiles), mirroring the `007 → 012` pattern
+- [x] Add a signpost note to `specs/012-multi-agent-govern/spec.md` pointing to 028 (registry generalized to layout profiles), mirroring the `007 → 012` pattern (in a blockquote, so `gen-spec-deps` skips the link — no 012↔028 cycle)
 - Done when: 012 carries the signpost; `gen-spec-deps` derives no cycle
 
 ## 9. Tests

@@ -16,6 +16,8 @@ review:
 
 A single `govern.md` command that supports adopting governance for multiple AI coding CLIs in the same project, with the target agent(s) selected at run time rather than baked into the file. Re-runs are additive — a project initialized for one agent can later adopt another by re-running `/govern` and selecting the new agent.
 
+> **Signpost (post-028):** the two-agent registry described here was generalized by [028-antigravity-agent](../028-antigravity-agent/spec.md), which adds a `layout` field so an agent with a different layout (Antigravity's `.agents/` skills, `mcp_config.json`, and `settings.json` `allow`/`deny`/`ask` permissions) can join the `.claude`-style agents. The "adding a new agent is a one-row append" contract here still holds for `claude-style` agents; a new *layout* additionally branches the scaffolding, permission-setup, and bootstrap sections of `govern.md`.
+>
 > **Note:** this spec uses `setup` for the per-agent permissions command throughout. The command and its source files were later renamed to `configure` (the source lives at `framework/bootstrap/configure/{key}.md` and is scaffolded as `{cli-config-dir}/commands/{project}/configure.md`). Behavior is unchanged.
 >
 > **Note:** path references below (`govern/govern.md`, `govern/govern-auggie.md`, `commands/setup/{agent}.md`) reflect the original layout. The repository was later reorganized so the govern installer lives at `framework/bootstrap/govern.md` and per-agent permission sources at `framework/bootstrap/configure/{key}.md`. Adopting projects' destination paths did not change.

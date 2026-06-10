@@ -133,6 +133,20 @@ curl -fsSL https://raw.githubusercontent.com/stonean/govern/main/framework/boots
 
 Then run `/govern {project-name}`.
 
+### Antigravity
+
+Antigravity discovers dir-form skills under `.agents/skills/`, so `govern` installs as a skill — `name:` frontmatter wrapping `govern.md`'s body — rather than a verbatim command file:
+
+```bash
+mkdir -p .agents/skills/govern
+{ printf -- '---\nname: govern\n---\n'; \
+  curl -fsSL https://raw.githubusercontent.com/stonean/govern/main/framework/bootstrap/govern.md \
+    | awk 'p{print} /^---[[:space:]]*$/{c++; if(c==2)p=1}'; \
+} > .agents/skills/govern/SKILL.md
+```
+
+Then run `/govern {project-name}`. The `awk` strips `govern.md`'s own frontmatter and the `printf` prepends the `name: govern` skill frontmatter; subsequent `/govern` runs reinstall it the same way. To use the optional gvrn runtime, register it in `.agents/mcp_config.json` (`{ "mcpServers": { "gvrn": { "command": "gvrn", "args": ["mcp"] } } }`).
+
 The command fetches `govern` files, scaffolds the spec directory, installs slash commands, and displays next steps. It is idempotent — safe to run again to pick up new `govern` files.
 
 The same `govern.md` supports every CLI listed above. Use whichever curl snippet matches the agent you want to start with — adopting additional agents later does not require a second curl. Re-run `/govern --add-agent` from any adopted agent to pick up the others, and the unified file scaffolds them alongside the existing setup.
@@ -377,10 +391,11 @@ If you prefer not to use `/govern`, `govern` is a reference, not a dependency. R
 
 ## Platform Support
 
-`govern` currently distributes to two AI coding agents:
+`govern` currently distributes to three AI coding agents:
 
 - **Claude Code** — `.claude/` paths, `/govern` and `/gov:*` commands
 - **Auggie** — `.augment/` paths, `/govern` command variant
+- **Antigravity** (`agy`) — `.agents/` paths, `govern` installed as a skill, `/{project}-*` invocations
 
 Adding a new agent is a single registry row plus an agent-specific `framework/bootstrap/configure/{key}.md` permission file — see [framework/bootstrap/govern.md](framework/bootstrap/govern.md#agent-registry) for the full rules.
 

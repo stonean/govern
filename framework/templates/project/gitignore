@@ -6,6 +6,10 @@
 .claude/*
 !.claude/commands/
 
+# Antigravity local settings (keep skills tracked for project-wide access)
+.agents/*
+!.agents/skills/
+
 # govern derived views — non-markdown caches and indexes generated from specs.
 # Markdown artifacts (specs, plans, scenarios) stay in git as the source of truth;
 # binary or machine-only views regenerated from them do not. See constitution
