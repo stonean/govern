@@ -32,14 +32,14 @@ Bootstrap flow (added after mid-implement discovery — see plan §Technical Dec
 
 ## 3. Create `framework/bootstrap/configure/antigravity.md`
 
-- [ ] Author the configure command writing `.agents/settings.json` `permissions.allow/deny/ask` in the action grammar (shell `command(...)` allows/denies; file ops omitted)
-- [ ] Include the `<!-- generated:mcp-allow:start/end -->` markers for the generator
+- [x] Author the configure command writing `.agents/settings.json` `permissions.allow/deny/ask` in the action grammar (shell `command(...)` allows/denies; file ops omitted)
+- [x] Include the `<!-- generated:mcp-allow:start/end -->` markers for the generator
 - Done when: `configure/antigravity.md` exists with the canonical non-MCP permission set and the marker block
 
 ## 4. Emit the Antigravity MCP block from `gen-configure-mcp.sh`
 
-- [ ] Add `antigravity.md` as a third splice target; emit a single `mcp(gvrn/*)` allow entry between the markers
-- [ ] Run the generator; verify `claude.md` / `auggie.md` output is unchanged and `antigravity.md` is populated
+- [x] Add `antigravity.md` as a third splice target; emit a single `mcp(gvrn/*)` allow entry between the markers
+- [x] Run the generator; verify `claude.md` / `auggie.md` output is unchanged and `antigravity.md` is populated
 - Done when: `scripts/gen-configure-mcp.sh` updates all three sources and the pre-commit invariant (drift fails) covers Antigravity
 
 ## 5. Branch Permission Setup + MCP registration in govern.md

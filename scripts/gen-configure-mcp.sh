@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # Regenerate the runtime-MCP-tool permission blocks in
-# framework/bootstrap/configure/claude.md and
-# framework/bootstrap/configure/auggie.md from the canonical tool list
-# in framework/runtime-tools.txt.
+# framework/bootstrap/configure/{claude,auggie,antigravity}.md from the
+# canonical tool list in framework/runtime-tools.txt.
 #
 # Establishes the invariant: every tool listed in runtime-tools.txt has
 # a permission entry in both agents' configure sources. Adding or
@@ -19,6 +18,8 @@
 #   <verb>-<noun>  →  Claude:  mcp__gvrn__<verb>-<noun>
 #                  →  Auggie:  toolName "mcp:gvrn:<verb>-<noun>",
 #                              permission { type: "allow" }
+#                  →  Antigravity: a single `mcp(gvrn/*)` wildcard (covers
+#                                  every tool; not per-tool enumerated)
 #
 # Exits non-zero if either marker is missing in either source file.
 
@@ -27,6 +28,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TOOLS="$ROOT/framework/runtime-tools.txt"
 CLAUDE_SRC="$ROOT/framework/bootstrap/configure/claude.md"
 AUGGIE_SRC="$ROOT/framework/bootstrap/configure/auggie.md"
+ANTIGRAVITY_SRC="$ROOT/framework/bootstrap/configure/antigravity.md"
 
 # Track every mktemp we create so early-exit paths (set -e, signals,
 # splice failures) don't leak temp files into $TMPDIR.
@@ -59,6 +61,11 @@ fi
 # bare `<verb>-<noun>`; the `gvrn` server-name prefix is added per host.
 claude_block_file="$(mktemp)"; cleanup_files+=("$claude_block_file")
 auggie_block_file="$(mktemp)"; cleanup_files+=("$auggie_block_file")
+# Antigravity uses one `mcp(gvrn/*)` wildcard covering every gvrn tool, rather
+# than the per-tool enumeration Claude/Auggie need — so its block is a constant
+# single line, built outside the per-tool loop below.
+antigravity_block_file="$(mktemp)"; cleanup_files+=("$antigravity_block_file")
+printf '   - `mcp(gvrn/*)`\n' > "$antigravity_block_file"
 
 tool_count=0
 while IFS= read -r tool; do
@@ -136,6 +143,7 @@ process() {
 rc=0
 process "$CLAUDE_SRC" "$claude_block_file" || rc=$?
 process "$AUGGIE_SRC" "$auggie_block_file" || rc=$?
+process "$ANTIGRAVITY_SRC" "$antigravity_block_file" || rc=$?
 
 if [ "$rc" -ne 0 ] && [ "$dry_run" -eq 1 ]; then
   exit 1
