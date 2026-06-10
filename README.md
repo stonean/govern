@@ -63,6 +63,7 @@ See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred 
 | [025-rule-opt-out](specs/025-rule-opt-out/spec.md) | done | 020, 024 | Add a narrow `.govern.toml` `[[review.disabled-rule-files]]` opt-out so an adopter whose stack matches a rule file's surface — but whose project is not yet ready to enforce that file's rules — can exclude the file from `/gov:review` loading with a recorded reason. |
 | [026-framework-self-audit](specs/026-framework-self-audit/spec.md) | done | 017, 022, 023, 024, 025 | A maintainer-grade slash command that audits `govern`'s own framework artifacts for the kinds of drift [`/gov:analyze`](../../framework/commands/analyze.md) is not scoped to catch. |
 | [027-bootstrap-migration-registry](specs/027-bootstrap-migration-registry/spec.md) | done | 026 | Replace the monotonically-growing prose-encoded Pre-run Migrations section in [framework/bootstrap/govern.md](../../framework/bootstrap/govern.md) with a machine-readable registry of convention removals. |
+| [028-antigravity-agent](specs/028-antigravity-agent/spec.md) | clarified | 012, 022 | Generalize the agent registry from "two agents that share one layout" to "N agents across differing per-agent layouts and host conventions," then use that generalization to add Google's **Antigravity CLI** (`agy`) as the third supported agent. |
 
 <!-- generated:feature-specs:end -->
 
