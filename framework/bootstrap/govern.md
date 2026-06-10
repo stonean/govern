@@ -479,7 +479,7 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 
 **AGENTS.md** (strategy: skip) — if it exists, leave it alone. If not, fetch `framework/templates/project/agents.md` from the `govern` repo and copy it as `AGENTS.md`, substituting `{project-name}` with the project name and `{One-line project description.}` with the project description.
 
-**CLAUDE.md** (strategy: skip) — if it exists, leave it alone. If not, fetch `framework/templates/project/claude-md.md` from the `govern` repo and copy it as `CLAUDE.md`. `claude-style` agents read `CLAUDE.md` natively (see each row's `rules_file_note`); the `antigravity` layout reads `AGENTS.md` natively instead. `CLAUDE.md` is still written once as a shared file (it is harmless for an Antigravity-only project), but it is not the rules file Antigravity loads.
+**CLAUDE.md** (strategy: skip, `claude-style` only) — written only when at least one selected agent is `claude-style`. If it exists, leave it alone. Otherwise, when a `claude-style` agent is selected, fetch `framework/templates/project/claude-md.md` from the `govern` repo and copy it as `CLAUDE.md`. `claude-style` agents read `CLAUDE.md` natively (see each row's `rules_file_note`); the `antigravity` layout reads `AGENTS.md` natively and does not need `CLAUDE.md`, so an **Antigravity-only** adoption ships no `CLAUDE.md`. (`AGENTS.md` is still written for every adoption, as below.)
 
 **.gitignore** (strategy: merge) — install or update a framework-managed block delimited by a `# govern` line preamble, then dedup any adopter-area copies of canonical patterns. Mirrors the runtime `merge-managed-block` contract (line-prefix style, marker `govern`):
 

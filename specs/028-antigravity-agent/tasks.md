@@ -68,14 +68,14 @@ Bootstrap flow (added after mid-implement discovery — see plan §Technical Dec
 
 ## 9. Tests
 
-- [ ] Extend/create `scripts/tests/test-gen-configure-mcp.sh` to assert the `antigravity.md` `mcp(gvrn/*)` block is emitted and in sync
-- [ ] Run the full generator + audit gate; confirm green
+- [x] Extend/create `scripts/tests/test-gen-configure-mcp.sh` to assert the `antigravity.md` `mcp(gvrn/*)` block is emitted and in sync
+- [x] Run the full generator + audit gate; confirm green
 - Done when: the Antigravity generator invariant is covered and `scripts/audit/run-all.sh` passes
 
 ## 10. Validation
 
-- [ ] `npx markdownlint-cli2` clean across the feature dir and changed framework files
-- [ ] Walk the acceptance criteria; confirm each is satisfied
+- [x] `npx markdownlint-cli2` clean across the feature dir and changed framework files
+- [x] Walk the acceptance criteria; confirm each is satisfied
 - Done when: all spec acceptance criteria are met and lint is clean
 
 <!-- Out of scope (tracked, not a task here): extending gvrn `exec`'s `Host`
