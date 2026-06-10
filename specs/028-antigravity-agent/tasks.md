@@ -10,13 +10,25 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] Update §"Adding a new agent" to note that a `claude-style` agent stays a one-row append
 - Done when: the registry + derived-values sections describe all three agents by profile, and a hypothetical `.claude`-style agent is still a pure row append
 
-## 2. Branch §Per-Agent Scaffolding for the `antigravity` layout
+## 2. Branch govern.md for the `antigravity` layout
 
-- [ ] For `layout: antigravity`, transform each `framework/commands/<name>.md` → `.agents/skills/{project}-<name>/SKILL.md` (set `name`, carry `description`, substitute `{project}`/`{cli-config-dir}`, preserve gate prompts)
-- [ ] Scaffold the `govern` installer to `.agents/skills/govern/SKILL.md` (placeholders kept literal)
-- [ ] Scaffold domain rule files to `.agents/rules/<name>.md`
-- [ ] Branch slash-command cleanup to prune stale `.agents/skills/{project}-*/` dirs
-- Done when: the scaffolding section produces the Antigravity skill/rules layout for the `antigravity` profile and the existing `claude-style` flow is unchanged
+Scaffolding (§Per-Agent Scaffolding):
+
+- [x] For `layout: antigravity`, transform each `framework/commands/<name>.md` → `.agents/skills/{project}-<name>/SKILL.md` (set `name`, carry `description`, substitute `{project}`/`{cli-config-dir}`, preserve gate prompts)
+- [x] Scaffold the `govern` installer to `.agents/skills/govern/SKILL.md` (placeholders kept literal)
+- [x] Scaffold domain rule files to `.agents/rules/<name>.md` (mirror of `specs/rules/`)
+- [x] Branch slash-command cleanup to prune stale `.agents/skills/{project}-*/` dirs
+
+Bootstrap flow (added after mid-implement discovery — see plan §Technical Decision 8):
+
+- [x] Branch the **govern.md Self-Update Check**: per-layout install path; compare the installed `SKILL.md` body (frontmatter stripped) against upstream, and on the stale-write path write the transformed skill — not raw `govern.md`
+- [x] Branch the **Post-Write Integrity Check**: for `antigravity`, verify the `SKILL.md` (frontmatter `name: govern` + body) rather than the `# govern` first line
+- [x] Branch the placeholder-substitution "keep literal" exception to the `antigravity` govern-skill path
+- [x] Update the **CLAUDE.md** shared-file step: ship `CLAUDE.md` for `claude-style` only; note Antigravity reads `AGENTS.md`
+- [x] Make `parity.strict-files` (frontmatter) layout-aware — evaluated: left as-is (unenforced metadata; only a future-use comment in `manifest-parity.sh`; antigravity skill paths not added as they would reference files absent in claude-only repos)
+- [x] Add the `antigravity` skills dir to intermediate-dir creation
+- [x] Guard **Workflow recommendation** to skip for `antigravity` (deferred)
+- Done when: every layout-assuming section of `govern.md` branches on `layout`, the `claude-style` flow is unchanged byte-for-byte, and an Antigravity bootstrap (install → self-update check → scaffold) is internally consistent
 
 ## 3. Create `framework/bootstrap/configure/antigravity.md`
 

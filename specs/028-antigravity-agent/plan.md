@@ -122,6 +122,30 @@ extension to these shapes is a 022 follow-up (parallel to the existing Auggie
 `toolPermissions` gap already noted in 022). govern.md documents the additive
 merge so the markdown-only path is faithful.
 
+### 8. The `antigravity` layout touches the whole bootstrap, not just scaffolding
+
+Discovered mid-implement (Task 2): the layout branch is not confined to
+§Per-Agent Scaffolding. Because the Antigravity `govern` installer is a
+*transformed* skill (`.agents/skills/govern/SKILL.md`, frontmatter `name:
+govern` plus the body) rather than a verbatim copy of `govern.md`, several other
+bootstrap
+sections that assume the `claude-style` `commands/govern.md` install must also
+branch on `layout`:
+
+- **govern.md Self-Update Check** — byte-compares the installed file against
+  upstream; for `antigravity` it must strip the added frontmatter and compare the
+  body, and the stale-write path must write the transformed skill, not raw
+  `govern.md` (otherwise every run reports stale and installs a broken skill).
+- **Post-Write Integrity Check** — asserts a `# govern` first line; for
+  `antigravity` it checks the `SKILL.md` frontmatter + body.
+- **Placeholder-substitution exception**, **intermediate-dir creation**,
+  **`parity.strict-files` frontmatter**, the **CLAUDE.md shared-file step**
+  (`claude-style` only), and **Workflow recommendation** (deferred for
+  `antigravity`) likewise branch.
+
+All are folded into Task 2; the Self-Update and Integrity branches are required
+for Antigravity to bootstrap at all.
+
 ## Affected Files
 
 | File | Action | Purpose |
