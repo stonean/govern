@@ -53,8 +53,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 8. Add new edge cases and the State-C tip to govern.md output
 
-- [ ] §Edge Cases: malformed wiring file (no clobber), denied/unavailable probe ⇒ State C, compounding restart collapsed to one.
-- [ ] §Post-Scaffolding Output: the State-C tip line; ensure the State-B abort message lists every file written.
+- [x] §Edge Cases: malformed wiring file (no clobber), denied/unavailable probe ⇒ State C, compounding restart collapsed to one.
+- [x] §Post-Scaffolding Output: the State-C tip line; ensure the State-B abort message lists every file written.
 - Done when: the new edge cases and output lines are present.
 
 ## 9. Extend and run the parity audit

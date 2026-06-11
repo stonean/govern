@@ -873,10 +873,14 @@ After writing the agent's installed `govern` file — whether via the **Pre-flig
 - **Pinned `govern.md` in `.govern.toml`** — the manifest's `update` strategy still skips the file (no overwrite), and the **Pre-flight Phase**'s self-update check never writes pinned files even on the stale-detect path. The check byte-compares anyway: matching upstream → recorded as `current`, no output; divergent from upstream → recorded as `pinned-divergent`, the run continues, and a single advisory line is printed in the post-scaffolding output. A pinned `govern.md` will not pick up upstream changes until the pin is removed, but the user is told once when the pin is currently suppressing real divergence.
 - **Self-update check sees a stale `govern` in an unselected adopted agent** — the check is scoped to selected agents only. The unselected agent's stale copy is not diffed, not written, and does not trigger the abort; it will be detected the next time the user runs `/govern` against it.
 - **Self-update small fetch fails** — clean abort with the error message defined in **Pre-flight Phase → Self-update check → Small fetch**. No `govern.md` writes occur, and the archive fetch is skipped. The user re-runs after the transient failure clears.
-- **Archive fetch or extract fails** — clean abort with the error message defined in **File Fetching → Archive fetch and extract**. The self-update check has already passed by this point, so no additional `govern.md` writes are pending; the user re-runs after the transient failure clears.
+- **Archive fetch or extract fails** — clean abort with the error message defined in **File Fetching → Archive fetch and extract**. The pre-flight phase has already passed by this point, so no additional `govern.md` or gvrn-wiring writes are pending; the user re-runs after the transient failure clears.
 - **A required source file is absent from the extracted archive** — warn `Source not found in archive: {source-path}; skipping.` and continue with the remaining manifest entries. Preserves the per-entry "do not abort on a single fetch error" guarantee at the entry level even though the archive itself is fetched once.
 - **First-run prompt with no detected dirs and only one supported agent** — the prompt still appears (the agent must be explicitly chosen), but the single agent is pre-selected. Confirming is one keystroke.
 - **Running `govern.md` cannot infer its own install path** — fall back to no pre-selection in the first-run prompt. The user picks explicitly.
+- **gvrn binary present but unwired (State B)** — the **Pre-flight Phase** writes the per-layout MCP config and the gvrn tool permissions, then stops as part of the single combined pre-flight abort. No archive is fetched; the user starts a new session and re-runs. See **gvrn runtime detection → State B**.
+- **gvrn wiring file is malformed JSON** — the wiring write does not touch the file. `/govern` skips wiring, warns the user to repair it, and continues on the markdown path for this run (treated as State C). A hand-maintained MCP config is never clobbered.
+- **gvrn binary probe cannot run or is denied** — the run is classified as State C (binary absent): the markdown path proceeds and the post-scaffolding tip fires. Detection never hard-fails on a host without shell.
+- **Stale `govern.md` on an adopter who has never wired gvrn** — both pre-flight checks contribute writes (a fresh `govern.md` and the gvrn wiring), but the **Pre-flight abort** emits one combined message and the user restarts once, not twice.
 
 ## Post-Scaffolding Output
 
@@ -888,7 +892,16 @@ After scaffolding, display:
 - Any fetch failures encountered
 - Pinned `govern.md` advisory (if applicable — see below)
 - Security audit summary (if applicable — see below)
+- gvrn runtime tip (State C only — see below)
 - Next steps (varies by mode):
+
+### gvrn runtime tip
+
+When the **Pre-flight Phase** resolved to **State C** (no `gvrn` binary detected), append one line after the file summary:
+
+> Tip: this run used the markdown path. Installing the `gvrn` runtime makes `/govern` and the pipeline commands much cheaper in tokens — see [Runtime](https://github.com/stonean/govern#runtime). Once it's on your `PATH`, `/govern` wires it in automatically.
+
+Omit the tip in **State A** (the runtime is already live) and **State B** (the run aborted in pre-flight before this output). State B's file disclosure rides the **Pre-flight abort** message, not this output.
 
 ### Pinned `govern.md` advisory
 
