@@ -141,11 +141,21 @@ This prevents repeated permission prompts during the fetch and scaffolding phase
 
 The gvrn runtime itself is wired separately and is **not** scaffolded by `/govern`: `claude-style` registers the server via `.mcp.json`, `antigravity` via `{config_dir}/mcp_config.json` (`{ "mcpServers": { "gvrn": { "command": "gvrn", "args": ["mcp"] } } }`, additive). Both are an optional install documented in the README's Runtime section.
 
-## govern.md Self-Update Check
+## Pre-flight Phase
 
-Before any other fetching, scaffolding, or migration, verify the running session's `govern.md` instructions are current. The check is its own phase — ahead of pre-run migrations and the full archive fetch — so a stale-detected abort does not leave any other write on disk and does not pay the cost of fetching the multi-hundred-KB archive on a run that is going to abort anyway.
+Run a single pre-flight phase after the **Permission Setup** seed (so the gvrn binary probe is pre-authorized) and before **Pre-run Migrations** and the full archive fetch. The phase owns two restart-requiring checks — **gvrn runtime detection** and the **govern.md self-update check** — that can each force the session to restart: gvrn detection to load a newly-wired MCP server, the self-update check to load a fresh `govern.md`. Neither pays the cost of the multi-hundred-KB archive; both run on a small fetch or no fetch, so a restart-triggering abort never leaves archive work on disk.
 
-### Small fetch
+The phase runs both checks, accumulates every restart-requiring write into a **pending-restart set**, and at the end emits a **single combined abort** if that set is non-empty (see **Pre-flight abort**). If neither check needs a restart, the run proceeds to **Pre-run Migrations**. Running both checks before the single abort is what collapses the worst case — a stale `govern.md` on an adopter who has never wired gvrn — into one restart instead of two.
+
+### gvrn runtime detection
+
+Detect whether the optional gvrn runtime is available and, when its binary is installed but not yet wired into this project, register it so the next session can run the deterministic path. Detection resolves to one of three states — A (runtime live this session), B (binary present, not wired), C (absent); the **Detection mechanism** and per-state behavior follow in the subsections below.
+
+### Self-update check
+
+Verify the running session's `govern.md` instructions are current.
+
+#### Small fetch
 
 Create a fresh temp directory used by both this check and the later archive fetch:
 
@@ -166,7 +176,7 @@ If the fetch fails — non-zero `curl` exit, network error, or a 404 — abort t
 
 > Failed to fetch the govern.md self-update check ({reason}). Re-run after checking network connectivity, or report this if it persists.
 
-### Per-agent comparison
+#### Per-agent comparison
 
 For each selected agent, compare the upstream `{tempdir}/govern.md.upstream` against the agent's installed `govern` file and assign one status. For `claude-style` the installed file is `{config_dir}/commands/govern.md` and the comparison is a byte-compare. For `antigravity` the installed file is `{config_dir}/skills/govern/SKILL.md`, which wraps the upstream body in `name: govern` frontmatter — strip its leading frontmatter block (the first `---`-delimited region) and compare the remaining body against `{tempdir}/govern.md.upstream`:
 
@@ -177,7 +187,7 @@ For each selected agent, compare the upstream `{tempdir}/govern.md.upstream` aga
 
 The check is scoped to **selected agents only** — agents whose `config_dir` exists in the project but are not in this run's selection are not diffed. An unselected stale agent will trip the check on its very next `/govern` run targeting it.
 
-### Stale → write and abort
+#### Stale → defer to pre-flight abort
 
 If any selected agent is recorded as `stale`:
 
@@ -185,27 +195,35 @@ If any selected agent is recorded as `stale`:
 2. Run the **Post-Write Integrity Check** (see below) on each freshly written file.
 3. Do not write `govern.md` for non-stale agents — their installed copies already match upstream.
 4. Do not write `govern.md` for `pinned-divergent` agents — the pin opts them out of automatic updates.
-5. Abort the run before any further work. Print:
+5. Add each stale agent's overwrite to the **pending-restart set** and contribute this notice to the combined **Pre-flight abort** — do **not** abort here:
 
 > **The govern command itself has updated.** Your installed copy was behind upstream and the running session is using the older instructions. The freshly fetched copy has been written to disk for stale agents.
 >
 > Stale agents updated: {comma-separated names}.
->
-> Start a new session and re-run `/govern` to pick up the latest version.
 
-Everything past this point — **Pre-run Migrations**, **Project Configuration**, the **Archive fetch and extract**, **Frontmatter Migration**, **Shared Files**, **Per-Agent Scaffolding**, **Security Audit**, and **Post-Scaffolding Output** — is skipped. The only writes this run performed are the additive **Permission Setup** entries and the per-stale-agent `govern.md` overwrite.
+The shared "start a new session and re-run" line and the skip of every later section are owned by **Pre-flight abort**, so a stale `govern.md` and a freshly-wired gvrn surface in one abort and one restart rather than two.
 
-The next `/govern` run in a new session loads the fresh `govern.md`, the self-update check sees `current` (or `no installed copy`) for every agent, and the run proceeds normally without abort.
-
-### Pinned-divergent → continue with advisory
+#### Pinned-divergent → continue with advisory
 
 If a selected agent is recorded as `pinned-divergent`, the run continues normally. After scaffolding, the **Post-Scaffolding Output** includes one advisory line per divergent agent (see **Post-Scaffolding Output → Pinned govern.md advisory**). The advisory is silent on runs where every pinned agent is `current` (the pinned version happens to match upstream this run).
 
 Pinning is an opt-out from automatic updates, not an opt-out from knowing the pin is currently active. When the pinned version actually drifts from upstream, the user usually wants to either review the upstream changes and unpin, or consciously confirm they are staying on the old version. Adopters who are deliberately and indefinitely on an old version see no recurring nag because the advisory only fires when divergence is real.
 
-### Current / no installed copy → continue
+#### Current / no installed copy → continue
 
-When all selected agents are `current` or `no installed copy`, the run proceeds. The temp directory created here is reused by the **Archive fetch and extract** step below — no second `mktemp`, no leaked extra temp directory.
+When all selected agents are `current` or `no installed copy`, the self-update check contributes nothing to the **pending-restart set**. The temp directory created here is reused by the **Archive fetch and extract** step below — no second `mktemp`, no leaked extra temp directory. Whether the run proceeds is decided by **Pre-flight abort** once gvrn detection has also run.
+
+### Pre-flight abort
+
+After both checks have run, inspect the **pending-restart set**:
+
+- **Empty** — no restart is needed. Proceed to **Pre-run Migrations**. (gvrn detection resolved to State A or State C, and the self-update check saw `current` / `no installed copy` / `pinned-divergent` for every selected agent.)
+- **Non-empty** — emit one combined abort and stop before any further work. The message includes every contributed notice and names every file written during this phase:
+  - the gvrn-wiring notice (State B), when gvrn was wired this run — see **gvrn runtime detection → State B**;
+  - the stale-update notice, when any selected agent was `stale` — see **Self-update check → Stale → defer to pre-flight abort**;
+  - a single shared closing line: **Start a new session and re-run `/govern` to pick up the changes.**
+
+Everything past the pre-flight phase — **Pre-run Migrations**, **Project Configuration**, the **Archive fetch and extract**, **Frontmatter Migration**, **Shared Files**, **Per-Agent Scaffolding**, **Security Audit**, and **Post-Scaffolding Output** — is skipped. The only writes performed are the additive **Permission Setup** entries, any per-stale-agent `govern.md` overwrite, and any gvrn wiring plus its permission entries. The next `/govern` run in a new session sees gvrn live (or absent) and every selected agent `current` (or `no installed copy`), and proceeds normally without abort.
 
 ## Pre-run Migrations
 
@@ -310,13 +328,13 @@ The full schema (allowed values, case-insensitive matching, empty-section behavi
 
 ## File Fetching
 
-Files from the `govern` repo are sourced from a single archive download, extracted into the temp directory established by **govern.md Self-Update Check**, and resolved as local paths for the rest of the run. Per-language `.gitignore` patterns from `github.com/github/gitignore` are **not** part of this archive — they remain separate `curl` calls (see the **.gitignore** subsection of **Shared Files** below).
+Files from the `govern` repo are sourced from a single archive download, extracted into the temp directory established during the **Pre-flight Phase**, and resolved as local paths for the rest of the run. Per-language `.gitignore` patterns from `github.com/github/gitignore` are **not** part of this archive — they remain separate `curl` calls (see the **.gitignore** subsection of **Shared Files** below).
 
-This section runs only after the **govern.md Self-Update Check** passes (no stale agents). On a stale-abort, the archive is never fetched.
+This section runs only after the **Pre-flight Phase** passes (no pending restart — no stale `govern.md` and no freshly-wired gvrn). On a pre-flight abort, the archive is never fetched.
 
 ### Archive fetch and extract
 
-Issue exactly one `curl` against GitHub's repo-archive endpoint, downloading into the temp directory established by the self-update check:
+Issue exactly one `curl` against GitHub's repo-archive endpoint, downloading into the temp directory established during the pre-flight phase:
 
 ```text
 curl -fsSL https://github.com/stonean/govern/archive/refs/heads/main.tar.gz \
@@ -334,7 +352,7 @@ If the fetch or extraction fails — non-zero exit from `curl` or `tar`, or a mi
 
 > Failed to fetch or extract the `govern` archive ({reason}). Re-run after checking network connectivity, or report this if it persists.
 
-A missing archive means **every** manifest entry would be missing, so partial scaffolding is impossible — the abort is the correct behavior. The self-update check has already completed by this point, so a stale `govern.md` would have already been written and the run would have aborted earlier.
+A missing archive means **every** manifest entry would be missing, so partial scaffolding is impossible — the abort is the correct behavior. The pre-flight phase has already completed by this point, so a stale `govern.md` or a freshly-wired gvrn would have already triggered the pre-flight abort earlier.
 
 ### Per-file resolution
 
@@ -357,7 +375,7 @@ If `specs/` does not exist (first run), skip this section — there is nothing t
 
 Bring existing spec and scenario files into the YAML frontmatter format declared in `framework/constitution.md` §text-first-artifacts. Migration is idempotent: re-running on an already-migrated project produces no further metadata changes.
 
-This section runs **after the govern.md Self-Update Check** so that a stale-govern abort cannot leave migration changes from old rules on the working tree. The new govern's migration logic — which may differ — is the only logic that ever writes migration changes.
+This section runs **after the Pre-flight Phase** so that a stale-govern abort cannot leave migration changes from old rules on the working tree. The new govern's migration logic — which may differ — is the only logic that ever writes migration changes.
 
 ### Precheck
 
@@ -549,7 +567,7 @@ Track the count of newly appended findings (post-deduplication). The total is re
 
 For each selected agent (in registry row order), run these steps with `{config_dir}` resolved to the agent's value and `{key}` to the agent's key.
 
-The steps below describe the **`claude-style`** layout. For an agent whose registry `layout` is **`antigravity`**, apply **### Antigravity layout** below in place of **### Slash commands** and **### Slash command cleanup**, and skip **### Workflow recommendation**. The `govern` self-install, the **govern.md Self-Update Check**, the **Post-Write Integrity Check**, and **Placeholder Substitution** each carry their own `layout: antigravity` branch in their own sections.
+The steps below describe the **`claude-style`** layout. For an agent whose registry `layout` is **`antigravity`**, apply **### Antigravity layout** below in place of **### Slash commands** and **### Slash command cleanup**, and skip **### Workflow recommendation**. The `govern` self-install, the **Pre-flight Phase**, the **Post-Write Integrity Check**, and **Placeholder Substitution** each carry their own `layout: antigravity` branch in their own sections.
 
 ### Slash commands (strategy: update)
 
@@ -771,7 +789,7 @@ In every copied file (except each selected agent's installed `govern` file — `
 
 ## Post-Write Integrity Check
 
-After writing the agent's installed `govern` file — whether via the **govern.md Self-Update Check** (stale-write path) or the **`govern` self-installation** manifest step — verify it is well-formed. For `claude-style` (`{config_dir}/commands/govern.md`), the file must start with `# govern`. For `antigravity` (`{config_dir}/skills/govern/SKILL.md`), the file must start with a frontmatter block whose `name:` is `govern`, and the body after that frontmatter must start with `# govern`. If the check fails, the write was corrupted — report the error and re-read the source: `{tempdir}/govern.md.upstream` for the self-update path, or `{tempdir}/govern-main/framework/bootstrap/govern.md` for the manifest path. Apply the check independently per agent.
+After writing the agent's installed `govern` file — whether via the **Pre-flight Phase** (stale-write path) or the **`govern` self-installation** manifest step — verify it is well-formed. For `claude-style` (`{config_dir}/commands/govern.md`), the file must start with `# govern`. For `antigravity` (`{config_dir}/skills/govern/SKILL.md`), the file must start with a frontmatter block whose `name:` is `govern`, and the body after that frontmatter must start with `# govern`. If the check fails, the write was corrupted — report the error and re-read the source: `{tempdir}/govern.md.upstream` for the self-update path, or `{tempdir}/govern-main/framework/bootstrap/govern.md` for the manifest path. Apply the check independently per agent.
 
 ## Re-Run Behavior
 
@@ -797,9 +815,9 @@ After writing the agent's installed `govern` file — whether via the **govern.m
 - **All supported agents already adopted with `--add-agent`** — show the prompt with all agents pre-selected; if the user confirms with no additions, treat it as a routine update and continue silently.
 - **`settings.local.json` already has entries beyond the bootstrap** — only add the curl/ls bootstrap entries if missing. Do not overwrite, deduplicate, or reorder entries added by `/{project}:configure` or by the user.
 - **`govern.md` content already matches the version on disk** — when the manifest's `update` strategy compares fetched content to the installed file, identical content reports as "unchanged" and avoids a redundant write. Same rule applies to per-project `configure.md` and other update-strategy files.
-- **Pinned `govern.md` in `.govern.toml`** — the manifest's `update` strategy still skips the file (no overwrite), and the **govern.md Self-Update Check** never writes pinned files even on the stale-detect path. The check byte-compares anyway: matching upstream → recorded as `current`, no output; divergent from upstream → recorded as `pinned-divergent`, the run continues, and a single advisory line is printed in the post-scaffolding output. A pinned `govern.md` will not pick up upstream changes until the pin is removed, but the user is told once when the pin is currently suppressing real divergence.
+- **Pinned `govern.md` in `.govern.toml`** — the manifest's `update` strategy still skips the file (no overwrite), and the **Pre-flight Phase**'s self-update check never writes pinned files even on the stale-detect path. The check byte-compares anyway: matching upstream → recorded as `current`, no output; divergent from upstream → recorded as `pinned-divergent`, the run continues, and a single advisory line is printed in the post-scaffolding output. A pinned `govern.md` will not pick up upstream changes until the pin is removed, but the user is told once when the pin is currently suppressing real divergence.
 - **Self-update check sees a stale `govern` in an unselected adopted agent** — the check is scoped to selected agents only. The unselected agent's stale copy is not diffed, not written, and does not trigger the abort; it will be detected the next time the user runs `/govern` against it.
-- **Self-update small fetch fails** — clean abort with the error message defined in **govern.md Self-Update Check → Small fetch**. No `govern.md` writes occur, and the archive fetch is skipped. The user re-runs after the transient failure clears.
+- **Self-update small fetch fails** — clean abort with the error message defined in **Pre-flight Phase → Self-update check → Small fetch**. No `govern.md` writes occur, and the archive fetch is skipped. The user re-runs after the transient failure clears.
 - **Archive fetch or extract fails** — clean abort with the error message defined in **File Fetching → Archive fetch and extract**. The self-update check has already passed by this point, so no additional `govern.md` writes are pending; the user re-runs after the transient failure clears.
 - **A required source file is absent from the extracted archive** — warn `Source not found in archive: {source-path}; skipping.` and continue with the remaining manifest entries. Preserves the per-entry "do not abort on a single fetch error" guarantee at the entry level even though the archive itself is fetched once.
 - **First-run prompt with no detected dirs and only one supported agent** — the prompt still appears (the agent must be explicitly chosen), but the single agent is pre-selected. Confirming is one keystroke.
@@ -819,7 +837,7 @@ After scaffolding, display:
 
 ### Pinned `govern.md` advisory
 
-If the **govern.md Self-Update Check** recorded any selected agent as `pinned-divergent` (the installed `govern` file (`{config_dir}/commands/govern.md`, or `{config_dir}/skills/govern/SKILL.md` for `antigravity`) is listed in `.govern.toml` `pinned.files` and differs from upstream), append one advisory line per divergent agent after the file summary and before next steps:
+If the **Pre-flight Phase** recorded any selected agent as `pinned-divergent` (the installed `govern` file (`{config_dir}/commands/govern.md`, or `{config_dir}/skills/govern/SKILL.md` for `antigravity`) is listed in `.govern.toml` `pinned.files` and differs from upstream), append one advisory line per divergent agent after the file summary and before next steps:
 
 > {agent}: govern.md pinned, upstream has changed.
 

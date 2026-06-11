@@ -4,9 +4,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 1. Add the Pre-flight Phase to `govern.md`
 
-- [ ] Generalize the §govern.md Self-Update Check section into a **Pre-flight Phase** positioned after the §Permission Setup seed and before §Pre-run Migrations / the archive fetch.
-- [ ] Describe the phase running both checks (gvrn detection + self-update), accumulating restart-requiring writes, and emitting a single combined abort if anything was written.
-- [ ] Preserve the existing self-update byte-compare / stale-write behavior inside the phase.
+- [x] Generalize the §govern.md Self-Update Check section into a **Pre-flight Phase** positioned after the §Permission Setup seed and before §Pre-run Migrations / the archive fetch.
+- [x] Describe the phase running both checks (gvrn detection + self-update), accumulating restart-requiring writes, and emitting a single combined abort if anything was written.
+- [x] Preserve the existing self-update byte-compare / stale-write behavior inside the phase.
 - Done when: govern.md describes one pre-flight phase whose worst case is a single restart, and the prior standalone self-update section no longer exists as a sibling.
 
 ## 2. Add the three-state detection mechanism
