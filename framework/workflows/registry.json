@@ -61,5 +61,33 @@
     "trigger": { "field": "backend_language", "value": "Go" },
     "template": "gofmt.md",
     "description": "Format the Go codebase with gofmt"
+  },
+  {
+    "name": "RuboCop",
+    "category": "Linting",
+    "trigger": { "field": "backend_language", "value": "Ruby" },
+    "template": "rubocop.md",
+    "description": "Run RuboCop against the Ruby codebase and surface findings"
+  },
+  {
+    "name": "RSpec",
+    "category": "Testing",
+    "trigger": { "field": "backend_language", "value": "Ruby" },
+    "template": "rspec.md",
+    "description": "Run the RSpec suite for the Ruby codebase"
+  },
+  {
+    "name": "rufo",
+    "category": "Formatting",
+    "trigger": { "field": "backend_language", "value": "Ruby" },
+    "template": "rufo.md",
+    "description": "Format the Ruby codebase with rufo"
+  },
+  {
+    "name": "Rails migrations",
+    "category": "Migrations",
+    "trigger": { "field": "backend_framework", "value": "Rails" },
+    "template": "rails-migrate.md",
+    "description": "Apply pending Rails database migrations and report the schema changes"
   }
 ]

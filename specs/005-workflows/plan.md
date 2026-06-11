@@ -133,7 +133,7 @@ Per resolved question equivalent in the original plan. Validation is done at rea
 
 ### Starter set vs. comprehensive coverage
 
-V1 ships nine workflow files covering TypeScript / Python / Go × Lint / Test / Format. Less common stacks (Ruby, frontend frameworks, databases, messaging) match no entries and silently fall through. Acceptable because the registry is designed for easy extension — adding a workflow is one registry entry plus one workflow file.
+V1 shipped nine workflow files covering TypeScript / Python / Go × Lint / Test / Format. The registry is designed for easy extension — adding a workflow is one registry entry plus one workflow file — and has since grown to cover Ruby (RuboCop / RSpec / rufo on `backend_language`) and the Rails framework (`Rails migrations` on `backend_framework`, the registry's first Migrations-category entry). Stacks still without entries (most frontend frameworks, databases, messaging) match nothing and silently fall through; adding them follows the same one-entry-plus-one-file path.
 
 ### Category-level accept vs. per-workflow accept
 
