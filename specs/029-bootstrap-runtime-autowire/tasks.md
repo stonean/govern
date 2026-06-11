@@ -57,11 +57,11 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] §Post-Scaffolding Output: the State-C tip line; ensure the State-B abort message lists every file written.
 - Done when: the new edge cases and output lines are present.
 
-## 9. Extend and run the parity audit
+## 9. Run the parity audit (new family deferred — Option B)
 
-- [ ] Extend `scripts/audit/installer-registry-parity.sh` so the probe seed entry is checked for parity across the registry rows and the configure files (verify `registry-equivalence.sh` coverage too).
-- [ ] Run `scripts/audit/run-all.sh` and resolve any drift it reports.
-- Done when: the audit passes with the new probe entry in place and would flag a future seed/configure mismatch.
+- [x] Investigate the existing audit families for a seed↔configure permission-parity home: none fits (Family 14 is install.sh↔registry; Family 3 is the workflow registry; Family 1 is pipeline-status wording). Log a follow-up to `specs/inbox.md` to add a dedicated `runtime-probe-parity.sh` family as its own spec rather than expand the audit surface mid-feature.
+- [x] Run `scripts/audit/run-all.sh` and confirm no regressions from tasks 1–8.
+- Done when: the audit passes clean with no regressions, and the deferred seed/configure parity family is captured as an inbox follow-up.
 
 ## 10. Verification pass
 
