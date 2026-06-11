@@ -9,14 +9,12 @@
 #   ... | sh -s -- auggie
 #   ... | sh -s -- antigravity
 #
-# Override the source ref (branch or tag), e.g. to pin a release:
-#   ... | GOVERN_REF=v0.1.0 sh
-#
 # The script is idempotent — re-run it any time to refresh the bootstrap file.
+# govern is live-on-main: the bootstrap (and everything /govern fetches) tracks
+# main, so there is no release-pinning knob.
 set -eu
 
-REF="${GOVERN_REF:-main}"
-RAW="https://raw.githubusercontent.com/stonean/govern/${REF}/framework/bootstrap/govern.md"
+RAW="https://raw.githubusercontent.com/stonean/govern/main/framework/bootstrap/govern.md"
 
 # Resolve the target agent: explicit arg > GOVERN_AGENT env > autodetect > claude.
 agent="${1:-${GOVERN_AGENT:-}}"

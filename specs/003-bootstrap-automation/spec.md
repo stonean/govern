@@ -4,10 +4,10 @@ status: done
 dependencies: [000-slash-commands, 001-system-spec-templates, 002-project-scaffolding]
 tags: [bootstrap, commands]
 review:
-  last-run: 2026-05-10T00:00:00Z
-  reviewed-against: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
+  last-run: 2026-06-11T01:48:34Z
+  reviewed-against: b9982910c3120ed67b63b90a7bb702a88de29403
   must-violations: 0
-  should-violations: 0
+  should-violations: 3
   low-confidence: 0
   blocking: false
 ---
