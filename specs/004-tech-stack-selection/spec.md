@@ -1,6 +1,6 @@
 ---
 title: "004-tech-stack-selection — spec"
-status: done
+status: in-progress
 dependencies: [003-bootstrap-automation]
 tags: [bootstrap]
 review:

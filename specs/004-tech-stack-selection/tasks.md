@@ -36,3 +36,11 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 - [x] Run `npx markdownlint-cli2` on all modified files
 - [x] Verify backwards compatibility: skip all categories → AGENTS.md unchanged
+
+## 6. Framework-implies-language inference
+
+- [x] `/gov:init` asks the framework before the language in each section and infers the language when the framework determines it (Rails → Ruby, Django → Python, Gin → Go, …)
+- [x] The inferred language is still written to the AGENTS.md Tech Stack table, so `backend_language`-triggered workflows (RuboCop, RSpec) still match
+- [x] The language question is still asked when the framework is skipped, answered "Other"/unrecognized, or is language-ambiguous (Node → TS/JS, JVM → Java/Kotlin)
+
+Done when: `/gov:init` does not ask the language question when the chosen framework unambiguously implies it, per `scenarios/framework-implies-language.md`.

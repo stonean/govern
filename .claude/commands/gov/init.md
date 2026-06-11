@@ -24,18 +24,20 @@ Collect from `$ARGUMENTS` or prompt the user interactively. When using AskUserQu
 
    **4b. Backend questions** (ask only if project type is `backend` or `fullstack`):
 
-   - **Backend language** — Example options: `TypeScript`, `Python`, `Go`, `Ruby`.
-   - **Backend framework** — Example options: `Fastify`, `FastAPI`, `Gin`, `Rails`.
+   - **Backend framework** — Example options: `Rails`, `FastAPI`, `Gin`, `Fastify`.
+   - **Backend language** — derived automatically from the framework when the framework determines it; in that case no question and no example options are shown. Asked only as a fallback — when the framework was skipped, answered "Other"/unrecognized, or is language-ambiguous — and only then with Example options: `Ruby`, `Python`, `Go`, `TypeScript`.
    - **Database** — Example options: `PostgreSQL`, `MySQL`, `SQLite`, `MongoDB`.
    - **Messaging** — Example options: `NATS`, `Kafka`, `RabbitMQ`, `Redis Pub/Sub`.
    - **Backend test runner** — Example options: `Vite`, `pytest`, `go test`, `RSpec`.
 
    **4c. Frontend questions** (ask only if project type is `frontend` or `fullstack`):
 
-   - **Frontend language** — Example options: `TypeScript`, `JavaScript`.
    - **Frontend framework** — Example options: `Svelte`, `Vue`, `React`, `Next.js`.
+   - **Frontend language** — same derivation; asked only as a fallback, and only then with Example options: `TypeScript`, `JavaScript`. Most frontend frameworks are language-ambiguous (TypeScript or JavaScript), so this one is usually asked.
    - **CSS/UI** — Example options: `Tailwind`, `SCSS`, `styled-components`.
    - **Frontend test runner** — Example options: `Vitest`, `Jest`, `Playwright`.
+
+   **Framework-implies-language inference.** Ask the framework question before the language question in each section. When the selected framework unambiguously determines its language — e.g. Rails → Ruby, Sinatra → Ruby, Django / FastAPI / Flask → Python, Gin / Echo → Go, Laravel → PHP, Phoenix → Elixir, ASP.NET → C# — record that language automatically and present **no** language question and **no** language example options. Still write the language row into the AGENTS.md Tech Stack table, since language-triggered workflows (e.g. RuboCop and RSpec for Ruby) match on it. Show the language question — and its example options — only when the framework was skipped, answered "Other" with an unrecognized value, or is language-ambiguous (a Node framework that could be TypeScript or JavaScript, a JVM framework that could be Java or Kotlin, etc.).
 
    For `fullstack` projects, ask backend questions first, then frontend questions. Every question can be skipped — the user is not required to answer any category.
 
