@@ -18,9 +18,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 3. Add the MCP Wiring subsection
 
-- [ ] Specify the per-layout target (`.mcp.json` / `{config_dir}/mcp_config.json`) and the `gvrn` entry shape.
-- [ ] Specify the additive/idempotent in-place merge rules: missing file, missing `gvrn`, existing `gvrn` (no-op), missing `mcpServers` key, malformed JSON (skip + warn + degrade).
-- [ ] State explicitly that the write updates and never replaces/truncates the file.
+- [x] Specify the per-layout target (`.mcp.json` / `{config_dir}/mcp_config.json`) and the `gvrn` entry shape.
+- [x] Specify the additive/idempotent in-place merge rules: missing file, missing `gvrn`, existing `gvrn` (no-op), missing `mcpServers` key, malformed JSON (skip + warn + degrade).
+- [x] State explicitly that the write updates and never replaces/truncates the file.
 - Done when: govern.md's MCP Wiring subsection covers all five merge cases.
 
 ## 4. Update §Permission Setup and reverse the "not scaffolded" decision

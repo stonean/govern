@@ -180,6 +180,24 @@ State B issues **no separate consent prompt** — the writes are additive and id
 
 The binary probe failed, could not run, or was denied. Proceed on the markdown path exactly as today; gvrn contributes nothing to the **pending-restart set**. After scaffolding, the **Post-Scaffolding Output** emits one tip line noting that installing gvrn reduces token use.
 
+#### MCP wiring
+
+The wiring file is the per-layout path from §Derived values: `.mcp.json` at the repo root for `claude-style`, `{config_dir}/mcp_config.json` for `antigravity`. The entry registers the server as `gvrn`:
+
+```json
+{ "mcpServers": { "gvrn": { "command": "gvrn", "args": ["mcp"] } } }
+```
+
+The write **updates the file in place — it never replaces or truncates it.** Apply the matching case:
+
+- **Missing file** — create it containing only the `gvrn` entry.
+- **Has `mcpServers`, no `gvrn`** — add the `gvrn` entry; preserve every other server and every other top-level key.
+- **Already has a `gvrn` entry** — no-op; leave the file byte-unchanged (idempotent re-run).
+- **No `mcpServers` key** — add the key with just the `gvrn` entry; preserve all other top-level keys.
+- **Not valid JSON** — do **not** touch the file. Skip wiring, warn the user to repair it, and degrade to the markdown path for this run (treat as **State C**). A hand-maintained config is never clobbered.
+
+There is no `gvrn` runtime primitive for this merge: State B is the runtime-absent case by definition, so the write is always host-side.
+
 ### Self-update check
 
 Verify the running session's `govern.md` instructions are current.
