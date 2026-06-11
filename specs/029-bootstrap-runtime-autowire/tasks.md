@@ -33,9 +33,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 5. Add the probe to the Agent Registry `settings_template` seeds
 
-- [ ] Claude row: add `Bash(command -v *)`.
-- [ ] Auggie row: add `{ "toolName": "launch-process", "shellInputRegex": "^command -v ", "permission": { "type": "allow" } }`.
-- [ ] Antigravity row: add `command(command -v)` (or the validated fallback) and keep it identical to the configure file's form.
+- [x] Claude row: add `Bash(command -v *)`.
+- [x] Auggie row: add `{ "toolName": "launch-process", "shellInputRegex": "^command -v ", "permission": { "type": "allow" } }`.
+- [x] Antigravity row: add `command(command -v)` (or the validated fallback) and keep it identical to the configure file's form.
 - Done when: all three registry seeds grant the probe.
 
 ## 6. Add the probe to the three configure files
