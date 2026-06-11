@@ -47,8 +47,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 7. Reframe the README Runtime section
 
-- [ ] Change the framing from "manual MCP wiring" to "`/govern` auto-wires gvrn when the binary is detected."
-- [ ] Keep the binary download/install instructions (the binary is still installed out of band).
+- [x] Change the framing from "manual MCP wiring" to "`/govern` auto-wires gvrn when the binary is detected."
+- [x] Keep the binary download/install instructions (the binary is still installed out of band).
 - Done when: README states auto-wiring and no longer instructs the user to hand-edit the MCP config.
 
 ## 8. Add new edge cases and the State-C tip to govern.md output

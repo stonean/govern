@@ -125,7 +125,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/stonean/g
 
 Then run `/govern {project-name}`. The installer creates the right directory for your agent and drops the bootstrap command in place — for Antigravity it's wrapped as a skill under `.agents/skills/govern/`, since Antigravity discovers dir-form skills rather than verbatim command files. It's safe to re-run. (`agy`, the Antigravity CLI command name, works in place of `antigravity`.)
 
-The same bootstrap supports every agent, so re-run `/govern --add-agent` from any adopted agent later to add others. To register the optional runtime with Antigravity, add it to `.agents/mcp_config.json`: `{ "mcpServers": { "gvrn": { "command": "gvrn", "args": ["mcp"] } } }`.
+The same bootstrap supports every agent, so re-run `/govern --add-agent` from any adopted agent later to add others. You don't need to wire the optional runtime by hand — once the `gvrn` binary is on your `PATH`, `/govern` registers it automatically on its next run (see [The optional runtime](#the-optional-runtime)).
 
 ## Brownfield adoption
 
@@ -179,6 +179,10 @@ cd - >/dev/null && rm -rf "${tmp}"
 ```
 
 Binaries are published for `aarch64-apple-darwin`, `x86_64-apple-darwin`, `x86_64-unknown-linux-gnu`, and `aarch64-unknown-linux-gnu` (a Windows binary appears when cross-compilation succeeds). If a runtime process crashes mid-procedure, just re-run the command — state lives in your markdown, and writes are filesystem-atomic, so the runtime resumes from the next incomplete step.
+
+### Registration is automatic
+
+You install the binary; you don't register the server yourself. The next time you run `/govern` after `gvrn` is on your `PATH`, the bootstrap detects it, writes the per-agent MCP config (`.mcp.json` for Claude-style agents, `.agents/mcp_config.json` for Antigravity) and the matching tool permissions, then asks you to start a fresh session so the runtime loads. From that session on, the pipeline takes the deterministic path. The writes are additive — an existing MCP config keeps its other servers, and a `gvrn` entry that's already present is left untouched. If `/govern` can't find the binary, it stays on the markdown path and reminds you that installing `gvrn` cuts token use.
 
 ## Configuration
 
