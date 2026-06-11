@@ -32,3 +32,13 @@ Done when: `/gov:init` exists with all scaffolding steps, input collection, pre-
 - [x] Update spec status to `planned`
 
 Done when: all eleven commands pass lint, placeholders are correct, and spec status is `planned`.
+
+## 4. Installer script (`install.sh`)
+
+- [x] `install.sh` resolves the agent (arg > `GOVERN_AGENT` > autodetect > `claude`) and places the bootstrap at the 012-registry path for claude, auggie, and antigravity
+- [x] Antigravity placement wraps the body as a `name: govern` skill; the fetch is tempfile-guarded (`mktemp` + `EXIT` trap) and idempotent
+- [x] README Quick start and per-agent installs reduced to a single `curl … | sh` line each
+- [x] Verified end to end against the live `govern.md` for all three agents
+- [ ] Resolve the installer↔registry parity open question in `scenarios/curl-sh-installer.md` (and add an audit check if accepted)
+
+Done when: the one-line `curl … | sh` installer places the bootstrap for every supported agent per `scenarios/curl-sh-installer.md`, and the README installs are reduced to one line per agent.

@@ -1,6 +1,6 @@
 ---
 title: "003-bootstrap-automation — spec"
-status: done
+status: in-progress
 dependencies: [000-slash-commands, 001-system-spec-templates, 002-project-scaffolding]
 tags: [bootstrap, commands]
 review:

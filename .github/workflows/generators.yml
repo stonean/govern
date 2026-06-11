@@ -7,7 +7,6 @@ on:
       - 'specs/**'
       - 'scripts/gen-*.sh'
       - 'scripts/tests/**'
-      - 'README.md'
       - 'AGENTS.md'
       - '.githooks/**'
       - '.github/workflows/generators.yml'
@@ -30,9 +29,6 @@ jobs:
 
       - name: Run gen-claude-commands
         run: ./scripts/gen-claude-commands.sh
-
-      - name: Run gen-readme-table
-        run: ./scripts/gen-readme-table.sh
 
       - name: Run gen-help-tables
         run: ./scripts/gen-help-tables.sh

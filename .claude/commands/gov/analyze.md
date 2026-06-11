@@ -31,7 +31,7 @@ If `--all` is not present, use the feature identifier if provided, otherwise fal
 ## Scope Boundaries
 
 - This is a read-only command. Do NOT modify any files.
-- Read only files within the target feature's directory, the cross-spec files needed for reference checks (`specs/system.md`, `specs/events.md`, `specs/errors.md`, dependency spec files), and the project's installed command-source frontmatter for the project-level consistency section below (`.claude/commands/gov/*.md` frontmatter only, plus `.claude/commands/govern.md` frontmatter for the bootstrap installer **if that file exists**). May invoke `scripts/gen-readme-table.sh --dry-run`, `scripts/gen-help-tables.sh --dry-run`, and `scripts/gen-spec-deps.sh --dry-run` to surface generator drift. Do NOT read source code or test files.
+- Read only files within the target feature's directory, the cross-spec files needed for reference checks (`specs/system.md`, `specs/events.md`, `specs/errors.md`, dependency spec files), and the project's installed command-source frontmatter for the project-level consistency section below (`.claude/commands/gov/*.md` frontmatter only, plus `.claude/commands/govern.md` frontmatter for the bootstrap installer **if that file exists**). May invoke `scripts/gen-help-tables.sh --dry-run` and `scripts/gen-spec-deps.sh --dry-run` to surface generator drift. Do NOT read source code or test files.
 - Reference: §spec-requirements, §plan-phase, §tasks-phase, §readiness-check, §scenarios, §cross-spec-impact, §text-first-artifacts, §markdown-standards, §drift-prevention (constitution loaded by `/gov:target` — do not re-read).
 
 ## Instructions
@@ -185,7 +185,7 @@ Read inputs:
 
 Checks:
 
-- **Generator drift** — run `scripts/gen-readme-table.sh --dry-run` and `scripts/gen-help-tables.sh --dry-run` (when the scripts exist in the project). Non-empty diff means the README Feature Specs table or the help.md command tables are out of sync with their sources. Report each as `Generator out of sync: {script}; the next commit will resolve.`
+- **Generator drift** — run `scripts/gen-help-tables.sh --dry-run` (when the script exists in the project). Non-empty diff means the help.md command tables are out of sync with their sources. Report it as `Generator out of sync: {script}; the next commit will resolve.`
 - **Anchor resolution** — every `§<name>` reference in any installed command file (typically in `Reference: §<first>, §<second>` Scope-Boundaries lines) resolves to a corresponding marker in `constitution.md`.
 - **Command frontmatter completeness** — every `.md` file in the installed commands directory has a `description:` frontmatter field; the same check applies to `.claude/commands/govern.md` when that file exists. Files whose body documents an `$ARGUMENTS` parameter additionally have `argument-hint:`. Report missing fields; do not check value content.
 

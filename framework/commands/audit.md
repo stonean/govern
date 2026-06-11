@@ -12,7 +12,7 @@ Audit `govern`'s own framework artifacts for the kinds of drift `/gov:analyze` i
 
 ## Purpose
 
-`/gov:analyze` audits a single feature spec's artifacts against each other (frontmatter, plan, tasks, data-model, dependencies, rule citations). Its contract is bounded to one feature directory plus declared dependencies, so it cannot see drift across the framework: README spec-status table vs. per-spec frontmatter, `configure/claude.md` vs. `configure/auggie.md` canonical permission set, workflow registry vs. workflow files, etc.
+`/gov:analyze` audits a single feature spec's artifacts against each other (frontmatter, plan, tasks, data-model, dependencies, rule citations). Its contract is bounded to one feature directory plus declared dependencies, so it cannot see drift across the framework: pipeline diagrams in the constitution vs. the introduction, `configure/claude.md` vs. `configure/auggie.md` canonical permission set, workflow registry vs. workflow files, etc.
 
 `/audit` fills that gap. It loads no rule files — its checks are about *framework consistency*, not spec quality. Each check family produces structured findings on stdout. Exit code is binary: `0` when no findings, `1` when any finding is present. CI uses the exit code as a release gate.
 
@@ -56,7 +56,7 @@ When the runtime is not on `PATH`, walk the same scripts directly. Each prints f
 | Dependency graph well-formed for one feature | `/gov:analyze` |
 | Rule IDs cited in spec exist in loaded rule files | `/gov:analyze` |
 | Plan / tasks / data-model present per status tier | `/gov:analyze` |
-| Cross-doc claim consistency (README vs frontmatter, etc.) | `/audit` |
+| Cross-doc claim consistency (pipeline diagrams, back-edge wording, etc.) | `/audit` |
 | Manifest / permission / registry parity | `/audit` |
 | Sibling-spec coupling (bundling candidates) | `/audit` |
 | Introducing-spec body drift (current-tense prose around renamed names) | `/audit` |

@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
 # scripts/audit/cross-doc-consistency.sh — Family 1 of /audit.
 #
-# Three sub-checks for cross-doc claim consistency:
-#
-#   1a. README spec-status table — invokes scripts/gen-readme-table.sh --dry-run.
-#       Redundant with check-zero by design; family 1 groups all cross-doc
-#       consistency checks in one place for the maintainer's reading
-#       convenience. When check-zero passes, 1a is a no-op.
+# Two sub-checks for cross-doc claim consistency:
 #
 #   1b. Pipeline-diagram status sequence — extracts the ordered status names
 #       (draft → clarified → planned → in-progress → done) from
@@ -35,23 +30,6 @@ drift=0
 emit() {
   echo "cross-doc | $1 | $2 | $3"
   drift=1
-}
-
-# -- 1a: README spec-status table -------------------------------------------
-
-sub_1a() {
-  # Reuse the existing generator's drift detection. Capture output to
-  # surface the specific change in the suggested-fix column.
-  if output="$(scripts/gen-readme-table.sh --dry-run 2>&1)"; then
-    :  # clean
-  else
-    emit "README.md spec-status table" "out of sync with per-spec frontmatter" "run scripts/gen-readme-table.sh to regenerate; commit the result"
-    # Surface the generator's own output for diagnosis (indented, not as
-    # a separate finding line).
-    while IFS= read -r line; do
-      printf '             %s\n' "$line"
-    done <<< "$output"
-  fi
 }
 
 # -- 1b: Pipeline-diagram status sequence -----------------------------------
@@ -140,7 +118,6 @@ sub_1c() {
   done
 }
 
-sub_1a
 sub_1b
 sub_1c
 

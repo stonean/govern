@@ -13,10 +13,7 @@
 #                                 regenerated configure.md picks up changes)
 #   2. gen-claude-commands.sh  — .claude/commands/gov/*.md from framework/commands/
 #   3. gen-spec-deps.sh        — frontmatter dependencies from body inline links
-#                                (runs before gen-readme-table.sh so the README
-#                                 table reflects post-derivation deps)
-#   4. gen-readme-table.sh     — Feature Specs table in README.md
-#   5. gen-help-tables.sh      — five command tables in framework/commands/help.md
+#   4. gen-help-tables.sh      — five command tables in framework/commands/help.md
 #
 # When staged files include anything under runtime/, this hook additionally
 # runs `cargo fmt --check`, `cargo clippy --all-targets --all-features
@@ -33,13 +30,11 @@ cd "$ROOT"
 scripts/gen-configure-mcp.sh
 scripts/gen-claude-commands.sh > /dev/null
 scripts/gen-spec-deps.sh
-scripts/gen-readme-table.sh
 scripts/gen-help-tables.sh
 
 # Stage any generator-produced changes to their known output paths.
 git add framework/bootstrap/configure/claude.md framework/bootstrap/configure/auggie.md
 git add .claude/commands/gov/ 2>/dev/null || true
-git add README.md
 git add framework/commands/help.md
 # Re-stage only spec files already part of this commit, so the generator's
 # derived `dependencies:` rewrite is captured without sweeping in untracked

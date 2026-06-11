@@ -1,91 +1,170 @@
 # govern
 
-Standards and conventions for spec-driven software development. This project defines how we run projects — the workflow, spec structure, principles, and quality rules that apply regardless of tech stack.
+**Spec-driven development for AI coding agents.** Describe a feature in plain English; your agent turns it into a spec, a plan, tasks, and reviewed code — and every feature lands with a written record of *why* it was built the way it is.
 
-## TL;DR
+`govern` is tech-stack agnostic, ships as plain markdown, and works with Claude Code, Auggie, and Antigravity. There's nothing to compile and no dependency to add — you install a single command into your project and drive the rest through a handful of verb-named slash commands.
 
-`govern` adds a spec-driven pipeline that your AI agent walks for you. You describe a feature in plain English; the agent produces the spec, plan, and tasks in a consistent shape. The surface area you learn is small — a handful of verb-named slash commands (`/specify`, `/clarify`, `/plan`, `/implement`, `/review`, `/analyze`) that map to things you already do: write a ticket, surface unknowns, sketch an approach, build it, audit it, check your work.
+## Why govern
 
-The payoff is that ambiguity gets caught upstream of code, and every feature lands with a written record of *why* it's built the way it is.
+AI agents are fast, but left to their own devices they're inconsistent: they guess at ambiguous requirements, lose the reasoning behind a change as soon as the chat scrolls away, and reinvent structure on every task. `govern` puts a thin, opinionated pipeline in front of the agent so that:
 
-## Contents
+- **Ambiguity is caught upstream of code.** Open questions get resolved in the spec, not discovered halfway through implementation.
+- **Every feature carries its "why."** The spec is a living document that stays accurate after the code ships — not a ticket that gets buried when it closes.
+- **The surface area is small.** A few commands map to things you already do: write a ticket, surface unknowns, sketch an approach, build it, audit it.
+- **Artifacts stay portable.** Everything is markdown with YAML frontmatter — readable in GitHub, Obsidian, or `cat`, with no proprietary format to escape.
 
-- [framework/](framework/) — Everything that ships to adopting projects
-  - [constitution.md](framework/constitution.md) — Guiding principles, development pipeline, spec lifecycle, quality standards. Authoritative.
-  - [framework/rules/](framework/rules/) — Domain rule sets adopted by reference
-    - [security-backend.md](framework/rules/security-backend.md) — Enforceable backend security rules (RFC 2119)
-    - [security-frontend.md](framework/rules/security-frontend.md) — Enforceable frontend security rules (RFC 2119)
-  - [framework/templates/](framework/templates/) — Starter files customized per project, split by consumer
-    - `templates/spec/` — Templates consumed during the pipeline (spec, plan, tasks, data-model, research, scenario)
-    - `templates/project/` — Project document templates consumed during adoption (agents.md, claude-md.md, system.md, errors.md, events.md, project-readme.md, gitignore, inbox.md)
-  - [framework/commands/](framework/commands/) — Slash command sources for the operational commands
-  - [framework/workflows/](framework/workflows/) — Tech-stack-specific workflow files (lint, test, format, migrate) plus `registry.json` mapping stack selections to workflows
-  - [framework/bootstrap/](framework/bootstrap/) — The `govern.md` installer plus per-agent permission files (`configure/{agent}.md`)
-- [docs/introduction.md](docs/introduction.md) — Long-form pitch for spec-driven development. The constitution is authoritative for normative rules.
-- [specs/](specs/) — Feature specs for `govern` itself (dogfooding the pipeline)
-- [scripts/](scripts/) — Maintenance scripts (e.g., regenerate `.claude/commands/gov/` from `framework/commands/`)
+## Quick start
 
-## Feature Specs
+Install `govern` into any project:
 
-`govern` uses its own spec-driven pipeline to develop itself.
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/stonean/govern/main/install.sh | sh
+```
 
-See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred work.
+This detects your agent (or installs for Claude Code) and places the `/govern` bootstrap command — see [Installing per agent](#installing-per-agent) to target a specific one. Then, in your agent, run:
 
-<!-- generated:feature-specs:start -->
+```text
+/govern my-project
+```
 
-| Spec | Status | Dependencies | Description |
-| --- | --- | --- | --- |
-| [000-slash-commands](specs/000-slash-commands/spec.md) | done | none | Generic, project-agnostic slash command templates that operationalize the governance development pipeline. |
-| [001-system-spec-templates](specs/001-system-spec-templates/spec.md) | done | none | Templates for the cross-cutting system specs that the constitution references but does not provide: `system.md`, `errors.md`, and `events.md`. |
-| [002-project-scaffolding](specs/002-project-scaffolding/spec.md) | done | 000, 001 | Templates for the project-level files that every governance-adopting project needs beyond the constitution, AGENTS.md, and spec templates. |
-| [003-bootstrap-automation](specs/003-bootstrap-automation/spec.md) | done | 000, 001, 002 | Governance slash commands that dogfood the same pipeline commands adopting projects use (`/gov:about`, `/gov:target`, `/gov:status`, `/gov:setup`, `/gov:specify`, `/gov:clarify`, `/gov:plan`, `/gov:implement`, `/gov:analyze`, `/gov:next`), plus a governance-specific `/gov:init` that scaffolds new projects from templates. |
-| [004-tech-stack-selection](specs/004-tech-stack-selection/spec.md) | done | 003 | Interactive tech stack selection during `/gov:init` that collects richer project metadata beyond primary language(s). |
-| [005-workflows](specs/005-workflows/spec.md) | done | 004, 010 | Based on project tech stack, recommend and scaffold relevant development workflow files during bootstrap. |
-| [006-bug-workflow](specs/006-bug-workflow/spec.md) | done | none | Bugs are unwritten scenarios. |
-| [007-govern-workflow](specs/007-govern-workflow/spec.md) | done | 003 | A self-contained slash command file that bootstraps governance in existing (brownfield) projects. |
-| [008-security-rules](specs/008-security-rules/spec.md) | done | 007 | Comprehensive, enforceable security rules for backend and frontend development. |
-| [009-scenario-targeting](specs/009-scenario-targeting/spec.md) | done | 006 | Promote scenarios to first-class targets in the governance pipeline. |
-| [010-agent-autonomy](specs/010-agent-autonomy/spec.md) | done | 000 | Evaluate capabilities found in autonomous agent orchestration tools (e.g., GSD-2) and determine which can be adopted within governance's constraints: zero dependencies, markdown-only artifacts, platform-agnostic, and human-in-the-loop pipeline gates. |
-| [011-brownfield-process](specs/011-brownfield-process/spec.md) | done | 007, 023 | A formalized process for initializing and incrementally building out specs in brownfield projects. |
-| [012-multi-agent-govern](specs/012-multi-agent-govern/spec.md) | done | 007 | A single `govern.md` command that supports adopting governance for multiple AI coding CLIs in the same project, with the target agent(s) selected at run time rather than baked into the file. |
-| [013-text-first-artifacts](specs/013-text-first-artifacts/spec.md) | done | 000, 007, 012 | Declare governance's implicit "all artifacts are markdown" principle in the constitution, formalize spec metadata as YAML frontmatter, and migrate adopted projects to the new format on the next `/govern` run. |
-| [014-reclarify-backedge](specs/014-reclarify-backedge/spec.md) | done | 000, 009, 013, 023 | Wire up `/ask` to own the `clarified` / `planned` / `in-progress` → `draft` back-edge so questions surfacing mid-pipeline are captured and the spec's lifecycle invariant is maintained automatically. |
-| [015-tarball-fetch](specs/015-tarball-fetch/spec.md) | done | 007, 012 | Collapse `/govern`'s ~35–50 individual `curl` fetches into a single archive download, extracted once into a temp directory and resolved as local paths. |
-| [016-cross-cutting-rules](specs/016-cross-cutting-rules/spec.md) | done | 006, 008 | Promote rules to a first-class artifact tier alongside specs and scenarios. |
-| [017-derive-dont-ask](specs/017-derive-dont-ask/spec.md) | done | none | Apply the **Design Principles** rule added to `AGENTS.md` on 2026-05-06 ("Never design framework features that depend on human diligence or discipline") to every existing framework input that violates it. |
-| [018-adopter-owned-pre-commit](specs/018-adopter-owned-pre-commit/spec.md) | done | 017 | Split the adopter pre-commit hook into two files so `/govern` can keep its generators in sync without ever overwriting code the adopter added to their own pre-commit hook. |
-| [019-config-decisions](specs/019-config-decisions/spec.md) | done | 005 | `.govern.toml` is currently a single-purpose pin file: `[pinned] files = [...]` keeps `/govern` from overwriting customized files. |
-| [020-code-review](specs/020-code-review/spec.md) | done | none | Adds `/gov:review`, a verb-named slash command that audits implementation code against the framework's rules across five dimensions (reuse, quality, security, efficiency, simplicity), writes a `review.md` artifact alongside the spec, and gates the `in-progress → done` transition via three reinforcing mechanisms. |
-| [021-runtime-boundary](specs/021-runtime-boundary/spec.md) | done | 020 | Establish the constitutional scope, eligibility criteria, and opt-in invariant for an optional deterministic runtime that adopters may install alongside the markdown framework. |
-| [022-deterministic-runtime](specs/022-deterministic-runtime/spec.md) | done | 021 | The runtime is the deterministic execution layer for govern. |
-| [023-govern-refinement](specs/023-govern-refinement/spec.md) | done | 022 | and gov-rt: renames in the audit's RENAMED_TOKENS catalog. |
-| [024-rule-loader](specs/024-rule-loader/spec.md) | done | 020, 023 | Generalize `/gov:review`'s rule-file selection so the set of `framework/rules/*.md` files loaded for any given run is derived from each file's declared surface and the project's detected tech stack — not from a hardcoded list of filenames in [`framework/commands/review.md`](../../framework/commands/review.md). |
-| [025-rule-opt-out](specs/025-rule-opt-out/spec.md) | done | 020, 024 | Add a narrow `.govern.toml` `[[review.disabled-rule-files]]` opt-out so an adopter whose stack matches a rule file's surface — but whose project is not yet ready to enforce that file's rules — can exclude the file from `/gov:review` loading with a recorded reason. |
-| [026-framework-self-audit](specs/026-framework-self-audit/spec.md) | done | 017, 022, 023, 024, 025 | A maintainer-grade slash command that audits `govern`'s own framework artifacts for the kinds of drift [`/gov:analyze`](../../framework/commands/analyze.md) is not scoped to catch. |
-| [027-bootstrap-migration-registry](specs/027-bootstrap-migration-registry/spec.md) | done | 026 | Replace the monotonically-growing prose-encoded Pre-run Migrations section in [framework/bootstrap/govern.md](../../framework/bootstrap/govern.md) with a machine-readable registry of convention removals. |
-| [028-antigravity-agent](specs/028-antigravity-agent/spec.md) | done | 012, 022 | Generalize the agent registry from "two agents that share one layout" to "N agents across differing per-agent layouts and host conventions," then use that generalization to add Google's **Antigravity CLI** (`agy`) as the third supported agent. |
+That one command scaffolds the `specs/` directory, installs the full set of slash commands, wires up the constitution and agent rules, and prints your next steps. It's idempotent — safe to re-run any time to pull the latest `govern` files.
 
-<!-- generated:feature-specs:end -->
+Now build your first feature by walking it through the pipeline:
 
-## Runtime
+```text
+/specify   add user login with email and password
+/clarify              # resolve open questions the spec surfaced
+/plan                 # technical decisions, affected files, tasks
+/implement            # work the tasks; code gets written here
+/review               # audit the code against the rules
+```
 
-The `govern` runtime is an **optional** deterministic execution layer for slash commands. It parses the prose Instructions section of each `framework/commands/*.md` file directly and dispatches the mechanical work (reading specs, walking tasks, checking dependencies, atomic checkbox updates, gate handshakes) in native Rust instead of having the LLM do it in slow tokens. The LLM is invoked only at named extension points (`assessSpecQuality`, `writeCode`, `writeSpecBody`) where semantic judgment actually matters.
+Each command advances the feature one step and leaves a durable artifact behind. That's the whole loop.
 
-The markdown-only path remains a first-class path per [constitution §runtime-boundary](framework/constitution.md#runtime-boundary). When the runtime is absent, the LLM walks the same prose as today.
+## How it works
 
-### Install
+Every feature moves through one pipeline. The status on each spec tracks where it is:
+
+```text
+draft ──/clarify──▶ clarified ──/plan──▶ planned ──/implement──▶ in-progress ──/implement──▶ done
+```
+
+- **Spec** (`/specify`, `/clarify`) — define *what* the feature does and *why*, with concrete acceptance criteria and a list of open questions. No open questions may remain before planning.
+- **Plan** (`/plan`) — turn the spec into technical decisions, affected files, and an ordered task list. Persistence-heavy features also get a data model.
+- **Implement** (`/implement`) — work the tasks; this is where code is written. Status moves to `in-progress`, then `done` once the review gate passes.
+- **Review** (`/review`) — audit the implementation against the framework's rules (security, reuse, quality, efficiency, simplicity). Blocking violations keep the feature out of `done` until they're fixed or explicitly waived.
+
+`/analyze` can run at any time to check a feature's artifacts against each other — it's a safety check, not a gate.
+
+You don't have to start at `draft`. A brownfield feature can enter with a sparse sketch spec and gain precision as you touch the code; a `done` feature reopens automatically when a bug or change request surfaces. See [docs/introduction.md](docs/introduction.md) for the full mental model, and [framework/constitution.md](framework/constitution.md) for the authoritative rules.
+
+## Commands
+
+Adoption installs a full set of verb-named, session-aware commands. Use `/target` to switch the working feature; `/specify` creates one and targets it automatically.
+
+### Pipeline — advance state
+
+| Command | Purpose |
+| --- | --- |
+| `/specify` | Create a new feature spec. Accepts rich (greenfield) or sparse (brownfield) input — richness scales with the description |
+| `/clarify` | Resolve open questions; advance the spec to `clarified` |
+| `/plan` | Create `plan.md` with technical decisions, affected files, and an ordered task list |
+| `/implement` | Work through tasks; move the spec to `in-progress`, then `done` |
+| `/review` | Audit code against the rules; write `review.md`; block `done` on MUST violations. `--all`, `--fix`, and `--waive <rule-id> --reason "<text>"` supported |
+| `/analyze` | Audit a feature's artifacts against each other. `--all` scans every feature; `--fix` auto-corrects checkbox drift |
+
+### Refine — add to a spec
+
+| Command | Purpose |
+| --- | --- |
+| `/ask` | Add a question or scenario to the targeted spec. Owns the lifecycle back-edges (a new question reopens to `draft`; a new scenario reopens a `done` spec to `in-progress`) |
+
+### Brownfield — absorb existing reality
+
+| Command | Purpose |
+| --- | --- |
+| `/log` | Record a raw item to `specs/inbox.md` for later grooming |
+| `/groom` | Walk the inbox and route each item to its proper spec or scenario |
+
+### Orient
+
+| Command | Purpose |
+| --- | --- |
+| `/target` | Set the working feature (or `feature/scenario`) for the session |
+| `/status` | Dashboard of every feature's progress, or a focused view of the current target |
+| `/help` | Project overview and command reference |
+
+### Bootstrap — one-time per project
+
+| Command | Purpose |
+| --- | --- |
+| `/govern` | Adopt or update `govern` in a project (the installer that placed every other command) |
+| `/configure` | Configure agent permissions for `govern` commands |
+
+## Installing (per agent)
+
+`govern` operates a **live-on-main** model — the installer fetches the latest from `main`. Omit the agent to autodetect (falling back to Claude Code), or name it explicitly.
+
+### Claude Code
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/stonean/govern/main/install.sh | sh
+```
+
+### Auggie
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/stonean/govern/main/install.sh | sh -s -- auggie
+```
+
+### Antigravity
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/stonean/govern/main/install.sh | sh -s -- antigravity
+```
+
+Then run `/govern {project-name}`. The installer creates the right directory for your agent and drops the bootstrap command in place — for Antigravity it's wrapped as a skill under `.agents/skills/govern/`, since Antigravity discovers dir-form skills rather than verbatim command files. It's safe to re-run.
+
+The same bootstrap supports every agent, so re-run `/govern --add-agent` from any adopted agent later to add others. To pin a tagged release instead of tracking `main`, set `GOVERN_REF` — e.g. `… | GOVERN_REF=v0.1.0 sh`. To register the optional runtime with Antigravity, add it to `.agents/mcp_config.json`: `{ "mcpServers": { "gvrn": { "command": "gvrn", "args": ["mcp"] } } }`.
+
+## Brownfield adoption
+
+You don't need to clone `govern` or rewrite history to adopt it. Install the command, run `/govern`, then let specs accrete naturally:
+
+- Use `/specify` with a sparse description to stub a skeleton spec for an existing feature — sparse acceptance criteria are valid here.
+- Let those specs gain precision incrementally through bug fixes, enhancements, and `/clarify`.
+- Drop raw items into `specs/inbox.md` with `/log` without breaking flow, and route them later with `/groom`.
+
+Adoption spreads by feature area, not in a big bang. The goal is for `inbox.md` to eventually disappear.
+
+### Bugs are unwritten scenarios
+
+`govern` treats every bug as evidence that a spec is missing, ambiguous, or violated. When one surfaces, follow the decision tree in order:
+
+1. **No spec exists** — write the spec first, then fix the code.
+2. **Spec is ambiguous** — fix the spec, then fix the implementation.
+3. **Spec is clear, implementation is wrong** — add a scenario, then fix the code.
+
+A scenario is a spec at a lower level of abstraction — same format, same discipline. Scenarios live in `specs/NNN-feature/scenarios/slug.md`, each gets a linked task in the parent spec, and any can be targeted directly with `/target feature/scenario-slug`.
+
+## The optional runtime
+
+The `govern` runtime (`gvrn`) is an **optional** deterministic execution layer. It parses the prose of each command and runs the mechanical work (reading specs, walking tasks, checking dependencies, atomic checkbox updates, gate handshakes) in native Rust instead of slow LLM tokens — invoking the model only where semantic judgment actually matters (`assessSpecQuality`, `writeCode`, `writeSpecBody`).
+
+The markdown-only path stays first-class per [constitution §runtime-boundary](framework/constitution.md#runtime-boundary): when the runtime is absent, the agent walks the same prose. Install it if you run the pipeline frequently — the wall-clock saving on `/analyze` and `/implement` is significant; skip it if you only use the pipeline occasionally.
+
+### Install the runtime
 
 Download the pre-built binary for your platform from the [latest release](https://github.com/stonean/govern/releases) and verify the checksum:
 
 ```bash
 # Example for aarch64-apple-darwin; substitute your target triple.
-VERSION="0.2.1"
+VERSION="0.11.3"
 TARGET="aarch64-apple-darwin"
 ARCHIVE="gvrn-${TARGET}.tar.gz"
 BASE="https://github.com/stonean/govern/releases/download/gvrn-v${VERSION}"
 
-# Work in a scratch tempdir so the extracted `gvrn` binary lands away
-# from the caller's working tree.
+# Work in a scratch tempdir so the extracted binary lands away from your tree.
 tmp="$(mktemp -d)" && cd "${tmp}"
 
 curl -LO "${BASE}/${ARCHIVE}"
@@ -99,320 +178,88 @@ gvrn --version
 cd - >/dev/null && rm -rf "${tmp}"
 ```
 
-Pre-built binaries are published for `aarch64-apple-darwin`, `x86_64-apple-darwin`, `x86_64-unknown-linux-gnu`, and `aarch64-unknown-linux-gnu`. A Windows binary may also be present when cross-compilation succeeds.
+Binaries are published for `aarch64-apple-darwin`, `x86_64-apple-darwin`, `x86_64-unknown-linux-gnu`, and `aarch64-unknown-linux-gnu` (a Windows binary appears when cross-compilation succeeds). If a runtime process crashes mid-procedure, just re-run the command — state lives in your markdown, and writes are filesystem-atomic, so the runtime resumes from the next incomplete step.
 
-### When to install
+## Configuration
 
-Install if you adopt `govern` and run slash commands frequently — the wall-clock saving on `/gov:analyze` and `/gov:implement` is significant. Skip if you only invoke the pipeline occasionally; the markdown-only path is faithful to the same semantics, just slower.
+`.govern.toml` is an optional project file — `/govern` runs fine without it. Create it only if you need one of these behaviors:
 
-If a runtime process crashes mid-procedure, re-run the slash command — the runtime reads state from your markdown and resumes from the next incomplete step. State-modifying primitives use filesystem-atomic writes (tempfile + rename), so crashes leave coherent markdown. On Windows the rename semantics are weaker; clean up any orphaned tempfile in the spec directory with a manual `rm` if you observe one.
+- **`[pinned]`** — list destination paths `govern` should never overwrite, even files it normally updates (e.g. a customized `constitution.md`).
+- **`[workflows]`** — record workflow categories you've declined so `/govern` stops offering them.
 
-## Adopting in an Existing Project
+```toml
+[pinned]
+files = ["constitution.md"]
 
-For brownfield projects, install the `govern` command and run it — no clone required. Once adopted, use `/specify` with a sparse description to initialize skeleton specs for existing features (sparse acceptance criteria are valid for brownfield use), and let them gain precision incrementally through bug fixes, enhancements, and clarification.
-
-`govern` operates a **live-on-main** model — the snippets below fetch the latest from `main`. Tagged releases (`v0.1.0`, etc.) mark milestones for changelogs and release notes, not pinning targets. Adopters who want to lock individual files they've customized use `.govern.toml` (see [Configuring `.govern.toml`](#configuring-governtoml) below).
-
-### Claude Code
-
-```bash
-mkdir -p .claude/commands
-curl -fsSL https://raw.githubusercontent.com/stonean/govern/main/framework/bootstrap/govern.md \
-  > .claude/commands/govern.md
+[workflows]
+declined_categories = ["Linting"]
 ```
 
-Then run `/govern {project-name}`.
+For the full schema, see [specs/019-config-decisions/data-model.md](specs/019-config-decisions/data-model.md).
 
-### Auggie
+## Updating an adopted project
 
-```bash
-mkdir -p .augment/commands
-curl -fsSL https://raw.githubusercontent.com/stonean/govern/main/framework/bootstrap/govern.md \
-  > .augment/commands/govern.md
-```
+Re-run `/govern` to pull the latest framework files. Each file is handled by one of three strategies:
 
-Then run `/govern {project-name}`.
+| Strategy | Behavior | Examples |
+| --- | --- | --- |
+| `update` | Always overwritten with the latest version | `constitution.md`, spec templates, slash commands |
+| `create` | Created on first run, skipped on re-run | `specs/system.md`, `specs/errors.md`, `specs/events.md` |
+| `skip` | Never overwritten | `AGENTS.md`, `CLAUDE.md` |
 
-### Antigravity
+`.gitignore` uses a `merge` strategy — `govern` patterns are appended below a `# govern` marker. Pin individual files you've customized with `[pinned]` in `.govern.toml` (above). `govern` is a reference, not a runtime dependency: if you'd rather not use `/govern`, diff the repo and apply changes at your own pace.
 
-Antigravity discovers dir-form skills under `.agents/skills/`, so `govern` installs as a skill — `name:` frontmatter wrapping `govern.md`'s body — rather than a verbatim command file:
+## Security rules
 
-```bash
-mkdir -p .agents/skills/govern
-{ printf -- '---\nname: govern\n---\n'; \
-  curl -fsSL https://raw.githubusercontent.com/stonean/govern/main/framework/bootstrap/govern.md \
-    | awk 'p{print} /^---[[:space:]]*$/{c++; if(c==2)p=1}'; \
-} > .agents/skills/govern/SKILL.md
-```
+`govern` ships enforceable security rules using RFC 2119 language — **MUST/MUST NOT** are blocking, **SHOULD/SHOULD NOT** are advisory. `/review` loads the rule files that match your detected stack.
 
-Then run `/govern {project-name}`. The `awk` strips `govern.md`'s own frontmatter and the `printf` prepends the `name: govern` skill frontmatter; subsequent `/govern` runs reinstall it the same way. To use the optional gvrn runtime, register it in `.agents/mcp_config.json` (`{ "mcpServers": { "gvrn": { "command": "gvrn", "args": ["mcp"] } } }`).
+- [framework/rules/security-backend.md](framework/rules/security-backend.md) — auth, input validation, data protection, API security, logging, dependencies, error handling
+- [framework/rules/security-frontend.md](framework/rules/security-frontend.md) — XSS, CSRF, secure storage, auth handling, content security, dependencies
 
-The command fetches `govern` files, scaffolds the spec directory, installs slash commands, and displays next steps. It is idempotent — safe to run again to pick up new `govern` files.
-
-The same `govern.md` supports every CLI listed above. Use whichever curl snippet matches the agent you want to start with — adopting additional agents later does not require a second curl. Re-run `/govern --add-agent` from any adopted agent to pick up the others, and the unified file scaffolds them alongside the existing setup.
-
-## Slash Commands
-
-Adoption installs a full set of slash commands that operationalize the pipeline. All commands are verb-named and session-aware — use `/target` to switch to an existing feature; `/specify` creates a new feature and sets it as the session target automatically (accepting both greenfield-rich and brownfield-sparse input).
-
-### Pipeline (advance state)
-
-| Command | Purpose |
-| --- | --- |
-| `/specify` | Create a new feature spec. Accepts both rich (greenfield) and sparse (brownfield) input — richness scales with the description |
-| `/clarify` | Resolve open questions in the current spec, advance status to `clarified` |
-| `/plan` | Create plan.md with technical decisions, affected files, and resolved questions |
-| `/implement` | Work through tasks, update spec status to `in-progress` then `done` |
-| `/review` | Audit code against rules — security, reuse, quality, efficiency, simplicity. Writes `review.md` and the spec's `review:` frontmatter block. Blocks `done` when MUST violations are present. `--all` reviews every `in-progress` or `done` feature. `--fix` applies conservative auto-fixes. Waive MUST findings with `--waive <rule-id> --reason "<text>"`. |
-| `/analyze` | Audit artifacts against each other — spec, plan, tasks, scenarios, frontmatter, dependencies, rule IDs. `--all` scans every feature. `--fix` auto-corrects fixable checkbox mismatches. Composable: `--all --fix` |
-
-### Refine (add to a spec)
-
-| Command | Purpose |
-| --- | --- |
-| `/ask` | Add a question or scenario to the targeted spec. The classifier routes the input; the user can `flip` the route at the approval gate. Owns both back-edges (`clarified` / `planned` / `in-progress` → `draft` on a question, `done` → `in-progress` on a scenario). |
-
-### Brownfield (absorb existing reality)
-
-| Command | Purpose |
-| --- | --- |
-| `/log` | Record a raw item to `specs/inbox.md` for later grooming |
-| `/groom` | Walk `specs/inbox.md` and route each item to its proper spec or scenario via the bug decision tree |
-
-### Orient
-
-| Command | Purpose |
-| --- | --- |
-| `/target` | Set the working feature (or `feature/scenario`) for the session |
-| `/status` | Dashboard showing all features' progress, or focused view of the current target |
-| `/help` | Display project overview and slash command reference |
-
-### Bootstrap (one-time per project)
-
-| Command | Purpose |
-| --- | --- |
-| `/govern` | Adopt or update `govern` in an existing project (the installer that placed every other command) |
-| `/configure` | Configure agent permissions for `govern` commands |
-
-### Waivers
-
-`/review` blocks the spec from reaching `done` while any MUST violation is unresolved. When a violation is intentional — internal-only endpoint, framework-version constraint, etc. — record a waiver explicitly rather than silencing the gate:
+When a MUST violation is intentional, record a waiver instead of silencing the gate:
 
 ```bash
 /review --waive <rule-id> --reason "<text>"
 ```
 
-The waiver appends a record to the spec's `review.waivers` frontmatter list (`rule`, `file`, `reason`, `waived-at`, `waived-by`). It is anchored to the rule ID and file path: if the file is renamed or the rule no longer fires there, the waiver expires on the next `/review` run and the finding re-blocks.
-
-The waiver list is open-schema — organizations that require additional fields (e.g., `co-waived-by`, `approved-by-team`, `ticket`) can layer them on without `govern` erroring on the unknown keys, then gate those fields in their own CI. See [specs/020-code-review/data-model.md](specs/020-code-review/data-model.md) for the full schema and expiry rules.
-
-## Starting a New Project
-
-The fastest path is `/govern` (see [Adopting in an Existing Project](#adopting-in-an-existing-project) above) — it scaffolds a working setup into a fresh repo. The manual steps below are listed for reference or for agents that don't yet support `/govern`.
-
-### 1. Bootstrap project structure
-
-```bash
-mkdir my-project && cd my-project
-git init
-```
-
-### 2. Copy `govern` files
-
-Copy these files from `govern` into your project root:
-
-| Source | Destination | Purpose |
-| --- | --- | --- |
-| `framework/constitution.md` | `constitution.md` | Principles, pipeline, spec lifecycle — customize the intro, keep the rest |
-| `framework/templates/project/agents.md` | `AGENTS.md` | Agent rules template — fill in every section for your tech stack |
-| `.markdownlint-cli2.jsonc` | `.markdownlint-cli2.jsonc` | Markdown linting config — use as-is |
-
-### 3. Fill in AGENTS.md
-
-Open `AGENTS.md` and replace every placeholder section:
-
-- **Tech Stack** — list your languages, frameworks, databases, and versions
-- **Commands** — define `dev`, `build`, `test`, `lint` (or your equivalents)
-- **Project Structure** — map out your directory layout
-- **Code Style** — show idiomatic patterns with code examples
-- **Testing** — define test types, file placement, and tooling conventions
-- **Gotchas** — document framework quirks and non-obvious behavior
-- **Boundaries** — define what agents must never do without asking
-
-### 4. Set up AI agent configuration
-
-Create a `CLAUDE.md` (or equivalent for your agent) that imports the constitution and agent rules:
-
-```text
-@import constitution.md
-@import AGENTS.md
-```
-
-### 5. Create the specs directory
-
-```bash
-mkdir specs
-```
-
-Write `specs/system.md` describing your architecture — server lifecycle, request flow, shared infrastructure, and module pattern. Add `specs/errors.md` and `specs/events.md` if your project uses structured errors or event-driven communication.
-
-### 6. Add your first feature spec
-
-Run `/specify` to create a numbered feature directory with a spec from template. The command accepts both rich (greenfield) and sparse (brownfield) input — richness scales with the description. Every spec uses the same artifact set (`spec.md`, `plan.md`, `tasks.md`).
-
-Alternatively, create one manually:
-
-```bash
-mkdir specs/000-skeleton
-cp /path/to/govern/framework/templates/spec/spec.md specs/000-skeleton/spec.md
-```
-
-### 7. Work through the pipeline
-
-Follow the pipeline defined in `constitution.md`:
-
-1. **Spec** — resolve all open questions, update status to `clarified`
-2. **Plan** — run `/plan` to create plan.md (technical decisions, affected files) and tasks.md (ordered work items) in one step. If the feature involves persistence, also add data-model.md. Updates spec status to `planned`
-3. **Implement** — follow the tasks list, update spec status to `in-progress`
-4. **Review** — run `/review` to audit the code against rules; resolve MUST violations or record waivers. The `done` transition is gated by `review.blocking: false`
-5. **Done** — `/implement` completes the `in-progress → done` transition when the review gate passes
-
-Run `/analyze` any time to audit a feature's artifacts; it is not a pipeline gate, but it is the recommended check before starting `/implement` and before the final `/review`.
-
-## Security Rules
-
-The `govern` framework includes enforceable security rules for backend and frontend code, distributed via `/govern`. Rules use RFC 2119 language: **MUST/MUST NOT** are blocking violations, **SHOULD/SHOULD NOT** are advisory warnings.
-
-- [framework/rules/security-backend.md](framework/rules/security-backend.md) — Authentication, authorization, input validation, data protection, API security, logging, dependency management, and error handling
-- [framework/rules/security-frontend.md](framework/rules/security-frontend.md) — XSS prevention, CSRF protection, secure storage, authentication handling, content security, and dependency management
-
-Projects can reference these rules in their AGENTS.md or validate command to enforce security standards during development.
-
-## Templates Reference
-
-Spec-pipeline templates (consumed by an agent during the pipeline):
-
-| Template | When to use |
-| --- | --- |
-| [spec.md](framework/templates/spec/spec.md) | Starting a new feature — requirements, acceptance criteria, open questions |
-| [plan.md](framework/templates/spec/plan.md) | Planning phase — technical decisions, affected files, resolved questions |
-| [tasks.md](framework/templates/spec/tasks.md) | Tasks phase — ordered work items derived from the plan |
-| [data-model.md](framework/templates/spec/data-model.md) | Plan phase — when the feature involves database persistence |
-| [research.md](framework/templates/spec/research.md) | Optional — background research, prior art, references |
-| [scenario.md](framework/templates/spec/scenario.md) | Scenario route of `/ask` — capturing specific behavior, edge case, or bug fix as a scenario file under the parent spec |
-
-Project-scaffolding templates (consumed once at adoption):
-
-| Template | Purpose |
-| --- | --- |
-| [agents.md](framework/templates/project/agents.md) | `AGENTS.md` — tech stack, conventions, code style, boundaries |
-| [claude-md.md](framework/templates/project/claude-md.md) | `CLAUDE.md` — Claude Code-specific configuration |
-| [project-readme.md](framework/templates/project/project-readme.md) | Starter project README |
-| [system.md](framework/templates/project/system.md) | `specs/system.md` — architecture and shared conventions |
-| [errors.md](framework/templates/project/errors.md) | `specs/errors.md` — error handling conventions |
-| [events.md](framework/templates/project/events.md) | `specs/events.md` — global event catalog |
-| [inbox.md](framework/templates/project/inbox.md) | `specs/inbox.md` — temporary inbox for known issues during brownfield adoption |
-| [gitignore](framework/templates/project/gitignore) | `govern`-related patterns merged into `.gitignore` |
-
-## Bug Workflow
-
-Bugs are unwritten scenarios. The `govern` framework treats every bug as evidence that a spec is missing, ambiguous, or violated.
-
-### Decision tree
-
-When a bug is reported, follow in order:
-
-1. **No spec exists** — write the spec first, then fix the code
-2. **Spec is ambiguous** — fix the spec, then fix the implementation
-3. **Spec is clear, implementation is wrong** — add a scenario, then fix the code
-
-### Scenarios
-
-A scenario is a spec at a lower level of abstraction. Scenarios live in `specs/NNN-feature/scenarios/slug.md` and capture edge cases, bug fixes, and detailed behavior. Each scenario gets a linked task in the parent spec's `tasks.md`. Scenarios can be targeted directly with `/target feature/scenario-slug` for focused work.
-
-### Inbox
-
-For brownfield projects, `specs/inbox.md` is a temporary inbox. Items are recorded with `/log` and groomed into specs or scenarios with `/groom`. The goal is for the inbox to eventually be empty.
-
-## Optional CI enforcement
-
-`/govern` installs a local pre-commit hook (`.githooks/pre-commit`) that keeps generated artifacts (currently the spec `dependencies:` frontmatter) in sync on every commit. For contributors who never installed the hook locally, govern ships a GitHub Actions template at [framework/templates/ci/adopter-generators.yml](framework/templates/ci/adopter-generators.yml). Copy it into your project at `.github/workflows/govern-generators.yml` to fail PRs when generators are out of sync. The template is not auto-installed because that would require detecting which CI platform you use (GHA vs. GitLab vs. Buildkite), which is beyond `/govern`'s scope.
-
-## Updating an Adopted Project
-
-Projects that were bootstrapped with `/govern` or adopted `govern` manually can pull the latest `govern` files by running `/govern` again. It uses three strategies to decide how each file is handled:
-
-| Strategy | Behavior | Examples |
-| --- | --- | --- |
-| `update` | Always overwritten with the latest `govern` version | `constitution.md`, spec templates, slash commands |
-| `create` | Created on first run, skipped on re-run | `specs/system.md`, `specs/errors.md`, `specs/events.md` |
-| `skip` | Never overwritten | `AGENTS.md`, `CLAUDE.md` |
-
-The `.gitignore` uses a `merge` strategy — `govern` patterns are appended below a `# govern` marker if the marker is not already present.
-
-Re-running `/govern` always pulls from `main` — the project does not pin to a specific tag. To track a tag instead, edit the `https://raw.githubusercontent.com/.../main/` URL inside your installed `govern.md` to point at the tag (e.g., `v0.1.0`). Most adopters won't need to — the per-file pinning below is finer-grained and usually the right tool.
-
-### Configuring `.govern.toml`
-
-`.govern.toml` is the project's optional configuration and persisted-decisions file. Create it at your project root only if you need one of the behaviors below — `/govern` runs without it just fine.
-
-#### `[pinned]` — keep `/govern` from overwriting customized files
-
-If your project has customized a file that `govern` normally overwrites (`update` strategy), pin it:
-
-```toml
-[pinned]
-# Files listed here use 'skip' instead of 'update'.
-# Use destination paths (after placeholder resolution).
-files = [
-  ".claude/commands/myapp/implement.md",
-  "constitution.md",
-]
-```
-
-Any file listed in `pinned.files` is treated as `skip` instead of `update` when `/govern` runs. Pinned files are reported in the post-scaffolding summary.
-
-#### `[workflows]` — stop being asked about declined workflow categories
-
-When `/govern` offers a workflow category (Linting, Formatting, Testing, Migrations, Code Review, Deployment), the prompt has three options: `Yes, scaffold all in this category`, `Skip this run`, or `Skip and don't ask again`. Picking the third option records the decline here:
-
-```toml
-[workflows]
-declined_categories = ["Linting"]
-```
-
-Categories listed are matched case-insensitively against the canonical category list. `/govern` won't prompt for them on subsequent runs and reports `suppressed (workflow): {Category} (declined in .govern.toml)` in the summary. To re-enable the prompt for a category, remove it from the array (or delete the `[workflows]` section, or delete the file).
-
-For the full schema — allowed values, unrecognized-entry handling, and future sections — see [`specs/019-config-decisions/data-model.md`](specs/019-config-decisions/data-model.md).
-
-### Manual updates
-
-If you prefer not to use `/govern`, `govern` is a reference, not a dependency. Review the `govern` changelog or diff, decide which changes apply to your project, and update your copies at your own pace.
-
-## Platform Support
-
-`govern` currently distributes to three AI coding agents:
-
-- **Claude Code** — `.claude/` paths, `/govern` and `/gov:*` commands
-- **Auggie** — `.augment/` paths, `/govern` command variant
-- **Antigravity** (`agy`) — `.agents/` paths, `govern` installed as a skill, `/{project}-*` invocations
-
-Adding a new agent is a single registry row plus an agent-specific `framework/bootstrap/configure/{key}.md` permission file — see [framework/bootstrap/govern.md](framework/bootstrap/govern.md#agent-registry) for the full rules.
+Waivers are anchored to the rule ID and file path — if the file is renamed or the rule stops firing there, the waiver expires and the finding re-blocks. The waiver schema is open, so organizations can layer on their own required fields. See [specs/020-code-review/data-model.md](specs/020-code-review/data-model.md).
 
 ## Viewing artifacts
 
-`govern` artifacts are plain markdown with YAML frontmatter, so any markdown viewer or PKM tool can browse them. Pick whichever fits your workflow:
+`govern` artifacts are plain markdown with YAML frontmatter, so any markdown viewer or PKM tool can browse them:
 
-- **GitHub** — push `specs/` and browse inline; relative links resolve natively, no tooling required
-- **[Obsidian](https://obsidian.md)** — point at the repo and open; graph view and backlinks out of the box
-- **[Logseq](https://logseq.com)** — open-source PKM with a similar graph model
-- **[Foam](https://foambubble.github.io/foam/)** — VS Code extension for markdown knowledge graphs
-- **[Quartz](https://quartz.jzhao.xyz)** — publish a static graph-style site; see Quartz's docs for setup
-- **[MkDocs](https://www.mkdocs.org)** — static documentation site generator
-- Plain `cat`, GitHub PR review, or any markdown editor — no viewer required
+- **GitHub** — push `specs/` and browse inline; relative links resolve natively
+- **[Obsidian](https://obsidian.md)**, **[Logseq](https://logseq.com)**, **[Foam](https://foambubble.github.io/foam/)** — graph view and backlinks out of the box
+- **[Quartz](https://quartz.jzhao.xyz)** or **[MkDocs](https://www.mkdocs.org)** — publish a static site
+- Plain `cat`, a GitHub PR review, or any markdown editor — no viewer required
 
-The principle is that artifacts stay portable and source-of-truth markdown, with structured viewers as derived views (see [constitution.md](framework/constitution.md#text-first-artifacts)).
+Artifacts stay the portable source of truth; structured viewers are derived views (see [constitution §text-first-artifacts](framework/constitution.md#text-first-artifacts)).
 
-## Markdown
+## Repository layout
 
-All `.md` files must pass `npx markdownlint-cli2` using the project config. See [constitution.md](framework/constitution.md#markdown-standards) for the full rule set.
+This repo is the source for everything `govern` ships, plus its own dogfooded specs.
+
+- **[framework/](framework/)** — everything that ships to adopting projects
+  - [constitution.md](framework/constitution.md) — guiding principles, pipeline, spec lifecycle, quality standards (authoritative)
+  - [rules/](framework/rules/) — domain rule sets adopted by reference
+  - [templates/](framework/templates/) — starter files for specs and project scaffolding
+  - [commands/](framework/commands/) — slash command sources
+  - [workflows/](framework/workflows/) — tech-stack-specific lint/test/format/migrate workflows plus `registry.json`
+  - [bootstrap/](framework/bootstrap/) — the `govern.md` installer and per-agent permission files
+- **[install.sh](install.sh)** — the `curl … | sh` installer that places the `/govern` bootstrap command for your agent
+- **[docs/introduction.md](docs/introduction.md)** — the long-form pitch for spec-driven development
+- **[runtime/](runtime/)** — the optional `gvrn` deterministic runtime (Rust)
+- **[specs/](specs/)** — `govern`'s own feature specs; it develops itself with its own pipeline. See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred work.
+- **[scripts/](scripts/)** — maintenance and generator scripts
+
+`govern` currently distributes to three AI coding agents: **Claude Code** (`.claude/` paths), **Auggie** (`.augment/` paths), and **Antigravity** (`.agents/` paths, installed as a skill). Adding another is a single registry row plus a permission file — see [framework/bootstrap/govern.md](framework/bootstrap/govern.md#agent-registry).
+
+## Contributing
+
+All `.md` files must pass `npx markdownlint-cli2` using the project config; see [constitution §markdown-standards](framework/constitution.md#markdown-standards) for the rule set. `govern` dogfoods its own pipeline — changes to the framework go through the same `/specify → /plan → /implement → /review` loop, recorded under [specs/](specs/).
+
+## License
+
+[MIT](LICENSE)
+</content>
+</invoke>
