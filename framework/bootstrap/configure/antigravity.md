@@ -34,6 +34,7 @@ Configure `{cli-config-dir}/settings.json` with the Antigravity tool permissions
    - `command(gh api)`
    - `command(mkdir -p)`
    - `command(chmod +x)`
+   - `command(which)`
 
    **Shell — git:**
    - `command(git add)`

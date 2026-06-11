@@ -59,6 +59,7 @@ Configure `.claude/settings.local.json` with the permissions needed for slash co
    - `Bash(gh api *)`
    - `Bash(mkdir -p *)`
    - `Bash(chmod +x *)`
+   - `Bash(command -v *)`
 
    **Build / lint:**
    - `Bash(make *)`

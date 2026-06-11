@@ -40,9 +40,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 6. Add the probe to the three configure files
 
-- [ ] `configure/claude.md`: add `Bash(command -v *)` to the canonical allow set.
-- [ ] `configure/auggie.md`: add the `"^command -v "` `toolPermissions` entry.
-- [ ] `configure/antigravity.md`: add the probe to `permissions.allow`, matching the registry-seed form; resolve the token-prefix grammar (`command(command -v)` vs `command(which)`).
+- [x] `configure/claude.md`: add `Bash(command -v *)` to the canonical allow set.
+- [x] `configure/auggie.md`: add the `"^command -v "` `toolPermissions` entry.
+- [x] `configure/antigravity.md`: add the probe to `permissions.allow`, matching the registry-seed form; resolve the token-prefix grammar (`command(command -v)` vs `command(which)`).
 - Done when: each configure file grants the probe in the same form as its registry seed.
 
 ## 7. Reframe the README Runtime section

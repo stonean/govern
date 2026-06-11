@@ -59,6 +59,7 @@ Configure `{cli-config-dir}/settings.local.json` with the permissions needed for
    - `Bash(gh api *)`
    - `Bash(mkdir -p *)`
    - `Bash(chmod +x *)`
+   - `Bash(command -v *)`
 
    **Build / lint:**
    - `Bash(make *)`

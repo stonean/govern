@@ -48,6 +48,7 @@ Configure `{cli-config-dir}/settings.local.json` with the tool permissions neede
    - `{ "toolName": "launch-process", "shellInputRegex": "^gh api ", "permission": { "type": "allow" } }`
    - `{ "toolName": "launch-process", "shellInputRegex": "^mkdir -p ", "permission": { "type": "allow" } }`
    - `{ "toolName": "launch-process", "shellInputRegex": "^chmod \\+x ", "permission": { "type": "allow" } }`
+   - `{ "toolName": "launch-process", "shellInputRegex": "^command -v ", "permission": { "type": "allow" } }`
 
    **Shell commands — build / lint:**
    - `{ "toolName": "launch-process", "shellInputRegex": "^make", "permission": { "type": "allow" } }`
