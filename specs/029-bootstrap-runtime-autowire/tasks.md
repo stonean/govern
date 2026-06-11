@@ -11,9 +11,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 2. Add the three-state detection mechanism
 
-- [ ] Document **State A** = tool-inventory introspection (`mcp__gvrn__*` / `mcp:gvrn:*`, lazy names count as present); no shell, no permission.
-- [ ] Document **State B** = binary probe succeeds, no tools → wire + grant perms + contribute to the pre-flight abort (names every file written).
-- [ ] Document **State C** = probe fails *or* cannot run *or* is denied → markdown path + one tip line pointing at README Runtime.
+- [x] Document **State A** = tool-inventory introspection (`mcp__gvrn__*` / `mcp:gvrn:*`, lazy names count as present); no shell, no permission.
+- [x] Document **State B** = binary probe succeeds, no tools → wire + grant perms + contribute to the pre-flight abort (names every file written).
+- [x] Document **State C** = probe fails *or* cannot run *or* is denied → markdown path + one tip line pointing at README Runtime.
 - Done when: all three states and the "deny/unavailable ⇒ State C" degradation are specified in govern.md.
 
 ## 3. Add the MCP Wiring subsection

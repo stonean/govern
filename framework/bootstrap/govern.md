@@ -151,6 +151,35 @@ The phase runs both checks, accumulates every restart-requiring write into a **p
 
 Detect whether the optional gvrn runtime is available and, when its binary is installed but not yet wired into this project, register it so the next session can run the deterministic path. Detection resolves to one of three states — A (runtime live this session), B (binary present, not wired), C (absent); the **Detection mechanism** and per-state behavior follow in the subsections below.
 
+#### Detection mechanism
+
+Two independent probes resolve the state:
+
+- **Tool-inventory introspection (State A).** Inspect your own available-tool inventory for any `gvrn`-namespaced MCP tool — `mcp__gvrn__*` on Claude Code, `mcp:gvrn:*` on Auggie and antigravity — counting deferred or lazily-loaded tool names as present (a host that lists tool names before exposing their schemas still has the runtime registered). Any match ⇒ **State A**. This needs no shell and no permission; you always know your own tools.
+- **Binary probe (State B vs. State C).** Only when introspection finds no `gvrn` tool, run a binary probe — `command -v gvrn` on `claude-style` and Auggie, `which gvrn` on `antigravity` (whose token-prefix permission grammar matches `which` cleanly). The probe is pre-authorized by the **Permission Setup** seed, so it does not prompt on routine runs. There is no non-shell way to detect an installed-but-unregistered binary — anything a tool could answer would already be **State A**. If the probe cannot run (no shell granted) or is denied, classify the run as **State C** — a harmless false negative; detection never hard-fails.
+
+#### State A — runtime live this session
+
+A `gvrn`-namespaced tool is available to this session. Take the deterministic primitive path for the rest of the run and emit no detection message. gvrn contributes nothing to the **pending-restart set**.
+
+#### State B — binary present, not wired
+
+The binary probe succeeded but no `gvrn` tool is available to this session. In order:
+
+1. Write the per-layout MCP-wiring file additively (see **MCP wiring**).
+2. Add the permission entries needed to call the `gvrn` tools (see **Permission Setup**), so the next session calls them without a prompt.
+3. Add the wiring (and the permission write) to the **pending-restart set** and contribute this notice to the combined **Pre-flight abort**, naming every file written:
+
+> **gvrn runtime detected and wired.** The `gvrn` binary is installed but was not registered for this project, so this run used the slower markdown path. `/govern` has wired it in so the next session runs through the runtime, which uses far fewer tokens.
+>
+> Files written: {comma-separated paths — the wiring file, and the settings file when permission entries were added}.
+
+State B issues **no separate consent prompt** — the writes are additive and idempotent, matching the silent **Permission Setup** writes; the abort's file list is the disclosure. There is no opt-out flag for auto-wiring.
+
+#### State C — binary absent
+
+The binary probe failed, could not run, or was denied. Proceed on the markdown path exactly as today; gvrn contributes nothing to the **pending-restart set**. After scaffolding, the **Post-Scaffolding Output** emits one tip line noting that installing gvrn reduces token use.
+
 ### Self-update check
 
 Verify the running session's `govern.md` instructions are current.
