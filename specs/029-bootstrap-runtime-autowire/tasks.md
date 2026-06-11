@@ -65,7 +65,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 10. Verification pass
 
-- [ ] `npx markdownlint-cli2` clean on the changed markdown (govern.md, configure files, README, this spec dir).
-- [ ] Manually walk each state's prose to confirm coherence: State A (silent deterministic), State B (wire + single abort + file list), State C (markdown + tip), and the merged stale-`govern.md` + unwired case (one restart).
-- [ ] Confirm `gvrn`-absent CI (`markdown-only-pipeline.yml`) reasoning still holds — the new probe is a detection step, not a runtime dependency.
+- [x] `npx markdownlint-cli2` clean on the changed markdown (govern.md, configure files, README, this spec dir).
+- [x] Manually walk each state's prose to confirm coherence: State A (silent deterministic), State B (wire + single abort + file list), State C (markdown + tip), and the merged stale-`govern.md` + unwired case (one restart).
+- [x] Confirm `gvrn`-absent CI (`markdown-only-pipeline.yml`) reasoning still holds — the new probe is a detection step, not a runtime dependency.
 - Done when: lint is clean and all state walk-throughs are coherent.

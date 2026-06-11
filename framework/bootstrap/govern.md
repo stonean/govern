@@ -178,7 +178,7 @@ The binary probe succeeded but no `gvrn` tool is available to this session. In o
 2. Add the permission entries needed to call the `gvrn` tools (see **Permission Setup**), so the next session calls them without a prompt.
 3. Add the wiring (and the permission write) to the **pending-restart set** and contribute this notice to the combined **Pre-flight abort**, naming every file written:
 
-> **gvrn runtime detected and wired.** The `gvrn` binary is installed but was not registered for this project, so this run used the slower markdown path. `/govern` has wired it in so the next session runs through the runtime, which uses far fewer tokens.
+> **gvrn runtime detected and wired.** The `gvrn` binary is installed but was not registered for this project, so `/govern` could not use the faster deterministic runtime this run. It has now been wired in so the next session runs through the runtime, which uses far fewer tokens.
 >
 > Files written: {comma-separated paths — the wiring file, and the settings file when permission entries were added}.
 
