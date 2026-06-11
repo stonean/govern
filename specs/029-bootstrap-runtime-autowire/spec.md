@@ -1,5 +1,5 @@
 ---
-status: clarified
+status: planned
 dependencies: [003-bootstrap-automation, 021-runtime-boundary, 022-deterministic-runtime, 028-antigravity-agent]
 review:
   last-run: null
