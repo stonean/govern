@@ -28,8 +28,8 @@ Adopters expect the now-standard one-line installer experience modeled by tools 
 
 ## Open Questions
 
-- **Installer ↔ agent-registry parity.** `install.sh` hard-codes the agent → destination-path mapping that also lives in the [012](../../012-multi-agent-govern/spec.md) agent registry, so adding a fourth agent now requires a matching `case` arm in the installer *in addition to* the "single registry row plus a permission file" the registry advertises. Should this parity be enforced by a `/gov:audit` check (in the spirit of the Family 2 manifest-parity checks), or is hand-maintenance acceptable because the installer is a thin first-touch convenience layer? The "never depend on human diligence" design principle argues for the audit check.
+*None — resolved below.*
 
 ## Resolved Questions
 
-*None yet.*
+- **Installer ↔ agent-registry parity.** `install.sh` hard-codes the agent → destination-path mapping that also lives in the [012](../../012-multi-agent-govern/spec.md) agent registry, so adding a fourth agent requires a matching `case` arm in the installer *in addition to* the "single registry row plus a permission file" the registry advertises. **Resolved: enforce the parity with a `/gov:audit` check** rather than rely on hand-maintenance — the choice the "never depend on human diligence" design principle argues for. `scripts/audit/installer-registry-parity.sh` (Family 14) parses the §Agent Registry table and `install.sh`'s `case`-arm → `dest=` mapping and asserts per-key parity in both directions: a registry agent with no installer arm, an installer arm naming no registry agent, or a dest that doesn't match the layout-derived `govern` install path each surface as a finding. Wired into `scripts/audit/run-all.sh` and listed in `framework/commands/audit.md`.

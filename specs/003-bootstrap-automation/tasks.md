@@ -39,6 +39,6 @@ Done when: all eleven commands pass lint, placeholders are correct, and spec sta
 - [x] Antigravity placement wraps the body as a `name: govern` skill; the fetch is tempfile-guarded (`mktemp` + `EXIT` trap) and idempotent
 - [x] README Quick start and per-agent installs reduced to a single `curl … | sh` line each
 - [x] Verified end to end against the live `govern.md` for all three agents
-- [ ] Resolve the installer↔registry parity open question in `scenarios/curl-sh-installer.md` (and add an audit check if accepted)
+- [x] Resolve the installer↔registry parity open question — enforced by `scripts/audit/installer-registry-parity.sh` (audit Family 14)
 
 Done when: the one-line `curl … | sh` installer places the bootstrap for every supported agent per `scenarios/curl-sh-installer.md`, and the README installs are reduced to one line per agent.

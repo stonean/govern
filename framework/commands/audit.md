@@ -47,6 +47,10 @@ When the runtime is not on `PATH`, walk the same scripts directly. Each prints f
 9. Run `scripts/audit/introducing-drift.sh` (Family 8).
 10. Run `scripts/audit/primitive-promotion-candidates.sh` (Family 9).
 11. Run `scripts/audit/migration-coverage.sh` (Family 10).
+12. Run `scripts/audit/consolidation-pair.sh` (Family 11).
+13. Run `scripts/audit/fixture-session-shape.sh` (Family 12).
+14. Run `scripts/audit/runtime-hardcoded-paths.sh` (Family 13).
+15. Run `scripts/audit/installer-registry-parity.sh` (Family 14 — `install.sh` agent list and dest paths match the §Agent Registry).
 
 ## Boundary with `/gov:analyze`
 
