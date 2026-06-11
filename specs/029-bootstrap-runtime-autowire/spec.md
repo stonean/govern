@@ -1,5 +1,5 @@
 ---
-status: planned
+status: in-progress
 dependencies: [003-bootstrap-automation, 021-runtime-boundary, 022-deterministic-runtime, 028-antigravity-agent]
 review:
   last-run: null
@@ -92,23 +92,23 @@ The README Runtime section, which currently frames the runtime as an entirely se
 
 ## Acceptance Criteria
 
-- [ ] When `gvrn` MCP tools are callable in the session (State A), `/govern` takes the deterministic primitive path and emits no detection message.
-- [ ] `gvrn` tools exposed lazily by the host (deferred schemas, not-yet-loaded) are classified as State A, not as absent.
-- [ ] State A is reached by introspecting the agent's own tool inventory (per-host `gvrn` tool prefix) — no shell probe and no added permission are required to detect State A.
-- [ ] When the binary probe cannot run (no shell granted) or is denied, the run is classified as State C — detection never hard-fails.
-- [ ] The `command -v gvrn`-equivalent probe command is part of the bootstrap's pre-granted shell-command seed, so it does not prompt on routine runs.
-- [ ] When the `gvrn` binary is discoverable but no `gvrn` MCP tools are available (State B), `/govern` writes the per-layout MCP-wiring file (`.mcp.json` for `claude-style`, `{config_dir}/mcp_config.json` for `antigravity`).
-- [ ] In State B, the write preserves every pre-existing `mcpServers` entry and is idempotent — a wiring file that already contains a `gvrn` entry is left byte-unchanged.
-- [ ] The gate wires `gvrn` on presence of the binary alone and performs no version-compatibility check (deferred to the runtime per spec 022 §Versioning enforcement).
-- [ ] An existing wiring file with no `mcpServers` key gains the key with just the `gvrn` entry, preserving all other top-level keys.
-- [ ] An existing wiring file that is not valid JSON is left untouched — the gate skips wiring, warns the user, and degrades to the markdown path (no clobber).
-- [ ] In State B, `/govern` aborts before the archive fetch and instructs the user to start a new session and re-run, stating that `gvrn` reduces token use and naming every file it wrote. No archive is fetched and no scaffolding runs.
-- [ ] State B performs no separate consent prompt before writing the wiring and permission entries (additive, idempotent); disclosure is the abort message's file list.
-- [ ] In State B, the agent's per-layout settings file gains the permission entries needed to call `gvrn` tools, added additively (no existing entry removed or reordered).
-- [ ] When the `gvrn` binary is not discoverable (State C), `/govern` proceeds on the markdown-only path and emits exactly one tip line pointing at the README Runtime section.
-- [ ] `gvrn` detection and the govern.md self-update check run in one pre-flight phase before the archive fetch; their restart-requiring writes are batched into a single abort so the user restarts at most once even when both fire.
-- [ ] Both the `claude-style` and `antigravity` layouts are covered by the above.
-- [ ] The README Runtime section states that `/govern` auto-wires `gvrn` when the binary is detected.
+- [x] When `gvrn` MCP tools are callable in the session (State A), `/govern` takes the deterministic primitive path and emits no detection message.
+- [x] `gvrn` tools exposed lazily by the host (deferred schemas, not-yet-loaded) are classified as State A, not as absent.
+- [x] State A is reached by introspecting the agent's own tool inventory (per-host `gvrn` tool prefix) — no shell probe and no added permission are required to detect State A.
+- [x] When the binary probe cannot run (no shell granted) or is denied, the run is classified as State C — detection never hard-fails.
+- [x] The `command -v gvrn`-equivalent probe command is part of the bootstrap's pre-granted shell-command seed, so it does not prompt on routine runs.
+- [x] When the `gvrn` binary is discoverable but no `gvrn` MCP tools are available (State B), `/govern` writes the per-layout MCP-wiring file (`.mcp.json` for `claude-style`, `{config_dir}/mcp_config.json` for `antigravity`).
+- [x] In State B, the write preserves every pre-existing `mcpServers` entry and is idempotent — a wiring file that already contains a `gvrn` entry is left byte-unchanged.
+- [x] The gate wires `gvrn` on presence of the binary alone and performs no version-compatibility check (deferred to the runtime per spec 022 §Versioning enforcement).
+- [x] An existing wiring file with no `mcpServers` key gains the key with just the `gvrn` entry, preserving all other top-level keys.
+- [x] An existing wiring file that is not valid JSON is left untouched — the gate skips wiring, warns the user, and degrades to the markdown path (no clobber).
+- [x] In State B, `/govern` aborts before the archive fetch and instructs the user to start a new session and re-run, stating that `gvrn` reduces token use and naming every file it wrote. No archive is fetched and no scaffolding runs.
+- [x] State B performs no separate consent prompt before writing the wiring and permission entries (additive, idempotent); disclosure is the abort message's file list.
+- [x] In State B, the agent's per-layout settings file gains the permission entries needed to call `gvrn` tools, added additively (no existing entry removed or reordered).
+- [x] When the `gvrn` binary is not discoverable (State C), `/govern` proceeds on the markdown-only path and emits exactly one tip line pointing at the README Runtime section.
+- [x] `gvrn` detection and the govern.md self-update check run in one pre-flight phase before the archive fetch; their restart-requiring writes are batched into a single abort so the user restarts at most once even when both fire.
+- [x] Both the `claude-style` and `antigravity` layouts are covered by the above.
+- [x] The README Runtime section states that `/govern` auto-wires `gvrn` when the binary is detected.
 
 ## Open Questions
 
