@@ -1,10 +1,10 @@
 ---
 spec: 003-bootstrap-automation
-reviewed-at: 2026-06-11T01:48:34Z
-reviewed-against: b9982910c3120ed67b63b90a7bb702a88de29403
+reviewed-at: 2026-06-11T01:57:04Z
+reviewed-against: fc3a832ebbb2c9cca9aedcd6703a9c0be0081271
 diff-base: 9847647bc7c165d26dff07317c6a865a49f18457
 must-violations: 0
-should-violations: 3
+should-violations: 0
 low-confidence: 0
 captured-issues: 0
 skipped-passes: []
@@ -17,13 +17,16 @@ skipped-passes: []
 Reviewed the code added under the `curl-sh-installer` scenario: `install.sh`
 (the one-line installer), `scripts/audit/installer-registry-parity.sh` (audit
 Family 14), and the supporting edits to `scripts/audit/run-all.sh`,
-`check-zero.sh`, and `cross-doc-consistency.sh`. **No MUST violations — the spec
-remains validly `done`.** Three advisory SHOULD findings, all in the simplicity
-and reuse dimensions. The loaded security/api/config rule files target
-application-backend concerns (auth, API schemas, secret handling) that this
-build/CLI tooling does not engage; per the security pass's authoritative-rule-set
-constraint, no security findings were manufactured for the `curl | sh` pattern
-(govern has no published release artifacts to checksum — it is live-on-main).
+`check-zero.sh`, and `cross-doc-consistency.sh`. **No MUST violations and no
+SHOULD violations — the spec is validly `done`.** The loaded security/api/config
+rule files target application-backend concerns (auth, API schemas, secret
+handling) that this build/CLI tooling does not engage; per the security pass's
+authoritative-rule-set constraint, no security findings were manufactured for
+the `curl | sh` pattern (govern has no published release artifacts to checksum —
+it is live-on-main).
+
+The three advisory SHOULD findings from the prior run (2026-06-11T01:48Z) have
+been resolved — see **Resolved since prior run** below.
 
 ## MUST violations (blocking)
 
@@ -31,29 +34,22 @@ None.
 
 ## SHOULD violations (advisory)
 
-### SHOULD: simplicity — installer autodetect serves an edge the explicit commands already cover
+None.
 
-- **File**: `install.sh:23-31`
-- **Rule**: AGENTS.md §Design / simplicity pass — avoid indirection that is dead under the documented usage.
-- **Finding**: The agent autodetect block (single existing `.claude`/`.augment`/`.agents` dir → that agent, else `claude`) only changes behavior for someone who pipes the bare Quick-start command inside an existing non-Claude project. The README gives an explicit `sh -s -- <agent>` one-liner per agent, so the common paths never reach the autodetect. It is correct and tested, but it is the most removable complexity in the script.
-- **Auto-fixable**: no
-- **Suggested fix**: Optional — drop the autodetect and default to `claude`, relying on the explicit per-agent commands. Kept deliberately for now; recorded as advisory.
+## Resolved since prior run
 
-### SHOULD: simplicity — `agy` alias accepted but undocumented
-
-- **File**: `install.sh:53`
-- **Rule**: simplicity / consistency — inputs the code accepts should match the inputs it advertises.
-- **Finding**: The Antigravity arm matches `antigravity | agy`, but the usage comment, the unknown-agent error message (`expected: claude, auggie, antigravity`), and the README all list only the canonical names. The `agy` alias is silently accepted, which is a small surface/doc mismatch.
-- **Auto-fixable**: no
-- **Suggested fix**: Either document `agy` (it is the Antigravity CLI command name) or drop the alias for one-to-one parity with the registry keys.
-
-### SHOULD: reuse — frontmatter-strip awk duplicated across the installer and govern.md
-
-- **File**: `install.sh:62`
-- **Rule**: reuse pass — shared logic should have one home.
-- **Finding**: The `awk 'p{print} /^---[[:space:]]*$/{c++; if(c==2)p=1}'` body-extraction transform appears in `install.sh` and in `govern.md`'s self-update comparison. It is a single line and cannot be factored across a shell script and a markdown command file without a shared helper neither layer wants, so this is noted rather than actioned — but the two copies must stay in lockstep if the skill-wrapping convention ever changes.
-- **Auto-fixable**: no
-- **Suggested fix**: None practical; flagged so the coupling is visible.
+- **simplicity — installer autodetect** (was `install.sh:23-31`). Removed. Agent
+  resolution is now the positional argument or a `claude` default
+  (`agent="${1:-claude}"`); the undocumented `GOVERN_AGENT` env override was
+  dropped in the same pass for the same reason.
+- **simplicity — `agy` alias accepted but undocumented** (was `install.sh:53`).
+  Removed. The Antigravity arm is now `antigravity)`, so the installer's accepted
+  agent names are exactly the §Agent Registry keys.
+- **reuse — frontmatter-strip awk "duplication"** (was `install.sh:62`).
+  Withdrawn as a mischaracterization: the `awk` literal lives only in
+  `install.sh`. `govern.md` describes the frontmatter strip in prose (no literal
+  awk), and the README's former copy was removed during the README rewrite.
+  There is a single copy, so there is nothing to de-duplicate.
 
 ## Low-confidence findings
 

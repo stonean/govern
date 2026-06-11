@@ -4,7 +4,7 @@
 # Usage:
 #   curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/stonean/govern/main/install.sh | sh
 #
-# Pick an agent explicitly (default: autodetect, falling back to claude):
+# Pick an agent explicitly (default: claude):
 #   ... | sh -s -- claude
 #   ... | sh -s -- auggie
 #   ... | sh -s -- antigravity
@@ -16,17 +16,8 @@ set -eu
 
 RAW="https://raw.githubusercontent.com/stonean/govern/main/framework/bootstrap/govern.md"
 
-# Resolve the target agent: explicit arg > GOVERN_AGENT env > autodetect > claude.
-agent="${1:-${GOVERN_AGENT:-}}"
-if [ -z "$agent" ]; then
-  matches=""
-  [ -d .claude ] && matches="claude $matches"
-  [ -d .augment ] && matches="auggie $matches"
-  [ -d .agents ] && matches="antigravity $matches"
-  # shellcheck disable=SC2086 # intentional word-split to count matches
-  set -- $matches
-  if [ "$#" -eq 1 ]; then agent="$1"; else agent="claude"; fi
-fi
+# Resolve the target agent: the optional positional argument, defaulting to claude.
+agent="${1:-claude}"
 
 if ! command -v curl >/dev/null 2>&1; then
   echo "govern: curl is required but was not found on PATH" >&2
@@ -48,8 +39,7 @@ case "$agent" in
     mkdir -p .augment/commands
     cp "$tmp" "$dest"
     ;;
-  antigravity | agy)
-    agent="antigravity"
+  antigravity)
     dest=".agents/skills/govern/SKILL.md"
     mkdir -p .agents/skills/govern
     # Antigravity discovers dir-form skills: wrap govern.md's body in skill

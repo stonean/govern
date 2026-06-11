@@ -35,7 +35,7 @@ Done when: all eleven commands pass lint, placeholders are correct, and spec sta
 
 ## 4. Installer script (`install.sh`)
 
-- [x] `install.sh` resolves the agent (arg > `GOVERN_AGENT` > autodetect > `claude`) and places the bootstrap at the 012-registry path for claude, auggie, and antigravity
+- [x] `install.sh` resolves the agent (positional arg, default `claude`) and places the bootstrap at the 012-registry path for claude, auggie, and antigravity
 - [x] Antigravity placement wraps the body as a `name: govern` skill; the fetch is tempfile-guarded (`mktemp` + `EXIT` trap) and idempotent
 - [x] README Quick start and per-agent installs reduced to a single `curl … | sh` line each
 - [x] Verified end to end against the live `govern.md` for all three agents

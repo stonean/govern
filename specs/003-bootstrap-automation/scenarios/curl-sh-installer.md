@@ -13,16 +13,15 @@ Adopters expect the now-standard one-line installer experience modeled by tools 
 ## Behavior
 
 - A POSIX-`sh` script `install.sh` lives at the repo root and is fetched and executed via `curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/stonean/govern/main/install.sh | sh`.
-- It resolves the target agent in precedence order: explicit positional argument (`sh -s -- <agent>`), then the `GOVERN_AGENT` environment variable, then autodetection of a single existing agent directory (`.claude` → claude, `.augment` → auggie, `.agents` → antigravity), then a default of `claude`.
+- It resolves the target agent from the optional positional argument (`sh -s -- <agent>`), defaulting to `claude` when none is given. The accepted agent names are exactly the §Agent Registry keys — `claude`, `auggie`, `antigravity` — with no aliases.
 - It fetches `framework/bootstrap/govern.md` from `main`, consistent with govern's live-on-main model. There is no release-pinning knob: `govern.md`'s own self-update check and archive fetch both target `main`, so a pinned bootstrap would be overwritten on the next `/govern` run anyway — tags are milestones, not pinning targets.
 - It places the bootstrap per agent, matching the destinations declared in the [012 multi-agent](../../012-multi-agent-govern/spec.md) agent registry: claude → `.claude/commands/govern.md`; auggie → `.augment/commands/govern.md`; antigravity → `.agents/skills/govern/SKILL.md`, with the body wrapped in `---\nname: govern\n---` skill frontmatter and `govern.md`'s own frontmatter stripped (everything up to and including the second `---`).
 - The download lands in a `mktemp` tempfile cleaned by an `EXIT` trap; a failed fetch (`curl -f`) aborts under `set -e` before the destination is touched, so a partial or empty `govern.md` is never written. Re-running is idempotent.
 - An unrecognized agent name, or a `curl` not found on `PATH`, prints a diagnostic to stderr and exits non-zero.
-- The README's per-agent install instructions are each reduced to a single `curl … | sh` line; the Quick start uses the bare autodetecting form.
+- The README's per-agent install instructions are each reduced to a single `curl … | sh` line; the Quick start uses the bare form, which installs for `claude`.
 
 ## Edge Cases
 
-- **More than one agent directory present** — autodetection is ambiguous and falls back to `claude`; an explicit `sh -s -- <agent>` argument overrides it.
 - **Piped to `sh`** — stdin is the script itself, so the installer performs no interactive prompting; it runs unattended end to end (unlike installers that read from `/dev/tty`).
 - **Beyond first-touch placement** — `install.sh` only handles the initial bootstrap drop. Adopting additional agents later, or any registry-driven multi-agent scaffolding, remains the job of `/govern --add-agent`; the installer does not duplicate that logic.
 

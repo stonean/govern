@@ -21,7 +21,7 @@ Install `govern` into any project:
 curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/stonean/govern/main/install.sh | sh
 ```
 
-This detects your agent (or installs for Claude Code) and places the `/govern` bootstrap command — see [Installing per agent](#installing-per-agent) to target a specific one. Then, in your agent, run:
+This installs the `/govern` bootstrap command for Claude Code — see [Installing per agent](#installing-per-agent) to target Auggie or Antigravity instead. Then, in your agent, run:
 
 ```text
 /govern my-project
@@ -103,7 +103,7 @@ Adoption installs a full set of verb-named, session-aware commands. Use `/target
 
 ## Installing (per agent)
 
-`govern` operates a **live-on-main** model — the installer fetches the latest from `main`. Omit the agent to autodetect (falling back to Claude Code), or name it explicitly.
+`govern` operates a **live-on-main** model — the installer fetches the latest from `main`. Omit the agent to install for Claude Code, or name it explicitly.
 
 ### Claude Code
 

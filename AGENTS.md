@@ -52,6 +52,7 @@ When tooling-language decisions arise (e.g., the runtime spec'd in 022, future b
 - The command generator substitutes `{project}` → `gov` and `{cli-config-dir}` → `.claude`, and writes the Claude-specific permission file (`framework/bootstrap/configure/claude.md`) as `configure.md` in the gov command directory.
 - `framework/workflows/` files ship as-is — they are not generator inputs and have no `govern`-side `gov:workflows:*` counterpart. Adopting projects scaffold them via `/govern` (or `/gov:init`).
 - `.claude/commands/gov/init.md` is the one exception to the generator rule — it is `govern`-specific (no source counterpart) and is hand-maintained. The generator leaves it untouched.
+- Never `git add -A` / `git add .` in this repo — it sweeps untracked `/specify` drafts (e.g. an in-progress `specs/NNN-*/spec.md`) into the commit, which spec 017 (`tracked-specs-not-worktree`) forbids. Stage explicit paths.
 
 ## Boundaries
 
