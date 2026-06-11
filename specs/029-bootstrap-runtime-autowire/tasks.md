@@ -25,10 +25,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 4. Update §Permission Setup and reverse the "not scaffolded" decision
 
-- [ ] Add the binary-probe permission to the always-applied seed description.
-- [ ] Describe the State-B gvrn tool-permission grant (per-layout wildcard, additive).
-- [ ] Rewrite the paragraph that says the runtime is "wired separately and not scaffolded" into the auto-wire-on-detect behavior.
-- [ ] Confirm the §Procedural-fidelity allowed-prompts list is unchanged (no new prompt).
+- [x] Add the binary-probe permission to the always-applied seed description.
+- [x] Describe the State-B gvrn tool-permission grant (per-layout wildcard, additive).
+- [x] Rewrite the paragraph that says the runtime is "wired separately and not scaffolded" into the auto-wire-on-detect behavior.
+- [x] Confirm the §Procedural-fidelity allowed-prompts list is unchanged (no new prompt).
 - Done when: the "not scaffolded" language is gone and no new confirmation prompt was added.
 
 ## 5. Add the probe to the Agent Registry `settings_template` seeds

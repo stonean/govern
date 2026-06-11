@@ -137,9 +137,17 @@ For each selected agent, before fetching any files:
 2. Merge the agent's `settings_template` entries into the existing file additively: add any entries that are missing, do not deduplicate or reorder anything else, and do not overwrite entries the user or `/{project}:configure` previously added. For `claude-style` the entries live under `permissions.allow`/`permissions.deny` (Claude) or `toolPermissions` (Auggie); for `antigravity` they live under `permissions.allow`/`permissions.deny`/`permissions.ask`.
 3. Write the file if anything was added.
 
-This prevents repeated permission prompts during the fetch and scaffolding phases. The full permission set is applied later by `/{project}:configure` (which writes the same per-layout settings file).
+This prevents repeated permission prompts during the fetch and scaffolding phases. The full permission set is applied later by `/{project}:configure` (which writes the same per-layout settings file). The seed also includes the gvrn **binary probe** (`command -v gvrn` for `claude-style` and Auggie, `which gvrn` for `antigravity`) so the **Pre-flight Phase**'s State B/State C probe does not prompt on routine runs.
 
-The gvrn runtime itself is wired separately and is **not** scaffolded by `/govern`: `claude-style` registers the server via `.mcp.json`, `antigravity` via `{config_dir}/mcp_config.json` (`{ "mcpServers": { "gvrn": { "command": "gvrn", "args": ["mcp"] } } }`, additive). Both are an optional install documented in the README's Runtime section.
+### gvrn runtime auto-wiring
+
+`/govern` wires the optional gvrn runtime automatically when its binary is detected on the session's `PATH` but not yet registered as an MCP server — the **Pre-flight Phase → State B** path. (This replaces the previous model where the runtime was a separate, hand-wired install.) Wiring writes the per-layout MCP file — see **gvrn runtime detection → MCP wiring** for the file path, the `gvrn` entry, and the additive merge rules — and, in the same pass, adds the **gvrn tool permissions** to the settings file so the next session calls the runtime without a per-tool prompt:
+
+- **Claude** (`permissions.allow`): `mcp__gvrn__*`
+- **Antigravity** (`permissions.allow`): `mcp(gvrn/*)`
+- **Auggie** (`toolPermissions`): `{ "toolName": "mcp:gvrn:*", "permission": { "type": "allow" } }` if Auggie's matcher honors the wildcard, otherwise the enumerated `mcp:gvrn:<tool>` set `/{project}:configure` already installs.
+
+The wildcard is the minimal bootstrap grant; the enumerated per-tool set stays owned by the generated block in `/{project}:configure`'s permission file and coexists harmlessly (exact-match dedup leaves both). Both the wiring write and this permission write are additive and idempotent and follow the same merge rules as the seed above — no existing entry is removed, reordered, or overwritten. There is **no new confirmation prompt**: the wiring is disclosed by the **Pre-flight abort** message, which names every file written — consistent with the §Procedural-fidelity rule the silent seed writes already follow. The runtime remains an optional install (the binary is still installed out of band; see the README's Runtime section) — `/govern` automates only the MCP registration once the binary is present.
 
 ## Pre-flight Phase
 
