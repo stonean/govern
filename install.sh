@@ -7,7 +7,7 @@
 # Pick an agent explicitly (default: claude):
 #   ... | sh -s -- claude
 #   ... | sh -s -- auggie
-#   ... | sh -s -- antigravity
+#   ... | sh -s -- antigravity   # 'agy' (the Antigravity CLI name) also works
 #
 # The script is idempotent — re-run it any time to refresh the bootstrap file.
 # govern is live-on-main: the bootstrap (and everything /govern fetches) tracks
@@ -39,7 +39,8 @@ case "$agent" in
     mkdir -p .augment/commands
     cp "$tmp" "$dest"
     ;;
-  antigravity)
+  antigravity | agy)
+    agent="antigravity"  # 'agy' is the Antigravity CLI command name
     dest=".agents/skills/govern/SKILL.md"
     mkdir -p .agents/skills/govern
     # Antigravity discovers dir-form skills: wrap govern.md's body in skill
@@ -51,7 +52,7 @@ case "$agent" in
     } > "$dest"
     ;;
   *)
-    echo "govern: unknown agent '$agent' (expected: claude, auggie, antigravity)" >&2
+    echo "govern: unknown agent '$agent' (expected: claude, auggie, antigravity, or agy)" >&2
     exit 1
     ;;
 esac

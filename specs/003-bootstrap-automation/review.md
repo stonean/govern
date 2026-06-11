@@ -1,7 +1,7 @@
 ---
 spec: 003-bootstrap-automation
-reviewed-at: 2026-06-11T01:57:04Z
-reviewed-against: fc3a832ebbb2c9cca9aedcd6703a9c0be0081271
+reviewed-at: 2026-06-11T02:02:12Z
+reviewed-against: a87ec526c1749086da61d7a8f59d5a891bd5ce1d
 diff-base: 9847647bc7c165d26dff07317c6a865a49f18457
 must-violations: 0
 should-violations: 0
@@ -43,8 +43,10 @@ None.
   (`agent="${1:-claude}"`); the undocumented `GOVERN_AGENT` env override was
   dropped in the same pass for the same reason.
 - **simplicity — `agy` alias accepted but undocumented** (was `install.sh:53`).
-  Removed. The Antigravity arm is now `antigravity)`, so the installer's accepted
-  agent names are exactly the §Agent Registry keys.
+  Resolved by documenting, not dropping: `agy` is the Antigravity CLI command
+  name, so accepting it is a sensible affordance, not noise. The alias is now
+  advertised in the installer usage comment and unknown-agent error message, the
+  README, and this scenario; it canonicalizes to the `antigravity` registry key.
 - **reuse — frontmatter-strip awk "duplication"** (was `install.sh:62`).
   Withdrawn as a mischaracterization: the `awk` literal lives only in
   `install.sh`. `govern.md` describes the frontmatter strip in prose (no literal

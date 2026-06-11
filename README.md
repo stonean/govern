@@ -123,7 +123,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/stonean/g
 curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/stonean/govern/main/install.sh | sh -s -- antigravity
 ```
 
-Then run `/govern {project-name}`. The installer creates the right directory for your agent and drops the bootstrap command in place — for Antigravity it's wrapped as a skill under `.agents/skills/govern/`, since Antigravity discovers dir-form skills rather than verbatim command files. It's safe to re-run.
+Then run `/govern {project-name}`. The installer creates the right directory for your agent and drops the bootstrap command in place — for Antigravity it's wrapped as a skill under `.agents/skills/govern/`, since Antigravity discovers dir-form skills rather than verbatim command files. It's safe to re-run. (`agy`, the Antigravity CLI command name, works in place of `antigravity`.)
 
 The same bootstrap supports every agent, so re-run `/govern --add-agent` from any adopted agent later to add others. To register the optional runtime with Antigravity, add it to `.agents/mcp_config.json`: `{ "mcpServers": { "gvrn": { "command": "gvrn", "args": ["mcp"] } } }`.
 
