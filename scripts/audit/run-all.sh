@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scripts/audit/run-all.sh — `/audit` aggregator.
 #
-# Runs the check-zero precondition pass followed by the fourteen family
+# Runs the check-zero precondition pass followed by the fifteen family
 # check scripts. Aggregates findings to stdout under per-family headers
 # and exits 1 when any family (or check-zero) produced findings.
 #
@@ -56,5 +56,6 @@ run_check "Family 11 — consolidation-pair drift" "scripts/audit/consolidation-
 run_check "Family 12 — fixture session-file shape" "scripts/audit/fixture-session-shape.sh"
 run_check "Family 13 — runtime hardcoded paths" "scripts/audit/runtime-hardcoded-paths.sh"
 run_check "Family 14 — installer/registry parity" "scripts/audit/installer-registry-parity.sh"
+run_check "Family 15 — runtime probe parity" "scripts/audit/runtime-probe-parity.sh"
 
 exit "$drift"

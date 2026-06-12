@@ -69,3 +69,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] Manually walk each state's prose to confirm coherence: State A (silent deterministic), State B (wire + single abort + file list), State C (markdown + tip), and the merged stale-`govern.md` + unwired case (one restart).
 - [x] Confirm `gvrn`-absent CI (`markdown-only-pipeline.yml`) reasoning still holds — the new probe is a detection step, not a runtime dependency.
 - Done when: lint is clean and all state walk-throughs are coherent.
+
+## 11. Implement scenario: runtime-probe-parity-audit
+
+- [x] Implement the behavior described in [`scenarios/runtime-probe-parity-audit.md`](scenarios/runtime-probe-parity-audit.md).
+
+- **Done when**: `scripts/audit/runtime-probe-parity.sh` asserts, per agent, that the gvrn binary probe is in parity between the §Agent Registry `settings_template` seed and that agent's `framework/bootstrap/configure/{key}.md` (present in both or neither — present in one only is a finding), as a fixed-string check in each agent's native grammar; the family is wired into `scripts/audit/run-all.sh` (family-count comment bumped) and enumerated in `framework/commands/audit.md`; `scripts/audit/run-all.sh` passes clean. (Scope narrowed from the original "every seed entry" framing during implementation — the seed and configure sets legitimately diverge; only the probe is a real cross-artifact invariant. See the scenario's Resolved Questions.)
