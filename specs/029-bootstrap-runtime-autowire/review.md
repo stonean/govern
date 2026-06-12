@@ -1,8 +1,8 @@
 ---
 spec: 029-bootstrap-runtime-autowire
-reviewed-at: 2026-06-12T01:12:44Z
-reviewed-against: 2d14949fe3236e068d75fb6c74fda4b91ecffb3e
-diff-base: 4be7cd9373fe7c7cb0a5285f1948d8249839fbb8
+reviewed-at: 2026-06-12T01:17:44Z
+reviewed-against: 42965fe689e9089b379bdda708393d5d909d41e0
+diff-base: 7a912adbfeddbb00ed4a3d1ea5569cf9e8aedd0b
 must-violations: 0
 should-violations: 0
 low-confidence: 0
@@ -14,7 +14,7 @@ skipped-passes: []
 
 ## Summary
 
-Clean. This run reviews the third follow-on scenario, `state-a-deterministic-path-forcing`: when `gvrn` is wired and live (State A) the bootstrap must actually take the deterministic path rather than walk the markdown shell reference. The implementation rewrites the §State A handoff in `framework/bootstrap/govern.md` into a binding execution contract and adds a spot reminder at §File Fetching. Per AGENTS.md Tech Stack, govern is text-first; the code-security rule set has no surface in a markdown procedure. Quality and simplicity passes assessed the contract directly: the primitive list matches the gvrn tool set, the boundary is stated in both directions (shell stays for non-primitive steps; tools required for primitive steps), the per-step error fallback is consistent with spec 022 §Versioning enforcement, and the scenario is honest that a markdown procedure maximizes but cannot hard-enforce compliance (true enforcement is a documented host concern, out of scope). No contradiction with the existing State A "lazy/deferred schemas are still State A" rule — the contract layers on top of it. `tech-stack-verified = true`, so the alignment precheck was skipped. **0 MUST, 0 SHOULD — not blocking.**
+Clean. This reopen is a decision-framing correction, not a behavior change: per maintainer decision, host-level enforcement of the deterministic path is a deliberate non-goal rather than a deferral. The `state-a-deterministic-path-forcing` scenario's resolved question is reframed from "out of scope here / a host concern" to an explicit rejection with rationale (host enforcement would block legitimate non-primitive shell steps, is a per-host maintenance tax, and breaks §runtime-boundary's "neither path wraps the other" parity), and the non-goal is recorded in AGENTS.md Boundaries. No `framework/` procedure code changed, no acceptance criterion changed, and the State-A binding contract is untouched. Per AGENTS.md Tech Stack, govern is text-first; the code-security rule set has no surface in a scenario doc or contributor-guidance edit. `tech-stack-verified = true`, so the alignment precheck was skipped. **0 MUST, 0 SHOULD — not blocking.**
 
 ## MUST violations (blocking)
 
