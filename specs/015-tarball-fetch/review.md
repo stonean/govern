@@ -1,11 +1,12 @@
 ---
 spec: 015-tarball-fetch
-reviewed-at: 2026-05-10T00:00:00Z
-reviewed-against: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
-diff-base: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
+reviewed-at: 2026-06-12T01:08:23Z
+reviewed-against: 7e19b6925f862d60bae30c1b19f05d79d4030419
+diff-base: f4985f455f4f39ecacea2aeea1dc65c125b1b3fb
 must-violations: 0
 should-violations: 0
 low-confidence: 0
+captured-issues: 0
 skipped-passes: []
 ---
 
@@ -13,7 +14,7 @@ skipped-passes: []
 
 ## Summary
 
-Single-file edit to `framework/bootstrap/govern.md` replacing per-file fetches with an archive-fetch / extract / resolve flow. The instructions describe `curl -fsSL` + `tar -xzf` + `mktemp -d` operations executed by the AI agent on the operator's machine during `/govern` adoption. The fetch surface is the only network touchpoint in the entire framework. All five passes ran; no findings. `blocking: no`.
+Clean. This is a drift-sync reopen, not a behavior change: the archive fetch already moved to the direct `codeload.github.com` endpoint under 029's `archive-fetch-direct-codeload` scenario (reviewed there); this run only updates 015's `§Source` prose, which still described the superseded `github.com/.../archive` form and the 302 redirect. The implementation under review is the `framework/bootstrap/govern.md` §Archive fetch step, already at codeload, plus the one-paragraph spec body edit. Per AGENTS.md Tech Stack, govern is text-first; the code-security rule set (`*-backend.md`/`*-frontend.md`/`*-cross.md`) has no surface in a markdown procedure or spec body. The corrected URL was byte-verified earlier to return the same `govern-main/` tarball with no redirect (HTTP 200, zero redirects). `tech-stack-verified = true`, so the alignment precheck was skipped. **0 MUST, 0 SHOULD — not blocking.**
 
 ## MUST violations (blocking)
 
@@ -31,28 +32,10 @@ _None._
 
 _None._
 
+## Captured issues (pending /gov:groom)
+
+_None — no additions to `specs/inbox.md` in the review window._
+
 ## Skipped passes
 
-_None._
-
-## Pass notes
-
-### Security
-
-The fetch is described with `curl -fsSL` (fails on HTTP error, silent progress, follow redirects). The archive URL is a documented HTTPS endpoint at `github.com/.../govern/archive/refs/heads/main.tar.gz`; the integrity check verifies the extracted `govern-main/` directory exists before any per-file copy. Failure of any of {curl, tar, missing dir} triggers an explicit abort message rather than silent fallback. No `eval`, no `bash <(curl …)`-style pipe-to-shell. Temp directory is via `mktemp -d -t govern-XXXXXX` (cross-platform safe between `$TMPDIR` and `/tmp`).
-
-### Reuse
-
-The fetch-and-extract pattern is the documented single path for adopter file acquisition — no per-file fallback alongside it (the previous per-file flow was fully replaced, not paralleled).
-
-### Quality
-
-Three failure modes (curl fail, tar fail, missing extraction dir) all converge on the same abort message — operator gets a single, consistent error surface. Edge Cases section documents fetch failure as a hard abort, not a partial-write state.
-
-### Efficiency
-
-Archive fetch replaces O(N) per-file curls with O(1) tarball — direct improvement to bootstrap latency. The `--maxdepth`/sed/grep operations in the per-file resolution step are bounded by the tarball contents (fixed shape).
-
-### Simplicity
-
-Three-step flow (fetch → extract → resolve-per-file) is described inline without indirection. The generator is not involved (govern.md is not in `gen-claude-commands.sh`'s input set), keeping the install path direct.
+_None — all five passes ran. (Tech-stack alignment precheck skipped per `[review] tech-stack-verified = true`.)_
