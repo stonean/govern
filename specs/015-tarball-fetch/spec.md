@@ -1,7 +1,7 @@
 ---
 title: "015-tarball-fetch — spec"
-status: done
-dependencies: [007-govern-workflow, 012-multi-agent-govern]
+status: in-progress
+dependencies: [007-govern-workflow, 012-multi-agent-govern, 029-bootstrap-runtime-autowire]
 tags: [bootstrap, performance]
 review:
   last-run: 2026-05-10T00:00:00Z
@@ -36,13 +36,13 @@ A single archive fetch removes that overhead while keeping every other guarantee
 
 ### Source
 
-`/govern` issues exactly one `curl` against GitHub's repo-archive endpoint:
+`/govern` issues exactly one `curl` against GitHub's archive host — the direct `codeload.github.com` endpoint:
 
 ```text
-https://github.com/stonean/govern/archive/refs/heads/main.tar.gz
+https://codeload.github.com/stonean/govern/tar.gz/refs/heads/main
 ```
 
-`curl -fsSL` already follows the 302 redirect to `codeload.github.com`. The archive's top-level directory is `govern-main/`; the framework files live at `govern-main/framework/...` after extraction.
+This is the target that `https://github.com/stonean/govern/archive/refs/heads/main.tar.gz` 302-redirects to; fetching it directly avoids a cross-host redirect that some agent hosts gate with a permission prompt even when `curl` is pre-granted (see [029 `archive-fetch-direct-codeload`](../029-bootstrap-runtime-autowire/scenarios/archive-fetch-direct-codeload.md)). The archive's top-level directory is `govern-main/`; the framework files live at `govern-main/framework/...` after extraction.
 
 External fetches that are **not** part of the governance repo are unchanged: per-language `.gitignore` patterns continue to come from `https://raw.githubusercontent.com/github/gitignore/main/{Language}.gitignore` as separate `curl` calls. They are not in the archive, and bundling them is out of scope.
 
