@@ -75,3 +75,23 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] Implement the behavior described in [`scenarios/runtime-probe-parity-audit.md`](scenarios/runtime-probe-parity-audit.md).
 
 - **Done when**: `scripts/audit/runtime-probe-parity.sh` asserts, per agent, that the gvrn binary probe is in parity between the §Agent Registry `settings_template` seed and that agent's `framework/bootstrap/configure/{key}.md` (present in both or neither — present in one only is a finding), as a fixed-string check in each agent's native grammar; the family is wired into `scripts/audit/run-all.sh` (family-count comment bumped) and enumerated in `framework/commands/audit.md`; `scripts/audit/run-all.sh` passes clean. (Scope narrowed from the original "every seed entry" framing during implementation — the seed and configure sets legitimately diverge; only the probe is a real cross-artifact invariant. See the scenario's Resolved Questions.)
+
+> Tasks 12–14 are backfilled records of scenarios that were added and implemented together via the direct reopen-implement path (a `set-status` reopen plus a single `feat` commit), tracked at the time by their acceptance criteria rather than a `tasks.md` entry. They are recorded here for scenario→task traceability; the work landed in the commits noted on each and predates Task 11.
+
+## 12. Implement scenario: project-inputs-asked-once
+
+- [x] Implement the behavior described in [`scenarios/project-inputs-asked-once.md`](scenarios/project-inputs-asked-once.md).
+
+- **Done when**: project inputs (`name`, `description`, `languages`) persist in `.govern.toml`'s `[project]` table and resolve at §Collect Project Inputs after the Pre-flight Phase — existing values read back, only missing ones prompted — so they are asked at most once across a State-B / stale-`govern.md` restart and never re-asked on update runs. (Landed in commit `6f75041`.)
+
+## 13. Implement scenario: archive-fetch-direct-codeload
+
+- [x] Implement the behavior described in [`scenarios/archive-fetch-direct-codeload.md`](scenarios/archive-fetch-direct-codeload.md).
+
+- **Done when**: the markdown-path archive fetch uses the direct `codeload.github.com` endpoint (no 302 redirect), so the bootstrap's pre-granted `curl` permission covers it without a prompt; the tarball is byte-equivalent and extraction is unchanged. (Landed in commit `6f75041`.)
+
+## 14. Implement scenario: state-a-deterministic-path-forcing
+
+- [x] Implement the behavior described in [`scenarios/state-a-deterministic-path-forcing.md`](scenarios/state-a-deterministic-path-forcing.md).
+
+- **Done when**: State A (gvrn live) is a binding execution contract — every primitive-backed step calls its `gvrn` MCP tool, the shell commands under those steps are the State-B/C fallback spec (not executed), non-primitive steps (gitignore `curl`, `git config`, input prompts) run in every state, and a primitive call that errors falls back to that one step's shell spec. (Landed in commit `2d14949`, refined in `42965fe`.)
