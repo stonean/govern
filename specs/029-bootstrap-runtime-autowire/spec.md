@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [003-bootstrap-automation, 021-runtime-boundary, 022-deterministic-runtime, 028-antigravity-agent]
 review:
   last-run: 2026-06-11T23:43:10Z
@@ -109,6 +109,8 @@ The README Runtime section, which currently frames the runtime as an entirely se
 - [x] `gvrn` detection and the govern.md self-update check run in one pre-flight phase before the archive fetch; their restart-requiring writes are batched into a single abort so the user restarts at most once even when both fire.
 - [x] Both the `claude-style` and `antigravity` layouts are covered by the above.
 - [x] The README Runtime section states that `/govern` auto-wires `gvrn` when the binary is detected.
+- [x] Project inputs (`name`, `description`, `languages`) are persisted in `.govern.toml`'s `[project]` table and resolved at §Collect Project Inputs after the Pre-flight Phase — reading existing values back and prompting only for what is missing — so they are asked at most once across the State B / stale-`govern.md` restart and never re-asked on update runs. (`host.project` is the derived runtime namespace, written from `project.name`.) *(scenario: [project-inputs-asked-once](scenarios/project-inputs-asked-once.md))*
+- [x] The markdown-path archive fetch uses the direct `codeload.github.com` endpoint (no 302 redirect), so the bootstrap's pre-granted `curl` permission covers it without a prompt. *(scenario: [archive-fetch-direct-codeload](scenarios/archive-fetch-direct-codeload.md))*
 
 ## Open Questions
 

@@ -89,13 +89,7 @@ An agent on a **different layout** (a new value in the `layout` column) addition
 
 ## Inputs
 
-Collect from `$ARGUMENTS` or prompt the user interactively. When using AskUserQuestion, every question **must** include an `options` array with 2–4 example choices (the user can always select "Other" for custom input):
-
-1. **Project name** — lowercase, alphanumeric, hyphens allowed. Used for `{project}` placeholder substitution and command directory naming. If `$ARGUMENTS` contains a single non-flag word, use it as the project name and prompt for the remaining inputs. Example options: the current directory name, `my-service`.
-2. **Project description** — one-line description for AGENTS.md. Example options: `A new microservice`, `CLI tool for X`.
-3. **Primary language(s)** — comma-separated list for .gitignore language patterns. Example options: `Go`, `Python`, `Node`, `Go, Python`.
-
-Validate the project name: must be lowercase, alphanumeric, and hyphens only. If invalid, reject with: "Project name must be lowercase, alphanumeric, and hyphens only."
+The project inputs are the **project name**, a one-line **description**, and the primary **language(s)**. From `$ARGUMENTS`, extract the project name now (a single non-flag word, if present) and recognize the flags below. **Do not prompt for any missing project input here** — interactive collection is deferred to **§Collect Project Inputs**, which runs *after* the **Pre-flight Phase**. Collecting them earlier means a pre-flight abort (a stale `govern.md` or a freshly-wired gvrn) discards the user's freshly-typed answers and forces them to re-enter everything on the restart. Nothing before §Collect Project Inputs — the pre-flight checks, agent selection, permission seeding, and the Pre-flight Phase itself — needs the interactive inputs; they need only `$ARGUMENTS` and the project's on-disk layout.
 
 Recognized flags in `$ARGUMENTS`:
 
@@ -278,7 +272,27 @@ After both checks have run, inspect the **pending-restart set**:
   - the stale-update notice, when any selected agent was `stale` — see **Self-update check → Stale → defer to pre-flight abort**;
   - a single shared closing line: **Start a new session and re-run `/govern` to pick up the changes.**
 
-Everything past the pre-flight phase — **Pre-run Migrations**, **Project Configuration**, the **Archive fetch and extract**, **Frontmatter Migration**, **Shared Files**, **Per-Agent Scaffolding**, **Security Audit**, and **Post-Scaffolding Output** — is skipped. The only writes performed are the additive **Permission Setup** entries, any per-stale-agent `govern.md` overwrite, and any gvrn wiring plus its permission entries. The next `/govern` run in a new session sees gvrn live (or absent) and every selected agent `current` (or `no installed copy`), and proceeds normally without abort.
+Everything past the pre-flight phase — **Collect Project Inputs**, **Pre-run Migrations**, **Project Configuration**, the **Archive fetch and extract**, **Frontmatter Migration**, **Shared Files**, **Per-Agent Scaffolding**, **Security Audit**, and **Post-Scaffolding Output** — is skipped. The only writes performed are the additive **Permission Setup** entries, any per-stale-agent `govern.md` overwrite, and any gvrn wiring plus its permission entries. Because input collection now lives past this point, an aborted run never prompts the user for the project name, description, or languages — they are asked exactly once, in the session that proceeds to scaffold. The next `/govern` run in a new session sees gvrn live (or absent) and every selected agent `current` (or `no installed copy`), and proceeds normally without abort.
+
+## Collect Project Inputs
+
+The Pre-flight Phase has passed (nothing in the pending-restart set), so this run will proceed to scaffold. **Only now** — never before the Pre-flight Phase — resolve the project inputs, so an abort can never discard answers the user just typed.
+
+`.govern.toml` is the persistent home for these answers. Resolve each input from the first available source and **prompt only for what is still missing**:
+
+1. **Project name** — from `$ARGUMENTS` (a single non-flag word, per §Inputs), else `[project] name` in `.govern.toml` (else `[host] project` for configs predating the `[project]` table), else prompt. Used for `{project}` substitution and command directory naming.
+2. **Project description** — from `[project] description` in `.govern.toml`, else prompt. Used for AGENTS.md.
+3. **Primary language(s)** — from `[project] languages` in `.govern.toml`, else prompt. Used for .gitignore language patterns.
+
+On a routine re-run (update mode) `.govern.toml` already carries all three, so this step prompts for nothing. On a first scaffold it prompts for whatever is missing, then **persists all three into `.govern.toml`'s `[project]` table** (`name`, `description`, `languages`; see §Project Configuration), preserving every other section, so the next run — and the session after any State B / stale-`govern.md` restart — reads them back instead of re-asking. `host.project` continues to be written from `project.name` as the runtime's slash-command namespace.
+
+When prompting (AskUserQuestion), every question **must** include an `options` array with 2–4 example choices (the user can always select "Other" for custom input):
+
+- **Project name** — example options: the current directory name, `my-service`.
+- **Project description** — example options: `A new microservice`, `CLI tool for X`.
+- **Primary language(s)** — comma-separated list. Example options: `Go`, `Python`, `Node`, `Go, Python`.
+
+Validate the project name: must be lowercase, alphanumeric, and hyphens only. If invalid, reject with: "Project name must be lowercase, alphanumeric, and hyphens only."
 
 ## Pre-run Migrations
 
@@ -331,6 +345,15 @@ The file is a flat collection of top-level sections. There is no umbrella namesp
 cli-config-dir = ".claude"
 project = "gov"
 
+[project]
+# The inputs /govern collects (§Collect Project Inputs), persisted so re-runs
+# and post-restart sessions read them back instead of re-prompting. This table
+# is the source of truth for the answers; host.project below is the derived
+# slash-command namespace, written from project.name.
+name = "my-service"
+description = "A new microservice"
+languages = ["Go", "Python"]
+
 [pinned]
 # Files listed here use 'skip' instead of 'update'.
 # Use destination paths (after placeholder resolution).
@@ -371,6 +394,8 @@ declined_categories = ["Linting", "Formatting"]
 
 `host.cli-config-dir` and `host.project` — the host's per-user config-dir name and the project's slash-command namespace, written by `/govern` into a managed block (`# govern (host)` line-prefix marker) on every run. The runtime reads these at `gvrn exec` time to resolve `{cli-config-dir}/commands/{project}/<name>.md`; both keys fall back to `.claude` / the repo directory basename when the block is missing. Adopters whose layout matches the defaults (this repo, anyone on Claude Code with the conventional `.claude/commands/<project>/`) never observe the difference; Auggie adopters and anyone with a non-standard layout do. The block is idempotent — re-runs update the values rather than appending duplicates.
 
+`project.name`, `project.description`, and `project.languages` — the project inputs collected at §Collect Project Inputs (name; one-line description for AGENTS.md; primary languages for .gitignore patterns), written into the `[project]` table additively (preserving every other section) and read back on every subsequent run so the inputs are asked at most once. `[project]` is the source of truth for the answers; `host.project` is written from `project.name` as the runtime's slash-command namespace (the derived runtime view of the same value), so the two cannot diverge. Editing a `[project]` value re-runs the corresponding scaffold step with the new value on the next `/govern` — the documented way to rename a project or change its languages. The table is host-side state (the host gathers inputs before the runtime walks per §Instructions step 1), so it is written on every adoption path without a runtime primitive.
+
 `pinned.files` — any file listed that would normally use `update` strategy is treated as `skip` instead. Report pinned files in the post-scaffolding summary.
 
 `migrations.last_applied` — slug of the newest pre-run migration applied to this project, written by `/govern` after each successful migration in §Pre-run Migrations. Absent section means "no migrations applied"; bootstrap runs every active entry on the next run. Adopters should not edit this field by hand — the registry in `framework/migrations.toml` and the per-entry procedure files in `framework/migrations/{id}.md` are the authoritative sources.
@@ -389,14 +414,14 @@ This section runs only after the **Pre-flight Phase** passes (no pending restart
 
 ### Archive fetch and extract
 
-Issue exactly one `curl` against GitHub's repo-archive endpoint, downloading into the temp directory established during the pre-flight phase:
+Issue exactly one `curl` against GitHub's archive host, downloading into the temp directory established during the pre-flight phase:
 
 ```text
-curl -fsSL https://github.com/stonean/govern/archive/refs/heads/main.tar.gz \
+curl -fsSL https://codeload.github.com/stonean/govern/tar.gz/refs/heads/main \
   -o {tempdir}/main.tar.gz
 ```
 
-`curl -fsSL` follows the 302 redirect to `codeload.github.com`. The archive's top-level directory is `govern-main/`; the framework files live at `govern-main/framework/...` after extraction.
+This is the direct `codeload.github.com` endpoint — the target that `https://github.com/stonean/govern/archive/refs/heads/main.tar.gz` 302-redirects to. Fetch it directly: the redirect form lands the command on a **new host mid-flight**, which some hosts (e.g. Antigravity) gate with a permission prompt even when a `curl` allow is pre-granted, because the grant matched the original host, not the redirect target. The direct URL has no redirect, so the bootstrap seed's `curl` pre-grant (`command(curl)` / `Bash(curl *)` / the Auggie `^curl` regex matcher) actually covers it. The archive's top-level directory is `govern-main/`; the framework files live at `govern-main/framework/...` after extraction.
 
 After fetching:
 
