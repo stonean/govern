@@ -12,7 +12,7 @@
 #   claude-style → {config_dir}/commands/govern.md
 #   antigravity  → {config_dir}/skills/govern/SKILL.md
 #
-# The check enforces per-key parity in both directions:
+# The check enforces per-key parity in three directions:
 #
 #   1. Every registry agent has a matching install.sh `case` arm whose
 #      dest equals the registry-derived path. (Catches: an agent added to
@@ -20,8 +20,14 @@
 #      row plus a permission file" claim would otherwise hide.)
 #   2. Every install.sh `case` arm names a registry agent and installs to
 #      that agent's derived path. (Catches: a stale or mis-mapped arm.)
+#   3. Every settings file install.sh pre-seeds matches that agent's
+#      registry settings_template, compared as JSON. (Catches: the seeded
+#      permission copy silently drifting from the registry it duplicates.)
 #
-# Pure text extraction — no jq, no associative arrays (macOS bash 3.2).
+# Directions 1-2 are pure text extraction — no jq, no associative arrays
+# (macOS bash 3.2). Direction 3 uses python3 (already a govern bootstrap
+# dependency, and used by sibling audit scripts) because the three permission
+# formats make an order-insensitive JSON compare the only reliable check.
 # This is the audit check spec 003's curl-sh-installer scenario calls for,
 # resolving its installer<->registry parity open question per the
 # "never depend on human diligence" design principle.
@@ -139,5 +145,89 @@ while IFS="$(printf '\t')" read -r key dest; do
 done <<EOF
 $installer_map
 EOF
+
+# Direction 3: settings-template parity. install.sh pre-seeds each agent's
+# permission file (so the first /govern run does not prompt for its bootstrap
+# shell commands) by hard-coding a copy of that agent's registry settings_template.
+# That duplicate must not silently drift. The three permission formats (claude
+# Bash()/Read(), auggie toolPermissions/regex, antigravity command()) make a text
+# diff unreliable, so this pass uses python3 for an order-insensitive JSON compare
+# of each install.sh seed against its §Agent Registry settings_template.
+seed_drift="$(
+python3 - "$GOVERN" "$INSTALLER" <<'PY'
+import json, re, sys
+govern, installer = sys.argv[1], sys.argv[2]
+
+# Registry: agent key -> settings_template JSON (column 5 of the §Agent Registry
+# table). The cell is backtick-wrapped JSON containing no literal '|'.
+rows = {}
+in_reg = False
+for line in open(govern):
+    if line.startswith("## Agent Registry"):
+        in_reg = True
+        continue
+    if in_reg and line.startswith("#"):
+        break
+    if in_reg and line.lstrip().startswith("|"):
+        c = line.split("|")
+        if len(c) < 7:
+            continue
+        key = c[1].strip().strip("`").strip()
+        if key in ("", "key") or set(key) == {"-"}:
+            continue
+        rows[key] = c[5].strip().strip("`").strip()
+
+# Installer: settings-file path -> seeded JSON heredoc body.
+text = open(installer).read()
+PATH2KEY = {
+    ".claude/settings.local.json": "claude",
+    ".augment/settings.local.json": "auggie",
+    ".agents/settings.json": "antigravity",
+}
+seeds = {}
+for m in re.finditer(r"cat > (\S+) <<'JSON'\n(.*?)\nJSON", text, re.S):
+    path, body = m.group(1), m.group(2)
+    key = PATH2KEY.get(path)
+    if key:
+        seeds[key] = (path, body)
+
+def norm(x):
+    if isinstance(x, dict):
+        return {k: norm(v) for k, v in x.items()}
+    if isinstance(x, list):
+        return sorted((norm(i) for i in x), key=lambda e: json.dumps(e, sort_keys=True))
+    return x
+
+def emit(loc, msg, fix):
+    print(f"installer-registry-parity | {loc} | {msg} | {fix}")
+
+for key, (path, body) in seeds.items():
+    if key not in rows:
+        emit(f"{installer} ({path})",
+             f"seeds settings for '{key}' but '{key}' is not in the agent registry",
+             f"add '{key}' to the §Agent Registry table in {govern}, or remove its seed from {installer}")
+        continue
+    try:
+        reg = norm(json.loads(rows[key]))
+    except json.JSONDecodeError as e:
+        emit(f"{govern} (agent {key})", f"settings_template is not valid JSON: {e}",
+             "repair the registry settings_template cell")
+        continue
+    try:
+        seed = norm(json.loads(body))
+    except json.JSONDecodeError as e:
+        emit(f"{installer} ({path})", f"seeded settings JSON is malformed: {e}",
+             "repair the install.sh heredoc")
+        continue
+    if reg != seed:
+        emit(f"{installer} ({path})",
+             f"settings seed for '{key}' drifts from the registry settings_template",
+             f"re-sync the '{path}' heredoc in {installer} with the '{key}' row in {govern} §Agent Registry")
+PY
+)"
+if [ -n "$seed_drift" ]; then
+  printf '%s\n' "$seed_drift"
+  drift=1
+fi
 
 exit "$drift"

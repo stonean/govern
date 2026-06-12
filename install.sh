@@ -33,11 +33,68 @@ case "$agent" in
     dest=".claude/commands/govern.md"
     mkdir -p .claude/commands
     cp "$tmp" "$dest"
+    # Pre-seed permissions so the first /govern run does not prompt for its
+    # bootstrap shell commands (see the antigravity arm for the rationale).
+    # Written only when absent — /govern owns additive merges. Keep in sync with
+    # the claude settings_template in framework/bootstrap/govern.md (§Agent Registry).
+    if [ ! -f .claude/settings.local.json ]; then
+      cat > .claude/settings.local.json <<'JSON'
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl *)",
+      "Bash(ls *)",
+      "Bash(tar *)",
+      "Bash(mktemp *)",
+      "Bash(git status *)",
+      "Bash(git config *)",
+      "Bash(git rev-parse *)",
+      "Bash(git diff *)",
+      "Bash(git ls-files *)",
+      "Bash(chmod *)",
+      "Bash(awk *)",
+      "Bash(command -v *)",
+      "Read(/private/var/folders/**/T/govern-*/**)",
+      "Read(//private/var/folders/**/T/govern-*/**)",
+      "Read(/var/folders/**/T/govern-*/**)",
+      "Read(//var/folders/**/T/govern-*/**)",
+      "Read(/tmp/govern-*/**)",
+      "Read(//tmp/govern-*/**)"
+    ],
+    "deny": []
+  }
+}
+JSON
+    fi
     ;;
   auggie)
     dest=".augment/commands/govern.md"
     mkdir -p .augment/commands
     cp "$tmp" "$dest"
+    # Pre-seed permissions so the first /govern run does not prompt for its
+    # bootstrap shell commands (see the antigravity arm for the rationale).
+    # Written only when absent — /govern owns additive merges. Keep in sync with
+    # the auggie settings_template in framework/bootstrap/govern.md (§Agent Registry).
+    if [ ! -f .augment/settings.local.json ]; then
+      cat > .augment/settings.local.json <<'JSON'
+{
+  "toolPermissions": [
+    { "toolName": "launch-process", "shellInputRegex": "^curl ", "permission": { "type": "allow" } },
+    { "toolName": "launch-process", "shellInputRegex": "^ls ", "permission": { "type": "allow" } },
+    { "toolName": "launch-process", "shellInputRegex": "^tar ", "permission": { "type": "allow" } },
+    { "toolName": "launch-process", "shellInputRegex": "^mktemp ", "permission": { "type": "allow" } },
+    { "toolName": "launch-process", "shellInputRegex": "^git status ", "permission": { "type": "allow" } },
+    { "toolName": "launch-process", "shellInputRegex": "^git config ", "permission": { "type": "allow" } },
+    { "toolName": "launch-process", "shellInputRegex": "^git rev-parse ", "permission": { "type": "allow" } },
+    { "toolName": "launch-process", "shellInputRegex": "^git diff ", "permission": { "type": "allow" } },
+    { "toolName": "launch-process", "shellInputRegex": "^git ls-files ", "permission": { "type": "allow" } },
+    { "toolName": "launch-process", "shellInputRegex": "^chmod ", "permission": { "type": "allow" } },
+    { "toolName": "launch-process", "shellInputRegex": "^awk ", "permission": { "type": "allow" } },
+    { "toolName": "launch-process", "shellInputRegex": "^command -v ", "permission": { "type": "allow" } }
+  ]
+}
+JSON
+    fi
     ;;
   antigravity | agy)
     agent="antigravity"  # 'agy' is the Antigravity CLI command name
@@ -50,6 +107,36 @@ case "$agent" in
       printf -- '---\nname: govern\n---\n'
       awk 'p{print} /^---[[:space:]]*$/{c++; if(c==2)p=1}' "$tmp"
     } > "$dest"
+    # Pre-seed the permission file so the first /govern run does not prompt for
+    # its bootstrap shell commands. Antigravity loads permissions at session
+    # start, so govern.md's in-run Permission Setup seed lands too late for the
+    # first run. Written only when absent — /govern owns additive merges into an
+    # existing settings.json. Keep this allow-list in sync with the antigravity
+    # settings_template in framework/bootstrap/govern.md (§Agent Registry).
+    if [ ! -f .agents/settings.json ]; then
+      cat > .agents/settings.json <<'JSON'
+{
+  "permissions": {
+    "allow": [
+      "command(curl)",
+      "command(ls)",
+      "command(tar)",
+      "command(mktemp)",
+      "command(git status)",
+      "command(git config)",
+      "command(git rev-parse)",
+      "command(git diff)",
+      "command(git ls-files)",
+      "command(chmod)",
+      "command(awk)",
+      "command(which)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
+JSON
+    fi
     ;;
   *)
     echo "govern: unknown agent '$agent' (expected: claude, auggie, antigravity, or agy)" >&2

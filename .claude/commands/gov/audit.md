@@ -50,7 +50,7 @@ When the runtime is not on `PATH`, walk the same scripts directly. Each prints f
 12. Run `scripts/audit/consolidation-pair.sh` (Family 11).
 13. Run `scripts/audit/fixture-session-shape.sh` (Family 12).
 14. Run `scripts/audit/runtime-hardcoded-paths.sh` (Family 13).
-15. Run `scripts/audit/installer-registry-parity.sh` (Family 14 — `install.sh` agent list and dest paths match the §Agent Registry).
+15. Run `scripts/audit/installer-registry-parity.sh` (Family 14 — `install.sh` agent list and dest paths match the §Agent Registry, and each agent's pre-seeded settings file matches its registry `settings_template`).
 
 ## Boundary with `/gov:analyze`
 
