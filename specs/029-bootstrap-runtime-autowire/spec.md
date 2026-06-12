@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: [003-bootstrap-automation, 021-runtime-boundary, 022-deterministic-runtime, 028-antigravity-agent]
 review:
   last-run: 2026-06-11T22:15:00Z
