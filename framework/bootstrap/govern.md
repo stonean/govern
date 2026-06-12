@@ -162,7 +162,14 @@ Two independent probes resolve the state:
 
 #### State A — runtime live this session
 
-A `gvrn`-namespaced tool is available to this session. Take the deterministic primitive path for the rest of the run and emit no detection message. gvrn contributes nothing to the **pending-restart set**.
+A `gvrn`-namespaced tool is available to this session, so the runtime is live and the rest of the run takes the **deterministic primitive path**. gvrn contributes nothing to the **pending-restart set**, and detection emits no message.
+
+State A is a **binding execution contract, not a preference.** Detecting the runtime and then walking the prose `curl`/`tar`/`python3` path anyway is the exact failure 029 exists to prevent — it spends the markdown path's tokens despite a cheaper path being live, and it is what makes the State-B wire-and-restart pointless. For the rest of this run:
+
+- **Every step that names a backticked primitive** — a bare name (`fetch-archive`, `extract-archive`, `apply-manifest`, `merge-managed-block`, `enforce-manifest`, `substitute-templates`, `merge-permissions`, `merge-claude-md`, `run-generator`, …) that matches a `gvrn` tool in your inventory — **MUST be performed by calling that MCP tool** (`mcp__gvrn__<primitive>` on Claude, `mcp:gvrn:<primitive>` on Auggie/antigravity; mapping per §Instructions).
+- **The shell commands shown under those steps** (`curl`, `tar -xzf`, `python3`, `awk`, byte-compares, hand-authored scaffold loops) are the **State-B/C fallback specification.** In State A they document the contract each tool fulfills; they are **not instructions to execute.** Do not run them. If you are about to run `curl`/`tar`/`python3` for a step that names a primitive, stop — that is the fallback path leaking into a State-A run; call the tool instead.
+- **Steps with no backticked primitive run as shown in every state** — the per-language `.gitignore` `curl` against `github.com/github/gitignore`, `git config core.hooksPath`, `chmod`, the git repo / tracked-file checks, and the §Collect Project Inputs prompts have no tool equivalent.
+- **If a primitive call errors** — e.g., a too-old wired `gvrn` surfaces a parse error per [spec 022 §Versioning enforcement](../022-deterministic-runtime/spec.md) — fall back to **that step's** shell specification for that one step and continue; do not abandon the deterministic path for the whole run.
 
 #### State B — binary present, not wired
 
@@ -411,6 +418,8 @@ The full schema (allowed values, case-insensitive matching, empty-section behavi
 Files from the `govern` repo are sourced from a single archive download, extracted into the temp directory established during the **Pre-flight Phase**, and resolved as local paths for the rest of the run. Per-language `.gitignore` patterns from `github.com/github/gitignore` are **not** part of this archive — they remain separate `curl` calls (see the **.gitignore** subsection of **Shared Files** below).
 
 This section runs only after the **Pre-flight Phase** passes (no pending restart — no stale `govern.md` and no freshly-wired gvrn). On a pre-flight abort, the archive is never fetched.
+
+**State A reminder:** the archive fetch/extract and the manifest passes below are primitive-backed. In a State-A run (gvrn live), call the `fetch-archive`, `extract-archive`, `apply-manifest`, and `enforce-manifest` tools — the `curl`/`tar` blocks shown are their State-B/C fallback spec, not commands to execute (see **§Pre-flight Phase → State A — runtime live this session**). The per-language `.gitignore` `curl` is *not* primitive-backed and runs as shown in every state.
 
 ### Archive fetch and extract
 

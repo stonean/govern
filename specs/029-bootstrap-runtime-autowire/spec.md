@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [003-bootstrap-automation, 021-runtime-boundary, 022-deterministic-runtime, 028-antigravity-agent]
 review:
   last-run: 2026-06-12T00:56:52Z
@@ -111,6 +111,7 @@ The README Runtime section, which currently frames the runtime as an entirely se
 - [x] The README Runtime section states that `/govern` auto-wires `gvrn` when the binary is detected.
 - [x] Project inputs (`name`, `description`, `languages`) are persisted in `.govern.toml`'s `[project]` table and resolved at §Collect Project Inputs after the Pre-flight Phase — reading existing values back and prompting only for what is missing — so they are asked at most once across the State B / stale-`govern.md` restart and never re-asked on update runs. (`host.project` is the derived runtime namespace, written from `project.name`.) *(scenario: [project-inputs-asked-once](scenarios/project-inputs-asked-once.md))*
 - [x] The markdown-path archive fetch uses the direct `codeload.github.com` endpoint (no 302 redirect), so the bootstrap's pre-granted `curl` permission covers it without a prompt. *(scenario: [archive-fetch-direct-codeload](scenarios/archive-fetch-direct-codeload.md))*
+- [x] State A (gvrn live) is a binding execution contract: every primitive-backed step is performed by calling its `gvrn` MCP tool, the shell commands under those steps are explicitly the State-B/C fallback spec (not to be executed), non-primitive steps (gitignore curl, git config, input prompts) run as shown in every state, and a primitive call that errors falls back to that one step's shell spec. *(scenario: [state-a-deterministic-path-forcing](scenarios/state-a-deterministic-path-forcing.md))*
 
 ## Open Questions
 
