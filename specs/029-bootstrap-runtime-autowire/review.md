@@ -1,8 +1,8 @@
 ---
 spec: 029-bootstrap-runtime-autowire
-reviewed-at: 2026-06-12T00:56:52Z
-reviewed-against: 6f7504192c2dfa8c136fa4d7b9d3d9045a1963d6
-diff-base: 0741350562a49cee39c8eb12d403fa275ae758c4
+reviewed-at: 2026-06-12T01:12:44Z
+reviewed-against: 2d14949fe3236e068d75fb6c74fda4b91ecffb3e
+diff-base: 4be7cd9373fe7c7cb0a5285f1948d8249839fbb8
 must-violations: 0
 should-violations: 0
 low-confidence: 0
@@ -14,7 +14,7 @@ skipped-passes: []
 
 ## Summary
 
-Clean. This run reviews the two follow-on scenarios added on the reopened spec — `project-inputs-asked-once` (persist project inputs in `.govern.toml`'s `[project]` table; collect after the Pre-flight Phase, reading existing values back and prompting only for what is missing) and `archive-fetch-direct-codeload` (fetch the archive from the direct `codeload.github.com` endpoint to avoid the 302 redirect). The implementation is entirely in the `framework/bootstrap/govern.md` markdown procedure. Per AGENTS.md Tech Stack, govern is a text-first framework; the rule files (`*-backend.md`, `*-frontend.md`, `*-cross.md`) target application code — SQL injection, XSS, auth, N+1 queries — which has no surface in a bootstrap procedure document, so the security and efficiency passes have nothing to flag. The quality and simplicity passes assessed the procedure logic directly: the read→resolve→prompt→persist flow is internally consistent, the persistence preserves every other `.govern.toml` section (matching the existing `[host]`/`[migrations]`/`[workflows]` write convention), the `[project].name` ↔ `host.project` relationship is well-defined (single source of truth plus a derived runtime view, kept in sync by `/govern`), and the codeload URL was byte-verified to yield the same `govern-main/` tarball. `tech-stack-verified = true` in `.govern.toml`, so the alignment check was skipped. **0 MUST, 0 SHOULD — not blocking.**
+Clean. This run reviews the third follow-on scenario, `state-a-deterministic-path-forcing`: when `gvrn` is wired and live (State A) the bootstrap must actually take the deterministic path rather than walk the markdown shell reference. The implementation rewrites the §State A handoff in `framework/bootstrap/govern.md` into a binding execution contract and adds a spot reminder at §File Fetching. Per AGENTS.md Tech Stack, govern is text-first; the code-security rule set has no surface in a markdown procedure. Quality and simplicity passes assessed the contract directly: the primitive list matches the gvrn tool set, the boundary is stated in both directions (shell stays for non-primitive steps; tools required for primitive steps), the per-step error fallback is consistent with spec 022 §Versioning enforcement, and the scenario is honest that a markdown procedure maximizes but cannot hard-enforce compliance (true enforcement is a documented host concern, out of scope). No contradiction with the existing State A "lazy/deferred schemas are still State A" rule — the contract layers on top of it. `tech-stack-verified = true`, so the alignment precheck was skipped. **0 MUST, 0 SHOULD — not blocking.**
 
 ## MUST violations (blocking)
 
@@ -38,4 +38,4 @@ _None — no additions to `specs/inbox.md` in the review window._
 
 ## Skipped passes
 
-_None — all five passes ran. (The tech-stack alignment precheck was skipped per `[review] tech-stack-verified = true`; this is a precheck, not one of the five review passes.)_
+_None — all five passes ran. (Tech-stack alignment precheck skipped per `[review] tech-stack-verified = true`.)_
