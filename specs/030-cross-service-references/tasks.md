@@ -67,4 +67,4 @@ Tasks derived from the [plan](plan.md). Complete in order. Tests are first-class
 
 ## 12. Full validation sweep
 
-- [ ] **Done when:** `npx markdownlint-cli2`, the full runtime test suite (`cargo test`), `scripts/audit/run-all.sh`, and every generator `--dry-run` are all green, and `/{project}:review` passes on the implementation.
+- [x] **Done when:** `npx markdownlint-cli2`, the full runtime test suite (`cargo test`), `scripts/audit/run-all.sh`, and every generator `--dry-run` are all green, and `/{project}:review` passes on the implementation.
