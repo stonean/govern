@@ -43,11 +43,11 @@ Tasks derived from the [plan](plan.md). Complete in order. Tests are first-class
 
 ## 8. Constitution + frontmatter schema
 
-- [ ] Add the `references:` row to constitution §text-first-artifacts (generator-managed, derived, distinct from `dependencies:`).
-- [ ] Add the §spec-lifecycle carve-out: a diff that only adds/removes/changes cross-service reference links is mechanical-class (non-reopening); a `done` spec stays `done`. Word it so the exemption is diff-determinable.
-- [ ] Add the §drift-prevention canonical-source row pointing at this spec's `data-model.md`.
-- [ ] Mirror the §spec-lifecycle interaction and the new generator in `AGENTS.md`.
-- [ ] **Done when:** anchors resolve, the canonical-source/back-link audits pass, and `scripts/audit/run-all.sh` is clean.
+- [x] Add the `references:` row to constitution §text-first-artifacts (generator-managed, derived, distinct from `dependencies:`).
+- [x] Add the §spec-lifecycle carve-out: a diff that only adds/removes/changes cross-service reference links is mechanical-class (non-reopening); a `done` spec stays `done`. Word it so the exemption is diff-determinable.
+- [x] Add the §drift-prevention canonical-source row pointing at this spec's `data-model.md`.
+- [x] Mirror the §spec-lifecycle interaction and the new generator in `AGENTS.md`.
+- [x] **Done when:** anchors resolve, the canonical-source/back-link audits pass, and `scripts/audit/run-all.sh` is clean.
 
 ## 9. Parity, golden, and fixtures
 
