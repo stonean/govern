@@ -16,9 +16,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Tests are first-class
 
 ## 3. Harvest generator
 
-- [ ] Create `scripts/gen-cross-service-refs.sh`: harvest body links whose repo matches a registered `[services]` entry into the `references:` frontmatter field; ignore the branch ref; honor the fenced-block / blockquote / `## See also` exclusions; never touch `dependencies:`.
-- [ ] Wire it into `scripts/install-hooks.sh` (pre-commit) and `.github/workflows/generators.yml`.
-- [ ] **Done when:** `--dry-run` is clean on the repo; shell tests cover a matching link (harvested), an unregistered link (recorded with null service), a `## See also` link (excluded), a branch-ref variation (same identity), and confirm `dependencies:` is untouched.
+- [x] Create `scripts/gen-cross-service-refs.sh`: harvest body links whose repo matches a registered `[services]` entry into the `references:` frontmatter field; ignore the branch ref; honor the fenced-block / blockquote / `## See also` exclusions; never touch `dependencies:`.
+- [x] Wire it into `scripts/install-hooks.sh` (pre-commit) and `.github/workflows/generators.yml`.
+- [x] **Done when:** `--dry-run` is clean on the repo; shell tests cover a matching link (harvested), an unregistered link (recorded with null service), a `## See also` link (excluded), a branch-ref variation (same identity), and confirm `dependencies:` is untouched.
 
 ## 4. `resolve-references` primitive + unit tests
 

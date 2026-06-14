@@ -13,7 +13,9 @@
 #                                 regenerated configure.md picks up changes)
 #   2. gen-claude-commands.sh  — .claude/commands/gov/*.md from framework/commands/
 #   3. gen-spec-deps.sh        — frontmatter dependencies from body inline links
-#   4. gen-help-tables.sh      — five command tables in framework/commands/help.md
+#   4. gen-cross-service-refs.sh — frontmatter references from body cross-service
+#                                URL links (distinct from dependencies)
+#   5. gen-help-tables.sh      — five command tables in framework/commands/help.md
 #
 # When staged files include anything under runtime/, this hook additionally
 # runs `cargo fmt --check`, `cargo clippy --all-targets --all-features
@@ -30,6 +32,7 @@ cd "$ROOT"
 scripts/gen-configure-mcp.sh
 scripts/gen-claude-commands.sh > /dev/null
 scripts/gen-spec-deps.sh
+scripts/gen-cross-service-refs.sh
 scripts/gen-help-tables.sh
 
 # Stage any generator-produced changes to their known output paths.

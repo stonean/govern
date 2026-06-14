@@ -36,6 +36,9 @@ jobs:
       - name: Run gen-spec-deps
         run: ./scripts/gen-spec-deps.sh
 
+      - name: Run gen-cross-service-refs
+        run: ./scripts/gen-cross-service-refs.sh
+
       - name: Fail if any generator produced a diff
         run: |
           if ! git diff --exit-code; then
@@ -45,3 +48,6 @@ jobs:
 
       - name: Run gen-spec-deps tests
         run: ./scripts/tests/test-gen-spec-deps.sh
+
+      - name: Run gen-cross-service-refs tests
+        run: ./scripts/tests/test-gen-cross-service-refs.sh
