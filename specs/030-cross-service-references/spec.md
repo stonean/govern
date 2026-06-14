@@ -67,18 +67,18 @@ Introducing a reference into an existing spec is a body edit. Because references
 
 ## Acceptance Criteria
 
-- [ ] A spec declares a cross-service reference as a standard markdown link to the linked spec's canonical repo URL; the URL is never fetched.
-- [ ] References are informative: they never enter `dependencies:`, never affect readiness, ordering, or completion, and never block a gate.
-- [ ] References are bidirectional — a spec may reference a spec in another service in either direction — and are author's-discretion, with no completeness requirement and no auto-discovered consumer list.
-- [ ] When the linked spec's service is registered in `.govern.toml [services]` and its checkout is reachable, `govern` surfaces the linked spec's lifecycle status (read live from frontmatter) next to the reference; no baseline, change detection, or diff is produced.
-- [ ] An unregistered reference (repo not in `[services]`) is a plain navigational link with status not attempted — not an error.
-- [ ] A registered reference whose checkout is missing or unusable shows status `unknown — not checked out`: informational, never blocking, never reported as broken.
-- [ ] A registered, reachable reference that does not resolve to a spec (malformed URL, or the spec renamed/moved/deleted/mistyped upstream) is reported as a broken-reference `/{project}:analyze` finding — distinct from an unknown status.
-- [ ] A registered, reachable reference whose linked file exists but whose `status` is unreadable (no or malformed frontmatter, missing or out-of-set `status`, or a scenario target) shows status `unknown — status unreadable`: surfaced, never silent.
-- [ ] References are harvested into a derived index, distinct from `dependencies:`, and never hand-authored in frontmatter.
-- [ ] The deterministic work — harvest references, resolve via `[services]`, read the linked status, classify the outcome — runs through `gvrn` MCP primitives when the runtime is installed, and completes identically via the markdown-only path (host file tools) when it is not; `gvrn` is never a prerequisite, and the no-runtime CI job exercises the fallback end-to-end.
-- [ ] Adding or removing an informative cross-service reference does not reopen a `done` spec — it is a non-reopening (mechanical-class) edit under §spec-lifecycle.
-- [ ] A single-service adopter that declares no cross-service references sees no behavior change and creates no new configuration.
+- [x] A spec declares a cross-service reference as a standard markdown link to the linked spec's canonical repo URL; the URL is never fetched.
+- [x] References are informative: they never enter `dependencies:`, never affect readiness, ordering, or completion, and never block a gate.
+- [x] References are bidirectional — a spec may reference a spec in another service in either direction — and are author's-discretion, with no completeness requirement and no auto-discovered consumer list.
+- [x] When the linked spec's service is registered in `.govern.toml [services]` and its checkout is reachable, `govern` surfaces the linked spec's lifecycle status (read live from frontmatter) next to the reference; no baseline, change detection, or diff is produced.
+- [x] An unregistered reference (repo not in `[services]`) is a plain navigational link with status not attempted — not an error.
+- [x] A registered reference whose checkout is missing or unusable shows status `unknown — not checked out`: informational, never blocking, never reported as broken.
+- [x] A registered, reachable reference that does not resolve to a spec (malformed URL, or the spec renamed/moved/deleted/mistyped upstream) is reported as a broken-reference `/{project}:analyze` finding — distinct from an unknown status.
+- [x] A registered, reachable reference whose linked file exists but whose `status` is unreadable (no or malformed frontmatter, missing or out-of-set `status`, or a scenario target) shows status `unknown — status unreadable`: surfaced, never silent.
+- [x] References are harvested into a derived index, distinct from `dependencies:`, and never hand-authored in frontmatter.
+- [x] The deterministic work — harvest references, resolve via `[services]`, read the linked status, classify the outcome — runs through `gvrn` MCP primitives when the runtime is installed, and completes identically via the markdown-only path (host file tools) when it is not; `gvrn` is never a prerequisite, and the no-runtime CI job exercises the fallback end-to-end.
+- [x] Adding or removing an informative cross-service reference does not reopen a `done` spec — it is a non-reopening (mechanical-class) edit under §spec-lifecycle.
+- [x] A single-service adopter that declares no cross-service references sees no behavior change and creates no new configuration.
 
 ## Resolved Questions
 
