@@ -1,0 +1,11 @@
+# Fixture-only: a registered service so 003-analyze's cross-service
+# references resolve. The `003-user` reference resolves to `ok` (checkout
+# under `checkouts/api`); the `099-ghost` reference is `broken` —
+# registered and reachable, but the target spec is absent upstream, so
+# /gov:analyze raises an Advisory broken-reference finding. The analyze
+# walker never reads `[services]`; reference resolution is the
+# resolve-references primitive's / host's job, exercised separately.
+[services.api]
+repo = "https://github.com/acme/api"
+path = "checkouts/api"
+description = "owns shared data models; the system of record"

@@ -38,8 +38,8 @@ Tasks derived from the [plan](plan.md). Complete in order. Tests are first-class
 
 ## 7. `/{project}:analyze` broken-reference finding
 
-- [ ] Update `framework/commands/analyze.md`: a `broken` outcome is an Advisory finding (distinct from the informational unknowns `unregistered` / `not-checked-out`); the `unregistered` surfacing suggests `/{project}:link`.
-- [ ] **Done when:** `analyze.md` documents the check; the `analyze-basic` parity fixture/golden cover a broken reference and a clean reference and pass.
+- [x] Update `framework/commands/analyze.md`: a `broken` outcome is an Advisory finding (distinct from the informational unknowns `unregistered` / `not-checked-out`); the `unregistered` surfacing suggests `/{project}:link`.
+- [x] **Done when:** `analyze.md` documents the check; the `analyze-basic` parity fixture/golden cover a broken reference and a clean reference and pass.
 
 ## 8. Constitution + frontmatter schema
 
