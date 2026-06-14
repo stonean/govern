@@ -1,0 +1,16 @@
+# Fixture for cross-service reference resolution parity (spec 030).
+#
+# `api` is registered AND checked out under `checkouts/api`, so its
+# references resolve to a real outcome (ok / broken / status-unreadable
+# depending on the target). `frontend` is registered but its checkout is
+# intentionally absent, exercising `not-checked-out`. A reference whose
+# service is omitted (null) exercises `unregistered`.
+[services.api]
+repo = "https://github.com/acme/api"
+path = "checkouts/api"
+description = "owns shared data models; the system of record"
+
+[services.frontend]
+repo = "https://github.com/acme/frontend"
+path = "checkouts/frontend"
+description = "React management console (intentionally not checked out)"

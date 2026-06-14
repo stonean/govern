@@ -1,0 +1,5 @@
+{"service":"api","spec":"003-user","outcome":"ok","status":"done"}
+{"service":"api","spec":"099-ghost","outcome":"broken","status":null}
+{"service":"api","spec":"004-nostatus","outcome":"status-unreadable","status":null}
+{"service":"frontend","spec":"010-page","outcome":"not-checked-out","status":null}
+{"service":null,"spec":"050-unregistered","outcome":"unregistered","status":null}

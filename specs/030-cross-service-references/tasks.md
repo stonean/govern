@@ -51,8 +51,8 @@ Tasks derived from the [plan](plan.md). Complete in order. Tests are first-class
 
 ## 9. Parity, golden, and fixtures
 
-- [ ] Add `runtime/tests/fixtures/cross-service-*` (a consumer spec plus fake registered checkouts exercising each outcome) and `runtime/tests/parity/cross-service/*` with `runtime/tests/golden/cross-service-*.jsonl`.
-- [ ] **Done when:** markdown-only and runtime paths produce byte-identical golden records; the runtime test suite is green.
+- [x] Add `runtime/tests/fixtures/cross-service-*` (a consumer spec plus fake registered checkouts exercising each outcome) and `runtime/tests/parity/cross-service/*` with `runtime/tests/golden/cross-service-*.jsonl`.
+- [x] **Done when:** markdown-only and runtime paths produce byte-identical golden records; the runtime test suite is green.
 
 ## 10. CI opt-in invariant
 
