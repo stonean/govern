@@ -10,9 +10,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Tests are first-class
 
 ## 2. `/{project}:link` registration command
 
-- [ ] Create `framework/commands/link.md`: register a service in `[services]` — **prompt for each field one at a time** (alias → repo → path → optional description), validating as entered (unique TOML key, URL-shaped repo, not-checked-out warning on the path); inline positional args remain an optional shortcut; additive write that preserves other `.govern.toml` tables; `--list` shows registered services + resolution health.
-- [ ] Wire through the command/help-table/permission generators and add per-agent permission entries in `framework/bootstrap/configure/*.md`; register in the command manifest.
-- [ ] **Done when:** `/{project}:link` adds a well-formed `[services]` block without disturbing other tables, rejects a duplicate alias, warns on an unresolved path, lists services with `--list`, and appears in `/{project}:help`; command tests pass.
+- [x] Create `framework/commands/link.md`: register a service in `[services]` — **prompt for each field one at a time** (alias → repo → path → optional description), validating as entered (unique TOML key, URL-shaped repo, not-checked-out warning on the path); inline positional args remain an optional shortcut; additive write that preserves other `.govern.toml` tables; `--list` shows registered services + resolution health.
+- [x] Wire through the command/help-table/permission generators and add per-agent permission entries in `framework/bootstrap/configure/*.md`; register in the command manifest.
+- [x] **Done when:** `/{project}:link` adds a well-formed `[services]` block without disturbing other tables, rejects a duplicate alias, warns on an unresolved path, lists services with `--list`, and appears in `/{project}:help`; command tests pass.
 
 ## 3. Harvest generator
 

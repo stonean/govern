@@ -26,6 +26,8 @@ Configure `{cli-config-dir}/settings.local.json` with the permissions needed for
    **Govern state files (no per-write confirmation):**
    - `Edit(.govern.session.toml)`
    - `Write(.govern.session.toml)`
+   - `Edit(.govern.toml)`
+   - `Write(.govern.toml)`
 
    **Web access:**
    - `WebFetch`

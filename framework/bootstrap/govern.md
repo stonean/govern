@@ -669,6 +669,7 @@ Fetch each command template and copy it into `{config_dir}/commands/{project}/`.
 | `framework/commands/groom.md` | `{config_dir}/commands/{project}/groom.md` |
 | `framework/commands/help.md` | `{config_dir}/commands/{project}/help.md` |
 | `framework/commands/implement.md` | `{config_dir}/commands/{project}/implement.md` |
+| `framework/commands/link.md` | `{config_dir}/commands/{project}/link.md` |
 | `framework/commands/log.md` | `{config_dir}/commands/{project}/log.md` |
 | `framework/commands/plan.md` | `{config_dir}/commands/{project}/plan.md` |
 | `framework/commands/review.md` | `{config_dir}/commands/{project}/review.md` |
@@ -693,7 +694,7 @@ Files listed in `pinned.files` are never deleted — report them as "pinned (kep
 
 When the agent's registry `layout` is `antigravity`, the two subsections above (**Slash commands**, **Slash command cleanup**) are replaced by the skill-based equivalents below. `{config_dir}` resolves to `.agents`; Antigravity discovers dir-form skills under `{config_dir}/skills/`.
 
-**Skills (strategy: update).** For each row in the slash-command manifest above — the twelve `framework/commands/*.md` rows plus the `framework/bootstrap/configure/{key}.md` configure row — transform the source into a dir-form skill at `{config_dir}/skills/{project}-{name}/SKILL.md` (instead of copying to `{config_dir}/commands/{project}/{name}.md`):
+**Skills (strategy: update).** For each row in the slash-command manifest above — the thirteen `framework/commands/*.md` rows plus the `framework/bootstrap/configure/{key}.md` configure row — transform the source into a dir-form skill at `{config_dir}/skills/{project}-{name}/SKILL.md` (instead of copying to `{config_dir}/commands/{project}/{name}.md`):
 
 1. Read the source markdown (frontmatter + body).
 2. Write `{config_dir}/skills/{project}-{name}/SKILL.md` with frontmatter `name: {project}-{name}` and the `description:` carried from the source frontmatter, followed by the source body.

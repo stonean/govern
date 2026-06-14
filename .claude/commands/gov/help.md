@@ -74,6 +74,7 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 | Command | Description |
 | --- | --- |
 | `/gov:target` | Set the working feature (and optionally scenario) for this session. |
+| `/gov:link` | Register a service so cross-service references resolve to its lifecycle status. |
 | `/gov:status` | Display the pipeline view for all feature specs. |
 | `/gov:help` | Display an overview of the pipeline and its slash commands. |
 

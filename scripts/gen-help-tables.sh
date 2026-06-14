@@ -108,6 +108,7 @@ brownfield_table="$(build_two_col_table \
 
 orient_table="$(build_two_col_table \
   '/{project}:target' "$CMD_DIR/target.md" \
+  '/{project}:link'   "$CMD_DIR/link.md" \
   '/{project}:status' "$CMD_DIR/status.md" \
   '/{project}:help'   "$CMD_DIR/help.md" \
 )"
