@@ -1,7 +1,7 @@
 ---
 spec: 030-cross-service-references
-reviewed-at: 2026-06-14T23:33:11Z
-reviewed-against: d285861e4524ea7b8438dd8c3f9df37238997494
+reviewed-at: 2026-06-14T23:37:34Z
+reviewed-against: 72d54e46cd83117b0184585c67024291407483ee
 diff-base: 5cf4ff0d91a5ce838694a70029cf7796886e75bb
 must-violations: 0
 should-violations: 0
