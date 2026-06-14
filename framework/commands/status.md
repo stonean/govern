@@ -50,3 +50,22 @@ Read-only overview of every feature's progress through the pipeline. Shows which
 | done | done (spec is complete) |
 
 When a scenario is targeted and the scenario itself has one or more open questions, the next action is `/{project}:clarify` (scenario-targeted, resolves scenario-level open questions regardless of parent spec status).
+
+## Markdown-only reference
+
+### Resolving cross-service references
+
+A spec's derived `references:` frontmatter index records each cross-service reference as a `{service, spec}` pair (see [030 — Cross-Service References](../../specs/030-cross-service-references/spec.md)). On the runtime path the `resolve-references` primitive classifies each entry; when the runtime is unavailable, classify each entry with the host's file tools — read `.govern.toml` and the linked spec directly, with **no shell-pipeline substitution**. The repo URL is identity and navigation only and is **never fetched**; status is read from the local checkout.
+
+For each `{service, spec}` entry, in index order, decide the outcome by what can be proven:
+
+1. **`unregistered`** — the entry's `service` is null, or names an alias absent from `.govern.toml` `[services]`. Status not attempted; a plain navigational link, not an error. (Surface it with a pointer to `/{project}:link` to register the service.)
+2. Otherwise read the matched `[services.<alias>]` entry's local `path` (relative to the repo root, or absolute):
+   - **`not-checked-out`** — `path` is missing or is not a directory. Status `unknown`; informational, never reported as broken — nothing can be proven without a checkout.
+   - Otherwise resolve the target spec at `{path}/specs/{spec}/spec.md`:
+     - **`broken`** — the target file does not exist (renamed, moved, deleted, or mistyped upstream). A provable defect, surfaced by `/{project}:analyze`.
+     - Otherwise read the target's frontmatter `status`:
+       - **`status-unreadable`** — the file has no frontmatter, its frontmatter is not valid YAML, or `status` is missing or not one of `draft` / `clarified` / `planned` / `in-progress` / `done`. Status `unknown`; surfaced, the defect is upstream's.
+       - **`ok`** — `status` is present and in that allowed set. The record carries that lifecycle status.
+
+This host-tools procedure produces the same resolution records — `{service, spec, outcome, status}` — as the `resolve-references` primitive for the same inputs; the two paths share a contract and neither wraps the other.

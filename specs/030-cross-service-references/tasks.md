@@ -28,8 +28,8 @@ Tasks derived from the [plan](plan.md). Complete in order. Tests are first-class
 
 ## 5. Markdown-only fallback
 
-- [ ] Write the runtime-absent procedure into the command prose (Tasks 6–7): read `.govern.toml`, resolve `path`, read the linked frontmatter `status`, classify — using host file tools only, no shell-pipeline substitution.
-- [ ] **Done when:** the prose path and the primitive produce identical resolution records for the same fixtures; `lint-procedure-parseability.sh` passes.
+- [x] Write the runtime-absent procedure into the command prose (Tasks 6–7): read `.govern.toml`, resolve `path`, read the linked frontmatter `status`, classify — using host file tools only, no shell-pipeline substitution.
+- [x] **Done when:** the prose path and the primitive produce identical resolution records for the same fixtures; `lint-procedure-parseability.sh` passes.
 
 ## 6. `/{project}:status` integration
 
