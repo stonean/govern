@@ -1250,6 +1250,74 @@ pub struct WriteSessionResult {
     pub created: bool,
 }
 
+// -- resolve-references ------------------------------------------------------
+
+/// Args for `resolve-references`. Resolves the consumer feature's derived
+/// `references:` index (see spec 030) against the `.govern.toml` `[services]`
+/// registry, reading each linked spec's live `status` from its local
+/// checkout. Takes only the consumer feature; the repo root is supplied by
+/// the runtime.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct ResolveReferencesArgs {
+    /// Consumer feature directory name under `specs/` whose `references:`
+    /// index is resolved.
+    #[arg(long)]
+    pub feature: String,
+}
+
+/// Closed outcome enum for one resolved cross-service reference. Decided by
+/// deterministic predicates — no prose is read for intent. Canonical in
+/// `specs/030-cross-service-references/data-model.md`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum ReferenceOutcome {
+    /// Registered, checkout reachable, target spec resolves, `status` present
+    /// and in the allowed set. `status` carries the linked lifecycle value.
+    Ok,
+    /// The reference's service is null (the href repo matched no `[services]`
+    /// entry at harvest time, or the alias is no longer registered) — a plain
+    /// navigational link; status not attempted.
+    Unregistered,
+    /// Registered, but the service's local `path` is missing or not a usable
+    /// checkout. Informational unknown, never reported as broken.
+    NotCheckedOut,
+    /// Registered and reachable, but the target spec does not resolve
+    /// (renamed / moved / deleted / mistyped upstream, or a malformed URL that
+    /// yielded no such spec). A provable defect — an analyze finding.
+    Broken,
+    /// The target file exists but its `status` cannot be read (no frontmatter,
+    /// malformed YAML, missing or out-of-set `status`). Surfaced, never silent;
+    /// the defect is upstream's.
+    StatusUnreadable,
+}
+
+/// One resolution record: the input reference plus its classified outcome
+/// and, on `ok`, the linked lifecycle status.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct ResolutionRecord {
+    /// Matched registry alias, or `null` when the reference is `unregistered`.
+    pub service: Option<String>,
+    /// Target `NNN-slug` (the stable reference identity).
+    pub spec: String,
+    /// Classified outcome.
+    pub outcome: ReferenceOutcome,
+    /// Linked lifecycle status; non-null only when `outcome` is `ok`.
+    pub status: Option<String>,
+}
+
+/// Result for `resolve-references`: one record per entry in the consumer's
+/// `references:` index, in index order.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct ResolveReferencesResult {
+    /// Resolution records in the consumer spec's `references:` order.
+    pub references: Vec<ResolutionRecord>,
+    /// Repo-relative path to the consumer spec file.
+    pub path: String,
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]

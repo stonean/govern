@@ -22,9 +22,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Tests are first-class
 
 ## 4. `resolve-references` primitive + unit tests
 
-- [ ] Add `runtime/src/primitives/resolve_references.rs` with `run(args, repo)`; reuse `read_text` / `split_frontmatter` / `ALLOWED_STATUSES`; classify each reference into the closed outcome enum.
-- [ ] Add Args/Result/outcome types to `runtime/src/schema/primitives.rs`; register in `runtime/src/primitives/mod.rs` and expose in `runtime/src/mcp/server.rs`.
-- [ ] **Done when:** the crate builds and Rust unit tests (tempdir fixtures with fake registered checkouts) cover all five outcomes — `ok`, `unregistered`, `not-checked-out`, `broken` (missing target + malformed URL), `status-unreadable` (no frontmatter / malformed YAML / out-of-set / scenario target) — plus a self-reference.
+- [x] Add `runtime/src/primitives/resolve_references.rs` with `run(args, repo)`; reuse `read_text` / `split_frontmatter` / `ALLOWED_STATUSES`; classify each reference into the closed outcome enum.
+- [x] Add Args/Result/outcome types to `runtime/src/schema/primitives.rs`; register in `runtime/src/primitives/mod.rs` and expose in `runtime/src/mcp/server.rs`.
+- [x] **Done when:** the crate builds and Rust unit tests (tempdir fixtures with fake registered checkouts) cover all five outcomes — `ok`, `unregistered`, `not-checked-out`, `broken` (missing target + malformed URL), `status-unreadable` (no frontmatter / malformed YAML / out-of-set / scenario target) — plus a self-reference.
 
 ## 5. Markdown-only fallback
 

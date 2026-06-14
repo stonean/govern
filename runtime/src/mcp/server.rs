@@ -33,10 +33,10 @@ use crate::schema::primitives::{
     MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeClaudeMdResult, MergeManagedBlockArgs,
     MergeManagedBlockResult, MergePermissionsArgs, MergePermissionsResult, MigrateSessionFileArgs,
     MigrateSessionFileResult, ReadSpecArgs, ReadSpecResult, ReadTasksArgs, ReadTasksResult,
-    ResolveAnchorArgs, ResolveAnchorResult, RunGeneratorArgs, RunGeneratorResult, SetStatusArgs,
-    SetStatusResult, SubstituteTemplatesArgs, SubstituteTemplatesResult, TraverseDepsArgs,
-    TraverseDepsResult, ValidateFrontmatterArgs, ValidateFrontmatterResult, WriteSessionArgs,
-    WriteSessionResult,
+    ResolveAnchorArgs, ResolveAnchorResult, ResolveReferencesArgs, ResolveReferencesResult,
+    RunGeneratorArgs, RunGeneratorResult, SetStatusArgs, SetStatusResult, SubstituteTemplatesArgs,
+    SubstituteTemplatesResult, TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs,
+    ValidateFrontmatterResult, WriteSessionArgs, WriteSessionResult,
 };
 
 /// Canonical MCP tool names exposed by the server, in manifest order.
@@ -68,6 +68,7 @@ pub const TOOL_NAMES: &[&str] = &[
     "append-task",
     "dashboard",
     "write-session",
+    "resolve-references",
 ];
 
 /// MCP server. Cloned per request by `rmcp`, so all state lives behind
@@ -449,6 +450,19 @@ impl GovRuntimeServer {
         params: Parameters<WriteSessionArgs>,
     ) -> Result<Json<WriteSessionResult>, String> {
         primitives::write_session::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "resolve-references",
+        description = "Resolve a consumer feature's `references:` index against `.govern.toml` [services]: for each cross-service reference, read the linked spec's live lifecycle status from its local checkout and classify the outcome (ok / unregistered / not-checked-out / broken / status-unreadable)."
+    )]
+    async fn resolve_references(
+        &self,
+        params: Parameters<ResolveReferencesArgs>,
+    ) -> Result<Json<ResolveReferencesResult>, String> {
+        primitives::resolve_references::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
     }

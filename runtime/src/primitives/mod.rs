@@ -31,6 +31,7 @@ pub mod migrate_session_file;
 pub mod read_spec;
 pub mod read_tasks;
 pub mod resolve_anchor;
+pub mod resolve_references;
 pub mod run_generator;
 pub mod set_status;
 pub mod substitute_templates;
