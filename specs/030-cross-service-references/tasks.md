@@ -33,8 +33,8 @@ Tasks derived from the [plan](plan.md). Complete in order. Tests are first-class
 
 ## 6. `/{project}:status` integration
 
-- [ ] Update `framework/commands/status.md` so the status payload includes per-reference resolution records and the dashboard surfaces outcome + linked status, plus the service `description` for orientation when present. The `unregistered` outcome points the user at `/{project}:link`.
-- [ ] **Done when:** `status.md` documents both paths; the `status-basic` parity fixture/golden are extended with a reference and pass.
+- [x] Update `framework/commands/status.md` so the status payload includes per-reference resolution records and the dashboard surfaces outcome + linked status, plus the service `description` for orientation when present. The `unregistered` outcome points the user at `/{project}:link`.
+- [x] **Done when:** `status.md` documents both paths; the `status-basic` parity fixture/golden are extended with a reference and pass.
 
 ## 7. `/{project}:analyze` broken-reference finding
 

@@ -2,6 +2,9 @@
 status: clarified
 dependencies: []
 tags: [test, pipeline]
+references:
+  - service: api
+    spec: 003-user
 review:
   last-run: null
   reviewed-against: null
@@ -23,6 +26,12 @@ The fixture exercises the `dashboard` primitive on a real spec.md shape:
 frontmatter is valid YAML, the body has the canonical sections, and the
 spec carries `tags` so the `tags-union` fold produces a non-empty
 result.
+
+It also declares one cross-service reference — the [api User model](https://github.com/acme/api/blob/main/specs/003-user/spec.md)
+— harvested into the derived `references:` index above. The registered
+`api` service (see `.govern.toml`) resolves it to `ok` against the
+`checkouts/api` checkout, exercising the reference readout without
+perturbing the `dashboard` stream.
 
 ## Acceptance Criteria
 

@@ -1,3 +1,12 @@
 [[review.disabled-rule-files]]
 file = "accessibility-frontend.md"
 reason = "Fixture-only: exercise the disabled-rule-files callout path."
+
+# Fixture-only: a registered service so 001-basic's cross-service
+# reference resolves to `ok` (checkout under `checkouts/api`). The
+# dashboard primitive ignores `[services]`; reference resolution is the
+# resolve-references primitive's job, exercised separately.
+[services.api]
+repo = "https://github.com/acme/api"
+path = "checkouts/api"
+description = "owns shared data models; the system of record"
