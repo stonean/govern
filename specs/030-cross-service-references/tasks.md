@@ -62,8 +62,8 @@ Tasks derived from the [plan](plan.md). Complete in order. Tests are first-class
 
 ## 11. Documentation
 
-- [ ] Update `README.md`: document `[services]` and cross-service reference resolution (local-checkout requirement, outcome semantics), and add the `/{project}:link` row to the **Orient** command table.
-- [ ] **Done when:** README reflects the shipped behavior, the Orient table includes `/{project}:link`, and `npx markdownlint-cli2` is clean.
+- [x] Update `README.md`: document `[services]` and cross-service reference resolution (local-checkout requirement, outcome semantics), and add the `/{project}:link` row to the **Orient** command table.
+- [x] **Done when:** README reflects the shipped behavior, the Orient table includes `/{project}:link`, and `npx markdownlint-cli2` is clean.
 
 ## 12. Full validation sweep
 

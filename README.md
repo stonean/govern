@@ -92,6 +92,7 @@ Adoption installs a full set of verb-named, session-aware commands. Use `/target
 | --- | --- |
 | `/target` | Set the working feature (or `feature/scenario`) for the session |
 | `/status` | Dashboard of every feature's progress, or a focused view of the current target |
+| `/link` | Register a service in `.govern.toml [services]` so cross-service references resolve to the linked spec's status; `--list` shows registered services and their resolution health |
 | `/help` | Project overview and command reference |
 
 ### Bootstrap — one-time per project
@@ -190,6 +191,7 @@ You install the binary; you don't register the server yourself. The next time yo
 
 - **`[pinned]`** — list destination paths `govern` should never overwrite, even files it normally updates (e.g. a customized `constitution.md`).
 - **`[workflows]`** — record workflow categories you've declined so `/govern` stops offering them.
+- **`[services]`** — register sibling services so cross-service reference links resolve to the linked spec's lifecycle status (see [Cross-service references](#cross-service-references)). Add entries with `/link`, not by hand.
 
 ```toml
 [pinned]
@@ -200,6 +202,33 @@ declined_categories = ["Linting"]
 ```
 
 For the full schema, see [specs/019-config-decisions/data-model.md](specs/019-config-decisions/data-model.md).
+
+## Cross-service references
+
+When a project spans multiple services — each its own repo with its own `govern` install — a spec can link a spec in another service and see its live lifecycle status. The reference is a standard markdown link to the linked spec's **canonical repo URL**; that URL is identity and navigation only and is **never fetched**. `govern` reads the linked spec's `status` from its **local checkout**, resolved through the `.govern.toml [services]` registry.
+
+References are informative, never dependencies: they do not enter `dependencies:`, do not gate completion, and never block a pipeline gate. They are harvested into a derived `references:` frontmatter index — distinct from `dependencies:` — by `scripts/gen-cross-service-refs.sh`; you never hand-author it.
+
+Register a service with `/link` (alias, repo URL, local checkout path, optional description):
+
+```toml
+[services.api]
+repo = "https://github.com/acme/api"
+path = "../api"
+description = "owns shared data models"
+```
+
+The registry is **required for status resolution, optional for referencing** — an unregistered link is just navigation. `/status` shows each reference's resolution outcome (and, on `ok`, the linked status); `/analyze` reports a provably broken one as an Advisory finding. The outcome depends on what can be proven:
+
+| Outcome | Meaning |
+| --- | --- |
+| `ok` | Registered, checkout reachable, target spec resolves — surfaces the linked lifecycle status |
+| `unregistered` | The repo matches no `[services]` entry — a plain navigational link; run `/link` to register the service |
+| `not-checked-out` | Registered, but the local `path` is missing or unusable — `unknown`, never reported as broken |
+| `broken` | Registered and reachable, but the target spec does not resolve (renamed, moved, deleted, or mistyped) — an `/analyze` finding |
+| `status-unreadable` | The target exists but its `status` cannot be read — `unknown`, the defect is upstream's |
+
+Status resolution runs only where the linked service is already checked out locally; `govern` never fetches or clones a repo. For the full schema, see [specs/030-cross-service-references/data-model.md](specs/030-cross-service-references/data-model.md).
 
 ## Updating an adopted project
 
