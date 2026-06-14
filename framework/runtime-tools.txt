@@ -26,6 +26,7 @@ derive-boundary
 check-stuck
 validate-frontmatter
 resolve-anchor
+resolve-references
 traverse-deps
 check-rule-ids
 run-generator

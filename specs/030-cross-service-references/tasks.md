@@ -56,9 +56,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Tests are first-class
 
 ## 10. CI opt-in invariant
 
-- [ ] Add the `resolve-references` tool name to `framework/runtime-tools.txt` so step (a) verifies it is absent from PATH.
-- [ ] Add `bash scripts/gen-cross-service-refs.sh --dry-run` to `markdown-only-pipeline.yml` step (b), and ensure the markdown-only job completes status resolution with no runtime present.
-- [ ] **Done when:** `markdown-only-pipeline.yml` passes with the runtime binary absent — the fallback is exercised end-to-end.
+- [x] Add the `resolve-references` tool name to `framework/runtime-tools.txt` so step (a) verifies it is absent from PATH.
+- [x] Add `bash scripts/gen-cross-service-refs.sh --dry-run` to `markdown-only-pipeline.yml` step (b), and ensure the markdown-only job completes status resolution with no runtime present.
+- [x] **Done when:** `markdown-only-pipeline.yml` passes with the runtime binary absent — the fallback is exercised end-to-end.
 
 ## 11. Documentation
 

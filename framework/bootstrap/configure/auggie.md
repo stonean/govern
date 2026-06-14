@@ -74,6 +74,7 @@ Configure `{cli-config-dir}/settings.local.json` with the tool permissions neede
    - `{ "toolName": "mcp:gvrn:check-stuck", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gvrn:validate-frontmatter", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gvrn:resolve-anchor", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:resolve-references", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gvrn:traverse-deps", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gvrn:check-rule-ids", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gvrn:run-generator", "permission": { "type": "allow" } }`

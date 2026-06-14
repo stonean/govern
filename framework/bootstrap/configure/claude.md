@@ -91,6 +91,7 @@ Configure `{cli-config-dir}/settings.local.json` with the permissions needed for
    - `mcp__gvrn__check-stuck`
    - `mcp__gvrn__validate-frontmatter`
    - `mcp__gvrn__resolve-anchor`
+   - `mcp__gvrn__resolve-references`
    - `mcp__gvrn__traverse-deps`
    - `mcp__gvrn__check-rule-ids`
    - `mcp__gvrn__run-generator`
