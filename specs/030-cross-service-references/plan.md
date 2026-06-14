@@ -82,7 +82,7 @@ The command adds surface: a source under `framework/commands/`, wiring through t
 | `runtime/src/primitives/mod.rs` | Modify | Register the primitive |
 | `runtime/src/mcp/server.rs` | Modify | Expose the MCP tool |
 | `runtime/src/schema/primitives.rs` | Modify | Args/Result types + outcome enum |
-| `runtime/src/schema/extensions.rs` | Modify | `[services]` table type |
+| `runtime/src/schema/services.rs` | Create | `[services]` registry type (`repo`/`path`/`description`) + parser |
 | `framework/commands/link.md` | Create | `/{project}:link` registration command source |
 | `framework/commands/status.md` | Modify | Surface reference status (both paths) |
 | `framework/commands/analyze.md` | Modify | Broken-reference Advisory finding |

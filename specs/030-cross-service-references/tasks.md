@@ -4,9 +4,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Tests are first-class
 
 ## 1. Registry schema (`[services]`)
 
-- [ ] Add the `[services.<alias>]` type (`repo`, `path`) to `runtime/src/schema/extensions.rs`, parsed from `.govern.toml`; absent table → empty set.
-- [ ] Confirm `data-model.md` matches the implemented schema and is named the canonical source in constitution §drift-prevention (Task 8).
-- [ ] **Done when:** `[services]` parses, a duplicate `repo` is detectable, and a missing table is a no-op; unit tests cover present/absent/duplicate.
+- [x] Add the `[services.<alias>]` type (`repo`, `path`, optional `description`) in a new `runtime/src/schema/services.rs` module, parsed from `.govern.toml`; absent table → empty set.
+- [x] Confirm `data-model.md` matches the implemented schema (`repo` / `path` / optional `description`). (The §drift-prevention canonical-source row is Task 8.)
+- [x] **Done when:** `[services]` parses, a duplicate `repo` is detectable, and a missing table is a no-op; unit tests cover present/absent/duplicate.
 
 ## 2. `/{project}:link` registration command
 
