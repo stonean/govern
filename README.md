@@ -160,7 +160,7 @@ Download the pre-built binary for your platform from the [latest release](https:
 
 ```bash
 # Example for aarch64-apple-darwin; substitute your target triple.
-VERSION="0.11.3"
+VERSION="0.12.0"
 TARGET="aarch64-apple-darwin"
 ARCHIVE="gvrn-${TARGET}.tar.gz"
 BASE="https://github.com/stonean/govern/releases/download/gvrn-v${VERSION}"

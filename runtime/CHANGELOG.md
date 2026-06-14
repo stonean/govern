@@ -2,6 +2,20 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.12.0] — 2026-06-14
+
+### Added
+
+- **`resolve-references` primitive + `[services]` registry — cross-service reference resolution (spec 030).** A spec can link a spec in another service by its canonical repo URL; when that service is registered in `.govern.toml` `[services]` (alias → `repo` / `path` / optional `description`) and checked out locally, `govern` resolves the linked spec's lifecycle `status` from the local checkout. The new `resolve-references` MCP tool (`runtime/src/primitives/resolve_references.rs`) classifies each entry of a consumer spec's derived `references:` index into a closed outcome enum — `ok` (status surfaced), `unregistered`, `not-checked-out`, `broken`, or `status-unreadable` — by deterministic predicates, reusing the `validate-frontmatter` machinery (`read_text` / `split_frontmatter` / `ALLOWED_STATUSES`). The canonical repo URL is identity and navigation only and is **never fetched**; resolution reads only `.govern.toml` and the registered local checkouts. References are informative, never dependencies — kept strictly distinct from `dependencies:` and never entering the blocking dependency graph.
+
+- **`[services]` registry schema (`runtime/src/schema/services.rs`).** A new public `Services` / `ServiceEntry` type plus a `from_toml_str` parser and a `duplicate_repos` detector for the `.govern.toml` `[services]` table. An absent table is an empty registry (single-service adopters write nothing); a missing required field surfaces as a parse error rather than a silent default.
+
+- **MCP exposure and command wiring.** `resolve-references` joins `TOOL_NAMES` and gains a `#[tool]` handler in `runtime/src/mcp/server.rs`; the `ResolveReferencesArgs` / `ResolveReferencesResult` / `ResolutionRecord` / `ReferenceOutcome` types land in `runtime/src/schema/primitives.rs`. The tool is registered in `framework/runtime-tools.txt` for the markdown-only-pipeline opt-in invariant and is referenced (each with a graceful markdown-only fallback) by `/gov:status` and `/gov:analyze`.
+
+### Notes
+
+- Backward-compatible, additive release: no existing tool, type, or behavior changes. Adopters with no `[services]` table and no cross-service references see no difference. The markdown-only path resolves references identically via host file tools, and the no-runtime CI job exercises that fallback end-to-end. All 416 runtime tests pass, including the new `runtime/tests/cross_service.rs` golden/parity test asserting the runtime and markdown-only paths produce byte-identical resolution records.
+
 ## [0.11.3] — 2026-06-09
 
 ### Fixed
