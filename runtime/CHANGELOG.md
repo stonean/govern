@@ -2,6 +2,22 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.12.1] — 2026-06-17
+
+### Fixed
+
+- **`gen-cross-service-refs.sh` was never distributed to adopters (spec 030 follow-up).** The cross-service-references generator shipped wired only into this repo's own `.githooks/pre-commit`, so it ran on `govern`'s own commits but a `/govern` update in an adopter project never installed or ran it — the derived `references:` index silently never materialized downstream. The generator is now a row in the **Shared Files** manifest (`framework/bootstrap/govern.md`, `update` strategy) so `/govern` copies it, and is invoked by the adopter pre-commit hook (`framework/bootstrap/hooks/govern-pre-commit`) so commits regenerate `references:`.
+
+### Changed
+
+- **Adopter `govern-pre-commit` scopes generators to staged specs (`--staged`).** Both `gen-spec-deps.sh` and `gen-cross-service-refs.sh` gained a `--staged` flag, and the adopter hook now passes it: committing one spec only rewrites the specs in that commit, never dirtying or restaging unrelated tracked specs. `gen-spec-deps.sh` still builds the dependency-cycle graph from the **full** spec set (read all, write staged), so a staged edge that closes a cycle through an unstaged spec is still caught. This repo's own `.githooks/pre-commit` continues to run the generators unscoped, keeping the whole tree in sync.
+
+- **Cross-service-reference authoring is now documented.** A new README "Documenting a reference in a spec" subsection and a spec-template comment show the concrete inline-link shape, the dependency-vs-reference distinction (sibling `../NNN-slug/` links stay dependencies; absolute service URLs become references), and the harvest opt-outs. The template's example link is backtick-wrapped so it is never harvested into an adopter's frontmatter if the comment is left in place.
+
+### Notes
+
+- No runtime crate code changes — the version is bumped in lockstep ([§runtime-boundary](../framework/constitution.md#runtime-boundary)) to ship the framework fixes via the tagged archive. The 416 runtime tests, both generator test suites (with new `--staged` coverage), the framework self-audit, and markdownlint are clean.
+
 ## [0.12.0] — 2026-06-14
 
 ### Added
