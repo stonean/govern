@@ -14,6 +14,8 @@ review:
 
 `/govern` should detect the `gvrn` runtime at the start of a bootstrap run, wire its MCP server into the project when the binary is present but unregistered, and tell the user that doing so reduces token use. The goal is to stop first-time adoptions from exhausting their token budget on the markdown-only reference path when a deterministic path was actually available.
 
+> **Signpost (post-031):** the State-B auto-wire described here assumed every agent discovers a project-committed MCP file. [031-agent-mcp-wiring](../031-agent-mcp-wiring/spec.md) corrected that: for `surface-instruction` agents (Auggie, whose MCP config is the user-global `~/.augment/settings.json`), State B writes **no** MCP file and instead surfaces a one-line registration command in the Pre-flight abort; only `write-file` agents (Claude) get the file written directly. The detection mechanism, the permission write, and the pending-restart / abort flow are otherwise unchanged.
+
 ## Motivation
 
 On a first-time adoption, the bootstrap walks the markdown-only reference path — `curl`, `tar`, byte-compares, and a hand-authored scaffold script — because the [gvrn runtime](../022-deterministic-runtime/spec.md) is not registered for the agent session. The model interprets a ~20k-token procedure step by step and can run out of tokens before the install finishes. This was observed with the [antigravity layout](../028-antigravity-agent/spec.md).

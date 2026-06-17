@@ -48,13 +48,15 @@ Wave 1 (tasks 1–4) does not change Antigravity behavior and is implementable n
 
 ## 4. Record cross-spec impact on 028 and 029
 
-- [ ] Add a back-linked "Signpost (post-031)" note to `specs/028-antigravity-agent/spec.md`:
+- [x] Add a back-linked "Signpost (post-031)" note to `specs/028-antigravity-agent/spec.md`:
       031 supersedes the `.agents/mcp_config.json` layout-derived MCP-wiring decision.
-- [ ] Add a back-linked note to `specs/029-bootstrap-runtime-autowire/spec.md`: 031 changes
+- [x] Add a back-linked note to `specs/029-bootstrap-runtime-autowire/spec.md`: 031 changes
       State-B for home-level agents (surface-instruction, not file write).
-- [ ] Decide and apply the recording mechanism (signpost vs. `/gov:ask`) so any
-      `done → in-progress` back-edge on 028/029 is intentional.
-- [ ] **Done when:** both specs carry a back-link to 031 and the back-edge decision is
+- [x] Decide and apply the recording mechanism (signpost vs. `/gov:ask`): **Option B** —
+      non-reopening navigational signposts, 028/029 stay `done` (per the existing 012
+      `Signpost (post-028)` precedent). User-approved deviation from `constitution.md:543`;
+      flagged for a possible constitution clarification follow-up.
+- [x] **Done when:** both specs carry a back-link to 031 and the back-edge decision is
       applied.
 
 ## 5. Verify Antigravity project-local MCP loading against the live `agy` CLI
