@@ -68,7 +68,6 @@ For each agent, these paths and behaviors are computed by convention from its ro
 | Command/skill path | `{config_dir}/commands/{project}/<name>.md` | `{config_dir}/skills/{project}-<name>/SKILL.md` |
 | Invocation | `/{project}:<name>` | `/{project}-<name>` |
 | `govern` install path | `{config_dir}/commands/govern.md` | `{config_dir}/skills/govern/SKILL.md` |
-| MCP-wiring file | `.mcp.json` | `{config_dir}/mcp_config.json` |
 | Settings file | `{config_dir}/settings.local.json` | `{config_dir}/settings.json` |
 | Permission shape | `permissions.allow/deny` (Claude) / `toolPermissions[]` (Auggie) | `permissions.allow/deny/ask` (action grammar) |
 | Native rule-loading dir | — (rules read from shared `specs/rules/`) | `{config_dir}/rules/<name>.md` |
@@ -77,15 +76,30 @@ For each agent, these paths and behaviors are computed by convention from its ro
 
 The session state file is `.govern.session.toml` at the repo root for every adopter — not a derived per-agent value. It's gitignored and host-agnostic.
 
+### MCP registration (per-agent)
+
+MCP discovery is **not** layout-derived — it is a per-agent property. A host can share Claude's command/skill layout and native `CLAUDE.md` reading (Auggie does) yet register MCP servers somewhere entirely different. Each agent therefore declares its own MCP registration descriptor; the State-B auto-wire (§gvrn runtime detection) and §MCP wiring branch on the `mechanism` column.
+
+| `key` | MCP target | scope | mechanism | surfaced instruction (when `surface-instruction`) |
+| --- | --- | --- | --- | --- |
+| `claude` | `.mcp.json` (repo root) | `project-committed` | `write-file` | — |
+| `auggie` | `~/.augment/settings.json` | `user-global` | `surface-instruction` | `auggie mcp add gvrn --command gvrn --args "mcp"` |
+| `antigravity` | `.agents/mcp_config.json` *(provisional — unverified)* | `project-committed` *(provisional)* | `write-file` *(provisional)* | edit `~/.gemini/config/mcp_config.json`, then `/mcp` reload |
+
+- **`write-file`** — govern writes `target` additively at State-B wire time (the additive merge in §MCP wiring). Only `project-committed` agents use it.
+- **`surface-instruction`** — govern writes **no** MCP file; State B surfaces the instruction in the Pre-flight abort and the user runs it once per machine, then restarts. Required for `user-global` / `home-level` agents, whose MCP config lives outside the repo and which govern must not silently mutate.
+- **Antigravity is provisional** pending a test against the live `agy` CLI: whether project-local `.agents/mcp_config.json` actually loads servers is disputed (documented as workspace-local, but reported read-but-ignored upstream). If it loads, the row above stands; if it is ignored, Antigravity becomes `~/.gemini/config/mcp_config.json` / `home-level` / `surface-instruction`. The home-level `surface-instruction` branch is the safe default when verification cannot be performed.
+
 ### Adding a new agent
 
-A `claude-style` agent (markdown commands under `{config_dir}/commands/{project}/`, reads `CLAUDE.md`) is still a one-row append plus two satellite files:
+A `claude-style` agent (markdown commands under `{config_dir}/commands/{project}/`, reads `CLAUDE.md`) is a one-row registry append plus an MCP registration entry plus two satellite files:
 
 1. Append a row with the six fields (`layout: claude-style`).
-2. Add `framework/bootstrap/configure/{key}.md` with the agent's full permission set in its native settings format.
-3. Add a curl snippet for the new agent to the README's adoption section.
+2. Add a row to §MCP registration (per-agent). MCP discovery is per-agent, not layout-derived, so even a `claude-style` agent must declare its own `target` / `scope` / `mechanism` — it is **not** inherited from the layout.
+3. Add `framework/bootstrap/configure/{key}.md` with the agent's full permission set in its native settings format.
+4. Add a curl snippet for the new agent to the README's adoption section.
 
-An agent on a **different layout** (a new value in the `layout` column) additionally needs its branch added to §Derived values and the layout-keyed steps in §Per-Agent Scaffolding, §Permission Setup, and the MCP-registration step — the work this `antigravity` layout introduced.
+An agent on a **different layout** (a new value in the `layout` column) additionally needs its branch added to §Derived values and the layout-keyed steps in §Per-Agent Scaffolding and §Permission Setup — the work this `antigravity` layout introduced. (MCP registration is per-agent regardless of layout, covered by step 2 above.)
 
 ## Inputs
 

@@ -1,5 +1,5 @@
 ---
-status: clarified
+status: in-progress
 dependencies: [012-multi-agent-govern, 028-antigravity-agent, 029-bootstrap-runtime-autowire]
 review:
   last-run: null
