@@ -18,6 +18,8 @@
 #   I. running twice produces no diff (idempotence)
 #   J. a spec with no cross-service links carries no references field, and a
 #      stale block is removed when its last link is deleted
+#   K. --staged rewrites only specs staged in the git index; an unstaged spec
+#      whose references have drifted is left untouched (adopter pre-commit path)
 #
 # Usage: scripts/tests/test-gen-cross-service-refs.sh
 
@@ -349,6 +351,52 @@ EOF
   rm -rf "$tmp"
 }
 
+# ---------- K: --staged scopes the rewrite to staged specs ----------
+
+test_K_staged_scopes_rewrite() {
+  local tmp; tmp="$(make_fixture)"
+  git -C "$tmp" init -q
+  git -C "$tmp" config user.email t@t
+  git -C "$tmp" config user.name t
+  write_govern_toml "$tmp" <<'EOF'
+[services.api]
+repo = "https://github.com/acme/api"
+path = "../api"
+EOF
+  # beta: committed; body links api but frontmatter has no references (drift).
+  write_spec "$tmp" "002-beta" <<'EOF'
+---
+status: clarified
+dependencies: []
+---
+
+# Beta
+
+Uses the [api model](https://github.com/acme/api/blob/main/specs/003-user/spec.md).
+EOF
+  git -C "$tmp" add -A
+  git -C "$tmp" commit -qm init
+  # alpha: new, staged, carries its own cross-service link.
+  write_spec "$tmp" "001-alpha" <<'EOF'
+---
+status: clarified
+dependencies: []
+---
+
+# Alpha
+
+Uses the [api model](https://github.com/acme/api/blob/main/specs/003-user/spec.md).
+EOF
+  git -C "$tmp" add specs/001-alpha
+
+  "$GEN" --staged --root="$tmp" > /dev/null
+
+  local a="$tmp/specs/001-alpha/spec.md" b="$tmp/specs/002-beta/spec.md"
+  fm_has  "$a" "spec: 003-user" "K: staged spec is rewritten under --staged"
+  fm_lacks "$b" "references:"   "K: unstaged drifted spec is left untouched"
+  rm -rf "$tmp"
+}
+
 # ---------- runner ----------
 
 run_all() {
@@ -363,6 +411,7 @@ run_all() {
   test_H_blockquote_excluded
   test_I_idempotent
   test_J_stale_block_removed
+  test_K_staged_scopes_rewrite
 
   if [ "$failures" -gt 0 ]; then
     echo "$failures test(s) failed" >&2

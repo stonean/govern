@@ -209,6 +209,29 @@ When a project spans multiple services — each its own repo with its own `gover
 
 References are informative, never dependencies: they do not enter `dependencies:`, do not gate completion, and never block a pipeline gate. They are harvested into a derived `references:` frontmatter index — distinct from `dependencies:` — by `scripts/gen-cross-service-refs.sh`; you never hand-author it.
 
+### Documenting a reference in a spec
+
+You author a reference by writing a **normal inline markdown link** in the spec **body** — nothing goes in the frontmatter, and there is no special syntax. The link's href must be an **absolute `http(s)` URL** whose path contains the target spec's `/specs/NNN-slug/` segment in the other service's repo:
+
+```markdown
+Tokens follow the contract in
+[api 014-auth-tokens](https://github.com/acme/api/blob/main/specs/014-auth-tokens/spec.md).
+```
+
+On the next commit (or any `scripts/gen-cross-service-refs.sh` run) the generator harvests that link into the frontmatter:
+
+```yaml
+references:
+  - service: api      # the [services] alias whose repo matches the URL host
+    spec: 014-auth-tokens
+```
+
+What the generator keys on:
+
+- **`NNN-slug` is the identity.** Everything in the URL before a `/blob/<ref>/` or `/tree/<ref>/` branch segment is the repo, matched against `.govern.toml [services]` to resolve the alias; the branch is ignored, so two links to the same spec on different branches collapse to one reference. A URL matching no registered service is still recorded, with `service: null` (the `unregistered` outcome above).
+- **Absolute URL, not a sibling link.** `[label](../014-auth-tokens/spec.md)` is a *sibling* link and becomes a **dependency** (a different generator, the blocking `dependencies:` graph) — never a cross-service reference. Use the full canonical URL precisely so the two stay distinct.
+- **Opt-outs are honored.** A link is **not** harvested if it sits under a `## See also` heading, inside a fenced code block, wrapped in `` `backticks` `` (inline code reads as an illustrative example, not a live link), or on a blockquote (`>`) line. These are the same navigational opt-outs `dependencies:` honors — use them for example or "see also" links you don't want to register.
+
 Register a service with `/link` (alias, repo URL, local checkout path, optional description):
 
 ```toml

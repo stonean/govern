@@ -514,6 +514,109 @@ EOF
   rm -rf "$tmp"
 }
 
+# --staged: only specs staged for the pending commit are rewritten; an unstaged
+# (committed) spec whose derived deps have drifted is left untouched. This is
+# the adopter pre-commit path — committing one spec must not restage others.
+test_O_staged_scopes_rewrite() {
+  local tmp; tmp="$(make_fixture)"
+  git -C "$tmp" init -q
+  git -C "$tmp" config user.email "test@example.com"
+  git -C "$tmp" config user.name "test"
+
+  # 002-beta: committed with drifted deps (body links 003, frontmatter is []).
+  write_spec "$tmp" "002-beta" <<'EOF'
+---
+status: clarified
+dependencies: []
+---
+
+# Beta
+
+Depends on [003-gamma](../003-gamma/spec.md).
+EOF
+  write_spec "$tmp" "003-gamma" <<'EOF'
+---
+status: clarified
+dependencies: []
+---
+
+# Gamma
+EOF
+  git -C "$tmp" add -A
+  git -C "$tmp" commit -q -m init
+
+  # 001-alpha: new, staged, links 003.
+  write_spec "$tmp" "001-alpha" <<'EOF'
+---
+status: clarified
+dependencies: []
+---
+
+# Alpha
+
+Depends on [003-gamma](../003-gamma/spec.md).
+EOF
+  git -C "$tmp" add specs/001-alpha/spec.md
+
+  "$GEN" --staged --root="$tmp" > /dev/null
+  assert_deps "$tmp/specs/001-alpha/spec.md" "dependencies: [003-gamma]" \
+    "O: staged spec is rewritten under --staged"
+  assert_deps "$tmp/specs/002-beta/spec.md" "dependencies: []" \
+    "O: unstaged drifted spec is left untouched"
+  rm -rf "$tmp"
+}
+
+# --staged still runs the cycle check over the FULL graph: a staged spec whose
+# new edge closes a cycle through an unstaged (committed) spec must still fail.
+test_P_staged_cycle_spans_full_graph() {
+  local tmp; tmp="$(make_fixture)"
+  git -C "$tmp" init -q
+  git -C "$tmp" config user.email "test@example.com"
+  git -C "$tmp" config user.name "test"
+
+  # beta -> alpha, committed (and not part of the pending change).
+  write_spec "$tmp" "002-beta" <<'EOF'
+---
+status: clarified
+dependencies: [001-alpha]
+---
+
+# Beta
+
+Depends on [001-alpha](../001-alpha/spec.md).
+EOF
+  write_spec "$tmp" "001-alpha" <<'EOF'
+---
+status: clarified
+dependencies: []
+---
+
+# Alpha
+EOF
+  git -C "$tmp" add -A
+  git -C "$tmp" commit -q -m init
+
+  # Add alpha -> beta, closing the cycle. Stage ONLY alpha.
+  write_spec "$tmp" "001-alpha" <<'EOF'
+---
+status: clarified
+dependencies: []
+---
+
+# Alpha
+
+Now depends on [002-beta](../002-beta/spec.md).
+EOF
+  git -C "$tmp" add specs/001-alpha/spec.md
+
+  local rc=0 err; err="$(mktemp)"
+  "$GEN" --staged --root="$tmp" > /dev/null 2>"$err" || rc=$?
+  assert_nonzero "$rc" "P: cycle closed through an unstaged spec is caught under --staged"
+  assert_stderr_contains "$err" "cycle:" "P: cycle reported on stderr"
+  rm -f "$err"
+  rm -rf "$tmp"
+}
+
 # ---------- runner ----------
 
 run_all() {
@@ -532,6 +635,8 @@ run_all() {
   test_L_self_cycle
   test_M_multiple_disjoint_cycles
   test_N_untracked_draft_ignored
+  test_O_staged_scopes_rewrite
+  test_P_staged_cycle_spans_full_graph
 
   if [ "$failures" -gt 0 ]; then
     echo "$failures test(s) failed" >&2

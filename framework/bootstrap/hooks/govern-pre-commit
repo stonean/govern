@@ -4,8 +4,16 @@
 # Adopter pre-commit hook installed by /govern.
 #
 # Runs adopter-relevant generators on every commit and stages their outputs.
-# Currently runs:
-#   1. scripts/gen-spec-deps.sh  — frontmatter dependencies from body inline links
+# Both run with --staged: only specs that are part of this commit are rewritten,
+# so committing one spec never dirties or restages the derived frontmatter of
+# unrelated specs. Currently runs:
+#   1. scripts/gen-spec-deps.sh         — frontmatter `dependencies:` from body
+#                                         inline links to sibling specs (also
+#                                         runs the dependency-cycle check, which
+#                                         spans the full spec graph)
+#   2. scripts/gen-cross-service-refs.sh — frontmatter `references:` from body
+#                                         inline links to other services' specs
+#                                         (distinct from dependencies)
 #
 # This file is overwritten by /govern unless listed in .govern.toml `pinned.files`.
 # The `# managed-by: govern` sentinel above is how /govern detects that the file
@@ -16,11 +24,12 @@ shopt -s nullglob
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
-scripts/gen-spec-deps.sh
+scripts/gen-spec-deps.sh --staged
+scripts/gen-cross-service-refs.sh --staged
 
 # Re-stage only spec files already part of this commit, so the derived
-# `dependencies:` rewrite is captured without sweeping in untracked `/specify`
-# drafts or unstaged edits to other tracked specs
+# `dependencies:` / `references:` rewrites are captured without sweeping in
+# untracked `/specify` drafts or unstaged edits to other tracked specs
 # (spec 017 / tracked-specs-not-worktree).
 staged_specs="$(git diff --cached --name-only -- specs \
   | { grep -E '^specs/[0-9][0-9][0-9]-[^/]+/(spec|spec-and-plan)\.md$' || true; })"

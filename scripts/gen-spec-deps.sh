@@ -26,15 +26,20 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 dry_run=0
+staged_only=0
 for arg in "$@"; do
   case "$arg" in
     --dry-run) dry_run=1 ;;
+    --staged)  staged_only=1 ;;
     --root=*)  ROOT="$(cd "${arg#--root=}" && pwd)" ;;
     -h|--help)
       sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'
       echo
-      echo "Usage: $(basename "$0") [--dry-run] [--root=PATH]"
+      echo "Usage: $(basename "$0") [--dry-run] [--staged] [--root=PATH]"
       echo "  --dry-run    Report what would change; exit 1 if any spec needs updating."
+      echo "  --staged     Only rewrite specs staged in the git index (the pending"
+      echo "               commit), instead of every tracked spec. The cycle check"
+      echo "               still spans the full graph. For pre-commit use."
       echo "  --root=PATH  Run against PATH as the repo root (default: script's parent dir)."
       exit 0
       ;;
@@ -63,8 +68,30 @@ list_specs() {
   fi
 }
 
+# Feature-spec files staged in the git index for the pending commit. Under
+# --staged these are the only specs whose frontmatter is rewritten on disk, so
+# committing one spec never restages or dirties the derived `dependencies:` of
+# unrelated specs. The cycle check still spans the full graph (list_specs) — a
+# staged edge can close a cycle through an unstaged spec, so correctness needs
+# every spec's edges even though only staged specs are written.
+staged_specs() {
+  git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 || return 0
+  git -C "$ROOT" diff --cached --name-only -- specs \
+    | { grep -E '^specs/[0-9][0-9][0-9]-[^/]+/(spec|spec-and-plan)\.md$' || true; } \
+    | while IFS= read -r rel; do printf '%s/%s\n' "$ROOT" "$rel"; done
+}
+
 graph_file="$(mktemp)"
-trap 'rm -f "$graph_file"' EXIT
+staged_file="$(mktemp)"
+trap 'rm -f "$graph_file" "$staged_file"' EXIT
+[ "$staged_only" -eq 1 ] && staged_specs > "$staged_file"
+
+# Whether $1 is a rewrite target: every spec in normal mode, only staged specs
+# under --staged.
+is_write_target() {
+  [ "$staged_only" -eq 0 ] && return 0
+  grep -Fxq "$1" "$staged_file"
+}
 
 changed=0
 while IFS= read -r spec; do
@@ -148,7 +175,7 @@ while IFS= read -r spec; do
     { print }
   ' "$spec" > "$tmp"
 
-  if ! cmp -s "$spec" "$tmp"; then
+  if ! cmp -s "$spec" "$tmp" && is_write_target "$spec"; then
     if [ "$dry_run" -eq 1 ]; then
       echo "Would update $spec"
       rm "$tmp"
@@ -158,10 +185,14 @@ while IFS= read -r spec; do
     fi
     changed=$((changed + 1))
   else
+    # Either already in sync, or (under --staged) a non-staged spec whose
+    # derived field has drifted — left untouched on disk; its edges still
+    # feed the cycle graph below from the worktree body.
     rm "$tmp"
   fi
 
-  # Record this spec's outgoing edges (post-rewrite) for the cycle check.
+  # Record this spec's outgoing edges for the cycle check — every spec, even
+  # non-staged ones, so the graph the check runs over is always complete.
   echo "$own_slug|$deps_csv" >> "$graph_file"
 done < <(list_specs)
 

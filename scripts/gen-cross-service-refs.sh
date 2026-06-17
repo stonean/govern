@@ -32,15 +32,19 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 dry_run=0
+staged_only=0
 for arg in "$@"; do
   case "$arg" in
     --dry-run) dry_run=1 ;;
+    --staged)  staged_only=1 ;;
     --root=*)  ROOT="$(cd "${arg#--root=}" && pwd)" ;;
     -h|--help)
-      sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '2,29p' "$0" | sed 's/^# \{0,1\}//'
       echo
-      echo "Usage: $(basename "$0") [--dry-run] [--root=PATH]"
+      echo "Usage: $(basename "$0") [--dry-run] [--staged] [--root=PATH]"
       echo "  --dry-run    Report what would change; exit 1 if any spec needs updating."
+      echo "  --staged     Only rewrite specs staged in the git index (the pending"
+      echo "               commit), instead of every tracked spec. For pre-commit use."
       echo "  --root=PATH  Run against PATH as the repo root (default: script's parent dir)."
       exit 0
       ;;
@@ -65,6 +69,24 @@ list_specs() {
       [ -e "$f" ] && printf '%s\n' "$f"
     done
   fi
+}
+
+# Feature-spec files staged in the git index for the pending commit. Used by
+# --staged (the adopter pre-commit path) to restrict the rewrite set to specs
+# that are actually part of this commit, so committing one spec never rewrites
+# the derived `references:` of unrelated specs. Empty outside a git repo — each
+# spec's `references:` is a pure function of its own body, so there is no
+# cross-spec graph that would need the full set (unlike gen-spec-deps.sh).
+staged_specs() {
+  git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 || return 0
+  git -C "$ROOT" diff --cached --name-only -- specs \
+    | { grep -E '^specs/[0-9][0-9][0-9]-[^/]+/(spec|spec-and-plan)\.md$' || true; } \
+    | while IFS= read -r rel; do printf '%s/%s\n' "$ROOT" "$rel"; done
+}
+
+# The set of specs to rewrite: only the staged ones under --staged, else all.
+enumerate_specs() {
+  if [ "$staged_only" -eq 1 ]; then staged_specs; else list_specs; fi
 }
 
 # Parse .govern.toml [services] into "alias<TAB>normalized-repo" records. A
@@ -245,7 +267,7 @@ while IFS= read -r spec; do
   else
     rm -f "$tmp"
   fi
-done < <(list_specs)
+done < <(enumerate_specs)
 
 if [ "$changed" -eq 0 ]; then
   echo "No changes (all references in sync)"

@@ -26,6 +26,17 @@ review:
      `dependencies` list is generated from inline markdown links to sibling specs
      in the body — do not edit it by hand.
 
+     Cross-service references: to reference a spec in another service (its own
+     repo with its own govern install), write a normal inline markdown link to
+     that spec's absolute canonical URL in the body — shaped like (backticks
+     here only to keep this example from being harvested as a real reference):
+     `[api 014-auth-tokens](https://github.com/acme/api/blob/main/specs/014-auth-tokens/spec.md)`.
+     The `references` frontmatter (distinct from `dependencies`, never blocking)
+     is generated from it — do not edit it by hand. Register the service with
+     /{project}:link so the reference resolves to the linked spec's status.
+     Sibling (../NNN-slug/) links stay dependencies; absolute service URLs become
+     references. See the README's "Cross-service references" section.
+
      Scenarios: when a spec section needs lower-level elaboration (edge cases, bug fixes,
      detailed behavior), run /{project}:ask to record a scenario file under
      specs/{NNN-feature-name}/scenarios/.

@@ -563,6 +563,7 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 | `framework/rules/security-frontend.md` | `specs/rules/security-frontend.md` |
 | `framework/bootstrap/hooks/govern-pre-commit` | `.githooks/govern-pre-commit` |
 | `scripts/gen-spec-deps.sh` | `scripts/gen-spec-deps.sh` |
+| `scripts/gen-cross-service-refs.sh` | `scripts/gen-cross-service-refs.sh` |
 | `.markdownlint-cli2.jsonc` | `.markdownlint-cli2.jsonc` |
 | `framework/templates/spec/spec.md` | `specs/templates/spec.md` |
 | `framework/templates/spec/plan.md` | `specs/templates/plan.md` |
@@ -803,11 +804,11 @@ After writing, run the **Post-Write Integrity Check** below.
 
 ## Hook Installation
 
-After **Per-Agent Scaffolding** completes, manage the project's git pre-commit hook so generated artifacts (currently spec `dependencies:` frontmatter, future generators if added) stay in sync on every commit.
+After **Per-Agent Scaffolding** completes, manage the project's git pre-commit hook so generated artifacts (currently spec `dependencies:` and `references:` frontmatter, future generators if added) stay in sync on every commit.
 
 Two files participate, with different ownership models:
 
-- **`.githooks/govern-pre-commit`** is govern-owned. Placed by the **Shared Files** manifest with `update` strategy; carries the `# managed-by: govern` sentinel on line 2; rewritten on every `/govern` run unless pinned in `.govern.toml`. Holds the generator orchestration (currently `scripts/gen-spec-deps.sh` plus output staging).
+- **`.githooks/govern-pre-commit`** is govern-owned. Placed by the **Shared Files** manifest with `update` strategy; carries the `# managed-by: govern` sentinel on line 2; rewritten on every `/govern` run unless pinned in `.govern.toml`. Holds the generator orchestration (currently `scripts/gen-spec-deps.sh --staged` and `scripts/gen-cross-service-refs.sh --staged` plus output staging). Both run with `--staged` so a commit only rewrites the specs it touches, never unrelated ones.
 - **`.githooks/pre-commit`** is adopter-owned. Placed by the manifest with `create` strategy on first install; never overwritten thereafter. Initial content invokes `./.githooks/govern-pre-commit`; adopters add their own pre-commit checks above or below that invocation.
 
 This section's job is to wire git up to actually run the outer hook (`git config core.hooksPath .githooks`) without clobbering whatever hook system the project already uses.
@@ -821,7 +822,7 @@ Detection runs in this order — first match wins:
 
 The detection ladder no longer treats `.githooks/pre-commit` itself as a govern-managed file — under the new model the outer file is adopter-owned, so its presence is not a signal that govern installed it. Migration of pre-existing govern-installed hooks (from spec-017 adopters) is handled by the **Migration from spec-017 hook** subsection below, which runs before the detection ladder.
 
-`scripts/gen-spec-deps.sh` ships in the **Shared Files** manifest with `update` strategy. Every `/govern` run refreshes it from upstream so adopters pick up generator fixes automatically. Adopters who have customized the script can list it in `.govern.toml` `pinned.files` to opt out of overwrites.
+`scripts/gen-spec-deps.sh` and `scripts/gen-cross-service-refs.sh` ship in the **Shared Files** manifest with `update` strategy. Every `/govern` run refreshes them from upstream so adopters pick up generator fixes automatically. Adopters who have customized a script can list it in `.govern.toml` `pinned.files` to opt out of overwrites.
 
 ### Migration from spec-017 hook
 
