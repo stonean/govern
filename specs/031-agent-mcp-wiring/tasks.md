@@ -22,17 +22,17 @@ Wave 1 (tasks 1–4) does not change Antigravity behavior and is implementable n
 
 ## 2. Branch State-B wiring by `mechanism` in `govern.md`
 
-- [ ] Rewrite §State B step 1 (line ~178) to branch on the agent's `mechanism`:
+- [x] Rewrite §State B step 1 (line ~178) to branch on the agent's `mechanism`:
       `write-file` writes `target` additively (existing five-case merge); `surface-instruction`
       writes no project MCP file.
-- [ ] Rewrite §MCP wiring (line ~192–208) from "the per-layout path" to a per-mechanism
+- [x] Rewrite §MCP wiring (line ~192–208) from "the per-layout path" to a per-mechanism
       description; keep the additive five-case merge for the `write-file` branch.
-- [ ] Add a `surface-instruction` variant to the Pre-flight abort message (line ~182–184)
+- [x] Add a `surface-instruction` variant to the Pre-flight abort message (line ~182–184)
       that carries the per-agent registration command and "run this, then start a fresh
       session." Auggie command: `auggie mcp add gvrn --command gvrn --args "mcp"`.
-- [ ] Confirm the State-B **permission write** (step 2) stays unchanged for all agents
+- [x] Confirm the State-B **permission write** (step 2) stays unchanged for all agents
       (project-level settings, independent of MCP server location).
-- [ ] **Done when:** govern.md describes both mechanisms; Auggie is no longer wired via
+- [x] **Done when:** govern.md describes both mechanisms; Auggie is no longer wired via
       `.mcp.json`; the abort covers both variants; Antigravity retains current behavior
       (provisional); `lint-markdown` clean.
 

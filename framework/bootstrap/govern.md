@@ -149,7 +149,7 @@ This prevents repeated permission prompts during the fetch and scaffolding phase
 
 ### gvrn runtime auto-wiring
 
-`/govern` wires the optional gvrn runtime automatically when its binary is detected on the session's `PATH` but not yet registered as an MCP server — the **Pre-flight Phase → State B** path. (This replaces the previous model where the runtime was a separate, hand-wired install.) Wiring writes the per-layout MCP file — see **gvrn runtime detection → MCP wiring** for the file path, the `gvrn` entry, and the additive merge rules — and, in the same pass, adds the **gvrn tool permissions** to the settings file so the next session calls the runtime without a per-tool prompt:
+`/govern` wires the optional gvrn runtime automatically when its binary is detected on the session's `PATH` but not yet registered as an MCP server — the **Pre-flight Phase → State B** path. (This replaces the previous model where the runtime was a separate, hand-wired install.) Wiring depends on the agent's MCP registration `mechanism` (§MCP registration): a `write-file` agent gets its MCP file written; a `surface-instruction` agent gets a one-line registration command surfaced for the user to run (govern never writes the user's home config) — see **gvrn runtime detection → MCP wiring** for the per-mechanism rules. In the same pass, either way, `/govern` adds the **gvrn tool permissions** to the settings file so the next session calls the runtime without a per-tool prompt:
 
 - **Claude** (`permissions.allow`): `mcp__gvrn__*`
 - **Antigravity** (`permissions.allow`): `mcp(gvrn/*)`
@@ -189,15 +189,18 @@ State A is a **binding execution contract, not a preference.** Detecting the run
 
 The binary probe succeeded but no `gvrn` tool is available to this session. In order:
 
-1. Write the per-layout MCP-wiring file additively (see **MCP wiring**).
-2. Add the permission entries needed to call the `gvrn` tools (see **Permission Setup**), so the next session calls them without a prompt.
+1. Register the `gvrn` server per the agent's MCP registration `mechanism` (§MCP registration; details in **MCP wiring**): for `write-file`, write the MCP file additively; for `surface-instruction`, write **no** MCP file — the registration command is surfaced in the abort (step 3) for the user to run once per machine.
+2. Add the permission entries needed to call the `gvrn` tools (see **Permission Setup**), so the next session calls them without a prompt. This write is the same for every agent regardless of `mechanism` — it targets the project-level settings file, not the MCP-server location.
 3. Add the wiring (and the permission write) to the **pending-restart set** and contribute this notice to the combined **Pre-flight abort**, naming every file written:
 
-> **gvrn runtime detected and wired.** The `gvrn` binary is installed but was not registered for this project, so `/govern` could not use the faster deterministic runtime this run. It has now been wired in so the next session runs through the runtime, which uses far fewer tokens.
->
-> Files written: {comma-separated paths — the wiring file, and the settings file when permission entries were added}.
+> **gvrn runtime detected.** The `gvrn` binary is installed but was not registered for this project, so `/govern` could not use the faster deterministic runtime this run.
 
-State B issues **no separate consent prompt** — the writes are additive and idempotent, matching the silent **Permission Setup** writes; the abort's file list is the disclosure. There is no opt-out flag for auto-wiring.
+The abort takes the form matching the selected agent's `mechanism`:
+
+- **`write-file` agent** (e.g. Claude): "It has now been wired in so the next session runs through the runtime, which uses far fewer tokens. Files written: {comma-separated paths — the wiring file, and the settings file when permission entries were added}."
+- **`surface-instruction` agent** (e.g. Auggie): "{Agent} registers MCP servers in your user-level config, which `/govern` does not write. To enable the faster runtime, run this once, then start a fresh session: `{the agent's surfaced instruction from §MCP registration}`. Files written: {the settings file, when permission entries were added}."
+
+State B issues **no separate consent prompt** — any file writes are additive and idempotent, matching the silent **Permission Setup** writes; the abort's file list (and, for a `surface-instruction` agent, the one-line command) is the disclosure. There is no opt-out flag for auto-wiring.
 
 #### State C — binary absent
 
@@ -205,13 +208,13 @@ The binary probe failed, could not run, or was denied. Proceed on the markdown p
 
 #### MCP wiring
 
-The wiring file is the per-layout path from §Derived values: `.mcp.json` at the repo root for `claude-style`, `{config_dir}/mcp_config.json` for `antigravity`. The entry registers the server as `gvrn`:
+How State B registers `gvrn` depends on the agent's MCP registration `mechanism` (§MCP registration). The server entry is identical in every case — a `mcpServers` map keyed by name; only the **location** (and whether govern writes it) differs:
 
 ```json
 { "mcpServers": { "gvrn": { "command": "gvrn", "args": ["mcp"] } } }
 ```
 
-The write **updates the file in place — it never replaces or truncates it.** Apply the matching case:
+**`write-file` agents** (scope `project-committed` — Claude, and Antigravity pending verification). govern writes the agent's `target` MCP file from §MCP registration (`.mcp.json` at the repo root for Claude). The write **updates the file in place — it never replaces or truncates it.** Apply the matching case:
 
 - **Missing file** — create it containing only the `gvrn` entry.
 - **Has `mcpServers`, no `gvrn`** — add the `gvrn` entry; preserve every other server and every other top-level key.
@@ -220,6 +223,13 @@ The write **updates the file in place — it never replaces or truncates it.** A
 - **Not valid JSON** — do **not** touch the file. Skip wiring, warn the user to repair it, and degrade to the markdown path for this run (treat as **State C**). A hand-maintained config is never clobbered.
 
 There is no `gvrn` runtime primitive for this merge: State B is the runtime-absent case by definition, so the write is always host-side.
+
+**`surface-instruction` agents** (scope `user-global` / `home-level` — Auggie, and Antigravity if verification confirms project-local is read-but-ignored). The agent reads MCP servers from a file in the user's **home** directory, shared across all their projects, which govern must **not** write. govern writes no MCP file; instead the **Pre-flight abort** surfaces the agent's registration instruction for the user to run once per machine, then restart:
+
+- **Auggie** — `auggie mcp add gvrn --command gvrn --args "mcp"` (the documented, schema-stable subcommand; it writes `~/.augment/settings.json`).
+- **Antigravity** — add the `gvrn` block above to `~/.gemini/config/mcp_config.json`, then reload via the in-prompt `/mcp` overlay (there is no scriptable `agy mcp add`). Surfaced only if verification routes Antigravity here.
+
+The permission write (State B step 2) still happens for these agents — it targets the project-level settings file the agent reads, independent of the home-level MCP-server location.
 
 ### Self-update check
 
@@ -927,7 +937,7 @@ After writing the agent's installed `govern` file — whether via the **Pre-flig
 - **A required source file is absent from the extracted archive** — warn `Source not found in archive: {source-path}; skipping.` and continue with the remaining manifest entries. Preserves the per-entry "do not abort on a single fetch error" guarantee at the entry level even though the archive itself is fetched once.
 - **First-run prompt with no detected dirs and only one supported agent** — the prompt still appears (the agent must be explicitly chosen), but the single agent is pre-selected. Confirming is one keystroke.
 - **Running `govern.md` cannot infer its own install path** — fall back to no pre-selection in the first-run prompt. The user picks explicitly.
-- **gvrn binary present but unwired (State B)** — the **Pre-flight Phase** writes the per-layout MCP config and the gvrn tool permissions, then stops as part of the single combined pre-flight abort. No archive is fetched; the user starts a new session and re-runs. See **gvrn runtime detection → State B**.
+- **gvrn binary present but unwired (State B)** — the **Pre-flight Phase** registers the runtime per the agent's `mechanism` (writes the MCP config for a `write-file` agent, or surfaces the registration command for a `surface-instruction` agent) plus the gvrn tool permissions, then stops as part of the single combined pre-flight abort. No archive is fetched; the user starts a new session and re-runs. See **gvrn runtime detection → State B**.
 - **gvrn wiring file is malformed JSON** — the wiring write does not touch the file. `/govern` skips wiring, warns the user to repair it, and continues on the markdown path for this run (treated as State C). A hand-maintained MCP config is never clobbered.
 - **gvrn binary probe cannot run or is denied** — the run is classified as State C (binary absent): the markdown path proceeds and the post-scaffolding tip fires. Detection never hard-fails on a host without shell.
 - **Stale `govern.md` on an adopter who has never wired gvrn** — both pre-flight checks contribute writes (a fresh `govern.md` and the gvrn wiring), but the **Pre-flight abort** emits one combined message and the user restarts once, not twice.
