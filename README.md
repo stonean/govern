@@ -181,9 +181,15 @@ cd - >/dev/null && rm -rf "${tmp}"
 
 Binaries are published for `aarch64-apple-darwin`, `x86_64-apple-darwin`, `x86_64-unknown-linux-gnu`, and `aarch64-unknown-linux-gnu` (a Windows binary appears when cross-compilation succeeds). If a runtime process crashes mid-procedure, just re-run the command — state lives in your markdown, and writes are filesystem-atomic, so the runtime resumes from the next incomplete step.
 
-### Registration is automatic
+### Registering the runtime
 
-You install the binary; you don't register the server yourself. The next time you run `/govern` after `gvrn` is on your `PATH`, the bootstrap detects it, writes the per-agent MCP config (`.mcp.json` for Claude-style agents, `.agents/mcp_config.json` for Antigravity) and the matching tool permissions, then asks you to start a fresh session so the runtime loads. From that session on, the pipeline takes the deterministic path. The writes are additive — an existing MCP config keeps its other servers, and a `gvrn` entry that's already present is left untouched. If `/govern` can't find the binary, it stays on the markdown path and reminds you that installing `gvrn` cuts token use.
+You install the binary; the next time you run `/govern` after `gvrn` is on your `PATH`, the bootstrap detects it and adds the matching tool permissions. How the server itself is registered depends on where your agent reads MCP config:
+
+- **Claude** — `/govern` writes `.mcp.json` for you; just start a fresh session. Fully automatic.
+- **Auggie** — Auggie reads MCP servers from your user-level `~/.augment/settings.json`, which `/govern` does not write. It surfaces a one-line command to run once — `auggie mcp add gvrn --command gvrn --args "mcp"` — then start a fresh session.
+- **Antigravity** — `/govern` writes `.agents/mcp_config.json`.
+
+From that session on, the pipeline takes the deterministic path. File writes are additive — an existing MCP config keeps its other servers, and a `gvrn` entry that's already present is left untouched. If `/govern` can't find the binary, it stays on the markdown path and reminds you that installing `gvrn` cuts token use.
 
 ## Configuration
 

@@ -38,12 +38,13 @@ Wave 1 (tasks 1–4) does not change Antigravity behavior and is implementable n
 
 ## 3. Correct the README wiring description
 
-- [ ] Edit `README.md` (~line 186): replace "writes the per-agent MCP config (`.mcp.json`
+- [x] Edit `README.md` (~line 186): replace "writes the per-agent MCP config (`.mcp.json`
       for Claude-style agents, `.agents/mcp_config.json` for Antigravity)" with the
       per-agent reality — writes `.mcp.json` for Claude; surfaces a one-line registration
       command for home-level agents (Auggie now; Antigravity per verification).
-- [ ] **Done when:** the README no longer claims Auggie/Antigravity use a committed MCP
-      file; `lint-markdown` clean.
+- [x] **Done when:** the README no longer claims Auggie uses a committed MCP file
+      (Antigravity stays documented as `write-file`/`.agents/mcp_config.json` pending the
+      task-6 verification); `lint-markdown` clean.
 
 ## 4. Record cross-spec impact on 028 and 029
 
