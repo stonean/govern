@@ -61,14 +61,18 @@ Wave 1 (tasks 1–4) does not change Antigravity behavior and is implementable n
 
 ## 5. Verify Antigravity project-local MCP loading against the live `agy` CLI
 
-- [ ] On a machine with `agy` installed, place a `gvrn` entry in a project's
+- [x] On a machine with `agy` installed, place a `gvrn` entry in a project's
       `.agents/mcp_config.json` and confirm whether the server actually spawns (vs.
       read-but-ignored per `google-antigravity/antigravity-cli` issue #60).
-- [ ] Create `specs/031-agent-mcp-wiring/scenarios/antigravity-mcp-verification.md`
+      **Result: project-local NOT loaded (0 spawns, 0 log refs); home-level control
+      loads (sentinel spawned, 19 log refs). Issue #60 confirmed.**
+- [x] Create `specs/031-agent-mcp-wiring/scenarios/antigravity-mcp-verification.md`
       recording the `agy` version tested, the observed behavior, and the resulting
       descriptor branch (`write-file`/`project-committed` vs. `surface-instruction`/`home-level`).
-- [ ] **Done when:** the scenario file records a definitive outcome (or, if `agy` is
+- [x] **Done when:** the scenario file records a definitive outcome (or, if `agy` is
       unavailable, records that and selects the safe home-level default).
+      **Definitive: Antigravity → `~/.gemini/config/mcp_config.json` / `home-level` /
+      `surface-instruction`.**
 
 ## 6. Finalize the Antigravity descriptor and State-B branch (gated on task 5)
 
