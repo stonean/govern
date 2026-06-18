@@ -99,10 +99,10 @@ Wave 1 (tasks 1–4) does not change Antigravity behavior and is implementable n
 
 ## 8. Generalize the command-preamble MCP-prefix phrasing (optional sweep)
 
-- [ ] Replace "server-name prefix taken from `.mcp.json`" with "taken from the agent's MCP
+- [x] Replace "server-name prefix taken from `.mcp.json`" with "taken from the agent's MCP
       registration" in `framework/bootstrap/govern.md` (line ~22) and
       `framework/commands/{target,status,analyze,implement,audit,specify,plan,ask}.md`.
-- [ ] **Done when:** the phrase is host-generic everywhere; `lint-markdown` clean.
+- [x] **Done when:** the phrase is host-generic everywhere; `lint-markdown` clean.
 
 ## 9. Final lint and dead-reference sweep
 
