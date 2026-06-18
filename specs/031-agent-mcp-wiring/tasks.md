@@ -106,8 +106,9 @@ Wave 1 (tasks 1–4) does not change Antigravity behavior and is implementable n
 
 ## 9. Final lint and dead-reference sweep
 
-- [ ] Run `lint-markdown` across the feature directory and every changed framework file.
-- [ ] Grep the framework + README for `.mcp.json` / `mcp_config.json` and confirm no
+- [x] Run `lint-markdown` across the feature directory and every changed framework file.
+- [x] Grep the framework + README for `.mcp.json` / `mcp_config.json` and confirm no
       remaining reference implies Auggie (or, per task 5, Antigravity) reads a committed
-      MCP file.
-- [ ] **Done when:** lint clean and no dead per-agent MCP-file references remain.
+      MCP file. **Fixed the last one: `runtime-tools.txt` namespacing comment generalized
+      to per-host registration with both wire identifiers.**
+- [x] **Done when:** lint clean and no dead per-agent MCP-file references remain.

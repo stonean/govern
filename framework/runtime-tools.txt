@@ -13,9 +13,10 @@
 #
 # Tool names are case-sensitive exact-match strings. Names are bare
 # `<verb>-<noun>` strings — server-level namespacing (`gvrn`) is
-# supplied by the MCP server registration in `.mcp.json`, which makes the
-# Claude Code-side wire identifier `mcp__gvrn__<verb>-<noun>`. The
-# bare names are also the `gvrn <name>` subcommand identifiers.
+# supplied by each host's MCP server registration, producing the
+# host-specific wire identifier (Claude Code: `mcp__gvrn__<verb>-<noun>`;
+# Auggie / Antigravity: `mcp:gvrn:<verb>-<noun>`). The bare names are
+# also the `gvrn <name>` subcommand identifiers.
 
 read-spec
 read-tasks
