@@ -76,12 +76,13 @@ Wave 1 (tasks 1–4) does not change Antigravity behavior and is implementable n
 
 ## 6. Finalize the Antigravity descriptor and State-B branch (gated on task 5)
 
-- [ ] Set Antigravity's registry MCP descriptor (task 1 table) to the verified values.
-- [ ] If `surface-instruction`: add the Antigravity abort instruction (edit
+- [x] Set Antigravity's registry MCP descriptor (task 1 table) to the verified values.
+- [x] If `surface-instruction`: add the Antigravity abort instruction (edit
       `~/.gemini/config/mcp_config.json`, then `/mcp` reload) and stop writing
       `.agents/mcp_config.json`. If `write-file`: keep current behavior, descriptor now
-      explicit.
-- [ ] **Done when:** govern.md's Antigravity MCP descriptor and State-B branch match the
+      explicit. **→ surface-instruction / home-level applied across govern.md,
+      data-model.md, README.md.**
+- [x] **Done when:** govern.md's Antigravity MCP descriptor and State-B branch match the
       task-5 outcome; `lint-markdown` clean.
 
 ## 7. Conditional cleanup migration (gated on task 5; only if project-local is ignored)

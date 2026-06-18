@@ -187,7 +187,7 @@ You install the binary; the next time you run `/govern` after `gvrn` is on your 
 
 - **Claude** — `/govern` writes `.mcp.json` for you; just start a fresh session. Fully automatic.
 - **Auggie** — Auggie reads MCP servers from your user-level `~/.augment/settings.json`, which `/govern` does not write. It surfaces a one-line command to run once — `auggie mcp add gvrn --command gvrn --args "mcp"` — then start a fresh session.
-- **Antigravity** — `/govern` writes `.agents/mcp_config.json`.
+- **Antigravity** — Antigravity reads MCP servers only from your home-level `~/.gemini/config/mcp_config.json` (project-local config is ignored), which `/govern` does not write. It surfaces an instruction: add the `gvrn` block to that file, then reload with the in-prompt `/mcp` overlay.
 
 From that session on, the pipeline takes the deterministic path. File writes are additive — an existing MCP config keeps its other servers, and a `gvrn` entry that's already present is left untouched. If `/govern` can't find the binary, it stays on the markdown path and reminds you that installing `gvrn` cuts token use.
 

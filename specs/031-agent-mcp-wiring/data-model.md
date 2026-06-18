@@ -26,24 +26,18 @@ must not mutate the user's home, per the spec's posture decision).
 | --- | --- | --- | --- | --- |
 | `claude` | `.mcp.json` (repo root) | `project-committed` | `write-file` | — |
 | `auggie` | `~/.augment/settings.json` | `user-global` | `surface-instruction` | `auggie mcp add gvrn --command gvrn --args "mcp"` |
-| `antigravity` | **verification-gated** (see below) | **verification-gated** | **verification-gated** | edit `~/.gemini/config/mcp_config.json` (add the `gvrn` block), then `/mcp` reload |
+| `antigravity` | `~/.gemini/config/mcp_config.json` | `home-level` | `surface-instruction` | edit `~/.gemini/config/mcp_config.json` (add the `gvrn` block), then `/mcp` reload |
 
-### Antigravity: verification-gated descriptor
+### Antigravity: resolved by live-`agy` verification
 
-Until tested against the live `agy` CLI, Antigravity's descriptor is **provisional**. Two
-outcomes:
-
-- **Project-local `.agents/mcp_config.json` loads servers** ⇒ `target: .agents/mcp_config.json`,
-  `scope: project-committed`, `mechanism: write-file` — govern's current behavior is
-  correct and only the descriptor is recorded explicitly.
-- **Project-local is read-but-ignored** (the `google-antigravity/antigravity-cli` issue #60
-  reading) ⇒ `target: ~/.gemini/config/mcp_config.json`, `scope: home-level`,
-  `mechanism: surface-instruction`, and a `framework/migrations.toml` entry removes the
-  stale `.agents/mcp_config.json` from adopter repos.
-
-Until verification resolves it, the provisional value is the current behavior
-(`.agents/mcp_config.json`, `write-file`) annotated "unverified" — the home-level default
-is the safe fallback (home-level definitely loads) if verification cannot be performed.
+The descriptor above was settled by testing the live `agy` CLI (see
+[scenarios/antigravity-mcp-verification.md](scenarios/antigravity-mcp-verification.md)):
+project-local `.agents/mcp_config.json` is **not loaded** (0 server spawns, 0 MCP log
+references across two runs), while a home-level control at
+`~/.gemini/config/mcp_config.json` **loads** (sentinel spawned, 19 MCP log references).
+Issue #60 confirmed. Antigravity is therefore `home-level` / `surface-instruction`, and the
+previously-written `.agents/mcp_config.json` is inert cruft retired by a
+`framework/migrations.toml` entry.
 
 ## Server entry shape (unchanged across all agents)
 

@@ -84,11 +84,11 @@ MCP discovery is **not** layout-derived — it is a per-agent property. A host c
 | --- | --- | --- | --- | --- |
 | `claude` | `.mcp.json` (repo root) | `project-committed` | `write-file` | — |
 | `auggie` | `~/.augment/settings.json` | `user-global` | `surface-instruction` | `auggie mcp add gvrn --command gvrn --args "mcp"` |
-| `antigravity` | `.agents/mcp_config.json` *(provisional — unverified)* | `project-committed` *(provisional)* | `write-file` *(provisional)* | edit `~/.gemini/config/mcp_config.json`, then `/mcp` reload |
+| `antigravity` | `~/.gemini/config/mcp_config.json` | `home-level` | `surface-instruction` | edit `~/.gemini/config/mcp_config.json`, then `/mcp` reload |
 
 - **`write-file`** — govern writes `target` additively at State-B wire time (the additive merge in §MCP wiring). Only `project-committed` agents use it.
 - **`surface-instruction`** — govern writes **no** MCP file; State B surfaces the instruction in the Pre-flight abort and the user runs it once per machine, then restarts. Required for `user-global` / `home-level` agents, whose MCP config lives outside the repo and which govern must not silently mutate.
-- **Antigravity is provisional** pending a test against the live `agy` CLI: whether project-local `.agents/mcp_config.json` actually loads servers is disputed (documented as workspace-local, but reported read-but-ignored upstream). If it loads, the row above stands; if it is ignored, Antigravity becomes `~/.gemini/config/mcp_config.json` / `home-level` / `surface-instruction`. The home-level `surface-instruction` branch is the safe default when verification cannot be performed.
+- **Antigravity** loads MCP servers only from home-level `~/.gemini/config/mcp_config.json`; project-local `.agents/mcp_config.json` is **ignored** (verified against the live `agy` CLI). There is no scriptable `agy mcp add`, so registration is a config-file edit plus a `/mcp` reload.
 
 ### Adding a new agent
 
@@ -214,7 +214,7 @@ How State B registers `gvrn` depends on the agent's MCP registration `mechanism`
 { "mcpServers": { "gvrn": { "command": "gvrn", "args": ["mcp"] } } }
 ```
 
-**`write-file` agents** (scope `project-committed` — Claude, and Antigravity pending verification). govern writes the agent's `target` MCP file from §MCP registration (`.mcp.json` at the repo root for Claude). The write **updates the file in place — it never replaces or truncates it.** Apply the matching case:
+**`write-file` agents** (scope `project-committed` — Claude). govern writes the agent's `target` MCP file from §MCP registration (`.mcp.json` at the repo root for Claude). The write **updates the file in place — it never replaces or truncates it.** Apply the matching case:
 
 - **Missing file** — create it containing only the `gvrn` entry.
 - **Has `mcpServers`, no `gvrn`** — add the `gvrn` entry; preserve every other server and every other top-level key.
@@ -224,10 +224,10 @@ How State B registers `gvrn` depends on the agent's MCP registration `mechanism`
 
 There is no `gvrn` runtime primitive for this merge: State B is the runtime-absent case by definition, so the write is always host-side.
 
-**`surface-instruction` agents** (scope `user-global` / `home-level` — Auggie, and Antigravity if verification confirms project-local is read-but-ignored). The agent reads MCP servers from a file in the user's **home** directory, shared across all their projects, which govern must **not** write. govern writes no MCP file; instead the **Pre-flight abort** surfaces the agent's registration instruction for the user to run once per machine, then restart:
+**`surface-instruction` agents** (scope `user-global` / `home-level` — Auggie and Antigravity). The agent reads MCP servers from a file in the user's **home** directory, shared across all their projects, which govern must **not** write. govern writes no MCP file; instead the **Pre-flight abort** surfaces the agent's registration instruction for the user to run once per machine, then restart:
 
 - **Auggie** — `auggie mcp add gvrn --command gvrn --args "mcp"` (the documented, schema-stable subcommand; it writes `~/.augment/settings.json`).
-- **Antigravity** — add the `gvrn` block above to `~/.gemini/config/mcp_config.json`, then reload via the in-prompt `/mcp` overlay (there is no scriptable `agy mcp add`). Surfaced only if verification routes Antigravity here.
+- **Antigravity** — add the `gvrn` block above to `~/.gemini/config/mcp_config.json`, then reload via the in-prompt `/mcp` overlay (there is no scriptable `agy mcp add`; project-local `.agents/mcp_config.json` is ignored).
 
 The permission write (State B step 2) still happens for these agents — it targets the project-level settings file the agent reads, independent of the home-level MCP-server location.
 
