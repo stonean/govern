@@ -2,10 +2,10 @@
 status: in-progress
 dependencies: [012-multi-agent-govern, 028-antigravity-agent, 029-bootstrap-runtime-autowire]
 review:
-  last-run: null
-  reviewed-against: null
+  last-run: 2026-06-18T23:30:38Z
+  reviewed-against: ef1aaccca59ac6e982fdda8f0b14f2cd78daf5c8
   must-violations: 0
-  should-violations: 0
+  should-violations: 1
   low-confidence: 0
   blocking: false
 ---
