@@ -118,6 +118,8 @@ curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/stonean/g
 curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/stonean/govern/main/install.sh | sh -s -- auggie
 ```
 
+Using the optional `gvrn` runtime? Auggie needs a one-time manual registration (`auggie mcp add gvrn …`) — see [Registering the runtime](#registering-the-runtime).
+
 ### Antigravity
 
 ```bash
@@ -126,7 +128,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/stonean/g
 
 Then run `/govern {project-name}`. The installer creates the right directory for your agent and drops the bootstrap command in place — for Antigravity it's wrapped as a skill under `.agents/skills/govern/`, since Antigravity discovers dir-form skills rather than verbatim command files. It's safe to re-run. (`agy`, the Antigravity CLI command name, works in place of `antigravity`.)
 
-The same bootstrap supports every agent, so re-run `/govern --add-agent` from any adopted agent later to add others. You don't need to wire the optional runtime by hand — once the `gvrn` binary is on your `PATH`, `/govern` registers it automatically on its next run (see [The optional runtime](#the-optional-runtime)).
+The same bootstrap supports every agent, so re-run `/govern --add-agent` from any adopted agent later to add others. Once the `gvrn` binary is on your `PATH`, `/govern` wires it on its next run — automatically for Claude, or by surfacing a one-time registration step for Auggie and Antigravity (see [Registering the runtime](#registering-the-runtime)).
 
 ## Brownfield adoption
 
