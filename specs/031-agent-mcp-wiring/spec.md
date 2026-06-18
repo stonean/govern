@@ -101,29 +101,29 @@ the instruction for the user to run.
 
 ## Acceptance Criteria
 
-- [ ] The Agent Registry / §Derived values no longer state that Auggie's MCP-wiring file
+- [x] The Agent Registry / §Derived values no longer state that Auggie's MCP-wiring file
       is repo-root `.mcp.json`.
-- [ ] The Antigravity MCP target in the registry reflects a **verification against the
+- [x] The Antigravity MCP target in the registry reflects a **verification against the
       live `agy` CLI**: home-level `~/.gemini/config/mcp_config.json` if project-local
       `.agents/mcp_config.json` is confirmed not to load servers, otherwise the
       confirmed-working project-local path. The verification outcome is recorded (in the
       plan or a scenario) so the decision is auditable rather than assumed.
-- [ ] A per-agent MCP descriptor records, for each of Claude / Auggie / Antigravity, the
+- [x] A per-agent MCP descriptor records, for each of Claude / Auggie / Antigravity, the
       correct MCP config target path and its scope (project-committed vs. user-global vs.
       home-level), independent of the `layout` field.
-- [ ] §MCP wiring in `framework/bootstrap/govern.md` documents the correct registration
+- [x] §MCP wiring in `framework/bootstrap/govern.md` documents the correct registration
       target and mechanism for each agent, replacing the single per-layout file write.
-- [ ] An Auggie adoption produces no repo-root `.mcp.json`.
-- [ ] The [029-bootstrap-runtime-autowire](../029-bootstrap-runtime-autowire/spec.md)
+- [x] An Auggie adoption produces no repo-root `.mcp.json`.
+- [x] The [029-bootstrap-runtime-autowire](../029-bootstrap-runtime-autowire/spec.md)
       State-B path produces, for Auggie (and for Antigravity if verification moves its
       target off the committed file), an outcome that results in a loadable `gvrn`
       registration via the surfaced-instruction posture rather than a write to an ignored
       path.
-- [ ] govern's completion / State-B message surfaces the correct registration step: for
+- [x] govern's completion / State-B message surfaces the correct registration step: for
       Auggie, `auggie mcp add gvrn --command gvrn --args "mcp"`; for Antigravity, the
       config-file edit + `/mcp` reload — shown when `gvrn` is present but not yet
       registered.
-- [ ] If files already written into existing adopter projects (`.mcp.json` for Auggie,
+- [x] If files already written into existing adopter projects (`.mcp.json` for Auggie,
       and `.agents/mcp_config.json` for Antigravity should verification retarget it) need
       cleanup, the change is registered in `framework/migrations.toml` so `/govern`
       reconciles them on the next run.
