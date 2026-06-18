@@ -87,11 +87,15 @@ Wave 1 (tasks 1–4) does not change Antigravity behavior and is implementable n
 
 ## 7. Conditional cleanup migration (gated on task 5; only if project-local is ignored)
 
-- [ ] If verification confirmed project-local ignored: add a `framework/migrations.toml`
+- [x] If verification confirmed project-local ignored: add a `framework/migrations.toml`
       entry removing a stale `.agents/mcp_config.json` from adopter repos on the next
       `/govern` run. Verify the matcher targets only that file and **never** `.mcp.json`.
-- [ ] **Done when:** the migration entry exists and is antigravity-file-scoped — or the
-      task is closed N/A because project-local loads.
+      **Decision: Option B — no migration.** The stale file is inert (agy ignores it), so
+      cleanup is purely cosmetic; a destructive, primitive-less (hand-edited JSON every
+      `/govern`), version-coupled migration is not worth it. Symmetric with leaving
+      Auggie's stale `.mcp.json` in place. govern stops writing it going forward (task 6).
+- [x] **Done when:** the migration entry exists and is antigravity-file-scoped — or the
+      task is closed **N/A** (chosen): inert file left in place, no destructive cleanup.
 
 ## 8. Generalize the command-preamble MCP-prefix phrasing (optional sweep)
 

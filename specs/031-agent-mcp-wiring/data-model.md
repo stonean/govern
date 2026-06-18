@@ -35,9 +35,10 @@ The descriptor above was settled by testing the live `agy` CLI (see
 project-local `.agents/mcp_config.json` is **not loaded** (0 server spawns, 0 MCP log
 references across two runs), while a home-level control at
 `~/.gemini/config/mcp_config.json` **loads** (sentinel spawned, 19 MCP log references).
-Issue #60 confirmed. Antigravity is therefore `home-level` / `surface-instruction`, and the
-previously-written `.agents/mcp_config.json` is inert cruft retired by a
-`framework/migrations.toml` entry.
+Issue #60 confirmed. Antigravity is therefore `home-level` / `surface-instruction`. govern
+stops writing `.agents/mcp_config.json` going forward; any already-written copy is **inert
+cruft left in place** — agy ignores it, so no destructive cleanup migration is warranted
+(symmetric with how govern leaves Auggie's stale `.mcp.json`).
 
 ## Server entry shape (unchanged across all agents)
 
