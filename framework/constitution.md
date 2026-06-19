@@ -185,6 +185,8 @@ See `framework/rules/configuration-cross.md` (`CFG-ENV-NNN` rules) for the enfor
 
 Bugs are unwritten or violated requirements. Every bug is evidence that one of the framework's three artifact tiers — rules (cross-cutting), specs (feature-wide), or scenarios (situational) — has a gap. Rather than tracking defects in a separate system, fixing a bug means making the requirement at the right tier more precise. See [§rules](#rules) for the rule tier and [§scenarios](#scenarios) for the scenario tier.
 
+Not every captured item is a requirement gap. An inbox item may be a **chore** — a discrete piece of project maintenance (lint or formatting cleanup, dependency cleanup, repo hygiene, a standalone refactor) that adds no missing or violated requirement and belongs to no single feature. A chore does **not** spawn a rule, spec, or scenario, and it is **not** a spec task — a spec's `tasks.md` holds work derived from that feature's plan, never standalone chores. It stays tracked as a checkbox in `specs/inbox.md` (the project's non-feature work surface) and is resolved by being *done*, then removed — not migrated to a spec. The test is **durability**: rules, specs, and scenarios hold durable information that must stay accurate as the project evolves — feature description and context, acceptance criteria kept current, resolved open questions that serve as the project's architecture-decision record, and cross-cutting rules. A chore captures none of that; it is transient work whose value is spent once complete. Route requirement gaps through the decision tree below; leave chores in the inbox to be done directly.
+
 ### Bug Decision Tree
 
 When a bug is reported, follow this decision tree in order. The first matching condition determines the route:
@@ -326,7 +328,7 @@ A `specs/inbox.md` file is the project's capture queue for issues not yet assign
 - **Brownfield migration** — for projects adopting `govern` incrementally, known issues are parked here until a spec exists to absorb them.
 - **Incidental capture** — issues an agent discovers as a side effect of other work are recorded here automatically (see [Automatic issue capture](#automatic-issue-capture) below).
 
-Items are recorded with `/log` (manual) or captured automatically during work, and groomed into their proper home with `/groom`.
+Items are recorded with `/log` (manual) or captured automatically during work, and groomed into their proper home with `/groom`. An item's "proper home" is usually a feature spec, scenario, or rule; an item that is a **chore** (project maintenance belonging to no feature — lint or dependency cleanup, repo hygiene, see [§bug-handling](#bug-handling)) has no spec home and is resolved by being done directly, then removed — `/groom` recognizes it and leaves it in place rather than forcing it into a spec.
 
 Inbox rules:
 
@@ -479,6 +481,7 @@ For every kind of fact described in multiple places, one location is authoritati
 | Security rule file format and ID conventions (`BE-`/`FE-`) | `specs/008-security-rules/data-model.md` |
 | Configuration rule file format and ID conventions (`CFG-`) | `specs/017-derive-dont-ask/data-model.md` |
 | Service registry schema (`.govern.toml` `[services]`) | `specs/030-cross-service-references/data-model.md` |
+| Where contributor knowledge is recorded (git vs. per-user agent memory) | `framework/constitution.md` §drift-prevention (Shared knowledge stays in git) |
 
 When adding a new kind of fact that may be referenced from multiple documents, name its canonical source explicitly here.
 
@@ -506,6 +509,16 @@ When multiple commands distribute or reference the same set of files (e.g., `/go
 - As a registry both commands read.
 
 Two commands that copy-paste the same manifest into their own bodies are guaranteed to drift over time. Consolidate or accept that drift is the rule, not the exception.
+
+### Shared knowledge stays in git
+
+Knowledge that would help any other contributor belongs in a git-tracked artifact, never in an AI agent's per-user memory. Per-user memory stores (Claude Code's auto-memory, Cursor's memories, and equivalents) live outside the repository — invisible to every other contributor and absent from a fresh clone — so a fact parked there is guaranteed to drift from the shared source the moment anyone else works the area. It is the most severe form of the drift this section exists to prevent: not an inconsistency between two committed documents, but knowledge that was never committed at all.
+
+- A **project learning** — a convention, a gotcha, a workflow rule, a boundary — goes in `AGENTS.md` (or the matching rule file under `specs/rules/`), where every contributor and every agent reads it.
+- A **durable requirement** goes in its canonical artifact: a spec, a scenario, a rule, or this constitution (see [Canonical sources](#canonical-sources)).
+- **Per-user agent memory** is correct only for facts that carry no value to other contributors — who the individual user is (role, persistent personal preferences) and external reference pointers (issue-tracker, chat, or dashboard bookmarks).
+
+The test before saving to per-user memory: *would this help a teammate?* If yes, commit it. A host's own rules file (`CLAUDE.md`, `AGENTS.md`) supplies the agent-specific routing that applies this principle.
 
 <!-- §pipeline-boundaries -->
 

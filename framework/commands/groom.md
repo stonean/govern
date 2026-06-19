@@ -8,7 +8,7 @@ Walk the inbox and route each item to its proper home.
 
 ## Purpose
 
-Backlog grooming for `specs/inbox.md`. Walks each raw item through the bug decision tree and migrates it to the appropriate spec, scenario, or spec edit. Removes resolved items from the inbox. Pairs with `/{project}:log`, which records items to the inbox without interpreting them.
+Backlog grooming for `specs/inbox.md`. Walks each raw item through the bug decision tree and routes it to its proper home — a rule, a new spec, a spec edit, or a scenario. Not every item belongs to a spec: a **chore** (lint or formatting cleanup, dependency cleanup, repo hygiene — project maintenance with no feature home) is not spec material and is left in the inbox to be done directly, never forced into a spec, scenario, or `tasks.md` (§bug-handling, durability test). Removes items once they are migrated or resolved. Pairs with `/{project}:log`, which records items to the inbox without interpreting them.
 
 ## Context
 
@@ -46,20 +46,22 @@ For each item in the inbox list:
 
    **Step 2: Does a spec exist for this behavior?**
    - Search `specs/` for a feature directory that covers this area.
-   - If no spec exists — recommend creating one via `/{project}:capture`. Ask the user whether to create the spec now or skip this item.
+   - If no spec exists — recommend creating one via `/{project}:specify`. Ask the user whether to create the spec now or skip this item. (If the item is a chore rather than a feature gap — see Step 4 — it never needs a spec; leave it in the inbox.)
 
    **Step 3: Is the spec ambiguous or incomplete?**
    - If the existing spec does not cover the reported behavior clearly — recommend updating the spec directly. Offer to help update the spec section.
 
-   **Step 4: Is the spec clear but needs a scenario?**
-   - If the spec covers the area but the specific behavior needs lower-level elaboration — create a scenario inline under the matching spec's `scenarios/` directory using the `specs/templates/scenario.md` template, then append a task to the spec's `tasks.md` referencing the new scenario. (`/{project}:groom` keeps the inbox flow moving; for a deeper interactive walk through a single scenario, run `/{project}:ask` against the parent spec — the classifier routes the input to the scenario branch.)
+   **Step 4: Spec is clear — durable requirement, or a chore?**
+   - The spec covers the area, so there is no rule, missing-spec, or spec-edit gap. Now decide what the item *is* (§bug-handling, durability test):
+     - **A durable behavioral requirement** — a new behavior, edge case, or contract the spec covers at a high level but does not yet describe in detail. Create a scenario inline under the matching spec's `scenarios/` directory using the `specs/templates/scenario.md` template, then append a task to the spec's `tasks.md` referencing the new scenario. (`/{project}:groom` keeps the inbox flow moving; for a deeper interactive walk through a single scenario, run `/{project}:ask` against the parent spec — the classifier routes the input to the scenario branch.)
+     - **A chore** — project maintenance (lint or formatting cleanup, dependency cleanup, repo hygiene, a standalone refactor) that adds no durable requirement. It is **not** spec material: do not create a rule, spec, or scenario, and do not append it to any `tasks.md` — spec tasks are feature work derived from a plan, not standalone chores. Leave the item in `specs/inbox.md` (do **not** remove it), tell the user it is general maintenance to be done directly (the project's lint/format/test workflows cover the common cases), and continue. It clears from the inbox when it is done, not by grooming.
 
-3. After migrating or resolving the item, remove it from `specs/inbox.md`.
+3. After migrating an item to a spec, scenario, or rule (or otherwise resolving it), remove it from `specs/inbox.md`. A chore recognized in Step 4 is the exception — leave it in place; it is resolved by being done, not by grooming.
 4. **Wait for user confirmation before moving to the next item.** Do not proceed until the user approves.
 
 ### Completion
 
 After all items are groomed:
 
-- Report how many items were migrated, how many specs were created, and how many items remain.
+- Report how many items were migrated, how many specs were created, how many scenarios were added, how many items were recognized as chores (left in the inbox to be done directly), and how many items remain.
 - If `specs/inbox.md` is now empty (no items left), report: "Inbox is clean."

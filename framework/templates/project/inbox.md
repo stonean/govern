@@ -9,6 +9,9 @@ Items are migrated to their proper home by `/groom` (see the constitution,
      - Do not frontfill bugs that are not being actively worked on.
      - Write specs for areas being actively touched — let adoption spread naturally.
      - As specs are written, items migrate from here into spec updates or new scenarios.
+     - Chores (project maintenance with no feature home — lint/formatting cleanup,
+       dependency cleanup, repo hygiene) also live here; /groom recognizes them and leaves
+       them in place. They clear when done, not by migrating to a spec.
      - The brownfield backlog drains toward empty as adoption completes; incidental
        capture is ongoing, so the file persists while work keeps surfacing issues.
 

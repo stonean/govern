@@ -106,6 +106,7 @@ The goal is a scenario that captures a specific situation and the concrete behav
 1. **Walk the bug decision tree** (§bug-handling):
    - **Does a spec exist for the behavior?** If no, stop. Tell the user to create the spec first via `/{project}:specify`, then come back. (`/ask` requires a session target with a real spec file.)
    - **Is the spec ambiguous or incomplete?** If yes — the right fix is to update the spec directly, not record a scenario. Offer to help edit the spec; exit without recording.
+   - **Is this a chore rather than a spec addition?** If the input is project maintenance (lint or formatting cleanup, dependency cleanup, repo hygiene, a standalone refactor) that adds no durable requirement and is not really about this spec (§bug-handling, durability test) — it is not spec material. Do not write a scenario or touch the spec; tell the user to capture it with `/{project}:log` (it lives in the inbox as a chore, done directly). Exit without recording.
    - **Is the spec clear but the behavior needs lower-level elaboration?** Proceed to draft the scenario.
 2. **Derive a slug** — lowercase, hyphenated, no whitespace, no punctuation beyond hyphens. Check `specs/{feature}/scenarios/` for slug conflicts; if a file with that slug exists, ask the user for a different name.
 3. **Identify the parent-spec section** — the `section:` frontmatter value names the spec section the scenario elaborates. Read the spec's body to pick an appropriate section, or ask the user.
@@ -175,6 +176,7 @@ Informational; no separate confirmation prompt.
 | Spec | `done` | question | Status tiebreaker auto-routes to scenario instead. The classifier never selects "question" on a `done` spec. |
 | Spec | `draft` / `clarified` / `planned` / `in-progress` | scenario | Show reopen-not-needed impact (the spec is already accepting work), create scenario, append task, update session target. No status mutation. |
 | Spec | `done` | scenario | Show reopen impact, create scenario, append task, revert `status` to `in-progress` in the same write, update session target. |
+| Spec | any | chore (scenario-route guard) | Not spec material — redirect the user to `/{project}:log` and exit. No question, scenario, task, or status mutation. |
 | Spec | `done` (on-disk delta, user confirms re-open precondition) | (precondition) | Flip `status` to `in-progress` via `set-status` (otherwise, edit the frontmatter directly). No question, no scenario, no task — the existing on-disk edits already capture the work. |
 | Scenario | (no status field) | (forced question) | Append question to the scenario's Open Questions section. The parent spec's status is not read or mutated. |
 
@@ -187,4 +189,5 @@ When the user is done, display the next step:
 - If a question was recorded on a spec: "Question recorded. Run `/{project}:clarify` to resolve it." On a spec, the status is now `draft` regardless of where it started.
 - If a question was recorded on a scenario: "Question recorded. Run `/{project}:clarify` to resolve it." The parent spec's status is unchanged.
 - If a scenario was recorded: "Scenario recorded at `specs/{feature}/scenarios/{slug}.md` and set as the session target. Run `/{project}:implement` to work on the new task."
+- If the input was a chore: "That's general maintenance, not a spec addition — capture it with `/{project}:log`." Nothing was recorded on the spec.
 - If the user aborted before accepting any input, exit silently — no input was recorded and no status mutation occurred.
