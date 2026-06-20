@@ -52,8 +52,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 8. Add the `opencode` arm to `install.sh`
 
-- [ ] Add the `opencode)` case: `dest=".opencode/command/govern.md"`, `mkdir -p .opencode/command`, seed root `opencode.json` `permission` (only if absent)
-- [ ] Update the usage comment and the unknown-agent error message to include `opencode`
+- [x] Add the `opencode)` case: `dest=".opencode/command/govern.md"`, `mkdir -p .opencode/command`, seed root `opencode.json` `permission` (only if absent)
+- [x] Update the usage comment and the unknown-agent error message to include `opencode`
 - Done when: `curl … | sh -s -- opencode` installs a verbatim `/govern` command and a seeded `opencode.json`
 
 ## 9. Document the OpenCode bootstrap in README

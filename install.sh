@@ -8,6 +8,7 @@
 #   ... | sh -s -- claude
 #   ... | sh -s -- auggie
 #   ... | sh -s -- antigravity   # 'agy' (the Antigravity CLI name) also works
+#   ... | sh -s -- opencode
 #
 # The script is idempotent — re-run it any time to refresh the bootstrap file.
 # govern is live-on-main: the bootstrap (and everything /govern fetches) tracks
@@ -138,8 +139,42 @@ JSON
 JSON
     fi
     ;;
+  opencode)
+    dest=".opencode/command/govern.md"
+    mkdir -p .opencode/command
+    cp "$tmp" "$dest"
+    # Pre-seed permissions so the first /govern run does not prompt for its
+    # bootstrap shell commands. OpenCode keeps both MCP wiring and permissions in
+    # one committed opencode.json; this seeds only the permission block, and only
+    # when neither opencode.json nor opencode.jsonc exists — /govern owns additive
+    # merges. Keep in sync with the opencode settings_template in
+    # framework/bootstrap/govern.md (§Agent Registry).
+    if [ ! -f opencode.json ] && [ ! -f opencode.jsonc ]; then
+      cat > opencode.json <<'JSON'
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "bash": {
+      "curl *": "allow",
+      "ls *": "allow",
+      "tar *": "allow",
+      "mktemp *": "allow",
+      "git status *": "allow",
+      "git config *": "allow",
+      "git rev-parse *": "allow",
+      "git diff *": "allow",
+      "git ls-files *": "allow",
+      "chmod *": "allow",
+      "awk *": "allow",
+      "command -v *": "allow"
+    }
+  }
+}
+JSON
+    fi
+    ;;
   *)
-    echo "govern: unknown agent '$agent' (expected: claude, auggie, antigravity, or agy)" >&2
+    echo "govern: unknown agent '$agent' (expected: claude, auggie, antigravity, agy, or opencode)" >&2
     exit 1
     ;;
 esac
