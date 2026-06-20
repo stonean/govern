@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Regenerate the runtime-MCP-tool permission blocks in
-# framework/bootstrap/configure/{claude,auggie,antigravity}.md from the
+# framework/bootstrap/configure/{claude,auggie,antigravity,opencode}.md from the
 # canonical tool list in framework/runtime-tools.txt.
 #
 # Establishes the invariant: every tool listed in runtime-tools.txt has
@@ -20,6 +20,8 @@
 #                              permission { type: "allow" }
 #                  →  Antigravity: a single `mcp(gvrn/*)` wildcard (covers
 #                                  every tool; not per-tool enumerated)
+#                  →  OpenCode: a single `"gvrn*": "allow"` glob (covers
+#                                  every tool; not per-tool enumerated)
 #
 # Exits non-zero if either marker is missing in either source file.
 
@@ -29,6 +31,7 @@ TOOLS="$ROOT/framework/runtime-tools.txt"
 CLAUDE_SRC="$ROOT/framework/bootstrap/configure/claude.md"
 AUGGIE_SRC="$ROOT/framework/bootstrap/configure/auggie.md"
 ANTIGRAVITY_SRC="$ROOT/framework/bootstrap/configure/antigravity.md"
+OPENCODE_SRC="$ROOT/framework/bootstrap/configure/opencode.md"
 
 # Track every mktemp we create so early-exit paths (set -e, signals,
 # splice failures) don't leak temp files into $TMPDIR.
@@ -66,6 +69,11 @@ auggie_block_file="$(mktemp)"; cleanup_files+=("$auggie_block_file")
 # single line, built outside the per-tool loop below.
 antigravity_block_file="$(mktemp)"; cleanup_files+=("$antigravity_block_file")
 printf '   - `mcp(gvrn/*)`\n' > "$antigravity_block_file"
+# OpenCode likewise uses one `"gvrn*": "allow"` glob (no dedicated mcp permission
+# key; MCP tools are matched by tool-name pattern), so its block is also a
+# constant single line built outside the per-tool loop.
+opencode_block_file="$(mktemp)"; cleanup_files+=("$opencode_block_file")
+printf '   - `"gvrn*": "allow"`\n' > "$opencode_block_file"
 
 tool_count=0
 while IFS= read -r tool; do
@@ -144,6 +152,7 @@ rc=0
 process "$CLAUDE_SRC" "$claude_block_file" || rc=$?
 process "$AUGGIE_SRC" "$auggie_block_file" || rc=$?
 process "$ANTIGRAVITY_SRC" "$antigravity_block_file" || rc=$?
+process "$OPENCODE_SRC" "$opencode_block_file" || rc=$?
 
 if [ "$rc" -ne 0 ] && [ "$dry_run" -eq 1 ]; then
   exit 1

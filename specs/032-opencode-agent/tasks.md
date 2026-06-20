@@ -33,15 +33,15 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 5. Create `framework/bootstrap/configure/opencode.md`
 
-- [ ] Author the configure command writing root `opencode.json` `permission` (action map: `edit: allow`, `bash` allow/deny patterns, `webfetch`/`websearch` as needed, `"gvrn*": "allow"` ordered after any broad `*`)
-- [ ] Implement it as a prose-walk generic additive JSON-object merge (preserve `$schema` + adopter keys; `.jsonc` fallback), per spec Resolved Q5 — not a `merge-permissions` extension
-- [ ] Include the `<!-- generated:mcp-allow:start/end -->` markers for the generator
+- [x] Author the configure command writing root `opencode.json` `permission` (action map: `edit: allow`, `bash` allow/deny patterns, `webfetch`/`websearch` as needed, `"gvrn*": "allow"` ordered after any broad `*`)
+- [x] Implement it as a prose-walk generic additive JSON-object merge (preserve `$schema` + adopter keys; `.jsonc` fallback), per spec Resolved Q5 — not a `merge-permissions` extension
+- [x] Include the `<!-- generated:mcp-allow:start/end -->` markers for the generator
 - Done when: `configure/opencode.md` exists with the canonical permission set, the merge prose, and the marker block
 
 ## 6. Emit the OpenCode MCP block from `gen-configure-mcp.sh`
 
-- [ ] Add `opencode.md` as a fourth splice target; emit a constant single `"gvrn*": "allow"` line (built outside the per-tool loop, like Antigravity's `mcp(gvrn/*)`) between the markers
-- [ ] Run the generator; verify `claude.md` / `auggie.md` / `antigravity.md` output is unchanged and `opencode.md` is populated
+- [x] Add `opencode.md` as a fourth splice target; emit a constant single `"gvrn*": "allow"` line (built outside the per-tool loop, like Antigravity's `mcp(gvrn/*)`) between the markers
+- [x] Run the generator; verify `claude.md` / `auggie.md` / `antigravity.md` output is unchanged and `opencode.md` is populated
 - Done when: the generator updates all four sources and the pre-commit drift invariant covers OpenCode
 
 ## 7. Add `.opencode/` to the managed `.gitignore` block
