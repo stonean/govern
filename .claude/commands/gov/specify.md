@@ -76,7 +76,7 @@ Run `npx markdownlint-cli2` on the new file (primitive: `lint-markdown`).
 
 ### Write the session target
 
-Write `.govern.session.toml` to set this feature as the session target (host responsibility; the runtime exposes no session-shaped primitive). Use tempfile + rename atomic-write semantics analogous to the runtime's spec write primitives.
+Write `.govern.session.toml` to set this feature as the session target (host responsibility; the runtime exposes no session-shaped primitive for this step). First read any existing `.govern.session.toml` to capture its cli-config-dir (the per-contributor agent identity written by /govern) and carry it forward, so creating a new feature never drops the agent identity. Use tempfile + rename atomic-write semantics analogous to the runtime's spec write primitives.
 
 ### Display the next step
 

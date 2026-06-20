@@ -370,6 +370,61 @@ fn exec_resolves_command_via_parameterized_host_block() {
 }
 
 #[test]
+fn exec_resolves_command_via_opencode_singular_command_dir() {
+    ensure_binary_built();
+    // OpenCode-shaped adopter project — no `framework/commands/` tree,
+    // command file at `.opencode/command/anvil/smoke.md` (the `opencode`
+    // layout uses a *singular* `command/` directory, unlike claude-style's
+    // `commands/`). `.govern.toml` declares `[host] cli-config-dir =
+    // ".opencode"` and `project = "anvil"`. The runtime tries the plural
+    // `commands/` candidate first (absent here), then the singular
+    // `command/` candidate, which resolves. Without the singular candidate
+    // the run would fail with "command file not found".
+    let tmp = tempfile::tempdir().unwrap();
+    let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/exec-opencode");
+    copy_dir_recursive(&fixture, tmp.path());
+
+    let mut child = Command::new(runtime_binary())
+        .arg("exec")
+        .arg("smoke")
+        .arg("feature=001-basic")
+        .current_dir(tmp.path())
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn runtime");
+    drop(child.stdin.take());
+
+    let stdout = child.stdout.take().unwrap();
+    let mut envelopes: Vec<Value> = Vec::new();
+    for line in BufReader::new(stdout).lines() {
+        let line = line.unwrap();
+        if line.trim().is_empty() {
+            continue;
+        }
+        envelopes.push(serde_json::from_str(&line).unwrap());
+    }
+    let stderr_buf = child.stderr.take().unwrap();
+    let stderr_str: String = BufReader::new(stderr_buf)
+        .lines()
+        .map_while(Result::ok)
+        .collect::<Vec<_>>()
+        .join("\n");
+    let status = child.wait().unwrap();
+    assert!(
+        status.success(),
+        "exit: {status:?}\nstderr:\n{stderr_str}\nenvelopes: {envelopes:?}"
+    );
+    let types: Vec<&str> = envelopes
+        .iter()
+        .map(|v| v["type"].as_str().unwrap())
+        .collect();
+    assert_eq!(types, vec!["progress", "complete"]);
+    assert_eq!(envelopes[0]["primitive"], "read-spec");
+}
+
+#[test]
 fn exec_returns_nonzero_when_command_file_missing() {
     ensure_binary_built();
     let tmp = tempfile::tempdir().unwrap();

@@ -1216,16 +1216,25 @@ pub struct MigrateSessionFileResult {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct WriteSessionArgs {
-    /// Feature slug (e.g., `022-deterministic-runtime`).
+    /// Feature slug (e.g., `022-deterministic-runtime`). Supplying it makes
+    /// this a *target write* — feature, path, scenario, and a fresh `set-at`
+    /// are written, preserving the per-contributor `cli-config-dir`. Omit it
+    /// (supplying only `cli-config-dir`) for a *host-config write* that sets
+    /// the agent identity while preserving the existing target. Must be
+    /// supplied together with `path`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[arg(long)]
-    pub feature: String,
+    pub feature: Option<String>,
     /// Repo-relative spec directory (e.g., `specs/022-deterministic-runtime`).
     /// The TOML key in the written session file is `path`, matching the
     /// convention used by `dashboard`'s reader and by host-written
-    /// sessions in adopter repos pre-consolidation.
+    /// sessions in adopter repos pre-consolidation. Must be supplied
+    /// together with `feature`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[arg(long)]
-    pub path: String,
-    /// Optional scenario slug. Must be supplied iff `scenario-path` is set.
+    pub path: Option<String>,
+    /// Optional scenario slug. Must be supplied iff `scenario-path` is set,
+    /// and only on a target write (with `feature`).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[arg(long)]
     pub scenario: Option<String>,
@@ -1235,6 +1244,18 @@ pub struct WriteSessionArgs {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[arg(long)]
     pub scenario_path: Option<String>,
+    /// Optional per-contributor agent config-dir name (`.claude`, `.augment`,
+    /// `.opencode`, `.agents`). Written to the gitignored session file by
+    /// `/govern` so a teammate's agent choice never lands in committed
+    /// config. Read back by `crate::host::Host`. On a target write it is
+    /// preserved from the existing file unless supplied here.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        rename = "cli-config-dir"
+    )]
+    #[arg(long = "cli-config-dir")]
+    pub cli_config_dir: Option<String>,
 }
 
 /// Result for `write-session`.
@@ -2001,12 +2022,13 @@ mod tests {
     #[test]
     fn write_session_round_trip() {
         let args = WriteSessionArgs {
-            feature: "022-deterministic-runtime".into(),
-            path: "specs/022-deterministic-runtime".into(),
+            feature: Some("022-deterministic-runtime".into()),
+            path: Some("specs/022-deterministic-runtime".into()),
             scenario: Some("write-session-primitive".into()),
             scenario_path: Some(
                 "specs/022-deterministic-runtime/scenarios/write-session-primitive.md".into(),
             ),
+            cli_config_dir: None,
         };
         let value: serde_json::Value = serde_json::to_value(&args).unwrap();
         // CLI/MCP args remain kebab-case to match every other primitive.
@@ -2019,12 +2041,28 @@ mod tests {
         );
         assert_eq!(round_trip(&args), args);
 
-        // Absent scenario + scenario-path omit both fields.
-        let args_no_scenario = WriteSessionArgs {
-            feature: "002-target".into(),
-            path: "specs/002-target".into(),
+        // Host-config write: only `cli-config-dir` set; the target fields
+        // are absent.
+        let args_host = WriteSessionArgs {
+            feature: None,
+            path: None,
             scenario: None,
             scenario_path: None,
+            cli_config_dir: Some(".opencode".into()),
+        };
+        let vh: serde_json::Value = serde_json::to_value(&args_host).unwrap();
+        let objh = vh.as_object().unwrap();
+        assert!(!objh.contains_key("feature"));
+        assert_eq!(vh["cli-config-dir"], ".opencode");
+        assert_eq!(round_trip(&args_host), args_host);
+
+        // Absent scenario + scenario-path omit both fields.
+        let args_no_scenario = WriteSessionArgs {
+            feature: Some("002-target".into()),
+            path: Some("specs/002-target".into()),
+            scenario: None,
+            scenario_path: None,
+            cli_config_dir: None,
         };
         let v: serde_json::Value = serde_json::to_value(&args_no_scenario).unwrap();
         let obj = v.as_object().unwrap();

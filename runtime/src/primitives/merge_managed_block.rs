@@ -276,29 +276,115 @@ fn find_line_prefix_block<'a>(
     None
 }
 
-/// Walk up to `expected_block.lines().count()` lines from `body_start`,
-/// using `expected_block` as a structural template. Terminate early
-/// when the expected line is non-blank but the on-disk line is blank —
-/// the blank is the end-of-block terminator the previous run wrote.
-/// Returns the byte offset immediately past the last consumed line's
-/// newline (or `text.len()` at EOF).
-fn walk_body_extent(text: &str, body_start: usize, expected_block: &str) -> usize {
-    let mut body_offset = body_start;
-    for expected_line in expected_block.lines() {
-        if body_offset >= text.len() {
-            break;
+/// Split a managed block into its blank-line-delimited subsections, each
+/// reduced to its pattern lines (non-blank, non-comment). Comments and blank
+/// positions are deliberately dropped: those are the parts that drift between
+/// framework releases (wording tweaks, reflow), so the pattern lines are the
+/// stable identity used to align an on-disk block against a structurally
+/// changed canonical.
+fn block_groups(block: &str) -> Vec<Vec<&str>> {
+    let mut groups: Vec<Vec<&str>> = Vec::new();
+    let mut current: Vec<&str> = Vec::new();
+    let mut started = false;
+    for line in block.lines() {
+        let l = line.trim_end_matches('\r');
+        if l.is_empty() {
+            if started {
+                groups.push(current);
+                current = Vec::new();
+                started = false;
+            }
+        } else {
+            started = true;
+            if !l.starts_with('#') {
+                current.push(l);
+            }
         }
-        let rest = &text[body_offset..];
-        let line_end = rest.find('\n').map_or(rest.len(), |i| i);
-        let raw_line = &rest[..line_end];
-        let actual_line = raw_line.trim_end_matches('\r');
-        if !expected_line.is_empty() && actual_line.is_empty() {
-            break;
-        }
-        let has_newline = line_end < rest.len();
-        body_offset += line_end + usize::from(has_newline);
     }
-    body_offset
+    if started {
+        groups.push(current);
+    }
+    groups
+}
+
+/// Read one blank-line-delimited group from `text` starting at `start`.
+/// Returns the group's pattern lines, the byte offset just past the group's
+/// last line, and the byte offset of the next group's first line. The two
+/// offsets differ by the blank-line separator that terminates the group; at
+/// EOF they coincide.
+fn read_group(text: &str, start: usize) -> (Vec<&str>, usize, usize) {
+    let mut patterns: Vec<&str> = Vec::new();
+    let mut scan = start;
+    let mut content_end = start;
+    while scan < text.len() {
+        let rest = &text[scan..];
+        let line_end = rest.find('\n').map_or(rest.len(), |i| i);
+        let line = rest[..line_end].trim_end_matches('\r');
+        let next = scan + line_end + usize::from(line_end < rest.len());
+        if line.is_empty() {
+            // Blank separator — not part of the group. Report the offset past
+            // it as the next group's start.
+            return (patterns, content_end, next);
+        }
+        if !line.starts_with('#') {
+            patterns.push(line);
+        }
+        scan = next;
+        content_end = next;
+    }
+    (patterns, content_end, scan)
+}
+
+/// Find the byte offset where the on-disk managed block ends, given the new
+/// canonical `expected_block`. The on-disk block is the *previous* canonical,
+/// which may differ from the new one structurally — a subsection inserted or
+/// removed, or a subsection's contents rewritten. A blank-line-only structural
+/// walk can't tell an interior subsection separator from the end-of-block
+/// terminator once the structures diverge, so this aligns on-disk groups
+/// against canonical groups with a two-pointer walk:
+///
+/// - **shares a pattern with the current canonical group** → structure-
+///   preserving edit (e.g. a comment-wording tweak); consume it.
+/// - **shares a pattern with a *later* canonical group** → the canonical
+///   inserted one or more groups not on disk (e.g. a new agent's subsection);
+///   skip past them, then consume this group against the group it matches.
+/// - **shares no pattern with any remaining canonical group** → a full rewrite
+///   of the current canonical group; consume it.
+///
+/// The block ends at the first on-disk group reached after the canonical's
+/// groups are exhausted — that group is adopter territory and is preserved.
+/// Returns the byte offset immediately past the last in-block group's final
+/// line (or `body_start` if the block is empty).
+fn walk_body_extent(text: &str, body_start: usize, expected_block: &str) -> usize {
+    let canon = block_groups(expected_block);
+    let mut ci = 0;
+    let mut offset = body_start;
+    let mut block_end = body_start;
+    while offset < text.len() {
+        // Canonical groups exhausted: everything from here is adopter content.
+        if ci >= canon.len() {
+            break;
+        }
+        let (patterns, content_end, next_start) = read_group(text, offset);
+        if canon[ci].iter().any(|p| patterns.contains(p)) {
+            ci += 1;
+        } else if let Some(rel) = canon[ci + 1..]
+            .iter()
+            .position(|g| g.iter().any(|p| patterns.contains(p)))
+        {
+            // Skip the inserted canonical group(s); re-match this on-disk group
+            // against the later canonical group it shares a pattern with
+            // without advancing past it on disk.
+            ci += rel + 1;
+            continue;
+        } else {
+            // Full rewrite of the current canonical group.
+            ci += 1;
+        }
+        block_end = content_end;
+        offset = next_start;
+    }
+    block_end
 }
 
 fn merge_line_prefix(
@@ -1018,6 +1104,90 @@ Thumbs.db";
             1,
             "subsection header must appear exactly once: {body:?}"
         );
+    }
+
+    #[test]
+    fn line_prefix_multi_subsection_inserts_new_subsection_without_orphan_tail() {
+        // Regression: a structure-CHANGING canonical edit — a new subsection
+        // inserted in the middle (the realistic case: adding an agent's
+        // gitignore block, e.g. Auggie's `.augment/*` between Claude and
+        // Antigravity). The new canonical is longer than the on-disk block, so
+        // the blank-line structural walk drifts and mis-bounds the old block,
+        // leaving its tail subsections duplicated below the new block as orphan
+        // comment headers after dedup strips their bodies. The merge must
+        // instead bound the old block by group alignment and replace it
+        // cleanly. Adopter content after the block is preserved.
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join(".gitignore");
+        let old_canonical = "\
+# Environment and secrets
+.env
+
+# Claude Code local settings (keep commands tracked for project-wide access)
+.claude/*
+!.claude/commands/
+
+# Antigravity local settings (keep skills tracked for project-wide access)
+.agents/*
+!.agents/skills/
+
+# IDE
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db";
+        let new_canonical = "\
+# Environment and secrets
+.env
+
+# Claude Code local settings (keep commands tracked for project-wide access)
+.claude/*
+!.claude/commands/
+
+# Auggie local settings (keep commands tracked for project-wide access)
+.augment/*
+!.augment/commands/
+
+# Antigravity local settings (keep skills tracked for project-wide access)
+.agents/*
+!.agents/skills/
+
+# IDE
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db";
+        let on_disk = format!("# govern-managed\n{old_canonical}\n\n# Rust\n/target\n");
+        fs::write(&path, &on_disk).unwrap();
+
+        let result = run(&args(&path, new_canonical, Some("line-prefix")), tmp.path()).unwrap();
+        assert_eq!(result.action, "updated");
+
+        let body = fs::read_to_string(&path).unwrap();
+        let expected = format!("# govern-managed\n{new_canonical}\n\n# Rust\n/target\n");
+        assert_eq!(
+            body, expected,
+            "inserted subsection must replace cleanly with no orphan tail"
+        );
+        // The Auggie subsection is present exactly once, and no subsection
+        // header is duplicated (the orphan-tail symptom).
+        assert_eq!(body.matches(".augment/*").count(), 1);
+        for header in ["# IDE\n", "# OS\n", "# Antigravity"] {
+            assert_eq!(
+                body.matches(header).count(),
+                1,
+                "header must appear exactly once: {header:?} in {body:?}"
+            );
+        }
+        // Adopter language section after the block survives verbatim.
+        assert!(body.contains("# Rust\n/target\n"));
+
+        // Idempotent: a second run with the same new canonical is a no-op.
+        let rerun = run(&args(&path, new_canonical, Some("line-prefix")), tmp.path()).unwrap();
+        assert_eq!(rerun.action, "unchanged");
+        assert_eq!(fs::read_to_string(&path).unwrap(), expected);
     }
 
     #[test]

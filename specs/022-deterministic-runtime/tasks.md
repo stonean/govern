@@ -371,3 +371,40 @@ The fix is consolidation, not parameterization: drop the host-/project-specific 
 - [x] Add CHANGELOG entry; bump `gvrn` to 0.11.0 (feature-level addition — new `Host` public API, new `[host]` block in `.govern.toml`, new Family 13 audit, parameterized command resolution; same minor-bump convention as 0.7.0 / 0.8.0); re-run every lint (`cargo test`, `cargo clippy --all-targets -- -D warnings`, `cargo fmt --check`, `lint-procedure-parseability`, `lint-tool-coverage`, `lint-frontmatter`, `markdownlint-cli2` over the 022 spec dir + CHANGELOG + bootstrap).
 - [x] Tag-push `gvrn-v0.11.0` (triggers the release workflow's 5-leg matrix); after all matrix legs report success, `cargo publish` from `runtime/` to upload `gvrn 0.11.0` to crates.io. Both steps require user authorization (externally visible).
 - **Done when**: the runtime resolves command files via `.govern.toml`'s `[host]` block at both callsites; the Auggie-shaped fixture passes parity; no hardcoded `.claude/commands/gov/` string remains in `runtime/src/`; the default-fallback path keeps this repo's behavior unchanged; `gvrn-v0.11.0` is live on GitHub releases and crates.io.
+
+## 42. Implement scenario: [merge-managed-block-subsection-insertion](scenarios/merge-managed-block-subsection-insertion.md)
+
+- [x] Add `.augment/*` + `!.augment/commands/` to `framework/templates/project/gitignore` (Auggie is `claude-style`, mirroring the Claude `commands` carve-out); add `.augment/` to the two managed-block enumerations in `framework/bootstrap/govern.md`
+- [x] Generalize `walk_body_extent` (`runtime/src/primitives/merge_managed_block.rs`) from a structural-template walk to group alignment: split the canonical and on-disk region into blank-line-delimited subsections, reduce each to its pattern lines (non-blank, non-comment), and align with a two-pointer walk (shares-pattern-with-current / shares-with-later-canonical-group / full-rewrite). Add `block_groups` and `read_group` helpers
+- [x] Add regression test `line_prefix_multi_subsection_inserts_new_subsection_without_orphan_tail` (inserted subsection replaces cleanly, present once, no duplicated headers, adopter `# Rust` tail preserved, idempotent rerun); confirm all existing `merge_managed_block::tests` pass unchanged
+- [x] Cross-reference the superseded "grew between runs" / "shrank or structurally diverged" Edge Cases in `scenarios/merge-managed-block-multi-subsection-end.md`
+- [x] Add CHANGELOG entry (shipped in the consolidated `0.13.0` release — see §43); `cargo test` + `cargo clippy --all-targets` green
+- [ ] Tag-push `gvrn-v0.13.0` — the `runtime-release.yml` workflow auto-builds the matrix and publishes to crates.io on the tag; requires user authorization (externally visible); shared with §43
+
+- **Done when**: an existing adopter re-running `/govern` after the framework inserts a new agent's gitignore subsection gets the block replaced cleanly with no orphan comment-header trail; new adopters and same-structure / full-replacement updates are unchanged; the inserted-subsection regression test and all existing `merge_managed_block::tests` pass; `gvrn-v0.13.0` is live on GitHub releases and crates.io.
+
+## 43. Implement scenario: [opencode-command-resolution](scenarios/opencode-command-resolution.md)
+
+Runtime follow-up for [032-opencode-agent](../032-opencode-agent/spec.md) Decision 10: spec 032 ships OpenCode on the markdown-only path and defers `gvrn exec` command resolution for the `opencode` layout (singular `command/` dir) to a 022 follow-up. Done here so OpenCode lands with a single `gvrn` update; the framework-side spec-032 work (registry row, derived values, `.opencode/` gitignore, `install.sh`, README) is owned by a separate session and is **not** in scope for this task.
+
+- [x] Add `Host::command_file_candidates` (`runtime/src/host.rs`) returning both flat-namespaced installed paths in order — plural `{dir}/commands/{project}/<name>.md` (claude-style) then singular `{dir}/command/{project}/<name>.md` (opencode); update the module doc
+- [x] Route both resolution callsites (`main::run_exec`, `interpreter::payload::locate_command_file`) through the helper so the plural/singular set lives in one place and the callsites cannot drift
+- [x] Add unit test `command_file_candidates_cover_both_layouts_plural_first`; add `exec-opencode` parity fixture (`.opencode/command/anvil/smoke.md`, `project` in `.govern.toml` `[host]`, `cli-config-dir = ".opencode"` in `.govern.session.toml` per §44) + subprocess test `exec_resolves_command_via_opencode_singular_command_dir`
+- [x] Bump `gvrn` to `0.13.0` (minor — new `Host` public API + new layout support, same convention as 0.11.0's `Host` parameterization); CHANGELOG `### Added` entry; `cargo test`, `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` green
+- [ ] Tag-push `gvrn-v0.13.0` — the `runtime-release.yml` workflow auto-builds the matrix and publishes to crates.io on the tag; requires user authorization (externally visible); shared with §42, §44
+
+- **Done when**: `gvrn exec <name>` resolves an OpenCode adopter's command file at `.opencode/command/{project}/<name>.md` (no `commands/` vs `command/` hardcoding at either callsite); claude-style adopters resolve unchanged (plural tried first); the new unit + parity tests pass; `gvrn-v0.13.0` is live on GitHub releases and crates.io.
+
+## 44. Implement scenario: [cli-config-dir-per-contributor](scenarios/cli-config-dir-per-contributor.md)
+
+`cli-config-dir` was committed to `.govern.toml` `[host]`, but it names the contributor's agent config dir (`.claude` / `.opencode` / …) — a per-contributor choice, since teammates on one project may use different agents. Relocate it to the gitignored, per-contributor `.govern.session.toml`; `project` stays committed. Ships in the same `0.13.0` `gvrn` update.
+
+- [x] `runtime/src/host.rs`: read `cli_config_dir` from `.govern.session.toml` → legacy `.govern.toml` `[host]` → default `.claude`; `project` still from `.govern.toml`. Add `load_host_block` / `load_session_cli_config_dir` helpers + `SessionHost` reader; unit tests for session-wins-over-legacy, session-only, and malformed-session fallback
+- [x] Extend `write-session` into a merge-writer (option A): `feature`/`path`/`scenario` optional, new optional `cli-config-dir` arg; target write preserves `cli-config-dir`, host-config write preserves the target; validations (feature+path paired, scenario needs a target, reject empty). Update `WriteSessionArgs` schema + round-trip test; new unit tests (host-config write fresh + preserve-target, reject-empty, reject-feature-without-path, reject-scenario-without-target)
+- [x] `dashboard`: `SessionFile.feature` optional — a session file with only `cli-config-dir` reports `session-target: null`, not a parse error
+- [x] `framework/bootstrap/govern.md`: step 6 writes `project` to `.govern.toml` `[host]` (drops legacy `cli-config-dir`) and `cli-config-dir` to `.govern.session.toml` via host-config write; update step 1 host-block prose, the `[host]` schema + prose, §Session state, and the derived-values note
+- [x] `framework/commands/target.md`: `--clear` preserves `cli-config-dir` (rewrite to only that key, else delete); step 8 target write preserves `cli-config-dir` on both the MCP and markdown-only paths
+- [x] Migration is self-healing (legacy fallback + next `/govern` relocation); no dedicated primitive. CHANGELOG `### Changed` entry; `cargo test`, `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, audits, markdownlint green
+- [ ] Tag-push `gvrn-v0.13.0` — the `runtime-release.yml` workflow auto-builds the matrix and publishes to crates.io on the tag; requires user authorization (externally visible); shared with §42, §43
+
+- **Done when**: `cli-config-dir` never lands in committed config; a mixed-agent team each resolves their own agent dir from their own session file; legacy adopters keep working via the fallback and self-migrate on the next `/govern`; `--clear` and target switches preserve the agent identity; all new tests pass; `gvrn-v0.13.0` is live.

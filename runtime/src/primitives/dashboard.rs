@@ -256,7 +256,11 @@ fn load_config(repo: &Path) -> Result<DashboardConfig> {
 /// file complete the migration via the `/govern` bootstrap pass.
 #[derive(Deserialize)]
 struct SessionFile {
-    feature: String,
+    // Optional: a session file may exist carrying only the per-contributor
+    // `cli-config-dir` (written by `/govern` before any target is selected).
+    // No `feature` means no target to surface.
+    #[serde(default)]
+    feature: Option<String>,
     #[serde(default)]
     scenario: Option<String>,
     #[serde(default, rename = "scenario-path")]
@@ -278,12 +282,17 @@ fn load_session_target(repo: &Path) -> Result<Option<DashboardSessionTarget>> {
         path: session_path.clone(),
         source,
     })?;
+    // A session file with no `feature` (e.g. only `cli-config-dir` recorded by
+    // `/govern` before a target is selected) carries no target to surface.
+    let Some(feature) = session.feature else {
+        return Ok(None);
+    };
     let scenario_detail = match (&session.scenario, &session.scenario_path) {
         (Some(_), Some(rel_path)) => load_scenario_detail(repo, rel_path)?,
         _ => None,
     };
     Ok(Some(DashboardSessionTarget {
-        feature: session.feature,
+        feature,
         scenario: session.scenario,
         scenario_detail,
     }))

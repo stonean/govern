@@ -1,7 +1,10 @@
-# Auggie-shaped adopter project — exercises the [host] block override
-# at command-resolution time. The runtime would otherwise default to
-# `.claude` / repo directory basename, neither of which resolve under
-# this fixture's `.augment/commands/anvil/` layout.
+# Auggie-shaped adopter project — exercises the LEGACY `cli-config-dir`
+# fallback: a pre-relocation adopter still carrying `cli-config-dir` in the
+# committed `.govern.toml` `[host]` block (current adopters write it to the
+# gitignored `.govern.session.toml` instead; see the exec-opencode fixture).
+# The runtime would otherwise default to `.claude` / repo directory basename,
+# neither of which resolve under this fixture's `.augment/commands/anvil/`
+# layout.
 
 # govern (host)
 [host]

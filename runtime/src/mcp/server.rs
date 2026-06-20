@@ -443,7 +443,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "write-session",
-        description = "Atomically rewrite `.govern.session.toml` (repo root, gitignored, single path for every adopter) with the session-target record. Pairs with `dashboard`'s read of the same file; allowing this MCP tool once suppresses the per-invocation Write permission prompt the host-write path triggers."
+        description = "Atomically merge-write `.govern.session.toml` (repo root, gitignored, single path for every adopter). A target write (supply `feature`+`path`, optional `scenario`) sets the target and preserves the per-contributor `cli-config-dir`; a host-config write (supply only `cli-config-dir`) sets the agent config-dir and preserves the existing target. Pairs with `dashboard`'s read of the same file; allowing this MCP tool once suppresses the per-invocation Write permission prompt the host-write path triggers."
     )]
     async fn write_session(
         &self,

@@ -28,7 +28,7 @@
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::primitives::{PrimitiveError, Result, rel_path, validate_no_traversal, write_atomic};
 use crate::schema::primitives::{WriteSessionArgs, WriteSessionResult};
@@ -64,9 +64,29 @@ pub(crate) fn run_with_now(
     repo: &Path,
     now: SystemTime,
 ) -> Result<WriteSessionResult> {
-    validate_no_traversal(&args.path)?;
+    if let Some(path) = &args.path {
+        validate_no_traversal(path)?;
+    }
     if let Some(scenario_path) = &args.scenario_path {
         validate_no_traversal(scenario_path)?;
+    }
+    // `feature` and `path` are a pair — a target needs both.
+    match (&args.feature, &args.path) {
+        (Some(_), None) => {
+            return Err(PrimitiveError::MissingArgument {
+                primitive: "write-session".into(),
+                argument: "path".into(),
+                reason: "must be supplied together with `feature`".into(),
+            });
+        }
+        (None, Some(_)) => {
+            return Err(PrimitiveError::MissingArgument {
+                primitive: "write-session".into(),
+                argument: "feature".into(),
+                reason: "must be supplied together with `path`".into(),
+            });
+        }
+        _ => {}
     }
     match (&args.scenario, &args.scenario_path) {
         (Some(_), None) => {
@@ -85,21 +105,57 @@ pub(crate) fn run_with_now(
         }
         _ => {}
     }
+    // A scenario only means something inside a target write.
+    if args.scenario.is_some() && args.feature.is_none() {
+        return Err(PrimitiveError::MissingArgument {
+            primitive: "write-session".into(),
+            argument: "feature".into(),
+            reason: "`scenario` requires a target write (supply `feature` and `path`)".into(),
+        });
+    }
+    // Nothing to do unless this is a target write or a host-config write.
+    if args.feature.is_none() && args.cli_config_dir.is_none() {
+        return Err(PrimitiveError::MissingArgument {
+            primitive: "write-session".into(),
+            argument: "feature".into(),
+            reason:
+                "supply `feature`+`path` (target write) or `cli-config-dir` (host-config write)"
+                    .into(),
+        });
+    }
 
     let session_path = repo.join(SESSION_FILE);
     let created = !session_path.exists();
+    let existing = read_existing_session(&session_path);
 
-    let record = SessionRecord {
-        feature: &args.feature,
-        path: &args.path,
-        scenario: args.scenario.as_deref(),
-        scenario_path: args.scenario_path.as_deref(),
-        set_at: iso8601_utc(now),
+    // Merge semantics. A *target write* (feature supplied) sets the target
+    // fields from args — including clearing `scenario` when it's absent — and
+    // stamps a fresh `set-at`, preserving the per-contributor `cli-config-dir`
+    // unless overridden. A *host-config write* (no feature) sets
+    // `cli-config-dir` and preserves the existing target verbatim.
+    let record = if args.feature.is_some() {
+        SessionRecord {
+            feature: args.feature.clone(),
+            path: args.path.clone(),
+            scenario: args.scenario.clone(),
+            scenario_path: args.scenario_path.clone(),
+            set_at: Some(iso8601_utc(now)),
+            cli_config_dir: args.cli_config_dir.clone().or(existing.cli_config_dir),
+        }
+    } else {
+        SessionRecord {
+            feature: existing.feature,
+            path: existing.path,
+            scenario: existing.scenario,
+            scenario_path: existing.scenario_path,
+            set_at: existing.set_at,
+            cli_config_dir: args.cli_config_dir.clone(),
+        }
     };
-    // `toml::to_string` over a struct of `&str` / `Option<&str>` / `String`
-    // is infallible — no non-string keys, no I/O, no exotic types — so the
-    // `expect` documents the invariant rather than handling a reachable
-    // failure mode. Same pattern as `merge_permissions::serialize_pretty`.
+    // `toml::to_string` over a struct of `Option<String>` is infallible — no
+    // non-string keys, no I/O, no exotic types — so the `expect` documents the
+    // invariant rather than handling a reachable failure mode. Same pattern as
+    // `merge_permissions::serialize_pretty`.
     let body = toml::to_string(&record).expect("session TOML serializes infallibly");
 
     write_atomic(&session_path, &body)?;
@@ -111,19 +167,57 @@ pub(crate) fn run_with_now(
 }
 
 /// On-disk shape of the session file. Field order is the wire contract —
-/// the parity byte-equality check on `.govern.session.toml` depends on
-/// it. All keys are kebab-case to match the reader in
-/// [`crate::primitives::dashboard`].
+/// the parity byte-equality check on `.govern.session.toml` depends on it.
+/// All keys are kebab-case to match the reader in
+/// [`crate::primitives::dashboard`]. Every field is optional: a host-config
+/// write (only `cli-config-dir`) against a fresh repo writes just that key,
+/// and a target write writes the target block plus the preserved
+/// `cli-config-dir`.
 #[derive(Serialize)]
-struct SessionRecord<'a> {
-    feature: &'a str,
-    path: &'a str,
+struct SessionRecord {
     #[serde(skip_serializing_if = "Option::is_none")]
-    scenario: Option<&'a str>,
+    feature: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    scenario: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none", rename = "scenario-path")]
-    scenario_path: Option<&'a str>,
-    #[serde(rename = "set-at")]
-    set_at: String,
+    scenario_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "set-at")]
+    set_at: Option<String>,
+    // Serialized last so the target block (feature/path/scenario/set-at)
+    // keeps its byte-for-byte order; absent unless a write recorded it.
+    #[serde(skip_serializing_if = "Option::is_none", rename = "cli-config-dir")]
+    cli_config_dir: Option<String>,
+}
+
+/// The fields of an existing `.govern.session.toml` a write may need to
+/// carry forward: a target write preserves `cli-config-dir`; a host-config
+/// write preserves the whole target block.
+#[derive(Deserialize, Default)]
+struct ExistingSession {
+    #[serde(default)]
+    feature: Option<String>,
+    #[serde(default)]
+    path: Option<String>,
+    #[serde(default)]
+    scenario: Option<String>,
+    #[serde(default, rename = "scenario-path")]
+    scenario_path: Option<String>,
+    #[serde(default, rename = "set-at")]
+    set_at: Option<String>,
+    #[serde(default, rename = "cli-config-dir")]
+    cli_config_dir: Option<String>,
+}
+
+/// Best-effort read of the current session file at `session_path`. A missing
+/// or malformed file yields an empty record so a write simply has nothing to
+/// preserve rather than failing.
+fn read_existing_session(session_path: &Path) -> ExistingSession {
+    let Ok(content) = std::fs::read_to_string(session_path) else {
+        return ExistingSession::default();
+    };
+    toml::from_str::<ExistingSession>(&content).unwrap_or_default()
 }
 
 /// Format `now` as an RFC 3339 / ISO 8601 UTC timestamp
@@ -197,10 +291,11 @@ mod tests {
 
     fn base_args() -> WriteSessionArgs {
         WriteSessionArgs {
-            feature: "022-deterministic-runtime".into(),
-            path: "specs/022-deterministic-runtime".into(),
+            feature: Some("022-deterministic-runtime".into()),
+            path: Some("specs/022-deterministic-runtime".into()),
             scenario: None,
             scenario_path: None,
+            cli_config_dir: None,
         }
     }
 
@@ -273,8 +368,8 @@ mod tests {
         // `.govern.session.toml` at the repo root.
         let tmp = tempdir().unwrap();
         let mut args = base_args();
-        args.feature = "002-observability".into();
-        args.path = "specs/002-observability".into();
+        args.feature = Some("002-observability".into());
+        args.path = Some("specs/002-observability".into());
         let result = run_with_now(&args, tmp.path(), fixed_now()).unwrap();
         assert_eq!(result.path, ".govern.session.toml");
         assert!(tmp.path().join(".govern.session.toml").is_file());
@@ -282,6 +377,150 @@ mod tests {
         assert!(!tmp.path().join(".claude").exists());
         assert!(!tmp.path().join(".claude/gov-session.json").exists());
         assert!(!tmp.path().join(".claude/anvil-session.json").exists());
+    }
+
+    #[test]
+    fn preserves_cli_config_dir_across_a_target_switch() {
+        // `/govern` records the per-contributor `cli-config-dir` in the
+        // session file; a later `/{project}:target` rewrites the file for a
+        // new feature and must NOT drop it.
+        let tmp = tempdir().unwrap();
+        fs::write(
+            tmp.path().join(".govern.session.toml"),
+            "feature = \"001-old\"\npath = \"specs/001-old\"\nset-at = \"2026-01-01T00:00:00Z\"\ncli-config-dir = \".opencode\"\n",
+        )
+        .unwrap();
+
+        let mut args = base_args();
+        args.feature = Some("002-new".into());
+        args.path = Some("specs/002-new".into());
+        run_with_now(&args, tmp.path(), fixed_now()).unwrap();
+
+        let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
+        assert!(body.contains("feature = \"002-new\""), "{body}");
+        assert!(
+            body.contains("cli-config-dir = \".opencode\""),
+            "cli-config-dir must survive the target switch: {body}"
+        );
+        // Serialized after the target block.
+        assert!(body.find("set-at =").unwrap() < body.find("cli-config-dir =").unwrap());
+    }
+
+    #[test]
+    fn omits_cli_config_dir_when_none_recorded() {
+        let tmp = tempdir().unwrap();
+        run_with_now(&base_args(), tmp.path(), fixed_now()).unwrap();
+        let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
+        assert!(!body.contains("cli-config-dir"), "{body}");
+    }
+
+    #[test]
+    fn host_config_write_sets_cli_config_dir_on_fresh_repo() {
+        // `/govern` setting the agent identity before any target is selected:
+        // a host-config write (no feature) against a fresh repo writes just
+        // `cli-config-dir`.
+        let tmp = tempdir().unwrap();
+        let args = WriteSessionArgs {
+            feature: None,
+            path: None,
+            scenario: None,
+            scenario_path: None,
+            cli_config_dir: Some(".opencode".into()),
+        };
+        let result = run_with_now(&args, tmp.path(), fixed_now()).unwrap();
+        assert!(result.created);
+        let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
+        assert_eq!(body, "cli-config-dir = \".opencode\"\n");
+    }
+
+    #[test]
+    fn host_config_write_preserves_existing_target() {
+        // Setting `cli-config-dir` after a target is already selected must not
+        // disturb the target block (feature/path/scenario/set-at).
+        let tmp = tempdir().unwrap();
+        fs::write(
+            tmp.path().join(".govern.session.toml"),
+            "feature = \"001-x\"\npath = \"specs/001-x\"\nset-at = \"2026-01-01T00:00:00Z\"\n",
+        )
+        .unwrap();
+        let args = WriteSessionArgs {
+            feature: None,
+            path: None,
+            scenario: None,
+            scenario_path: None,
+            cli_config_dir: Some(".augment".into()),
+        };
+        run_with_now(&args, tmp.path(), fixed_now()).unwrap();
+        let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
+        assert!(body.contains("feature = \"001-x\""), "{body}");
+        assert!(body.contains("path = \"specs/001-x\""), "{body}");
+        assert!(body.contains("set-at = \"2026-01-01T00:00:00Z\""), "{body}");
+        assert!(body.contains("cli-config-dir = \".augment\""), "{body}");
+    }
+
+    #[test]
+    fn rejects_write_with_neither_target_nor_cli_config_dir() {
+        let tmp = tempdir().unwrap();
+        let args = WriteSessionArgs {
+            feature: None,
+            path: None,
+            scenario: None,
+            scenario_path: None,
+            cli_config_dir: None,
+        };
+        let err = run_with_now(&args, tmp.path(), fixed_now()).unwrap_err();
+        assert!(matches!(err, PrimitiveError::MissingArgument { .. }));
+        assert!(!tmp.path().join(".govern.session.toml").exists());
+    }
+
+    #[test]
+    fn rejects_feature_without_path() {
+        let tmp = tempdir().unwrap();
+        let args = WriteSessionArgs {
+            feature: Some("001-x".into()),
+            path: None,
+            scenario: None,
+            scenario_path: None,
+            cli_config_dir: None,
+        };
+        let err = run_with_now(&args, tmp.path(), fixed_now()).unwrap_err();
+        match err {
+            PrimitiveError::MissingArgument {
+                primitive,
+                argument,
+                ..
+            } => {
+                assert_eq!(primitive, "write-session");
+                assert_eq!(argument, "path");
+            }
+            other => panic!("expected MissingArgument, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn rejects_scenario_without_a_target() {
+        // A scenario is a sub-selection of the current target, so it requires
+        // a target write (feature + path).
+        let tmp = tempdir().unwrap();
+        let args = WriteSessionArgs {
+            feature: None,
+            path: None,
+            scenario: Some("x".into()),
+            scenario_path: Some("specs/x/scenarios/y.md".into()),
+            cli_config_dir: Some(".opencode".into()),
+        };
+        let err = run_with_now(&args, tmp.path(), fixed_now()).unwrap_err();
+        match err {
+            PrimitiveError::MissingArgument {
+                primitive,
+                argument,
+                ..
+            } => {
+                assert_eq!(primitive, "write-session");
+                assert_eq!(argument, "feature");
+            }
+            other => panic!("expected MissingArgument, got {other:?}"),
+        }
     }
 
     #[test]
@@ -345,7 +584,7 @@ mod tests {
     fn rejects_path_with_parent_component() {
         let tmp = tempdir().unwrap();
         let mut args = base_args();
-        args.path = "specs/../escape".into();
+        args.path = Some("specs/../escape".into());
         let err = run_with_now(&args, tmp.path(), fixed_now()).unwrap_err();
         assert!(matches!(err, PrimitiveError::InvalidPath { .. }));
     }

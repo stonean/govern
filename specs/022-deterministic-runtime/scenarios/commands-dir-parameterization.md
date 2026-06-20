@@ -69,3 +69,5 @@ The runtime's parity contract requires the markdown-only fallback to keep workin
 ## Resolved Questions
 
 **Source-of-truth shape — `.govern.toml` `[host]` block (Option 1).** Resolved 2026-05-24 during task 41 implementation. The runtime loads `Host { cli_config_dir, project }` from a `[host]` block in `.govern.toml`, defaulting to `.claude` / the repo directory basename when the block is missing. `/govern`'s bootstrap writes the block idempotently. Option 2 (env vars) was rejected as invisible at the repo level; Option 3 (per-invocation CLI flags) was rejected for ergonomic cost.
+
+> **Superseded in part for `cli-config-dir`.** `project` still loads from `.govern.toml` `[host]` as above, but `cli_config_dir` is per-contributor (teammates may use different agents) and was relocated to the gitignored `.govern.session.toml` — read with a legacy `.govern.toml` `[host]` fallback. See [cli-config-dir-per-contributor](cli-config-dir-per-contributor.md).

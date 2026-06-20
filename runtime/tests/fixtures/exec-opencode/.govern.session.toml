@@ -1,0 +1,6 @@
+# Per-contributor session state. `cli-config-dir` is the agent identity
+# `/govern` records here (never in committed config, since teammates may use
+# different agents); the runtime reads it to resolve command files at
+# `.opencode/command/{project}/<name>.md`. No target is set — `gvrn exec`
+# takes the feature as a CLI arg in this fixture.
+cli-config-dir = ".opencode"

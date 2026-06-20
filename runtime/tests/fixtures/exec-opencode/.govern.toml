@@ -1,0 +1,9 @@
+# OpenCode-shaped adopter project — exercises command resolution for the
+# `opencode` layout, whose command files live under a *singular* `command/`
+# directory (not `commands/`). `project` is the team-shared namespace and
+# stays in committed `.govern.toml`; the per-contributor `cli-config-dir`
+# lives in the gitignored `.govern.session.toml` (see the sibling file).
+
+# govern (host)
+[host]
+project = "anvil"

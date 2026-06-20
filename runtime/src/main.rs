@@ -208,20 +208,26 @@ fn run_exec(command: &str, args: &[String], repo: &std::path::Path) -> ExitCode 
     use serde_json::{Map, Value};
 
     let host = Host::load(repo);
-    let candidates = [
+    let mut candidates = vec![
         repo.join("framework/commands")
             .join(format!("{command}.md")),
-        repo.join(format!(
-            "{}/commands/{}/{command}.md",
-            host.cli_config_dir, host.project
-        )),
-        // Bootstrap procedures (`/govern` and its successors) live outside
-        // the project-installable command namespace because they're invoked
-        // before any framework files exist in the adopter's project. See
-        // spec 022 scenario `govern-bootstrap`.
+    ];
+    // Installed command file under the adopter's config dir — `commands/`
+    // (claude-style) or singular `command/` (opencode); see
+    // `Host::command_file_candidates`.
+    candidates.extend(
+        host.command_file_candidates(command)
+            .into_iter()
+            .map(|rel| repo.join(rel)),
+    );
+    // Bootstrap procedures (`/govern` and its successors) live outside
+    // the project-installable command namespace because they're invoked
+    // before any framework files exist in the adopter's project. See
+    // spec 022 scenario `govern-bootstrap`.
+    candidates.push(
         repo.join("framework/bootstrap")
             .join(format!("{command}.md")),
-    ];
+    );
     let Some(path) = candidates.iter().find(|p| p.exists()) else {
         eprintln!(
             "runtime exec: command file not found (tried {})",

@@ -378,14 +378,12 @@ fn load_constitution_excerpts(command_name: &str, repo: &Path) -> Vec<String> {
 
 fn locate_command_file(command_name: &str, repo: &Path) -> Option<PathBuf> {
     let host = Host::load(repo);
-    for rel in [
-        format!("framework/commands/{command_name}.md"),
-        format!(
-            "{}/commands/{}/{command_name}.md",
-            host.cli_config_dir, host.project
-        ),
-        format!("framework/bootstrap/{command_name}.md"),
-    ] {
+    let mut rels = vec![format!("framework/commands/{command_name}.md")];
+    // Installed command file — `commands/` (claude-style) or singular
+    // `command/` (opencode); see `Host::command_file_candidates`.
+    rels.extend(host.command_file_candidates(command_name));
+    rels.push(format!("framework/bootstrap/{command_name}.md"));
+    for rel in rels {
         let candidate = repo.join(rel);
         if candidate.is_file() {
             return Some(candidate);
