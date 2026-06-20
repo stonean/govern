@@ -1,5 +1,5 @@
 ---
-status: planned
+status: in-progress
 dependencies: [012-multi-agent-govern, 022-deterministic-runtime, 028-antigravity-agent, 031-agent-mcp-wiring]
 review:
   last-run: null

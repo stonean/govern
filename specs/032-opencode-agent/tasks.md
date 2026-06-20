@@ -4,9 +4,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 1. Add the `opencode` registry row + derived values
 
-- [ ] Add the `opencode` row to `framework/bootstrap/govern.md` §Agent Registry (`config_dir: .opencode`, `layout: opencode`, `settings_template`, `rules_file_note`) per [data-model.md](data-model.md)
-- [ ] Add the `opencode` column to §Derived values (command path `.opencode/command/{project}/<name>.md`, invocation `/{project}/<name>`, `govern` install path `.opencode/command/govern.md`, settings file root `opencode.json`, permission shape OpenCode action map, native rules dir —, native rules file `AGENTS.md`, cleanup glob `{project}/` subdir under `command/`)
-- [ ] Update §"Adding a new agent" to record `opencode` as the third layout
+- [x] Add the `opencode` row to `framework/bootstrap/govern.md` §Agent Registry (`config_dir: .opencode`, `layout: opencode`, `settings_template`, `rules_file_note`) per [data-model.md](data-model.md)
+- [x] Add the `opencode` column to §Derived values (command path `.opencode/command/{project}/<name>.md`, invocation `/{project}/<name>`, `govern` install path `.opencode/command/govern.md`, settings file root `opencode.json`, permission shape OpenCode action map, native rules dir —, native rules file `AGENTS.md`, cleanup glob `{project}/` subdir under `command/`)
+- [x] Update §"Adding a new agent" to record `opencode` as the third layout
 - Done when: registry + derived values describe all four agents by profile; Claude/Auggie/Antigravity rows are byte-unchanged
 
 ## 2. Add the `opencode` MCP descriptor + State-B write-file branch
