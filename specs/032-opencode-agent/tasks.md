@@ -28,7 +28,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 4. Branch §Permission Setup for `opencode`
 
-- [ ] Seed the root `opencode.json` `permission` from the `opencode` `settings_template` (create the file with `$schema` + `permission` if absent); note the settings file == the MCP-wiring file for OpenCode
+- [x] Seed the root `opencode.json` `permission` from the `opencode` `settings_template` (create the file with `$schema` + `permission` if absent); note the settings file == the MCP-wiring file for OpenCode
 - Done when: the fetch/scaffold phase runs without permission prompts for an OpenCode adoption, additively
 
 ## 5. Create `framework/bootstrap/configure/opencode.md`

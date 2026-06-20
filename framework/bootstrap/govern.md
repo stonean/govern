@@ -143,11 +143,11 @@ The user must end up with at least one selected agent in every path. Removing an
 
 For each selected agent, before fetching any files:
 
-1. Read the agent's settings file — `{config_dir}/settings.local.json` for `claude-style`, or `{config_dir}/settings.json` for `antigravity` (create it if missing, with the agent's `settings_template` from the registry).
-2. Merge the agent's `settings_template` entries into the existing file additively: add any entries that are missing, do not deduplicate or reorder anything else, and do not overwrite entries the user or `/{project}:configure` previously added. For `claude-style` the entries live under `permissions.allow`/`permissions.deny` (Claude) or `toolPermissions` (Auggie); for `antigravity` they live under `permissions.allow`/`permissions.deny`/`permissions.ask`.
+1. Read the agent's settings file — `{config_dir}/settings.local.json` for `claude-style`, `{config_dir}/settings.json` for `antigravity`, or the **repo-root `opencode.json`** for `opencode` (the same file as OpenCode's MCP-wiring target — settings and MCP wiring share one file; create it if missing, with the agent's `settings_template` from the registry; for `opencode`, merge into the adopter's existing `opencode.jsonc` instead if that is where their config lives).
+2. Merge the agent's `settings_template` entries into the existing file additively: add any entries that are missing, do not deduplicate or reorder anything else, and do not overwrite entries the user or `/{project}:configure` previously added. For `claude-style` the entries live under `permissions.allow`/`permissions.deny` (Claude) or `toolPermissions` (Auggie); for `antigravity` they live under `permissions.allow`/`permissions.deny`/`permissions.ask`; for `opencode` they live under the `permission` action map (preserving `$schema` and every other top-level key).
 3. Write the file if anything was added.
 
-This prevents repeated permission prompts during the fetch and scaffolding phases. The full permission set is applied later by `/{project}:configure` (which writes the same per-layout settings file). The seed also includes the gvrn **binary probe** (`command -v gvrn` for `claude-style` and Auggie, `which gvrn` for `antigravity`) so the **Pre-flight Phase**'s State B/State C probe does not prompt on routine runs.
+This prevents repeated permission prompts during the fetch and scaffolding phases. The full permission set is applied later by `/{project}:configure` (which writes the same per-layout settings file). The seed also includes the gvrn **binary probe** (`command -v gvrn` for `claude-style`, Auggie, and `opencode`, `which gvrn` for `antigravity`) so the **Pre-flight Phase**'s State B/State C probe does not prompt on routine runs.
 
 ### gvrn runtime auto-wiring
 
@@ -175,7 +175,7 @@ Detect whether the optional gvrn runtime is available and, when its binary is in
 Two independent probes resolve the state:
 
 - **Tool-inventory introspection (State A).** Inspect your own available-tool inventory for any `gvrn`-namespaced MCP tool — `mcp__gvrn__*` on Claude Code, `mcp:gvrn:*` on Auggie and antigravity — counting deferred or lazily-loaded tool names as present (a host that lists tool names before exposing their schemas still has the runtime registered). Any match ⇒ **State A**. This needs no shell and no permission; you always know your own tools.
-- **Binary probe (State B vs. State C).** Only when introspection finds no `gvrn` tool, run a binary probe — `command -v gvrn` on `claude-style` and Auggie, `which gvrn` on `antigravity` (whose token-prefix permission grammar matches `which` cleanly). The probe is pre-authorized by the **Permission Setup** seed, so it does not prompt on routine runs. There is no non-shell way to detect an installed-but-unregistered binary — anything a tool could answer would already be **State A**. If the probe cannot run (no shell granted) or is denied, classify the run as **State C** — a harmless false negative; detection never hard-fails.
+- **Binary probe (State B vs. State C).** Only when introspection finds no `gvrn` tool, run a binary probe — `command -v gvrn` on `claude-style`, Auggie, and `opencode`, `which gvrn` on `antigravity` (whose token-prefix permission grammar matches `which` cleanly). The probe is pre-authorized by the **Permission Setup** seed, so it does not prompt on routine runs. There is no non-shell way to detect an installed-but-unregistered binary — anything a tool could answer would already be **State A**. If the probe cannot run (no shell granted) or is denied, classify the run as **State C** — a harmless false negative; detection never hard-fails.
 
 #### State A — runtime live this session
 
