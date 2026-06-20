@@ -2,8 +2,8 @@
 status: in-progress
 dependencies: [012-multi-agent-govern, 022-deterministic-runtime, 028-antigravity-agent, 031-agent-mcp-wiring]
 review:
-  last-run: null
-  reviewed-against: null
+  last-run: 2026-06-20T16:55:57Z
+  reviewed-against: a65c021bbcdf3bdd96dc970b486d51b454ddac85
   must-violations: 0
   should-violations: 0
   low-confidence: 0
