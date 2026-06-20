@@ -18,12 +18,12 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 3. Branch §Per-Agent Scaffolding + bootstrap flow for `opencode`
 
-- [ ] Add the `opencode` branch to the §Per-Agent Scaffolding dispatch note; copy each `framework/commands/<name>.md` → `.opencode/command/{project}/<name>.md` verbatim (carry `description`, keep body + gate prompts, substitute `{project}`/`{cli-config-dir}`→`.opencode`, preserve `$ARGUMENTS`); the configure row → `.opencode/command/{project}/configure.md`
-- [ ] Branch slash-command cleanup to prune stale `.md` files under `.opencode/command/{project}/` not in the manifest
-- [ ] Scaffold the `govern` installer to `.opencode/command/govern.md` (verbatim, placeholders kept literal)
-- [ ] Branch Self-Update Check + Post-Write Integrity Check claude-style-like (install path `.opencode/command/govern.md`, direct byte compare, `# govern` first-line check — no frontmatter strip)
-- [ ] Add `.opencode/command/{project}/` to intermediate-dir creation; `{cli-config-dir}`→`.opencode` in Placeholder Substitution
-- [ ] Confirm the CLAUDE.md shared-file step stays `claude-style`-only (OpenCode ships no CLAUDE.md; reads AGENTS.md); guard Workflow recommendation to skip for `opencode`
+- [x] Add the `opencode` branch to the §Per-Agent Scaffolding dispatch note; copy each `framework/commands/<name>.md` → `.opencode/command/{project}/<name>.md` verbatim (carry `description`, keep body + gate prompts, substitute `{project}`/`{cli-config-dir}`→`.opencode`, preserve `$ARGUMENTS`); the configure row → `.opencode/command/{project}/configure.md`
+- [x] Branch slash-command cleanup to prune stale `.md` files under `.opencode/command/{project}/` not in the manifest
+- [x] Scaffold the `govern` installer to `.opencode/command/govern.md` (verbatim, placeholders kept literal)
+- [x] Branch Self-Update Check + Post-Write Integrity Check claude-style-like (install path `.opencode/command/govern.md`, direct byte compare, `# govern` first-line check — no frontmatter strip)
+- [x] Add `.opencode/command/{project}/` to intermediate-dir creation; `{cli-config-dir}`→`.opencode` in Placeholder Substitution
+- [x] Confirm the CLAUDE.md shared-file step stays `claude-style`-only (OpenCode ships no CLAUDE.md; reads AGENTS.md); guard Workflow recommendation to skip for `opencode`
 - Done when: an OpenCode bootstrap (install → self-update → scaffold) is internally consistent; the `claude-style` flow is unchanged
 
 ## 4. Branch §Permission Setup for `opencode`

@@ -267,7 +267,7 @@ If the fetch fails — non-zero `curl` exit, network error, or a 404 — abort t
 
 #### Per-agent comparison
 
-For each selected agent, compare the upstream `{tempdir}/govern.md.upstream` against the agent's installed `govern` file and assign one status. For `claude-style` the installed file is `{config_dir}/commands/govern.md`, installed verbatim (frontmatter included), so the comparison is a direct byte-compare against `{tempdir}/govern.md.upstream`. For `antigravity` the installed file is `{config_dir}/skills/govern/SKILL.md`, which wraps **only the upstream body** in `name: govern` frontmatter — the installer drops `govern.md`'s own frontmatter when wrapping. So compare **bodies on both sides**: strip the leading frontmatter block (the first `---`-delimited region) from the installed `SKILL.md` **and** from `{tempdir}/govern.md.upstream`, then byte-compare what remains. Stripping only the `SKILL.md` side leaves `govern.md`'s frontmatter on the upstream side, which never matches — a false `stale` on every run. The statuses below are assigned from this body-vs-body (antigravity) or file-vs-file (`claude-style`) comparison:
+For each selected agent, compare the upstream `{tempdir}/govern.md.upstream` against the agent's installed `govern` file and assign one status. For `claude-style` the installed file is `{config_dir}/commands/govern.md` and for `opencode` it is `{config_dir}/command/govern.md` — both installed verbatim (frontmatter included), so the comparison is a direct byte-compare against `{tempdir}/govern.md.upstream`. For `antigravity` the installed file is `{config_dir}/skills/govern/SKILL.md`, which wraps **only the upstream body** in `name: govern` frontmatter — the installer drops `govern.md`'s own frontmatter when wrapping. So compare **bodies on both sides**: strip the leading frontmatter block (the first `---`-delimited region) from the installed `SKILL.md` **and** from `{tempdir}/govern.md.upstream`, then byte-compare what remains. Stripping only the `SKILL.md` side leaves `govern.md`'s frontmatter on the upstream side, which never matches — a false `stale` on every run. The statuses below are assigned from this body-vs-body (antigravity) or file-vs-file (`claude-style` / `opencode`) comparison:
 
 - **`no installed copy`** — the installed file does not exist (first run for this agent). Continue.
 - **`current`** — the two files are byte-identical, **or** the installed file is byte-identical to upstream and listed in `.govern.toml` `pinned.files` (the pin had nothing to suppress this run). Continue.
@@ -280,7 +280,7 @@ The check is scoped to **selected agents only** — agents whose `config_dir` ex
 
 If any selected agent is recorded as `stale`:
 
-1. For **each stale agent**, write the freshly fetched upstream to the agent's installed `govern` file (overwrite) so the next session loads the up-to-date instructions. For `claude-style`, copy `{tempdir}/govern.md.upstream` verbatim to `{config_dir}/commands/govern.md`. For `antigravity`, write `{config_dir}/skills/govern/SKILL.md` as the transformed skill — `name: govern` frontmatter followed by the upstream body — **not** the raw `govern.md` (a raw copy is not a loadable skill). In both cases do not substitute placeholders in the body — `{project}` and `{cli-config-dir}` stay literal, per the `govern` self-install rule.
+1. For **each stale agent**, write the freshly fetched upstream to the agent's installed `govern` file (overwrite) so the next session loads the up-to-date instructions. For `claude-style`, copy `{tempdir}/govern.md.upstream` verbatim to `{config_dir}/commands/govern.md`; for `opencode`, copy it verbatim to `{config_dir}/command/govern.md`. For `antigravity`, write `{config_dir}/skills/govern/SKILL.md` as the transformed skill — `name: govern` frontmatter followed by the upstream body — **not** the raw `govern.md` (a raw copy is not a loadable skill). In both cases do not substitute placeholders in the body — `{project}` and `{cli-config-dir}` stay literal, per the `govern` self-install rule.
 2. Run the **Post-Write Integrity Check** (see below) on each freshly written file.
 3. Do not write `govern.md` for non-stale agents — their installed copies already match upstream.
 4. Do not write `govern.md` for `pinned-divergent` agents — the pin opts them out of automatic updates.
@@ -620,7 +620,7 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 
 **AGENTS.md** (strategy: skip) — if it exists, leave it alone. If not, fetch `framework/templates/project/agents.md` from the `govern` repo and copy it as `AGENTS.md`, substituting `{project-name}` with the project name and `{One-line project description.}` with the project description.
 
-**CLAUDE.md** (strategy: skip, `claude-style` only) — written only when at least one selected agent is `claude-style`. If it exists, leave it alone. Otherwise, when a `claude-style` agent is selected, fetch `framework/templates/project/claude-md.md` from the `govern` repo and copy it as `CLAUDE.md`. `claude-style` agents read `CLAUDE.md` natively (see each row's `rules_file_note`); the `antigravity` layout reads `AGENTS.md` natively and does not need `CLAUDE.md`, so an **Antigravity-only** adoption ships no `CLAUDE.md`. (`AGENTS.md` is still written for every adoption, as below.)
+**CLAUDE.md** (strategy: skip, `claude-style` only) — written only when at least one selected agent is `claude-style`. If it exists, leave it alone. Otherwise, when a `claude-style` agent is selected, fetch `framework/templates/project/claude-md.md` from the `govern` repo and copy it as `CLAUDE.md`. `claude-style` agents read `CLAUDE.md` natively (see each row's `rules_file_note`); the `antigravity` and `opencode` layouts read `AGENTS.md` natively and do not need `CLAUDE.md`, so an **Antigravity-only** or **OpenCode-only** adoption ships no `CLAUDE.md`. (`AGENTS.md` is still written for every adoption, as below.)
 
 **.gitignore** (strategy: merge) — install or update a framework-managed block delimited by a `# govern` line preamble, then dedup any adopter-area copies of canonical patterns. Mirrors the runtime `merge-managed-block` contract (line-prefix style, marker `govern`):
 
@@ -692,6 +692,8 @@ For each selected agent (in registry row order), run these steps with `{config_d
 
 The steps below describe the **`claude-style`** layout. For an agent whose registry `layout` is **`antigravity`**, apply **### Antigravity layout** below in place of **### Slash commands** and **### Slash command cleanup**, and skip **### Workflow recommendation**. The `govern` self-install, the **Pre-flight Phase**, the **Post-Write Integrity Check**, and **Placeholder Substitution** each carry their own `layout: antigravity` branch in their own sections.
 
+For an agent whose `layout` is **`opencode`**, apply **### OpenCode layout** below in place of **### Slash commands** and **### Slash command cleanup**, and skip **### Workflow recommendation**. OpenCode's installer is a **verbatim markdown file** (no skill wrapper), so the `govern` self-install, **Self-update check**, **Post-Write Integrity Check**, and **Placeholder Substitution** follow the **`claude-style`** path — with the command directory `command/` (singular) and `{cli-config-dir}` resolving to `.opencode`.
+
 ### Slash commands (strategy: update)
 
 Fetch each command template and copy it into `{config_dir}/commands/{project}/`. In each copied file, replace `{project}` with the user-provided project name and `{cli-config-dir}` with `{config_dir}`.
@@ -740,9 +742,21 @@ When the agent's registry `layout` is `antigravity`, the two subsections above (
 
 **Skill cleanup (replaces Slash command cleanup).** List the skill directories under `{config_dir}/skills/` whose name matches `{project}-*`. Delete any `{config_dir}/skills/{project}-{name}/` whose `{project}-{name}` is not produced by the skills manifest above and is not listed in `.govern.toml` `pinned.files`; report removals and pinned-keeps as for the `claude-style` cleanup. Skill dirs outside the `{project}-*` namespace (and the `govern` skill) are adopter/agent territory and are never touched.
 
+### OpenCode layout (`layout: opencode`)
+
+When the agent's registry `layout` is `opencode`, the two subsections above (**Slash commands**, **Slash command cleanup**) are replaced by the equivalents below. `{config_dir}` resolves to `.opencode`; OpenCode discovers markdown commands under `{config_dir}/command/` (singular), namespaced by subdirectory.
+
+**Commands (strategy: update).** For each row in the slash-command manifest above — the thirteen `framework/commands/*.md` rows plus the `framework/bootstrap/configure/{key}.md` configure row — copy the source **verbatim** (frontmatter + body, no skill transform) to `{config_dir}/command/{project}/{name}.md` (instead of `{config_dir}/commands/{project}/{name}.md`). Substitute `{project}` and `{cli-config-dir}` (→ `.opencode`) in the body exactly as in the `claude-style` copy, and carry the `description` frontmatter as-is. `{name}` is the command's base name (the configure row's `{name}` is `configure`). The commands are invoked `/{project}/{name}` — OpenCode namespaces by subdirectory (verified: `command/gov/specify.md` registers as command key `gov/specify`).
+
+**Command cleanup (replaces Slash command cleanup).** List the `.md` files under `{config_dir}/command/{project}/`. Delete any whose base name is not produced by the manifest above and is not listed in `.govern.toml` `pinned.files`; report removals and pinned-keeps as for the `claude-style` cleanup. Files outside the `{project}/` subdirectory are adopter/agent territory and are never touched.
+
+**Rules.** OpenCode reads `AGENTS.md` natively (via its `instructions` resolution) and the pipeline reads the shared `specs/rules/` directly — there is **no** native rules-dir mirror (unlike `antigravity`). Nothing extra to scaffold.
+
+**MCP + permissions.** Both the `gvrn` `mcp` block and the `permission` set live in the committed root `opencode.json` — seeded by §Permission Setup, wired by §gvrn runtime detection (State-B `write-file`), and completed by `/{project}:configure`. See §Derived values and §MCP registration.
+
 ### Workflow recommendation (strategy: create per accepted workflow)
 
-**Skip this entire section when the agent's `layout` is `antigravity`** — workflow-skill scaffolding is deferred for Antigravity (the tech-stack-gated workflow commands are not yet adapted to the skill layout); the pipeline skills above are the adoption surface. For `claude-style` agents, proceed as below.
+**Skip this entire section when the agent's `layout` is `antigravity` or `opencode`** — workflow scaffolding is deferred for those layouts (the tech-stack-gated workflow commands are not yet adapted); the pipeline commands above are the adoption surface. For `claude-style` agents, proceed as below.
 
 After the slash command cleanup, offer any newly registered workflows that match the project's tech stack and have not yet been scaffolded for this agent. Adopter cleanup of legacy workflow filenames and the legacy `skills/` directory is handled by the **Pre-run Migrations** section earlier in this procedure — see `framework/migrations.toml` entries `workflow-filename-rename` and `skills-to-workflows`.
 
@@ -829,7 +843,7 @@ The session state file lives at `.govern.session.toml` at the repo root — host
 
 ### `govern` self-installation (strategy: update)
 
-Fetch `framework/bootstrap/govern.md` and write it to the agent's `govern` install path: `{config_dir}/commands/govern.md` for `claude-style`, or `{config_dir}/skills/govern/SKILL.md` for `antigravity`. This is the same unified file the user is currently running, installed into every selected agent so the command is invokable from that agent on subsequent runs. For `antigravity`, wrap the body in `name: govern` frontmatter (the dir-form skill); the body keeps every placeholder literal (next paragraph).
+Fetch `framework/bootstrap/govern.md` and write it to the agent's `govern` install path: `{config_dir}/commands/govern.md` for `claude-style`, `{config_dir}/command/govern.md` for `opencode`, or `{config_dir}/skills/govern/SKILL.md` for `antigravity`. This is the same unified file the user is currently running, installed into every selected agent so the command is invokable from that agent on subsequent runs. For `antigravity`, wrap the body in `name: govern` frontmatter (the dir-form skill); for `claude-style` and `opencode` the file is the verbatim `govern.md`. The body keeps every placeholder literal (next paragraph).
 
 In this file (and only this file), keep **every** placeholder literal — do **not** substitute anything. `{project}` and `{cli-config-dir}` must stay literal so `govern` itself can read `$ARGUMENTS` and the per-agent config dir on each run; `{project-name}` and `{One-line project description.}` must stay literal because this file's prose *documents* those placeholders for the AGENTS.md template — substituting them would corrupt the documentation, not personalize a value.
 
@@ -904,7 +918,7 @@ The Hook Installation section above still runs and may set `core.hooksPath` rega
 
 ## Placeholder Substitution
 
-In every copied file (except each selected agent's installed `govern` file — `{config_dir}/commands/govern.md` for `claude-style`, `{config_dir}/skills/govern/SKILL.md` for `antigravity` — whose body keeps `{project}` and `{cli-config-dir}` as literal placeholders), replace:
+In every copied file (except each selected agent's installed `govern` file — `{config_dir}/commands/govern.md` for `claude-style`, `{config_dir}/command/govern.md` for `opencode`, `{config_dir}/skills/govern/SKILL.md` for `antigravity` — whose body keeps `{project}` and `{cli-config-dir}` as literal placeholders), replace:
 
 - `{project}` with the user-provided project name (used in commands, README)
 - `{project-name}` with the user-provided project name (used in AGENTS.md template)
@@ -913,7 +927,7 @@ In every copied file (except each selected agent's installed `govern` file — `
 
 ## Post-Write Integrity Check
 
-After writing the agent's installed `govern` file — whether via the **Pre-flight Phase** (stale-write path) or the **`govern` self-installation** manifest step — verify it is well-formed. For `claude-style` (`{config_dir}/commands/govern.md`), the file must start with `# govern`. For `antigravity` (`{config_dir}/skills/govern/SKILL.md`), the file must start with a frontmatter block whose `name:` is `govern`, and the body after that frontmatter must start with `# govern`. If the check fails, the write was corrupted — report the error and re-read the source: `{tempdir}/govern.md.upstream` for the self-update path, or `{tempdir}/govern-main/framework/bootstrap/govern.md` for the manifest path. Apply the check independently per agent.
+After writing the agent's installed `govern` file — whether via the **Pre-flight Phase** (stale-write path) or the **`govern` self-installation** manifest step — verify it is well-formed. For `claude-style` (`{config_dir}/commands/govern.md`) and `opencode` (`{config_dir}/command/govern.md`), the file must start with `# govern`. For `antigravity` (`{config_dir}/skills/govern/SKILL.md`), the file must start with a frontmatter block whose `name:` is `govern`, and the body after that frontmatter must start with `# govern`. If the check fails, the write was corrupted — report the error and re-read the source: `{tempdir}/govern.md.upstream` for the self-update path, or `{tempdir}/govern-main/framework/bootstrap/govern.md` for the manifest path. Apply the check independently per agent.
 
 ## Re-Run Behavior
 
@@ -1040,4 +1054,4 @@ Re-runs are additive across agents — adopting a new agent leaves existing agen
 
 ## Directory Creation
 
-Create intermediate directories as needed (e.g., `specs/`, `specs/templates/`, and — by layout — `{config_dir}/commands/{project}/` for `claude-style`, or `{config_dir}/skills/` and `{config_dir}/rules/` for `antigravity`).
+Create intermediate directories as needed (e.g., `specs/`, `specs/templates/`, and — by layout — `{config_dir}/commands/{project}/` for `claude-style`, `{config_dir}/command/{project}/` for `opencode`, or `{config_dir}/skills/` and `{config_dir}/rules/` for `antigravity`).
