@@ -2,7 +2,7 @@
 
 **Spec-driven development for AI coding agents.** Describe a feature in plain English; your agent turns it into a spec, a plan, tasks, and reviewed code — and every feature lands with a written record of *why* it was built the way it is.
 
-`govern` is tech-stack agnostic, ships as plain markdown, and works with Claude Code, Auggie, and Antigravity. There's nothing to compile and no dependency to add — you install a single command into your project and drive the rest through a handful of verb-named slash commands.
+`govern` is tech-stack agnostic, ships as plain markdown, and works with Claude Code, Auggie, Antigravity, and OpenCode. There's nothing to compile and no dependency to add — you install a single command into your project and drive the rest through a handful of verb-named slash commands.
 
 ## Why govern
 
@@ -21,7 +21,7 @@ Install `govern` into any project:
 curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/stonean/govern/main/install.sh | sh
 ```
 
-This installs the `/govern` bootstrap command for Claude Code — see [Installing per agent](#installing-per-agent) to target Auggie or Antigravity instead. Then, in your agent, run:
+This installs the `/govern` bootstrap command for Claude Code — see [Installing per agent](#installing-per-agent) to target Auggie, Antigravity, or OpenCode instead. Then, in your agent, run:
 
 ```text
 /govern my-project
@@ -128,7 +128,15 @@ curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/stonean/g
 
 Then run `/govern {project-name}`. The installer creates the right directory for your agent and drops the bootstrap command in place — for Antigravity it's wrapped as a skill under `.agents/skills/govern/`, since Antigravity discovers dir-form skills rather than verbatim command files. It's safe to re-run. (`agy`, the Antigravity CLI command name, works in place of `antigravity`.)
 
-The same bootstrap supports every agent, so re-run `/govern --add-agent` from any adopted agent later to add others. Once the `gvrn` binary is on your `PATH`, `/govern` wires it on its next run — automatically for Claude, or by surfacing a one-time registration step for Auggie and Antigravity (see [Registering the runtime](#registering-the-runtime)).
+### OpenCode
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/stonean/govern/main/install.sh | sh -s -- opencode
+```
+
+OpenCode installs the bootstrap as a verbatim command at `.opencode/command/govern.md` (invoked `/govern`) and reads `AGENTS.md` natively — no `CLAUDE.md`. `/govern` wires the `gvrn` runtime automatically by writing the project's root `opencode.json`; because OpenCode loads config once at startup, restart it after the first wiring (see [Registering the runtime](#registering-the-runtime)).
+
+The same bootstrap supports every agent, so re-run `/govern --add-agent` from any adopted agent later to add others. Once the `gvrn` binary is on your `PATH`, `/govern` wires it on its next run — automatically for Claude and OpenCode (both keep MCP config in a committed repo file), or by surfacing a one-time registration step for Auggie and Antigravity (see [Registering the runtime](#registering-the-runtime)).
 
 ## Brownfield adoption
 
@@ -188,6 +196,7 @@ Binaries are published for `aarch64-apple-darwin`, `x86_64-apple-darwin`, `x86_6
 You install the binary; the next time you run `/govern` after `gvrn` is on your `PATH`, the bootstrap detects it and adds the matching tool permissions. How the server itself is registered depends on where your agent reads MCP config:
 
 - **Claude** — `/govern` writes `.mcp.json` for you; just start a fresh session. Fully automatic.
+- **OpenCode** — `/govern` writes the `gvrn` `mcp` block into your committed root `opencode.json` for you; because OpenCode loads config once at startup, quit and restart it so the server loads. No manual `mcp add`.
 - **Auggie** — Auggie reads MCP servers from your user-level `~/.augment/settings.json`, which `/govern` does not write. It surfaces a one-line command to run once — `auggie mcp add gvrn --command gvrn --args "mcp"` — then start a fresh session.
 - **Antigravity** — Antigravity reads MCP servers only from your home-level `~/.gemini/config/mcp_config.json` (project-local config is ignored), which `/govern` does not write. It surfaces an instruction: add the `gvrn` block to that file, then reload with the in-prompt `/mcp` overlay.
 
@@ -316,7 +325,7 @@ This repo is the source for everything `govern` ships, plus its own dogfooded sp
 - **[specs/](specs/)** — `govern`'s own feature specs; it develops itself with its own pipeline. See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred work.
 - **[scripts/](scripts/)** — maintenance and generator scripts
 
-`govern` currently distributes to three AI coding agents: **Claude Code** (`.claude/` paths), **Auggie** (`.augment/` paths), and **Antigravity** (`.agents/` paths, installed as a skill). Adding another is a single registry row plus a permission file — see [framework/bootstrap/govern.md](framework/bootstrap/govern.md#agent-registry).
+`govern` currently distributes to four AI coding agents: **Claude Code** (`.claude/` paths), **Auggie** (`.augment/` paths), **Antigravity** (`.agents/` paths, installed as a skill), and **OpenCode** (`.opencode/` command tree plus a committed root `opencode.json`). Adding another is a single registry row plus a permission file (or, for a new layout, a derived-values branch) — see [framework/bootstrap/govern.md](framework/bootstrap/govern.md#agent-registry).
 
 ## Contributing
 

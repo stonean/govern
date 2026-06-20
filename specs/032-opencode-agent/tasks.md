@@ -58,9 +58,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 9. Document the OpenCode bootstrap in README
 
-- [ ] Add an OpenCode curl snippet (`… | sh -s -- opencode`) and an `### OpenCode` install section (installed as `.opencode/command/govern.md`; reads AGENTS.md)
-- [ ] Add OpenCode to the supported-agents intro and the repo-layout paths summary (`.opencode/` paths)
-- [ ] In Registering the runtime, note OpenCode is auto-wired (write-file to root `opencode.json`, no manual `mcp add`) and that OpenCode loads config once — a restart is required after wiring
+- [x] Add an OpenCode curl snippet (`… | sh -s -- opencode`) and an `### OpenCode` install section (installed as `.opencode/command/govern.md`; reads AGENTS.md)
+- [x] Add OpenCode to the supported-agents intro and the repo-layout paths summary (`.opencode/` paths)
+- [x] In Registering the runtime, note OpenCode is auto-wired (write-file to root `opencode.json`, no manual `mcp add`) and that OpenCode loads config once — a restart is required after wiring
 - Done when: README documents adopting OpenCode with no second curl for additional agents
 
 ## 10. Cross-spec signpost on 028
