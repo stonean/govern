@@ -13,6 +13,8 @@ review:
 # 028 — Antigravity Agent Support
 
 > **Signpost (post-031):** the MCP-wiring model in this spec — Auggie via `.mcp.json`, Antigravity via `.agents/mcp_config.json`, both treated as **layout-derived** — was corrected by [031-agent-mcp-wiring](../031-agent-mcp-wiring/spec.md). MCP discovery is **not** layout-derived: Auggie registers MCP servers in user-global `~/.augment/settings.json` (not `.mcp.json`), so govern surfaces a one-line registration command instead of writing a file; Antigravity's project-local `.agents/mcp_config.json` loading is verification-gated against the live `agy` CLI. 031 moves MCP into a per-agent descriptor (`target` / `scope` / `mechanism`); the registry's other per-agent fields (command/skill location, settings file, rules location, native rules file) are unchanged.
+>
+> **Signpost (post-032):** [032-opencode-agent](../032-opencode-agent/spec.md) adds a **third layout profile**, `opencode`, to the registry generalized here — verbatim namespaced markdown commands under `.opencode/command/{project}/`, native `AGENTS.md` reading, and a single committed root `opencode.json` carrying both the `gvrn` MCP wiring (`write-file`, project-committed) and the `permission` set. The `claude-style` and `antigravity` branches in this spec are unchanged; `opencode` is a new branch alongside them.
 
 Generalize the agent registry from "two agents that share one layout" to "N
 agents across differing per-agent layouts and host conventions," then use that

@@ -65,7 +65,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 10. Cross-spec signpost on 028
 
-- [ ] Add a signpost note to `specs/028-antigravity-agent/spec.md` pointing to 032 (the registry now carries a third layout, `opencode`), in a blockquote so `gen-spec-deps` derives no cycle
+- [x] Add a signpost note to `specs/028-antigravity-agent/spec.md` pointing to 032 (the registry now carries a third layout, `opencode`), in a blockquote so `gen-spec-deps` derives no cycle
 - Done when: 028 carries the signpost; `gen-spec-deps` derives no cycle
 
 ## 11. Tests + validation
