@@ -152,45 +152,45 @@ step. Pinning via `.govern.toml` and the manifest strategies apply unchanged.
 
 ## Acceptance Criteria
 
-- [ ] The Agent Registry gains an `opencode` row, and OpenCode's divergent axes
+- [x] The Agent Registry gains an `opencode` row, and OpenCode's divergent axes
       (single `opencode.json` config, namespaced `.opencode/command/{project}/<name>.md` commands,
       `AGENTS.md` native reading, project-committed MCP, OpenCode permission
       format) are expressed as registry-derived values via a new `opencode`
       `layout` branch — not branched on the agent name; the Claude / Auggie /
       Antigravity rows are unchanged
-- [ ] Scaffolding OpenCode writes each pipeline command to
+- [x] Scaffolding OpenCode writes each pipeline command to
       `.opencode/command/{project}/<name>.md` (markdown, `description` frontmatter,
       body = prompt with `$ARGUMENTS` preserved, approval-gate prompts intact),
       invocable as `/{project}/<name>` (subdirectory namespacing)
-- [ ] The per-agent MCP descriptor records OpenCode's target as the
+- [x] The per-agent MCP descriptor records OpenCode's target as the
       project-committed `opencode.json` `mcp` block, `scope: project-committed`,
       `mechanism: write-file`; `/govern` writes the `gvrn` local-stdio server
       (`{ "type": "local", "command": ["gvrn", "mcp"], "enabled": true }`)
       additively, preserving other config keys
-- [ ] An OpenCode adoption reaches a loadable `gvrn` registration with **no
+- [x] An OpenCode adoption reaches a loadable `gvrn` registration with **no
       surfaced manual instruction** (OpenCode reads the committed file) —
       verifiable by `opencode mcp list` reporting `gvrn` connected, as observed
       during this spec's verification
-- [ ] A `framework/bootstrap/configure/opencode.md` writes OpenCode's `permission`
+- [x] A `framework/bootstrap/configure/opencode.md` writes OpenCode's `permission`
       block (allow/ask/deny) in OpenCode's native format — the framework's bootstrap
       shell allows plus `"gvrn*": "allow"` to pre-allow gvrn's MCP tools without
       prompts; OpenCode never receives another agent's permission format
-- [ ] OpenCode's `mcp` and `permission` blocks coexist in one committed root
+- [x] OpenCode's `mcp` and `permission` blocks coexist in one committed root
       `opencode.json` (or the adopter's existing `opencode.jsonc`); `govern`'s
       additive merge preserves `$schema` and adopter keys and touches only the two
       regions it owns (no `ConfigInvalidError`)
-- [ ] `/govern` gitignores `.opencode/` (the regenerated `command/{project}/`
+- [x] `/govern` gitignores `.opencode/` (the regenerated `command/{project}/`
       tree) but leaves the root `opencode.json` committed, so the `gvrn` wiring is
       team-shared — the same split as Claude's gitignored `.claude/` and committed
       root `.mcp.json`
-- [ ] Adopting OpenCode ships no `CLAUDE.md` and no new context file — the
+- [x] Adopting OpenCode ships no `CLAUDE.md` and no new context file — the
       already-shipped `AGENTS.md` is read natively
-- [ ] Auto-detection recognizes an existing OpenCode adoption (its `config_dir` /
+- [x] Auto-detection recognizes an existing OpenCode adoption (its `config_dir` /
       `opencode.json`) and re-scaffolds on routine `/govern` re-runs, consistent
       with the 012/028 detect path
-- [ ] The README documents the OpenCode bootstrap and notes that OpenCode loads
+- [x] The README documents the OpenCode bootstrap and notes that OpenCode loads
       config once — a restart is required after MCP/command changes
-- [ ] All shipped markdown passes `npx markdownlint-cli2`; the emitted
+- [x] All shipped markdown passes `npx markdownlint-cli2`; the emitted
       `opencode.json` is valid JSON and passes OpenCode's strict config validation
 
 ## Open Questions

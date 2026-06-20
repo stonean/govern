@@ -31,6 +31,7 @@
 #   claude       Bash(command -v *)
 #   auggie       "^command -v "  (the launch-process shellInputRegex)
 #   antigravity  command(which)
+#   opencode     "command -v *": "allow"  (the bash permission-map entry)
 #
 # Adding a fourth agent that wires the probe is one extra check_agent line below.
 # macOS bash 3.2: no associative arrays, no mapfile.
@@ -91,5 +92,6 @@ check_agent() {
 check_agent "claude"      "framework/bootstrap/configure/claude.md"      "Bash(command -v *)"
 check_agent "auggie"      "framework/bootstrap/configure/auggie.md"      "^command -v "
 check_agent "antigravity" "framework/bootstrap/configure/antigravity.md" "command(which)"
+check_agent "opencode"    "framework/bootstrap/configure/opencode.md"    '"command -v *": "allow"'
 
 exit "$drift"

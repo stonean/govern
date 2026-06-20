@@ -70,10 +70,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 11. Tests + validation
 
-- [ ] Extend `scripts/tests/test-gen-configure-mcp.sh` to assert the `opencode.md` `"gvrn*"` block is emitted and in sync
-- [ ] Check `scripts/audit/run-all.sh` and `runtime/tests/` for any agent enumeration that must include `opencode`; fold in additions and run the audit gate green
-- [ ] `npx markdownlint-cli2` clean across the feature dir and changed framework files
-- [ ] Walk the spec acceptance criteria; confirm each is satisfied (including a live `opencode mcp list` → `gvrn` connected check on a scaffolded sample)
+- [x] Extend `scripts/tests/test-gen-configure-mcp.sh` to assert the `opencode.md` `"gvrn*"` block is emitted and in sync
+- [x] Check `scripts/audit/run-all.sh` and `runtime/tests/` for any agent enumeration that must include `opencode`; fold in additions and run the audit gate green
+- [x] `npx markdownlint-cli2` clean across the feature dir and changed framework files
+- [x] Walk the spec acceptance criteria; confirm each is satisfied (including a live `opencode mcp list` → `gvrn` connected check on a scaffolded sample)
 - Done when: the OpenCode generator invariant is covered, the audit gate passes, lint is clean, and all acceptance criteria are met
 
 <!-- Out of scope (tracked, not a task here): extending gvrn `exec`'s `Host`

@@ -11,6 +11,7 @@
 #
 #   claude-style → {config_dir}/commands/govern.md
 #   antigravity  → {config_dir}/skills/govern/SKILL.md
+#   opencode     → {config_dir}/command/govern.md
 #
 # The check enforces per-key parity in three directions:
 #
@@ -60,6 +61,7 @@ derive_path() {
   case "$2" in
     claude-style) printf '%s/commands/govern.md\n' "$1" ;;
     antigravity)  printf '%s/skills/govern/SKILL.md\n' "$1" ;;
+    opencode)     printf '%s/command/govern.md\n' "$1" ;;
     *)            printf '\n' ;;  # unknown layout — signalled by empty result
   esac
 }
@@ -183,6 +185,7 @@ PATH2KEY = {
     ".claude/settings.local.json": "claude",
     ".augment/settings.local.json": "auggie",
     ".agents/settings.json": "antigravity",
+    "opencode.json": "opencode",
 }
 seeds = {}
 for m in re.finditer(r"cat > (\S+) <<'JSON'\n(.*?)\nJSON", text, re.S):

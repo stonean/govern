@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Test surface for scripts/gen-configure-mcp.sh — focused on the Antigravity
-# mcp-allow block added by spec 028 (the third splice target).
+# Test surface for scripts/gen-configure-mcp.sh — the wildcard-block splice
+# targets (Antigravity from spec 028, OpenCode from spec 032).
 #
 # Coverage:
-#   A. `--dry-run` reports all three configure sources in sync (no drift)
+#   A. `--dry-run` reports all four configure sources in sync (no drift)
 #   B. antigravity.md's generated block is the single `mcp(gvrn/*)` wildcard
 #   C. claude.md / auggie.md still carry their per-tool blocks (regression)
+#   D. opencode.md's generated block is the single `"gvrn*": "allow"` glob
 #
 # Usage: scripts/tests/test-gen-configure-mcp.sh
 
@@ -17,6 +18,7 @@ GEN="$REPO_ROOT/scripts/gen-configure-mcp.sh"
 ANTIGRAVITY="$REPO_ROOT/framework/bootstrap/configure/antigravity.md"
 CLAUDE="$REPO_ROOT/framework/bootstrap/configure/claude.md"
 AUGGIE="$REPO_ROOT/framework/bootstrap/configure/auggie.md"
+OPENCODE="$REPO_ROOT/framework/bootstrap/configure/opencode.md"
 
 failures=0
 pass() { printf '  PASS  %s\n' "$1"; }
@@ -55,6 +57,14 @@ if mcp_block "$AUGGIE" | grep -qF -- 'mcp:gvrn:read-spec'; then
   pass "C: auggie.md per-tool block intact"
 else
   fail "C: auggie.md per-tool block missing or changed"
+fi
+
+# D. opencode block is exactly one `"gvrn*": "allow"` entry
+oc_block="$(mcp_block "$OPENCODE")"
+if printf '%s\n' "$oc_block" | grep -qF -- '- `"gvrn*": "allow"`'; then
+  pass 'D: opencode.md block is the single "gvrn*": "allow" glob'
+else
+  fail "D: opencode.md block unexpected: $(printf '%s' "$oc_block" | tr '\n' '|')"
 fi
 
 if [ "$failures" -gt 0 ]; then
