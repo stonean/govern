@@ -1,6 +1,6 @@
 ---
 status: done
-dependencies: [012-multi-agent-govern, 022-deterministic-runtime, 028-antigravity-agent, 031-agent-mcp-wiring]
+dependencies: [012-multi-agent-govern, 022-deterministic-runtime, 028-antigravity-agent, 029-bootstrap-runtime-autowire, 031-agent-mcp-wiring]
 review:
   last-run: 2026-06-20T16:55:57Z
   reviewed-against: a65c021bbcdf3bdd96dc970b486d51b454ddac85
@@ -43,7 +43,10 @@ agent shares an existing `layout`, or a bounded framework change adding a new
 `layout` branch when it does not.
 [031-agent-mcp-wiring](../031-agent-mcp-wiring/spec.md) then split MCP discovery
 out of the `layout` axis into a per-agent descriptor (`target` / `scope` /
-`mechanism`).
+`mechanism`), whose target the
+[029-bootstrap-runtime-autowire](../029-bootstrap-runtime-autowire/spec.md)
+State-B auto-wire writes — the path this spec extends with OpenCode's
+`write-file` case.
 
 OpenCode is the next agent. Adopters driving their work through OpenCode get none
 of the `govern` pipeline today — the slash commands are never scaffolded where
