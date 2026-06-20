@@ -46,8 +46,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 7. Add `.opencode/` to the managed `.gitignore` block
 
-- [ ] Add `.opencode/` to `framework/templates/project/gitignore.md` (ignore the regenerated command tree; leave root `opencode.json` tracked)
-- [ ] Update the illustrative gitignore-block references in `framework/bootstrap/govern.md` (steps that list `.claude/`, `.augment/`, `.agents/`)
+- [x] Add `.opencode/` to `framework/templates/project/gitignore.md` (ignore the regenerated command tree; leave root `opencode.json` tracked)
+- [x] Update the illustrative gitignore-block references in `framework/bootstrap/govern.md` (steps that list `.claude/`, `.augment/`, `.agents/`)
 - Done when: a fresh adoption gitignores `.opencode/` while keeping root `opencode.json` committed
 
 ## 8. Add the `opencode` arm to `install.sh`
