@@ -86,6 +86,7 @@ MCP discovery is **not** layout-derived — it is a per-agent property. A host c
 | `claude` | `.mcp.json` (repo root) | `project-committed` | `write-file` | — |
 | `auggie` | `~/.augment/settings.json` | `user-global` | `surface-instruction` | `auggie mcp add gvrn --command gvrn --args "mcp"` |
 | `antigravity` | `~/.gemini/config/mcp_config.json` | `home-level` | `surface-instruction` | edit `~/.gemini/config/mcp_config.json`, then `/mcp` reload |
+| `opencode` | `opencode.json` (repo root) `mcp` block | `project-committed` | `write-file` | — |
 
 - **`write-file`** — govern writes `target` additively at State-B wire time (the additive merge in §MCP wiring). Only `project-committed` agents use it.
 - **`surface-instruction`** — govern writes **no** MCP file; State B surfaces the instruction in the Pre-flight abort and the user runs it once per machine, then restarts. Required for `user-global` / `home-level` agents, whose MCP config lives outside the repo and which govern must not silently mutate.
@@ -155,6 +156,7 @@ This prevents repeated permission prompts during the fetch and scaffolding phase
 - **Claude** (`permissions.allow`): `mcp__gvrn__*`
 - **Antigravity** (`permissions.allow`): `mcp(gvrn/*)`
 - **Auggie** (`toolPermissions`): `{ "toolName": "mcp:gvrn:*", "permission": { "type": "allow" } }` if Auggie's matcher honors the wildcard, otherwise the enumerated `mcp:gvrn:<tool>` set `/{project}:configure` already installs.
+- **OpenCode** (`permission`): `"gvrn*": "allow"` (a single glob in the root `opencode.json` `permission` map).
 
 The wildcard is the minimal bootstrap grant; the enumerated per-tool set stays owned by the generated block in `/{project}:configure`'s permission file and coexists harmlessly (exact-match dedup leaves both). Both the wiring write and this permission write are additive and idempotent and follow the same merge rules as the seed above — no existing entry is removed, reordered, or overwritten. There is **no new confirmation prompt**: the wiring is disclosed by the **Pre-flight abort** message, which names every file written — consistent with the §Procedural-fidelity rule the silent seed writes already follow. The runtime remains an optional install (the binary is still installed out of band; see the README's Runtime section) — `/govern` automates only the MCP registration once the binary is present.
 
@@ -209,18 +211,24 @@ The binary probe failed, could not run, or was denied. Proceed on the markdown p
 
 #### MCP wiring
 
-How State B registers `gvrn` depends on the agent's MCP registration `mechanism` (§MCP registration). The server entry is identical in every case — a `mcpServers` map keyed by name; only the **location** (and whether govern writes it) differs:
+How State B registers `gvrn` depends on the agent's MCP registration `mechanism` (§MCP registration). For the `mcpServers`-shaped agents (Claude/Auggie/Antigravity) the server entry is a `mcpServers` map keyed by name; only the **location** (and whether govern writes it) differs:
 
 ```json
 { "mcpServers": { "gvrn": { "command": "gvrn", "args": ["mcp"] } } }
 ```
 
-**`write-file` agents** (scope `project-committed` — Claude). govern writes the agent's `target` MCP file from §MCP registration (`.mcp.json` at the repo root for Claude). The write **updates the file in place — it never replaces or truncates it.** Apply the matching case:
+OpenCode uses a different shape — an `mcp` key with a typed local-server entry — written into the committed root `opencode.json` (the OpenCode sub-case below):
 
-- **Missing file** — create it containing only the `gvrn` entry.
-- **Has `mcpServers`, no `gvrn`** — add the `gvrn` entry; preserve every other server and every other top-level key.
+```json
+{ "mcp": { "gvrn": { "type": "local", "command": ["gvrn", "mcp"], "enabled": true } } }
+```
+
+**`write-file` agents** (scope `project-committed` — Claude and OpenCode). govern writes the agent's `target` MCP file from §MCP registration, using that agent's server-entry shape — **Claude:** `.mcp.json` at the repo root, the `mcpServers` map, `{ "command": "gvrn", "args": ["mcp"] }`; **OpenCode:** the committed root `opencode.json` (or the adopter's existing `opencode.jsonc`), the `mcp` map, `{ "type": "local", "command": ["gvrn", "mcp"], "enabled": true }`. The write **updates the file in place — it never replaces or truncates it.** Apply the matching case (read `{servers-key}` as `mcpServers` for Claude, `mcp` for OpenCode):
+
+- **Missing file** — create it containing only the `gvrn` entry (for OpenCode, include `"$schema": "https://opencode.ai/config.json"`).
+- **Has `{servers-key}`, no `gvrn`** — add the `gvrn` entry; preserve every other server and every other top-level key (including OpenCode's `$schema` and `permission`).
 - **Already has a `gvrn` entry** — no-op; leave the file byte-unchanged (idempotent re-run).
-- **No `mcpServers` key** — add the key with just the `gvrn` entry; preserve all other top-level keys.
+- **No `{servers-key}` key** — add the key with just the `gvrn` entry; preserve all other top-level keys.
 - **Not valid JSON** — do **not** touch the file. Skip wiring, warn the user to repair it, and degrade to the markdown path for this run (treat as **State C**). A hand-maintained config is never clobbered.
 
 There is no `gvrn` runtime primitive for this merge: State B is the runtime-absent case by definition, so the write is always host-side.

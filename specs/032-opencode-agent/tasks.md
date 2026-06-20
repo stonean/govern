@@ -11,9 +11,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 2. Add the `opencode` MCP descriptor + State-B write-file branch
 
-- [ ] Add the `opencode` row to §MCP registration: target root `opencode.json` `mcp` block, scope `project-committed`, mechanism `write-file`, surfaced instruction —
-- [ ] Branch §MCP wiring's `write-file` subsection with an `opencode` sub-case: write the `mcp` key with OpenCode's server shape (`{ "type": "local", "command": ["gvrn", "mcp"], "enabled": true }`) into root `opencode.json`, additively (missing-file / has-key-no-gvrn / already-present no-op / no-key / invalid-JSON-skip)
-- [ ] Add `"gvrn*": "allow"` to the §gvrn-runtime-auto-wiring permission grant list for OpenCode
+- [x] Add the `opencode` row to §MCP registration: target root `opencode.json` `mcp` block, scope `project-committed`, mechanism `write-file`, surfaced instruction —
+- [x] Branch §MCP wiring's `write-file` subsection with an `opencode` sub-case: write the `mcp` key with OpenCode's server shape (`{ "type": "local", "command": ["gvrn", "mcp"], "enabled": true }`) into root `opencode.json`, additively (missing-file / has-key-no-gvrn / already-present no-op / no-key / invalid-JSON-skip)
+- [x] Add `"gvrn*": "allow"` to the §gvrn-runtime-auto-wiring permission grant list for OpenCode
 - Done when: govern.md documents OpenCode's project-committed write-file MCP wiring (root `opencode.json`, OpenCode shape) and the auto-wire grant, additively and host-side
 
 ## 3. Branch §Per-Agent Scaffolding + bootstrap flow for `opencode`
