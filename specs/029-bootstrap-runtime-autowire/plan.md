@@ -77,7 +77,7 @@ The probe seed entry must stay in sync across the three Agent Registry `settings
 | `specs/029-bootstrap-runtime-autowire/plan.md` | Create | This plan |
 | `specs/029-bootstrap-runtime-autowire/tasks.md` | Create | Task breakdown below |
 
-Cross-spec (informational, not in this scope): a back-linked scenario on **003** and/or **028** noting 029 reverses the "not scaffolded" decision — record via `/gov:ask` after planning.
+Cross-spec (informational, not in this scope): a back-linked scenario on **003** and/or **028** noting 029 reverses the "not scaffolded" decision — record via `/gov:amend` after planning.
 
 ## Trade-offs
 

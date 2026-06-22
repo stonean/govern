@@ -77,7 +77,7 @@ Adoption installs a full set of verb-named, session-aware commands. Use `/target
 
 | Command | Purpose |
 | --- | --- |
-| `/ask` | Add a question or scenario to the targeted spec. Owns the lifecycle back-edges (a new question reopens to `draft`; a new scenario reopens a `done` spec to `in-progress`) |
+| `/amend` | Add a question or scenario to the targeted spec. Owns the lifecycle back-edges (a new question reopens to `draft`; a new scenario reopens a `done` spec to `in-progress`) |
 
 ### Brownfield — absorb existing reality
 

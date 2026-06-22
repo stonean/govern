@@ -105,7 +105,7 @@ fn render_task_block(number: u32, args: &AppendTaskArgs, heading_level: u8) -> S
         }
     } else if let Some(slug) = &args.slug {
         // Default single sub-item. The "scenarios/{slug}.md" pointer mirrors
-        // the convention `/gov:ask`'s scenario branch uses; `slug` comes from
+        // the convention `/gov:amend`'s scenario branch uses; `slug` comes from
         // the explicit argument (required when body is omitted; see Q1).
         let _ = writeln!(
             out,
@@ -152,7 +152,7 @@ fn insert_phased_task(existing: &str, number: u32, args: &AppendTaskArgs) -> Res
     // First check for any existing `Phase X — Follow-on scenarios` phase and
     // extend it; only create a new phase when no follow-on phase exists yet.
     // This keeps the Phase-letter sequence bounded over multiple follow-on
-    // appends (otherwise every `/gov:ask` scenario branch would bump the
+    // appends (otherwise every `/gov:amend` scenario branch would bump the
     // letter, exhausting A–Z over time).
     if let Some(phase) = phases.iter().find(|p| is_follow_on_phase(&p.heading)) {
         return Ok(insert_inside_phase(existing, phase, &block));

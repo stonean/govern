@@ -38,7 +38,7 @@ review:
      references. See the README's "Cross-service references" section.
 
      Scenarios: when a spec section needs lower-level elaboration (edge cases, bug fixes,
-     detailed behavior), run /{project}:ask to record a scenario file under
+     detailed behavior), run /{project}:amend to record a scenario file under
      specs/{NNN-feature-name}/scenarios/.
 -->
 

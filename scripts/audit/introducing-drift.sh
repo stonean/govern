@@ -18,7 +18,7 @@
 #   - Each match emits a finding with file:line and a suggested past-
 #     tense rewrite. False positives expected (heuristic doesn't
 #     distinguish current-tense from past-tense surrounding prose);
-#     maintainer dismisses per-spec via a small /gov:ask cycle that
+#     maintainer dismisses per-spec via a small /gov:amend cycle that
 #     adds a past-tense rewrite or accepts the prose as-is.
 #
 # Exemptions (two forms):
@@ -46,11 +46,11 @@ cd "$ROOT"
 # other tokens.
 RENAMED_TOKENS=(
   "/capture|/specify|consolidated into /specify (spec 023)"
-  "/elaborate|/ask|consolidated into /ask (spec 023)"
+  "/elaborate|/amend|consolidated into /amend (spec 023)"
   "/validate|/analyze|renamed to /analyze (spec 023)"
   "/gov:validate|/gov:analyze|renamed to /analyze (spec 023)"
   "/gov:capture|/gov:specify|consolidated into /specify (spec 023)"
-  "/gov:elaborate|/gov:ask|consolidated into /ask (spec 023)"
+  "/gov:elaborate|/gov:amend|consolidated into /amend (spec 023)"
   "gov-rt:|gvrn:|MCP server name changed (spec 022 task 28)"
 )
 
@@ -91,7 +91,7 @@ for spec_file in specs/[0-9][0-9][0-9]-*/spec.md; do
       if [[ "$line_content" =~ ^[[:space:]]*\> ]]; then
         continue
       fi
-      emit "$spec_file:$line_no" "references old name \`$old\` ($hint)" "rewrite to past tense or replace with \`$new\`; see scenarios/living-specs.md pattern (small /gov:ask cycle)"
+      emit "$spec_file:$line_no" "references old name \`$old\` ($hint)" "rewrite to past tense or replace with \`$new\`; see scenarios/living-specs.md pattern (small /gov:amend cycle)"
     done < <(grep -nF "\`$old\`" "$spec_file" 2>/dev/null || true)
   done
 done

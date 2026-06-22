@@ -6,7 +6,7 @@ section: "Command Set"
 
 ## Context
 
-`/gov:target` (Behavior → Command Set → Utility commands) sets the working feature for the session by writing `.govern.session.toml`. After a spec advances to `done`, the session still points at the now-completed feature (and optionally scenario), producing awkward `/gov:status` output ("Target: 000-slash-commands / done / next: done (spec is complete)") and trapping `/gov:ask` and `/gov:implement` on stale state until the user manually picks a new target.
+`/gov:target` (Behavior → Command Set → Utility commands) sets the working feature for the session by writing `.govern.session.toml`. After a spec advances to `done`, the session still points at the now-completed feature (and optionally scenario), producing awkward `/gov:status` output ("Target: 000-slash-commands / done / next: done (spec is complete)") and trapping `/gov:amend` and `/gov:implement` on stale state until the user manually picks a new target.
 
 The only reset path today is `/gov:target <other-feature>`, which mutates the session toward a different target rather than clearing it. There is no first-class "no target" state reachable through the command — even though the `dashboard` primitive already handles `session-target: null` and the status renderer already prints "No session target. Run /gov:target to select one." when that's the case (per `framework/commands/status.md` step 2).
 

@@ -52,7 +52,7 @@ Wave 1 (tasks 1–4) does not change Antigravity behavior and is implementable n
       031 supersedes the `.agents/mcp_config.json` layout-derived MCP-wiring decision.
 - [x] Add a back-linked note to `specs/029-bootstrap-runtime-autowire/spec.md`: 031 changes
       State-B for home-level agents (surface-instruction, not file write).
-- [x] Decide and apply the recording mechanism (signpost vs. `/gov:ask`): **Option B** —
+- [x] Decide and apply the recording mechanism (signpost vs. `/gov:amend`): **Option B** —
       non-reopening navigational signposts, 028/029 stay `done` (per the existing 012
       `Signpost (post-028)` precedent). User-approved deviation from `constitution.md:543`;
       flagged for a possible constitution clarification follow-up.

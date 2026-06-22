@@ -18,7 +18,7 @@ Establishes which feature spec all subsequent `/{project}:*` commands operate on
 
 - Read `constitution.md` once per session and the targeted feature's `spec.md` frontmatter and open-question count. Read the targeted scenario file only when one is specified.
 - Do NOT read plan files, tasks, source code, test files, or unrelated specs' bodies.
-- Do NOT modify any spec, plan, scenario, or source file. The only file written is the session JSON. Status transitions belong to the pipeline commands (`/{project}:clarify`, `/{project}:plan`, `/{project}:implement`) and to `/{project}:ask` (the documented back-edges: `clarified|planned|in-progress → draft` on a new question, and `done → in-progress` on a new scenario).
+- Do NOT modify any spec, plan, scenario, or source file. The only file written is the session JSON. Status transitions belong to the pipeline commands (`/{project}:clarify`, `/{project}:plan`, `/{project}:implement`) and to `/{project}:amend` (the documented back-edges: `clarified|planned|in-progress → draft` on a new question, and `done → in-progress` on a new scenario).
 - Reference: §spec-lifecycle, §scenarios, §concurrent-features, §text-first-artifacts.
 
 ## Instructions
@@ -58,6 +58,6 @@ Establishes which feature spec all subsequent `/{project}:*` commands operate on
 | clarified | 0 | /{project}:plan |
 | planned | 0 | /{project}:implement |
 | in-progress | 0 | /{project}:implement |
-| done | any | confirm complete; run /{project}:ask to record a scenario and reopen |
+| done | any | confirm complete; run /{project}:amend to record a scenario and reopen |
 
-When the status is clarified, planned, or in-progress AND the open-question count is at least one, the next step is `/{project}:clarify` (recovery). This state usually arises from a manual frontmatter edit; the normal back-edge via `/{project}:ask` keeps status and open-question presence in sync.
+When the status is clarified, planned, or in-progress AND the open-question count is at least one, the next step is `/{project}:clarify` (recovery). This state usually arises from a manual frontmatter edit; the normal back-edge via `/{project}:amend` keeps status and open-question presence in sync.

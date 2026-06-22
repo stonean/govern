@@ -242,7 +242,7 @@ Done when: the template exists and documents adopter usage. ✓
 - [x] Replace per-row help-equivalence check with structural generator-drift check
 - [x] Lint passes
 
-### 24. Update `framework/commands/ask.md`
+### 24. Update `framework/commands/amend.md`
 
 - [x] Add "Recompute dependencies" step in Confirm target (skip on scenario targets)
 - [x] Lint passes

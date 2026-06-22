@@ -48,7 +48,7 @@ See [constitution.md](constitution.md) — guiding principles, development pipel
     - `data-model.md` -- *(optional)* Generated during plan phase
     - `tasks.md` -- Discrete work items derived from the plan
     - `scenarios/` -- Bug fixes, edge cases, detailed behavior elaborations
-      - `{slug}.md` -- Individual scenario created via `/{project}:ask` (scenario route)
+      - `{slug}.md` -- Individual scenario created via `/{project}:amend` (scenario route)
 
 <!-- Add project-specific directories below (e.g., src/, cmd/, modules/) -->
 

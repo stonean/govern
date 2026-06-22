@@ -6,23 +6,23 @@ title: "014-reclarify-backedge — tasks"
 
 Tasks derived from the [plan](plan.md). Complete in order.
 
-## 1. Update `/ask` source for back-edge ownership
+## 1. Update `/amend` source for back-edge ownership
 
-- [x] In `framework/commands/ask.md`, remove the "Status warning" subsection (informational-only)
-- [x] Add a "Status mutation" subsection that branches on the spec's current status: `draft` → no mutation; `clarified` / `planned` / `in-progress` → revert frontmatter `status` to `draft` in the same write that appends the question; `done` → refuse the recording (no question added, no mutation) and redirect to `/{project}:ask` with the spec's exact message
+- [x] In `framework/commands/amend.md`, remove the "Status warning" subsection (informational-only)
+- [x] Add a "Status mutation" subsection that branches on the spec's current status: `draft` → no mutation; `clarified` / `planned` / `in-progress` → revert frontmatter `status` to `draft` in the same write that appends the question; `done` → refuse the recording (no question added, no mutation) and redirect to `/{project}:amend` with the spec's exact message
 - [x] Add an "Impact display" step that runs only on a non-`draft`, non-`done` mutation: prior status, plan-artifact list with last-modified timestamps, scenario-file list, and a one-line dependency note when this spec is named in any other spec's frontmatter `dependencies` field
 - [x] Update the "Refine the question" step to detect when the refined form matches an existing `## Open Questions` entry (normalized whitespace) and prompt skip-or-refine; on skip, exit without recording or mutating
 - [x] Update the next-step hint after a recorded question to "Question recorded. Run `/{project}:clarify` to resolve it." in every case where a question is recorded; on `done` the hint is the elaborate redirect message instead
 - [x] Confirm the scenario-targeted branch is unchanged — scenarios have no status field, so the back-edge does not apply
 
-Done when: the source file describes the new ownership rules end-to-end and explicitly covers all four target shapes (draft spec, clarified+/in-progress spec, done spec, scenario target). All AC bullets under "`/ask` back-edge" in the spec are satisfied by the source text.
+Done when: the source file describes the new ownership rules end-to-end and explicitly covers all four target shapes (draft spec, clarified+/in-progress spec, done spec, scenario target). All AC bullets under "`/amend` back-edge" in the spec are satisfied by the source text.
 
 ## 2. Update `/clarify` source for data-driven gate and recovery path
 
 - [x] In `framework/commands/clarify.md`, replace the Gate subsection with a branch on `(status, open-question count)` per the spec's table
 - [x] Preserve the existing draft hot path verbatim (walk questions if any, verify acceptance criteria, advance to `clarified`)
 - [x] Add a "Recovery path" subsection that triggers when status is `clarified` / `planned` / `in-progress` and `## Open Questions` has at least one entry: display status, open-question titles, plan-artifact list with timestamps, and scenario-file list, then prompt with the wording in the spec's recovery-path acceptance criterion; on confirm, revert frontmatter `status` to `draft` and run the standard walk; on decline, exit with no file modifications
-- [x] Add the explicit `done` branch: stop with "Spec is `done`. Run `/{project}:ask` to capture this as a scenario instead." and exit without mutation
+- [x] Add the explicit `done` branch: stop with "Spec is `done`. Run `/{project}:amend` to capture this as a scenario instead." and exit without mutation
 - [x] Lightly tighten the existing "already `{status}`" message to mention the next pipeline command per the spec's table
 - [x] Confirm the scenario-targeted clarify section is unchanged, including that `## Resolved Questions` is never re-walked
 - [x] Confirm the existing dependency-readiness check still runs on the post-revert walk
@@ -42,7 +42,7 @@ Done when: the source file describes both keep and replace branches and runs the
 
 ## 4. Rewrite constitution §spec-lifecycle back-edge bullet
 
-- [x] In `framework/constitution.md` §spec-lifecycle, rewrite the second back-edge bullet to read: "`clarified` / `planned` / `in-progress` → `draft` when `/ask` records a new open question; the next `/clarify` resolves the question and the spec advances forward again."
+- [x] In `framework/constitution.md` §spec-lifecycle, rewrite the second back-edge bullet to read: "`clarified` / `planned` / `in-progress` → `draft` when `/amend` records a new open question; the next `/clarify` resolves the question and the spec advances forward again."
 - [x] Leave the first back-edge bullet (`/elaborate` for `done → in-progress`) untouched
 - [x] Confirm the surrounding lifecycle prose still reads coherently with the new wording
 
@@ -50,7 +50,7 @@ Done when: the §spec-lifecycle bullet matches the **Constitution Updates** sect
 
 ## 5. Add 014 signpost to spec 000
 
-- [x] In `specs/000-slash-commands/spec.md`, add a Note line in the same style as the existing "subsequent specs renamed" note that records: 014 made `/ask` the owner of the `clarified+ → draft` back-edge (status mutation on non-`draft` specs), added a recovery path to `/clarify` for hand-edited inconsistent state, and added overwrite-protection to `/plan` for existing artifacts
+- [x] In `specs/000-slash-commands/spec.md`, add a Note line in the same style as the existing "subsequent specs renamed" note that records: 014 made `/amend` the owner of the `clarified+ → draft` back-edge (status mutation on non-`draft` specs), added a recovery path to `/clarify` for hand-edited inconsistent state, and added overwrite-protection to `/plan` for existing artifacts
 - [x] Place the new note adjacent to the existing rename note for discoverability
 
 Done when: the note appears near the existing rename note and references spec 014 explicitly.
@@ -58,7 +58,7 @@ Done when: the note appears near the existing rename note and references spec 01
 ## 6. Regenerate `.claude/commands/gov/` mirrors
 
 - [x] Run `./scripts/gen-claude-commands.sh`
-- [x] Verify `.claude/commands/gov/ask.md`, `clarify.md`, and `plan.md` reflect the source edits with `{project}` and `{cli-config-dir}` substituted correctly
+- [x] Verify `.claude/commands/gov/amend.md`, `clarify.md`, and `plan.md` reflect the source edits with `{project}` and `{cli-config-dir}` substituted correctly
 - [x] Confirm `git diff` shows changes only in those three generated files (plus the source edits and other expected files)
 
 Done when: the generator runs to completion and the regenerated files contain the new behaviors.
@@ -73,9 +73,9 @@ Done when: `npx markdownlint-cli2` exits 0 across all modified files.
 ## 8. Implement [reopen-after-informal-edits](scenarios/reopen-after-informal-edits.md)
 
 - [x] Pick Option A, Option B, or both per the scenario's "Recommended pick"; record the decision in the scenario's Resolved Questions
-- [x] If Option B: update `framework/commands/ask.md` to add the on-disk delta detection precondition on `done` specs, with the prompt wording in the scenario's Behavior section; revert `status: done → in-progress` on confirm, leave files untouched on decline
-- [x] If Option A: update agent-facing guidance (AGENTS.md and/or constitution) so the agent invokes `set-status` directly for re-open-only intent and does not prompt `/gov:ask`
-- [x] Regenerate `.claude/commands/gov/ask.md` via `./scripts/gen-claude-commands.sh` if `ask.md` is touched
+- [x] If Option B: update `framework/commands/amend.md` to add the on-disk delta detection precondition on `done` specs, with the prompt wording in the scenario's Behavior section; revert `status: done → in-progress` on confirm, leave files untouched on decline
+- [x] If Option A: update agent-facing guidance (AGENTS.md and/or constitution) so the agent invokes `set-status` directly for re-open-only intent and does not prompt `/gov:amend`
+- [x] Regenerate `.claude/commands/gov/amend.md` via `./scripts/gen-claude-commands.sh` if `amend.md` is touched
 - [x] Run `npx markdownlint-cli2` on every modified file
 
 Done when: the targeted host (agent for A, command for B, or both) re-opens a `done` spec from an on-disk delta without requiring synthetic classifier input and without creating an unwanted scenario file.

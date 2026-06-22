@@ -27,7 +27,7 @@ Per spec Q7: frontmatter `dependencies` is fully derived from inline markdown li
 Sync runs in two places:
 
 1. **Pre-commit hook** — primary sync. Runs `gen-spec-deps.sh` on every commit and stages the result.
-2. **Command-entry recompute** — `/clarify`, `/plan`, `/implement`, `/elaborate`, `/ask`, and `/target` recompute on entry as an idempotent safety net for uncommitted body edits.
+2. **Command-entry recompute** — `/clarify`, `/plan`, `/implement`, `/elaborate`, `/amend`, and `/target` recompute on entry as an idempotent safety net for uncommitted body edits.
 
 Removal mechanism: remove the inline link, or move it inside a code fence (the scanner ignores fenced-code links). To mention a spec without depending on it, use a bare slug per Q4.
 
@@ -147,7 +147,7 @@ A second workflow file (`.github/workflows/adopter-generators.yml`) ships as a t
 | `framework/commands/elaborate.md` | Modify | Remove title placeholder; change `spec-ref` to `section`; add deps recompute on entry |
 | `framework/commands/groom.md` | Modify | Remove `[promote-to-rule]` prefix instruction; specify "always re-walk every item not migrated on next pass" |
 | `framework/commands/analyze.md` | Modify | Remove Fix Mode section; remove PKM title check; remove tags advisory; rename `spec-ref` check to `section`; change help-equivalence to dry-run-of-generator check; add body-link-vs-deps advisory; add configuration rule file to rule-file list |
-| `framework/commands/ask.md` | Modify | Add deps recompute on entry |
+| `framework/commands/amend.md` | Modify | Add deps recompute on entry |
 | `framework/commands/target.md` | Modify | Remove `tags` from frontmatter parse; add deps recompute on entry |
 | `framework/commands/help.md` | Modify | Add HTML marker comments around the five command tables; tables become generator output |
 | `framework/commands/log.md` | No change | — |

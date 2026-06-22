@@ -68,7 +68,7 @@ Run `scripts/gen-spec-deps.sh --dry-run` against the target spec. If it reports 
 
 ### Detect existing artifacts
 
-Before generating any artifacts, check the feature directory for existing plan files. This protects work the user may have already invested — including plans that survived a `/gov:ask` back-edge cycle.
+Before generating any artifacts, check the feature directory for existing plan files. This protects work the user may have already invested — including plans that survived a `/gov:amend` back-edge cycle.
 
 1. Check the feature directory for `plan.md`, `tasks.md`, and `data-model.md`.
 2. If none of those files exist, skip this section and proceed to the cross-spec context checklist with the standard template-copy flow unchanged.

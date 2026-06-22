@@ -147,5 +147,5 @@ behavior fix.
   State-A tool-inventory introspection is the implicit check (tools present ⇒ it worked);
   no extra verification machinery is added.
 - **Cross-spec signposts touch `done` specs 028/029.** This may trip the `done → in-progress`
-  back-edge; the recording mechanism (signpost vs. `/gov:ask`) is settled at implement time
+  back-edge; the recording mechanism (signpost vs. `/gov:amend`) is settled at implement time
   to keep the reopen, if any, intentional rather than incidental.

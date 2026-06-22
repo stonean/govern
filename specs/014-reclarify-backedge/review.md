@@ -13,7 +13,7 @@ skipped-passes: []
 
 ## Summary
 
-Re-review after Task 8 (Options A + B for the reopen-after-informal-edits scenario) landed in `36461bd`. Scope: `framework/commands/ask.md` (new "Re-open precondition" section), `.claude/commands/gov/ask.md` (regenerated mirror), `AGENTS.md` (Workflow entry for the agent-side `set-status` shortcut), and the new scenario file. Pure markdown; the only rule file that applies to a markdown scope is `configuration-cross.md`, which has no triggers in prose. One SHOULD finding caught and fixed in this same review: the decline branch of the new precondition contradicted the scenario's "Delta exists but the user intends to add a new scenario" edge case. `blocking: no`.
+Re-review after Task 8 (Options A + B for the reopen-after-informal-edits scenario) landed in `36461bd`. Scope: `framework/commands/amend.md` (new "Re-open precondition" section), `.claude/commands/gov/amend.md` (regenerated mirror), `AGENTS.md` (Workflow entry for the agent-side `set-status` shortcut), and the new scenario file. Pure markdown; the only rule file that applies to a markdown scope is `configuration-cross.md`, which has no triggers in prose. One SHOULD finding caught and fixed in this same review: the decline branch of the new precondition contradicted the scenario's "Delta exists but the user intends to add a new scenario" edge case. `blocking: no`.
 
 ## MUST violations (blocking)
 
@@ -23,9 +23,9 @@ _None._
 
 ### SHOULD: SCENARIO-CONTRACT — decline branch contradicted edge case (fixed in-review)
 
-- **File**: `framework/commands/ask.md:66`
+- **File**: `framework/commands/amend.md:66`
 - **Rule**: Scenario-documented contract: `specs/014-reclarify-backedge/scenarios/reopen-after-informal-edits.md` Edge Cases — _"Delta exists but the user intends to add a new scenario — Option B's prompt is offered before classification, so the user can decline the re-open prompt and continue into the scenario branch with the new input."_
-- **Finding**: The initial Option B implementation wrote step 5 as "On **decline**, exit without modifying any file." That terminates `/ask` entirely, which contradicts the scenario's edge case requiring the user to be able to decline the re-open and still route a new scenario input. The contradiction is internal to the same section — the trailing paragraph already promised the opt-out-and-continue behavior.
+- **Finding**: The initial Option B implementation wrote step 5 as "On **decline**, exit without modifying any file." That terminates `/amend` entirely, which contradicts the scenario's edge case requiring the user to be able to decline the re-open and still route a new scenario input. The contradiction is internal to the same section — the trailing paragraph already promised the opt-out-and-continue behavior.
 - **Auto-fixable**: yes
 - **Suggested fix**: replace "On **decline**, exit without modifying any file" with "On **decline**, continue to **Gather the input** without modifying any file" plus the disambiguating sentence about empty vs. new input.
 - **Status**: **fixed in this review run** (no separate commit yet — fix is in the working tree alongside this report).
@@ -50,7 +50,7 @@ Markdown command-spec edits, no executable surface. The new `git status --porcel
 
 ### Reuse
 
-The "detect on-disk delta, prompt user, mutate status" shape echoes `/gov:clarify`'s recovery path from Tasks 1–2 (status + open-question-count → prompt → revert). No shared helper is warranted in a markdown-spec framework, but the pattern is now applied symmetrically across `/ask` and `/clarify` — operators can predict it from one to the other.
+The "detect on-disk delta, prompt user, mutate status" shape echoes `/gov:clarify`'s recovery path from Tasks 1–2 (status + open-question-count → prompt → revert). No shared helper is warranted in a markdown-spec framework, but the pattern is now applied symmetrically across `/amend` and `/clarify` — operators can predict it from one to the other.
 
 ### Quality
 
@@ -58,8 +58,8 @@ Found the one SHOULD finding above and fixed it. The status-mutation table picke
 
 ### Efficiency
 
-`git status --porcelain` is the canonical machine-parseable interface, scoped to three paths. O(small) on every `done`-spec `/ask` invocation; the cost is justified by the user-visible re-open shortcut.
+`git status --porcelain` is the canonical machine-parseable interface, scoped to three paths. O(small) on every `done`-spec `/amend` invocation; the cost is justified by the user-visible re-open shortcut.
 
 ### Simplicity
 
-Option A is a single AGENTS.md Workflow entry — no new primitive, no new command flag. Option B adds one section, one table row, and one scope-boundary note to `framework/commands/ask.md`. No premature abstraction.
+Option A is a single AGENTS.md Workflow entry — no new primitive, no new command flag. Option B adds one section, one table row, and one scope-boundary note to `framework/commands/amend.md`. No premature abstraction.

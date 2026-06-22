@@ -702,7 +702,7 @@ Fetch each command template and copy it into `{config_dir}/commands/{project}/`.
 
 | Source Path | Destination Path |
 | --- | --- |
-| `framework/commands/ask.md` | `{config_dir}/commands/{project}/ask.md` |
+| `framework/commands/amend.md` | `{config_dir}/commands/{project}/amend.md` |
 | `framework/commands/clarify.md` | `{config_dir}/commands/{project}/clarify.md` |
 | `framework/commands/groom.md` | `{config_dir}/commands/{project}/groom.md` |
 | `framework/commands/help.md` | `{config_dir}/commands/{project}/help.md` |

@@ -82,7 +82,7 @@ The existing Steps 1–3 become 2–4 with no other changes. Groom still creates
 
 > **Signpost:** 008 defines the *security instance* of the general rules tier later formalized in [016 — Cross-Cutting Rules](../016-cross-cutting-rules/spec.md). The rule-file format, ID conventions, and validate enforcement defined here remain authoritative for security rules and serve as the canonical reference for any future rule file. See [§rules](../../framework/constitution.md) in the constitution for the general framing.
 
-This pattern (signpost note for evolved framing) is consistent with how 006 already handles renamed commands ("`/gov:scenario` is now `/gov:ask`," etc.) — a top-of-file note rather than body rewrites.
+This pattern (signpost note for evolved framing) is consistent with how 006 already handles renamed commands ("`/gov:scenario` is now `/gov:amend`," etc.) — a top-of-file note rather than body rewrites.
 
 ### Generated Claude commands: regenerate via scripts/gen-claude-commands.sh
 

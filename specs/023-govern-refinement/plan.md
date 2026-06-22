@@ -4,9 +4,9 @@ Implements [023 — `govern` Refinement](spec.md).
 
 ## Overview
 
-The work splits into two phases: (A) extend the `gvrn` runtime with two new primitives via a follow-on scenario on spec [022](../022-deterministic-runtime/spec.md), then (B) consolidate the slash command surface in `govern` and sweep the dependent prose. Phase A must ship before phase B because `framework/commands/ask.md` (rewritten in phase B) invokes the new primitives on its scenario branch.
+The work splits into two phases: (A) extend the `gvrn` runtime with two new primitives via a follow-on scenario on spec [022](../022-deterministic-runtime/spec.md), then (B) consolidate the slash command surface in `govern` and sweep the dependent prose. Phase A must ship before phase B because `framework/commands/amend.md` (rewritten in phase B) invokes the new primitives on its scenario branch.
 
-Within phase B, the four scope-of-change items from the spec land in this order: `/configure` MCP allow-list (independent), lightweight track removal (constitution and command sweep), `/capture` merge into `/specify`, `/ask` rewrite. The prose sweep (`README`, `docs/introduction.md`, help tables, brownfield-process body) runs last because it depends on the final verb set.
+Within phase B, the four scope-of-change items from the spec land in this order: `/configure` MCP allow-list (independent), lightweight track removal (constitution and command sweep), `/capture` merge into `/specify`, `/amend` rewrite. The prose sweep (`README`, `docs/introduction.md`, help tables, brownfield-process body) runs last because it depends on the final verb set.
 
 ## Technical Decisions
 
@@ -21,9 +21,9 @@ Phase A has six tasks in this order:
 5. Append `gov-rt:create-scenario` and `gov-rt:append-task` to `framework/runtime-tools.txt`. The pre-commit hook runs `gen-configure-mcp.sh` in the same commit, propagating the entries into `claude.md` and `auggie.md` automatically. Tag the `gvrn` release with the new binary; the framework files (including the updated configure sources) ship through the same govern commit.
 6. Close the spec 022 scenario; spec 022 returns to `done`.
 
-Only after Phase A completes does Phase B begin — the `framework/commands/ask.md` rewrite calls primitives that exist in `gvrn` and are already allowed by the configure files.
+Only after Phase A completes does Phase B begin — the `framework/commands/amend.md` rewrite calls primitives that exist in `gvrn` and are already allowed by the configure files.
 
-Rationale: deferring the primitive landing to mid-023 would force the `ask.md` rewrite to ship in lockstep with `gvrn` primitives in the same PR, blurring the per-spec scope and making rollback noisy. Two clean releases (`gvrn` first, `govern` second) keep each landing independently revertible. The generator-before-primitive ordering inside Phase A means the `runtime-tools.txt` → configure invariant holds at every commit on `main` — no transient window where the canonical allow set lags the published tool list.
+Rationale: deferring the primitive landing to mid-023 would force the `amend.md` rewrite to ship in lockstep with `gvrn` primitives in the same PR, blurring the per-spec scope and making rollback noisy. Two clean releases (`gvrn` first, `govern` second) keep each landing independently revertible. The generator-before-primitive ordering inside Phase A means the `runtime-tools.txt` → configure invariant holds at every commit on `main` — no transient window where the canonical allow set lags the published tool list.
 
 ### MCP allow-list generator — `scripts/gen-configure-mcp.sh`
 
@@ -50,9 +50,9 @@ Separate from the lightweight-track sweep, the constitution carries eight refere
 
 | Line | Section | Current text | Rewrite |
 | --- | --- | --- | --- |
-| 99 | §spec-lifecycle | `/elaborate` adds a scenario | `/ask` adds a scenario |
-| 108 | §three-cycles (Brownfield) | `/capture` (sketch spec) → … → `/elaborate` to add a scenario | `/specify` (sketch spec) → … → `/ask` to add a scenario |
-| 109 | §three-cycles (Reopen) | `/elaborate` adds a scenario | `/ask` adds a scenario |
+| 99 | §spec-lifecycle | `/elaborate` adds a scenario | `/amend` adds a scenario |
+| 108 | §three-cycles (Brownfield) | `/capture` (sketch spec) → … → `/elaborate` to add a scenario | `/specify` (sketch spec) → … → `/amend` to add a scenario |
+| 109 | §three-cycles (Reopen) | `/elaborate` adds a scenario | `/amend` adds a scenario |
 | 260 | §scenario-promotion | `/specify` (for new behavior) or `/capture` (for another existing feature) | `/specify` (covers both) |
 | 335 | §brownfield-process intro | The `/capture` command initializes a skeleton spec | The `/specify` command initializes a skeleton spec; sparse acceptance criteria are valid for brownfield use |
 | 339 | §brownfield-process Capture phase | `/capture` drafts a skeleton spec | `/specify` drafts a skeleton spec |
@@ -69,9 +69,9 @@ The §brownfield-process anchor name is preserved (no cascading anchor reference
 
 `/specify` absorbs the brownfield use case by accepting sparse acceptance criteria as valid. The spec template already documents "At least one concrete, testable criterion is required before `/{project}:clarify` will advance the spec" — that gate stays. A brownfield-adopter who runs `/specify` with no AC lands at `draft` and can advance later as real work fills the section.
 
-### `/ask` rewrite — classifier + scenario branch
+### `/amend` rewrite — classifier + scenario branch
 
-Three additions to `framework/commands/ask.md`:
+Three additions to `framework/commands/amend.md`:
 
 1. **Classifier prose** — a paragraph in the Instructions section names the heuristic signals (question signals, scenario signals, status tiebreaker) and instructs the host to apply them at the refinement step. No new LLM extension point; the host (LLM walking prose) executes the heuristic directly.
 2. **Scenario branch** — invoked when the classifier (or user override) selects scenario. Adopts the decision tree currently in `framework/commands/elaborate.md` (does a spec exist? is the spec ambiguous? is the behavior situational?). Calls `gov-rt:create-scenario` to write `scenarios/{slug}.md` and `gov-rt:append-task` to extend `tasks.md`. On a `done` spec, calls `gov-rt:set-status` to reopen `done → in-progress`. Updates the session target to point at the new scenario (host responsibility — no session primitive).
@@ -100,10 +100,10 @@ The rename ships alongside a description tightening on both commands so `/help` 
 
 ### Help-tables generator update
 
-`scripts/gen-help-tables.sh` currently builds five tables. The `elaborate_table` (lines 100-103) lists `/ask` and `/elaborate`; the `brownfield_table` (lines 105-109) lists `/capture`, `/log`, `/groom`. Changes:
+`scripts/gen-help-tables.sh` currently builds five tables. The `elaborate_table` (lines 100-103) lists `/amend` and `/elaborate`; the `brownfield_table` (lines 105-109) lists `/capture`, `/log`, `/groom`. Changes:
 
 - Rename marker `commands-elaborate` → `commands-refine` in the generator and in `framework/commands/help.md`.
-- Drop the `/elaborate` row from the refine table; the table becomes a single-row table with `/ask` only.
+- Drop the `/elaborate` row from the refine table; the table becomes a single-row table with `/amend` only.
 - Drop the `/capture` row from the brownfield table.
 - Rename the surrounding heading in `help.md` from "Elaborate (add precision)" to "Refine".
 
@@ -127,7 +127,7 @@ The acceptance criteria are concrete enough that a `grep`-based pass against the
 4. `scripts/lint-tool-coverage.sh` → passes.
 5. `scripts/gen-spec-deps.sh --dry-run` → reports "in sync".
 6. `npx markdownlint-cli2 '**/*.md'` → passes.
-7. `runtime` parseability check on rewritten `specify.md` and `ask.md` → passes.
+7. `runtime` parseability check on rewritten `specify.md` and `amend.md` → passes.
 8. `/gov:validate` on spec 023 → no hard-fail or blocking.
 9. Markdown-only CI workflow (locally simulated) → passes.
 
@@ -148,19 +148,19 @@ The acceptance criteria are concrete enough that a `grep`-based pass against the
 | `framework/templates/spec/spec-and-plan.md` | Delete | Lightweight track template no longer used. |
 | `framework/constitution.md` | Modify | Delete §lightweight-track; prune `spec-and-plan.md` references; rewrite §brownfield-process step 1; sweep eight deleted-verb references (§spec-lifecycle, §three-cycles, §scenario-promotion, §brownfield-process intro/Capture/Inbox, §runtime-boundary). |
 | `framework/commands/specify.md` | Modify | Drop qualifying questions and `spec-and-plan.md` branch; always use `spec.md`. |
-| `framework/commands/ask.md` | Modify | Add classifier heuristic, scenario branch, both back-edges, `flip` override. |
+| `framework/commands/amend.md` | Modify | Add classifier heuristic, scenario branch, both back-edges, `flip` override. |
 | `framework/commands/capture.md` | Delete | Consolidated into `/specify`. |
-| `framework/commands/elaborate.md` | Delete | Consolidated into `/ask`. |
+| `framework/commands/elaborate.md` | Delete | Consolidated into `/amend`. |
 | `framework/commands/clarify.md` | Modify | Drop `spec-and-plan.md` fallback; rewrite "Spec File Detection" section. |
 | `framework/commands/plan.md` | Modify | Drop `spec-and-plan.md` fallback and "skip plan creation" branch. |
 | `framework/commands/implement.md` | Modify | Drop `spec-and-plan.md` references in setup, scope boundaries, gate. |
 | `framework/commands/review.md` | Modify | Drop `spec-and-plan.md` reference in Inputs section. |
 | `framework/commands/validate.md` → `framework/commands/analyze.md` | Rename + Modify | Rename for spec-driven-development standard alignment; update H1 to "# Analyze"; drop `spec-and-plan.md` references; tighten frontmatter schema text. |
 | `scripts/lint-frontmatter.sh` | Modify | Update any direct `validate.md` reference to `analyze.md`. |
-| `framework/commands/target.md` | Modify | Drop fallback; update Status → next action table (`done` → `/ask`). |
-| `framework/commands/status.md` | Modify | Drop fallback; update Status → next action table (`done` → `/ask`). |
+| `framework/commands/target.md` | Modify | Drop fallback; update Status → next action table (`done` → `/amend`). |
+| `framework/commands/status.md` | Modify | Drop fallback; update Status → next action table (`done` → `/amend`). |
 | `framework/commands/help.md` | Modify | Rename "Elaborate" heading to "Refine"; update marker names. |
-| `framework/commands/groom.md` | Modify | Update references that point at `/elaborate` to point at `/ask`. |
+| `framework/commands/groom.md` | Modify | Update references that point at `/elaborate` to point at `/amend`. |
 | `framework/bootstrap/configure/claude.md` | Modify | Add managed block holding the MCP allow-list entries. |
 | `framework/bootstrap/configure/auggie.md` | Modify | Add managed block holding the MCP allow-list entries (Auggie format). |
 | `scripts/gen-help-tables.sh` | Modify | Rename `commands-elaborate` marker → `commands-refine`; drop `/elaborate` and `/capture` rows. |
@@ -190,4 +190,4 @@ The acceptance criteria are concrete enough that a `grep`-based pass against the
 
 - The migration check in `/govern` bootstrap relies on shell `find` and host-level file operations, not a new primitive. This is acceptable because the migration is a one-time event per adopter; adding a `migrate-spec-and-plan` primitive would carry maintenance cost long after the migration is done across the adopter base.
 - Auggie's MCP permission format may differ from the placeholder shape (`mcp:gov-rt:<verb>-<noun>`) assumed here. The generator implementation reads `framework/bootstrap/configure/auggie.md` at implementation time to confirm the schema; if the placeholder is wrong, the generator updates to match. This is a small implementation-time correction, not a spec-time risk.
-- The `flip` keyword in `/ask`'s refinement-approval gate may conflict with a legitimate question or scenario whose text starts with the literal word "flip". Mitigation: the gate matches `flip` only as a standalone command at the prompt — text that includes "flip" mid-sentence as part of a refined question or scenario is recognized as user-provided content via the existing approve/refine selector, not as the override keyword.
+- The `flip` keyword in `/amend`'s refinement-approval gate may conflict with a legitimate question or scenario whose text starts with the literal word "flip". Mitigation: the gate matches `flip` only as a standalone command at the prompt — text that includes "flip" mid-sentence as part of a refined question or scenario is recognized as user-provided content via the existing approve/refine selector, not as the override keyword.

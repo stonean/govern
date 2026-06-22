@@ -3,15 +3,15 @@ description: Add a question or a scenario to the targeted spec (classifier-drive
 argument-hint: "[input text]"
 ---
 
-# Ask
+# Amend
 
-Add input to the targeted spec or scenario. `/ask` classifies the input as either a **question** (an unresolved decision recorded under `## Open Questions`) or a **scenario** (a concrete behavior captured under `scenarios/{slug}.md`), routes through the matching path, and on the spec target performs whichever back-edge keeps the lifecycle invariant.
+Add input to the targeted spec or scenario. `/amend` classifies the input as either a **question** (an unresolved decision recorded under `## Open Questions`) or a **scenario** (a concrete behavior captured under `scenarios/{slug}.md`), routes through the matching path, and on the spec target performs whichever back-edge keeps the lifecycle invariant.
 
 ## Purpose
 
-Captures additions to a spec that arise at any point in the pipeline — during review, planning, implementation, or just thinking. `/ask` is the single verb for "I have a thing to add to this spec." The framework classifies the input and routes it; the user approves the classification (or flips it) at the same approval gate that already exists for the refined wording.
+Captures additions to a spec that arise at any point in the pipeline — during review, planning, implementation, or just thinking. `/amend` is the single verb for "I have a thing to add to this spec." The framework classifies the input and routes it; the user approves the classification (or flips it) at the same approval gate that already exists for the refined wording.
 
-Two back-edges keep the spec lifecycle honest, both owned by `/ask`:
+Two back-edges keep the spec lifecycle honest, both owned by `/amend`:
 
 - **Question route — `clarified` / `planned` / `in-progress` → `draft`.** Recording a new open question on a non-`draft` spec leaves the spec in an internally inconsistent state ("status says questions resolved, body has unresolved questions"); the same write reverts status to `draft`. The user's acceptance of the refined question at the approval gate is the consent for the mutation; no separate prompt fires.
 - **Scenario route — `done` → `in-progress`.** Recording a scenario on a `done` spec reopens it via the documented reopen cycle (§spec-lifecycle). The scenario's task is implemented, the spec returns to `done`.
@@ -46,7 +46,7 @@ Read `.govern.session.toml`. If the session includes a `scenario` and `scenario-
 
 ### Re-open precondition (spec target, status = done)
 
-When the target is a spec with `status: done`, inspect the feature directory for an on-disk delta before gathering input. The user may have already added scenario or task content informally (during conversation, manual editing, etc.) and only needs the status flipped to match — there is no new input to classify. Detection is a host responsibility; the optional mutation uses the `set-status` primitive when registered. Scenario-targeted `/gov:ask` skips this section (scenarios have no status field).
+When the target is a spec with `status: done`, inspect the feature directory for an on-disk delta before gathering input. The user may have already added scenario or task content informally (during conversation, manual editing, etc.) and only needs the status flipped to match — there is no new input to classify. Detection is a host responsibility; the optional mutation uses the `set-status` primitive when registered. Scenario-targeted `/gov:amend` skips this section (scenarios have no status field).
 
 1. Run `git status --porcelain -- specs/{feature}/scenarios/ specs/{feature}/spec.md specs/{feature}/tasks.md` and parse the output. The delta consists of:
    - Untracked files under `specs/{feature}/scenarios/` (status `??`).
@@ -63,7 +63,7 @@ When the target is a spec with `status: done`, inspect the feature directory for
    ```
 
 4. On **confirm**, invoke `set-status` (MCP: `set-status`) with `from: done`, `to: in-progress` to flip the frontmatter. Otherwise, edit the frontmatter directly. Display: "Spec reopened to `in-progress`. The on-disk delta is now tracked. Run `/gov:plan` or `/gov:implement` next." Exit without entering the classifier and without recording any new input.
-5. On **decline**, continue to **Gather the input** without modifying any file. The spec remains `done` and the on-disk delta is left alone. If the user has new content to add (the delta is forward-looking and not what they're capturing now), it routes through the existing classifier; if they have nothing more, the Gather step exits naturally. The user can also re-invoke `/gov:ask` later to accept the re-open.
+5. On **decline**, continue to **Gather the input** without modifying any file. The spec remains `done` and the on-disk delta is left alone. If the user has new content to add (the delta is forward-looking and not what they're capturing now), it routes through the existing classifier; if they have nothing more, the Gather step exits naturally. The user can also re-invoke `/gov:amend` later to accept the re-open.
 
 This precondition fires only on `done` specs. The prompt offers an opt-out so the user can decline and continue into the scenario branch with a new input — useful when the delta represents forward-looking work the user does *not* want to reflect in the spec's status yet.
 
@@ -104,7 +104,7 @@ The goal is a question that is precise, actionable, and self-contained — someo
 The goal is a scenario that captures a specific situation and the concrete behavior it triggers. Scenarios live at a lower level of abstraction than the parent spec — narrower scope, plain language.
 
 1. **Walk the bug decision tree** (§bug-handling):
-   - **Does a spec exist for the behavior?** If no, stop. Tell the user to create the spec first via `/gov:specify`, then come back. (`/ask` requires a session target with a real spec file.)
+   - **Does a spec exist for the behavior?** If no, stop. Tell the user to create the spec first via `/gov:specify`, then come back. (`/amend` requires a session target with a real spec file.)
    - **Is the spec ambiguous or incomplete?** If yes — the right fix is to update the spec directly, not record a scenario. Offer to help edit the spec; exit without recording.
    - **Is this a chore rather than a spec addition?** If the input is project maintenance (lint or formatting cleanup, dependency cleanup, repo hygiene, a standalone refactor) that adds no durable requirement and is not really about this spec (§bug-handling, durability test) — it is not spec material. Do not write a scenario or touch the spec; tell the user to capture it with `/gov:log` (it lives in the inbox as a chore, done directly). Exit without recording.
    - **Is the spec clear but the behavior needs lower-level elaboration?** Proceed to draft the scenario.

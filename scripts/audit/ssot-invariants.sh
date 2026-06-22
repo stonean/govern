@@ -17,10 +17,10 @@
 #      *textual rule* (full sentence describing the state machine) lives
 #      in one canonical home with references elsewhere, not restated.
 #
-#   2. Back-edge ownership: the rule that /ask owns both back-edges
+#   2. Back-edge ownership: the rule that /amend owns both back-edges
 #      (clarified/planned/in-progress → draft; done → in-progress).
 #      Canonical: framework/constitution.md §spec-lifecycle
-#      Family 1c already checks the back-edge wording in ask.md and
+#      Family 1c already checks the back-edge wording in amend.md and
 #      target.md; this check is the SSOT companion.
 #
 #   3. Open-question counting rule: how the framework counts entries in

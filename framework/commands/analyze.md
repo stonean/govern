@@ -83,7 +83,7 @@ For each scenario file (`scenarios/{slug}.md`):
 
 - A YAML frontmatter block exists at the top of the file.
 - The frontmatter parses as valid YAML.
-- Either the `section` field (new schema) or the legacy `spec-ref` field is present and non-empty. New scenarios written by `/{project}:ask` use `section`; pre-017 scenarios written before `section` existed may still carry `spec-ref`. Either field satisfies the check.
+- Either the `section` field (new schema) or the legacy `spec-ref` field is present and non-empty. New scenarios written by `/{project}:amend` use `section`; pre-017 scenarios written before `section` existed may still carry `spec-ref`. Either field satisfies the check.
 
 Reference: the schema is canonically declared in `framework/constitution.md` §text-first-artifacts.
 
@@ -91,7 +91,7 @@ Reference: the schema is canonically declared in `framework/constitution.md` §t
 
 - Acceptance criteria section exists with at least one checkbox item
 - No placeholder or empty acceptance criteria
-- Open questions consistent with status (`clarified` or later must have none). When this check fails — a spec at `clarified` / `planned` / `in-progress` with one or more open questions in the body — the spec is in the recovery state defined by spec 014. Suggested fix: run `/{project}:clarify` (its recovery path will revert status to `draft` and walk the questions), or `/{project}:ask` on a fresh question (which performs the back-edge automatically).
+- Open questions consistent with status (`clarified` or later must have none). When this check fails — a spec at `clarified` / `planned` / `in-progress` with one or more open questions in the body — the spec is in the recovery state defined by spec 014. Suggested fix: run `/{project}:clarify` (its recovery path will revert status to `draft` and walk the questions), or `/{project}:amend` on a fresh question (which performs the back-edge automatically).
 - No implementation code blocks (function signatures, package paths, language-specific snippets) in the spec — those belong in plan.md. Format examples, directory structures, and user-facing commands are acceptable when they define behavioral contracts.
 
 ### Artifact completeness (blocking)

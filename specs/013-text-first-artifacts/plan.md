@@ -117,7 +117,7 @@ Phases 2 and 3 can run in parallel within the same session; everything else is s
 | `framework/commands/capture.md` | Modify | Write frontmatter for new sketch specs |
 | `framework/commands/groom.md` | Audit/Modify | Update only if it reads spec metadata for routing |
 | `framework/commands/elaborate.md` | Audit/Modify | Update only if it touches scenario metadata (will: scenarios now use frontmatter `spec-ref`) |
-| `framework/commands/ask.md` | Audit/Modify | Update only if it reads spec/scenario metadata to identify the target |
+| `framework/commands/amend.md` | Audit/Modify | Update only if it reads spec/scenario metadata to identify the target |
 | `framework/commands/log.md` | Audit | Likely no change (inbox.md is out of frontmatter scope) |
 | `framework/commands/help.md` | No change | Fixed text, no metadata parsing |
 | `framework/bootstrap/govern.md` | Modify | Add migration step (git precheck, walk, convert); add `npx quartz specs/` to post-run tip output |

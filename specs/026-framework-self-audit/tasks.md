@@ -26,7 +26,7 @@ Tasks derived from the [plan](plan.md). Complete in order. Phased structure — 
 
 - [x] Sub-check 1a: invoke `scripts/gen-readme-table.sh --check`. Surface non-zero exit as a finding pointing at `README.md`.
 - [x] Sub-check 1b: extract the pipeline-diagram block (delimited by the canonical `draft → clarified → planned → in-progress → done` line and surrounding whitespace) from `framework/constitution.md` §spec-lifecycle, `docs/introduction.md`, and `framework/templates/project/project-readme.md`. Diff pairwise; finding per divergence.
-- [x] Sub-check 1c: extract back-edge sentences from `framework/constitution.md` §spec-lifecycle. Compare against references in `framework/commands/ask.md` and `framework/commands/target.md`'s Status→next-action table. Finding per wording divergence.
+- [x] Sub-check 1c: extract back-edge sentences from `framework/constitution.md` §spec-lifecycle. Compare against references in `framework/commands/amend.md` and `framework/commands/target.md`'s Status→next-action table. Finding per wording divergence.
 - [x] Unit-test by running against the current repo (should exit 0) and against a deliberately-modified copy with one altered line in `docs/introduction.md` (should exit 1 with one finding).
 
 - **Done when**: script runs, exits 0 on clean state, exits 1 with structured findings on injected drift.
@@ -103,7 +103,7 @@ Pulled in from the original Future Considerations during the autonomous implemen
 - [x] For each old-name token: grep all `done` specs' bodies for the token in code-span form (backticked).
 - [x] For each match: examine the surrounding sentence (split at sentence boundaries). Look for current-tense verbs (`is`, `provides`, `exposes`, `creates`, `runs`, `defines`).
 - [x] If a current-tense verb is found near the old-name token: emit a finding with the affected sentence, the spec file:line, and a suggested past-tense rewrite (`is` → `was`, `provides` → `provided`, `exposes` → `exposed`, `creates` → `created`, `runs` → `ran`, `defines` → `defined`).
-- [x] Suggested-fix output names the `/gov:ask` cycle as the resolution path (the maintainer adds a clarify-question on the affected spec, then accepts the past-tense rewrite).
+- [x] Suggested-fix output names the `/gov:amend` cycle as the resolution path (the maintainer adds a clarify-question on the affected spec, then accepts the past-tense rewrite).
 
 - **Done when**: script runs and produces findings against the documented ~9 specs from spec body's Family 8 background (011, 014, 017, 020, 021, 022, 023, 024, 000). False positives expected; manually verify the findings list is plausible.
 

@@ -18,7 +18,7 @@ Bugs are unwritten scenarios. Rather than tracking defects in a separate system,
 
 Most projects adopting governance are not greenfield — they have existing code, existing bugs, and incomplete specifications. Scenarios are the primary mechanism for incrementally bringing brownfield projects under governance. Every bug fix, edge case discovery, or behavior clarification produces a scenario that makes the specs more precise over time.
 
-> **Note:** several commands introduced here were renamed by later specs. `/gov:scenario` is now `/gov:ask`, `/gov:triage` is now `/gov:groom` (operating on `specs/inbox.md` — see [011-brownfield-process](../011-brownfield-process/spec.md)), and `/gov:next` was retired. References to the original names appear below as historical context.
+> **Note:** several commands introduced here were renamed by later specs. `/gov:scenario` is now `/gov:amend`, `/gov:triage` is now `/gov:groom` (operating on `specs/inbox.md` — see [011-brownfield-process](../011-brownfield-process/spec.md)), and `/gov:next` was retired. References to the original names appear below as historical context.
 >
 > **Note:** path references below (`templates/scenario.md`, `templates/triage.md`, `templates/spec.md`) reflect the original layout. The repository was later reorganized so spec templates live in `framework/templates/spec/` and project-scaffolding templates in `framework/templates/project/`. The `triage.md` template was renamed to `inbox.md` by [011-brownfield-process](../011-brownfield-process/spec.md) (current path: `framework/templates/project/inbox.md`). The acceptance criteria below were satisfied at merge time under the original paths and names.
 

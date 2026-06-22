@@ -11,7 +11,7 @@ Resolve open questions and advance a spec from `draft` to `clarified`, or resolv
 
 Pipeline gate: `draft` → `clarified`. A spec cannot be planned until all open questions are resolved, edge cases documented, and acceptance criteria verified. When a scenario is targeted, resolves scenario-level open questions instead.
 
-This command is the resolver, not the back-edge entry point. The `clarified` / `planned` / `in-progress` → `draft` back-edge is owned by `/{project}:ask` (see §spec-lifecycle in the constitution and spec 014). The hot path here walks open questions on a `draft` spec and advances to `clarified`. A recovery branch handles hand-edited specs that arrive at `/{project}:clarify` with a non-`draft` status and unresolved questions in the body — a state that should not occur via normal usage but can arise from manual frontmatter edits or migrations from other tools.
+This command is the resolver, not the back-edge entry point. The `clarified` / `planned` / `in-progress` → `draft` back-edge is owned by `/{project}:amend` (see §spec-lifecycle in the constitution and spec 014). The hot path here walks open questions on a `draft` spec and advances to `clarified`. A recovery branch handles hand-edited specs that arrive at `/{project}:clarify` with a non-`draft` status and unresolved questions in the body — a state that should not occur via normal usage but can arise from manual frontmatter edits or migrations from other tools.
 
 ## Context
 
@@ -37,7 +37,7 @@ Read the spec's frontmatter `status` field and count entries in the `## Open Que
 | `draft` | no | Verify acceptance criteria, then advance to `clarified` (existing hot path) |
 | `clarified` / `planned` / `in-progress` | no | Stop with: "Spec is already `{status}`. Run `/{project}:plan` to create the technical plan." for `clarified`, or "Run `/{project}:implement` to continue implementation." for `planned` / `in-progress`. |
 | `clarified` / `planned` / `in-progress` | yes | Run the **Recovery path** below. |
-| `done` | (any) | Stop with: "Spec is `done`. Run `/{project}:ask` to capture this as a scenario instead." Exit without mutation. |
+| `done` | (any) | Stop with: "Spec is `done`. Run `/{project}:amend` to capture this as a scenario instead." Exit without mutation. |
 
 The "already `{status}`" branch and the `done` branch never modify any file.
 
@@ -86,7 +86,7 @@ After the review:
 
 ### Recovery path: non-`draft` spec with open questions
 
-Triggered only when the gate sees `(status ∈ {clarified, planned, in-progress}) && open-question count ≥ 1`. This state should not occur via normal usage — `/{project}:ask` reverts a spec to `draft` whenever it records a new open question on a non-`draft` spec — but it can arise from a manual frontmatter edit or a spec migrated from another tool.
+Triggered only when the gate sees `(status ∈ {clarified, planned, in-progress}) && open-question count ≥ 1`. This state should not occur via normal usage — `/{project}:amend` reverts a spec to `draft` whenever it records a new open question on a non-`draft` spec — but it can arise from a manual frontmatter edit or a spec migrated from another tool.
 
 Before mutating anything, surface the inconsistency to the user:
 

@@ -14,7 +14,7 @@
 #
 #   1c. Back-edge wording — extracts the back-edge transitions from
 #       framework/constitution.md §spec-lifecycle (the canonical source) and
-#       confirms each is referenced by framework/commands/ask.md (which owns
+#       confirms each is referenced by framework/commands/amend.md (which owns
 #       the back-edges per spec 014) and framework/commands/target.md's
 #       Status→next-action table.
 #
@@ -96,12 +96,12 @@ sub_1b() {
 
 sub_1c() {
   # The two canonical back-edges per spec 014 and the constitution:
-  #   * clarified/planned/in-progress → draft  (new question via /ask)
-  #   * done → in-progress                      (new scenario via /ask)
-  # Both should be referenced from framework/commands/ask.md (which owns
+  #   * clarified/planned/in-progress → draft  (new question via /amend)
+  #   * done → in-progress                      (new scenario via /amend)
+  # Both should be referenced from framework/commands/amend.md (which owns
   # the back-edges) and framework/commands/target.md (which surfaces the
   # next-action implications).
-  local consumers=("framework/commands/ask.md" "framework/commands/target.md")
+  local consumers=("framework/commands/amend.md" "framework/commands/target.md")
   for c in "${consumers[@]}"; do
     if [ ! -f "$c" ]; then
       emit "$c" "expected back-edge reference missing — file does not exist" "create the file or update the family-1c consumer list"

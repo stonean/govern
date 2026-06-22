@@ -1127,7 +1127,7 @@ pub struct AppendTaskArgs {
     /// caller has provided the full body, so no slug is needed. Pairs
     /// with the slug previously passed to `create-scenario` when both
     /// primitives are invoked together by the scenario branch of
-    /// `/gov:ask`.
+    /// `/gov:amend`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[arg(long)]
     pub slug: Option<String>,

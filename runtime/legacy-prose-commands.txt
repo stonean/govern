@@ -13,7 +13,7 @@
 # without failing CI; if a file in this list ever starts parsing as a
 # real procedure, that's a win and the entry can be removed.
 
-framework/commands/ask.md
+framework/commands/amend.md
 framework/commands/clarify.md
 framework/commands/groom.md
 framework/commands/help.md

@@ -85,9 +85,9 @@ Done when: `grep -n 'spec-and-plan' framework/constitution.md` returns no hits; 
 
 Rewrite every reference to the deleted verbs (`/capture`, `/elaborate`) in `framework/constitution.md`. The plan's "Constitution slash-command sweep" table enumerates the eight known sites with the exact rewrite for each.
 
-- [x] Edit §spec-lifecycle (line ~99): rewrite the `/elaborate` back-edge owner to `/ask`.
-- [x] Edit §three-cycles Brownfield (line ~108): rewrite `/capture` → `/specify`; rewrite `/elaborate` → `/ask`.
-- [x] Edit §three-cycles Reopen (line ~109): rewrite `/elaborate` → `/ask`.
+- [x] Edit §spec-lifecycle (line ~99): rewrite the `/elaborate` back-edge owner to `/amend`.
+- [x] Edit §three-cycles Brownfield (line ~108): rewrite `/capture` → `/specify`; rewrite `/elaborate` → `/amend`.
+- [x] Edit §three-cycles Reopen (line ~109): rewrite `/elaborate` → `/amend`.
 - [x] Edit §scenario-promotion (line ~260): collapse "`/specify` (for new behavior) or `/capture` (for another existing feature)" to "`/specify` (covers both)".
 - [x] Edit §brownfield-process intro (line ~335): rewrite "`/capture` command initializes a skeleton spec" to "`/specify` command initializes a skeleton spec; sparse acceptance criteria are valid for brownfield use".
 - [x] Edit §brownfield-process Capture phase (line ~339): rewrite `/capture` → `/specify`.
@@ -101,7 +101,7 @@ Done when: the grep for `/capture\b` and `/elaborate\b` against `framework/const
 ### 8. Lightweight track — command source sweep
 
 - [x] Delete `framework/templates/spec/spec-and-plan.md`.
-- [x] Sweep each command source for `spec-and-plan.md` references and the dual-detection fallback. Files to edit: `clarify.md`, `plan.md`, `implement.md`, `review.md`, `validate.md`, `target.md`, `status.md`, `ask.md`. For each: replace "Check for `spec.md` first, then `spec-and-plan.md`. Use whichever exists. If neither exists, stop and report..." with "Read `spec.md`. If it does not exist, stop and report..." Drop any "If the spec file is `spec-and-plan.md` (lightweight track), [branch]" prose.
+- [x] Sweep each command source for `spec-and-plan.md` references and the dual-detection fallback. Files to edit: `clarify.md`, `plan.md`, `implement.md`, `review.md`, `validate.md`, `target.md`, `status.md`, `amend.md`. For each: replace "Check for `spec.md` first, then `spec-and-plan.md`. Use whichever exists. If neither exists, stop and report..." with "Read `spec.md`. If it does not exist, stop and report..." Drop any "If the spec file is `spec-and-plan.md` (lightweight track), [branch]" prose.
 - [x] Verify `grep -rn 'spec-and-plan' framework/commands/` returns no hits. (Only `specify.md` and `elaborate.md` retain refs at this point — both are rewritten/deleted in Tasks 9 and 12 respectively; the final verification grep runs in Task 16.)
 - [x] Run the runtime parseability check against every edited command source and confirm pass.
 
@@ -117,19 +117,19 @@ Done when: zero `spec-and-plan` hits under `framework/commands/`; parseability c
 
 Done when: `specify.md` carries no qualifying questions; `capture.md` source no longer exists; the Claude-commands generator reports the prune.
 
-### 10. `/ask` rewrite — classifier prose
+### 10. `/amend` rewrite — classifier prose
 
-- [x] Edit `framework/commands/ask.md`: under the existing "Refine the question" section (or an adjacent new "Classify the input" section before refinement), add prose naming the heuristic — question signals (terminal `?`; interrogative starters how/what/when/should/could/would/is/are/do/does/can; hedge words maybe/perhaps/not sure); scenario signals (declarative or imperative; concrete event/state language on/when/if/after; no terminal `?`); status tiebreaker (on a `done` spec, scenario is the default for mixed signals).
+- [x] Edit `framework/commands/amend.md`: under the existing "Refine the question" section (or an adjacent new "Classify the input" section before refinement), add prose naming the heuristic — question signals (terminal `?`; interrogative starters how/what/when/should/could/would/is/are/do/does/can; hedge words maybe/perhaps/not sure); scenario signals (declarative or imperative; concrete event/state language on/when/if/after; no terminal `?`); status tiebreaker (on a `done` spec, scenario is the default for mixed signals).
 - [x] Update the existing user-approves-the-refined-form gate prose to display "Recording as [question|scenario] — preview drafted at [`## Open Questions` entry | `scenarios/{slug}.md`]" and accept `flip` as a standalone override that re-routes through the alternate path's drafting.
 - [x] Run the parseability check.
 
 Done when: the prose names the heuristic and override surface explicitly; parseability is clean.
 
-### 11. `/ask` rewrite — scenario branch and back-edges
+### 11. `/amend` rewrite — scenario branch and back-edges
 
-- [x] Add a "Scenario branch" subsection to `framework/commands/ask.md` covering: the decision tree (does a spec exist? is the spec ambiguous? is the behavior situational?); the invocation of `gov-rt:create-scenario` to write `scenarios/{slug}.md` from the scenario template; the invocation of `gov-rt:append-task` to add the linked task to `tasks.md`; the session-target update to point at the new scenario.
-- [x] Update the gate logic in `ask.md`: the `done` spec refusal goes away. On a `done` spec, the input routes to the scenario branch by default; on confirmation, `gov-rt:set-status` flips `done → in-progress` before scenario creation.
-- [x] Document the back-edge ownership update in the "Status mutation summary" table — both back-edges now belong to `/ask`.
+- [x] Add a "Scenario branch" subsection to `framework/commands/amend.md` covering: the decision tree (does a spec exist? is the spec ambiguous? is the behavior situational?); the invocation of `gov-rt:create-scenario` to write `scenarios/{slug}.md` from the scenario template; the invocation of `gov-rt:append-task` to add the linked task to `tasks.md`; the session-target update to point at the new scenario.
+- [x] Update the gate logic in `amend.md`: the `done` spec refusal goes away. On a `done` spec, the input routes to the scenario branch by default; on confirmation, `gov-rt:set-status` flips `done → in-progress` before scenario creation.
+- [x] Document the back-edge ownership update in the "Status mutation summary" table — both back-edges now belong to `/amend`.
 - [x] Run the parseability check.
 
 Done when: scenario branch is fully described; both back-edges are documented; parseability is clean.
@@ -137,9 +137,9 @@ Done when: scenario branch is fully described; both back-edges are documented; p
 ### 12. `/elaborate` delete and dependent prose update
 
 - [x] Delete `framework/commands/elaborate.md`.
-- [x] Update `framework/commands/groom.md`: replace the existing reference to running `/elaborate` separately for a deeper walk with the equivalent `/ask` reference.
-- [x] Update `framework/commands/clarify.md`: the recovery-path gate currently mentions `/elaborate` on the `done` row — rewrite to reference `/ask`.
-- [x] Update Status → next action tables in `framework/commands/target.md` and `framework/commands/status.md`: `done` row's next action becomes `/ask` (scenario branch) instead of `/elaborate`. (target.md updated; status.md never carried an `/elaborate` reference.)
+- [x] Update `framework/commands/groom.md`: replace the existing reference to running `/elaborate` separately for a deeper walk with the equivalent `/amend` reference.
+- [x] Update `framework/commands/clarify.md`: the recovery-path gate currently mentions `/elaborate` on the `done` row — rewrite to reference `/amend`.
+- [x] Update Status → next action tables in `framework/commands/target.md` and `framework/commands/status.md`: `done` row's next action becomes `/amend` (scenario branch) instead of `/elaborate`. (target.md updated; status.md never carried an `/elaborate` reference.)
 - [x] Run the parseability check against every edited command.
 - [x] Run `scripts/gen-claude-commands.sh` and verify `.claude/commands/gov/elaborate.md` is pruned.
 
@@ -160,7 +160,7 @@ Pure rename, no behavior change. Must land atomically with the help-tables gener
 - [x] Edit `scripts/gen-help-tables.sh`: the pipeline-table builder references `validate.md` and `'/{project}:validate'` — both update to `analyze.md` and `'/{project}:analyze'`.
 - [x] Edit `scripts/lint-frontmatter.sh`: update any direct `validate.md` reference.
 - [x] Sweep references in `README.md` (5 occurrences) and `docs/introduction.md`.
-- [x] Edit `specs/README.md`: add a new "Past Renames" section recording `/validate → /analyze` (also `/capture → /specify` and `/elaborate → /ask`).
+- [x] Edit `specs/README.md`: add a new "Past Renames" section recording `/validate → /analyze` (also `/capture → /specify` and `/elaborate → /amend`).
 - [x] Verify done specs under `specs/NNN-*/` are NOT modified — `git diff --stat specs/0[0-2][0-9]-*/` should be empty (excluding 023 itself).
 - [x] Run `scripts/gen-claude-commands.sh` and verify `.claude/commands/gov/validate.md` is pruned and `.claude/commands/gov/analyze.md` is created.
 - [x] Verify `grep -rn '/validate\b\|validate\.md\|/gov:validate\|/{project}:validate' framework/ scripts/ docs/ README.md AGENTS.md` returns zero hits except: (a) `framework/commands/analyze.md` line 20 (intentional rename documentation), and (b) `README.md` line 41 (generated table content describing spec 003's frozen-archaeology body).
@@ -173,7 +173,7 @@ Done when: source is at `framework/commands/analyze.md`; the grep returns no hit
 - [x] Edit `framework/commands/help.md`: rename the heading `#### Elaborate (add precision)` to `#### Refine`; update the marker pair `commands-elaborate:start` / `commands-elaborate:end` to `commands-refine:start` / `commands-refine:end`; drop the `/capture` row's static reference text in the brownfield subsection if present.
 - [x] Run `scripts/gen-help-tables.sh` and verify the diff is clean.
 
-Done when: dry-run reports "in sync"; help.md shows the renamed category with `/ask` only and the brownfield table with two rows.
+Done when: dry-run reports "in sync"; help.md shows the renamed category with `/amend` only and the brownfield table with two rows.
 
 ### 14. `/govern` bootstrap — migration check and prose sweep
 
@@ -190,10 +190,10 @@ Done when: bootstrap runs against a fixture project containing `spec-and-plan.md
 
 - [x] Edit `README.md`: remove or rewrite every reference to `/capture`, `/elaborate`, and the lightweight track. Update the Slash Commands tables under "Pipeline", "Elaborate" (renamed to "Refine"), and "Brownfield" to match the post-consolidation surface (Pipeline 6, Refine 1, Brownfield 2). Update "Adopting in an Existing Project" prose to point at `/specify` for brownfield use with sparse-AC guidance. Drop the `spec-and-plan.md` row from the templates table and rewrite the scenario.md description that mentioned "elaborate workflow".
 - [x] Edit `AGENTS.md` (govern repo root): drop `spec-and-plan` from the framework templates list.
-- [x] Edit `specs/README.md`: replace the "Lightweight track detection" bullet from §Design Decisions with a new "Past Renames" section recording `/validate → /analyze`, `/capture → /specify`, and `/elaborate → /ask`.
-- [x] Edit `docs/introduction.md`: sweep deleted-verb references and lightweight-track mentions; rewrite the back-edges paragraph so both back-edges name `/ask`; update the help-tables-mirroring table to match the new category set (Pipeline 6 / Refine 1 / Brownfield 2 / Orient 3 / Bootstrap 2).
-- [x] Edit `framework/templates/project/agents.md`: drop `spec-and-plan` from the templates list; remove the dedicated `spec-and-plan.md` description row including the `*(lightweight track)*` annotation; rewrite "elaborate command" mention to point at `/{project}:ask`.
-- [x] Edit `framework/templates/project/project-readme.md`: drop `spec-and-plan` from the templates list; rewrite cycle prose (Brownfield / Reopen) to use `/specify` and `/ask`; rewrite Slash Commands table to drop `/elaborate` and `/capture` rows and add `/analyze` description.
+- [x] Edit `specs/README.md`: replace the "Lightweight track detection" bullet from §Design Decisions with a new "Past Renames" section recording `/validate → /analyze`, `/capture → /specify`, and `/elaborate → /amend`.
+- [x] Edit `docs/introduction.md`: sweep deleted-verb references and lightweight-track mentions; rewrite the back-edges paragraph so both back-edges name `/amend`; update the help-tables-mirroring table to match the new category set (Pipeline 6 / Refine 1 / Brownfield 2 / Orient 3 / Bootstrap 2).
+- [x] Edit `framework/templates/project/agents.md`: drop `spec-and-plan` from the templates list; remove the dedicated `spec-and-plan.md` description row including the `*(lightweight track)*` annotation; rewrite "elaborate command" mention to point at `/{project}:amend`.
+- [x] Edit `framework/templates/project/project-readme.md`: drop `spec-and-plan` from the templates list; rewrite cycle prose (Brownfield / Reopen) to use `/specify` and `/amend`; rewrite Slash Commands table to drop `/elaborate` and `/capture` rows and add `/analyze` description.
 - [x] Run `grep -rn '/capture\b\|/elaborate\b\|lightweight track\|spec-and-plan' README.md AGENTS.md specs/README.md docs/ framework/` and confirm zero hits (excluding the resolved questions and decision tables in spec 023's own body, which are frozen historical record, and excluding the migration-check step in `framework/bootstrap/govern.md` that legitimately references the `spec-and-plan.md` filename pattern, and excluding the Past Renames bullets in `specs/README.md` that intentionally document the renames).
 
 Done when: the four `grep` patterns return no hits outside the spec 023 directory and the migration-check step in `govern.md`.

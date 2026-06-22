@@ -49,7 +49,7 @@ The frontmatter schema codified here is the contract that every later spec (014�
 
 ### Quality
 
-Self-migration of 013 last (after 000–012) was a deliberate exercise — running the migration against a known-good source surfaces edge cases before they reach the operator. The audit/modify rows for `groom.md`, `elaborate.md`, `ask.md`, `log.md`, `help.md` correctly call out which need touch and which don't.
+Self-migration of 013 last (after 000–012) was a deliberate exercise — running the migration against a known-good source surfaces edge cases before they reach the operator. The audit/modify rows for `groom.md`, `elaborate.md`, `amend.md`, `log.md`, `help.md` correctly call out which need touch and which don't.
 
 ### Efficiency
 

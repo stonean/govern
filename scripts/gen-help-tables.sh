@@ -98,7 +98,7 @@ pipeline_table="$(build_pipeline_table \
 )"
 
 refine_table="$(build_two_col_table \
-  '/{project}:ask' "$CMD_DIR/ask.md" \
+  '/{project}:amend' "$CMD_DIR/amend.md" \
 )"
 
 brownfield_table="$(build_two_col_table \

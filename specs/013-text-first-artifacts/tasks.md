@@ -84,15 +84,15 @@ These tasks may proceed in parallel within a session. Each command file is touch
 - [x] Audit conclusion: groom does not read or write spec metadata fields. No edit needed.
 - [x] **Done when:** audit complete; any required updates lint clean.
 
-### 12. Audit and update `/gov:ask`
+### 12. Audit and update `/gov:amend`
 
 - [x] Read `framework/commands/elaborate.md` and check whether it writes scenario `spec-ref` or otherwise touches scenario metadata.
 - [x] Updated the "Update spec status" section to read/write the frontmatter `status` field. (Scenario creation uses the scenario template, which already emits frontmatter from Task 2.)
 - [x] **Done when:** scenario creation produces frontmatter-formatted scenarios; file lints clean.
 
-### 13. Audit and update `/gov:ask`
+### 13. Audit and update `/gov:amend`
 
-- [x] Read `framework/commands/ask.md` and check whether it reads spec/scenario metadata to identify the target.
+- [x] Read `framework/commands/amend.md` and check whether it reads spec/scenario metadata to identify the target.
 - [x] Updated scope boundaries to declare that `status` is read from YAML frontmatter; references §text-first-artifacts.
 - [x] **Done when:** audit complete; any required updates lint clean.
 

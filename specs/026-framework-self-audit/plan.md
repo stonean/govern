@@ -61,7 +61,7 @@ Three sub-checks composed in one script:
 
 - 1a README table: invoke `scripts/gen-readme-table.sh --check`; finding on non-zero exit.
 - 1b pipeline diagrams: extract the `draft → clarified → planned → in-progress → done` diagram block from `framework/constitution.md` §spec-lifecycle, `docs/introduction.md`, and `framework/templates/project/project-readme.md`. Normalize whitespace, diff pairwise, finding per divergence.
-- 1c back-edge wording: extract the back-edge sentences from §spec-lifecycle, then compare against the references in `framework/commands/ask.md` and `framework/commands/target.md`'s Status→next-action table.
+- 1c back-edge wording: extract the back-edge sentences from §spec-lifecycle, then compare against the references in `framework/commands/amend.md` and `framework/commands/target.md`'s Status→next-action table.
 
 **`scripts/audit/manifest-parity.sh`** (Family 2)
 Two sub-checks:
@@ -83,7 +83,7 @@ Maintain a curated list of normative rules whose text should appear in one canon
 
 - Open-question counting rule (counts top-level list items or `**Bold-prefix**` headings in `## Open Questions`).
 - Status state machine: `draft → clarified → planned → in-progress → done`.
-- Back-edge ownership: `/ask` owns the back-edges.
+- Back-edge ownership: `/amend` owns the back-edges.
 
 For each rule, the script grep's all framework artifacts for the canonical text plus known paraphrases. If the canonical text appears in more than one file (or paraphrases appear that should reference the canonical), surface as a finding suggesting the duplicate location reference the canonical one.
 
@@ -104,7 +104,7 @@ Use `git log --all --pretty=format:"%H %s" -- framework/commands/ scripts/` to b
 
 For each `done` spec's body, grep for each old-name token in code-span form (`` `/capture` ``). For each match, check the surrounding sentence for current-tense or imperative verbs (`is`, `provides`, `exposes`, `creates`, `runs`). If found, surface as a finding with the affected sentence and a past-tense rewrite suggestion (`was`, `provided`, `exposed`, `created`, `ran`).
 
-Heuristic by design — false positives expected on first runs. The maintainer accepts or dismisses each per-spec via a small `/gov:ask` cycle on the affected spec.
+Heuristic by design — false positives expected on first runs. The maintainer accepts or dismisses each per-spec via a small `/gov:amend` cycle on the affected spec.
 
 ### `/audit`'s command procedure shape
 
@@ -197,7 +197,7 @@ Family 6's curated list of normative rules to track lives in `scripts/audit/ssot
 
 ### Known limitation: Family 8 heuristic emits false positives
 
-Detecting current-tense vs past-tense prose is heuristic. Sentences like *"`/capture` provided…"* (already past tense) might be flagged if the verb is far from the code-span token. Sentences like *"this is how `/capture` worked"* should NOT be flagged (verb already past) but might be on first runs. The maintainer dismisses false positives per-spec via `/gov:ask` resolution comments — over time, the heuristic's false-positive rate is itself a signal (high rate ⇒ rewrite the heuristic).
+Detecting current-tense vs past-tense prose is heuristic. Sentences like *"`/capture` provided…"* (already past tense) might be flagged if the verb is far from the code-span token. Sentences like *"this is how `/capture` worked"* should NOT be flagged (verb already past) but might be on first runs. The maintainer dismisses false positives per-spec via `/gov:amend` resolution comments — over time, the heuristic's false-positive rate is itself a signal (high rate ⇒ rewrite the heuristic).
 
 ### Known limitation: new generators require manual update in two places
 

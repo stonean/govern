@@ -1,7 +1,7 @@
 //! `create-scenario` — write a new `scenarios/{slug}.md` file under a feature.
 //!
 //! Mirrors the scenario-creation phase of `/elaborate` (and, post-spec-023,
-//! `/ask`'s scenario branch): writes a single file with `section` frontmatter
+//! `/amend`'s scenario branch): writes a single file with `section` frontmatter
 //! and prose body sections atomically via tempfile + rename, creating the
 //! `scenarios/` subdirectory when absent. Refuses to overwrite an existing
 //! scenario.

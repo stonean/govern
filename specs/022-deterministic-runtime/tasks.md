@@ -245,7 +245,7 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 28. Implement scenario: ask-consolidation
 
-Adds two new primitives — `create-scenario` and `append-task` — that the `/ask` scenario branch (introduced in spec [023 — `govern` Refinement](../023-govern-refinement/spec.md)) invokes when classifying an input as a scenario.
+Adds two new primitives — `create-scenario` and `append-task` — that the `/amend` scenario branch (introduced in spec [023 — `govern` Refinement](../023-govern-refinement/spec.md)) invokes when classifying an input as a scenario.
 
 - [x] 28.1 Add `create-scenario` primitive — args (`feature-path`, `slug`, `section`, `context`, `behavior`, optional `edge-cases`); resolves the scenario template at `framework/templates/spec/scenario.md`, substitutes the supplied values, writes `{feature-path}/scenarios/{slug}.md` atomically via tempfile-in-parent + `persist` rename. Creates the scenarios subdirectory if absent. Refuses on slug conflict with a clean operational error. Unit tests cover: happy path, scenarios directory absent, slug conflict, feature path absent, optional edge-cases omitted.
 - [x] 28.2 Add `append-task` primitive — args (`feature-path`, `title`, `done-when`, optional `body`); reads existing `tasks.md` to compute next task number from `max(existing) + 1` (not `count + 1`); appends a new section block atomically. Creates `tasks.md` with a derived heading when absent. Unit tests cover: empty `tasks.md`, existing tasks (sequential numbering), skip-value numbering, missing `tasks.md`, atomic-write semantics on simulated crash mid-write.
@@ -254,7 +254,7 @@ Adds two new primitives — `create-scenario` and `append-task` — that the `/a
 - [x] 28.5 Tag-push `gvrn-v0.4.0` (triggers the release workflow's 5-leg matrix); after all matrix legs report success, `cargo publish` from `runtime/` to upload `gvrn 0.4.0` to crates.io. Both steps require user authorization (externally visible).
 
   > Confirmed 2026-05-16: tag `gvrn-v0.4.0` pushed; release run 25962899207 reports all 5 matrix legs green (aarch64/x86_64 macOS, x86_64/aarch64 Linux, x86_64 Windows). Release at <https://github.com/stonean/govern/releases/tag/gvrn-v0.4.0> ships 5 archives + 5 sha256 sidecars. `cargo publish` from `runtime/` uploaded `gvrn 0.4.0` to crates.io.
-- **Done when**: the scenario's described behavior is correctly implemented and tested; `gvrn-v0.4.0` is live on GitHub releases and crates.io; spec 023's Phase B can begin (the `framework/commands/ask.md` rewrite calls the new primitives).
+- **Done when**: the scenario's described behavior is correctly implemented and tested; `gvrn-v0.4.0` is live on GitHub releases and crates.io; spec 023's Phase B can begin (the `framework/commands/amend.md` rewrite calls the new primitives).
 
 ## 29. Implement scenario: runtime-primitive-structural-bugs
 

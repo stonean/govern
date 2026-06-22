@@ -363,7 +363,7 @@ mod tests {
         write(&spec_path, &spec("done"));
         commit_all(&repo, "feat: ship");
 
-        // Reopen: done → in-progress via /gov:ask's back-edge. The new
+        // Reopen: done → in-progress via /gov:amend's back-edge. The new
         // task starts fresh.
         write(&spec_path, &spec("in-progress"));
         commit_all(&repo, "chore: reopen for follow-on"); // second transition (this is `since`)

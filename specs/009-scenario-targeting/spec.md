@@ -18,7 +18,7 @@ Promote scenarios to first-class targets in the governance pipeline. Currently, 
 
 The motivation is context management: as specs grow, loading the entire spec to work on a single scenario wastes agent context. Scenario-level targeting keeps the agent focused on a bounded artifact.
 
-> **Note:** the `question` command is now `/{project}:ask` and the `scenario` command is now `/{project}:ask`. Behavior described below is unchanged; only the command names differ in the current framework.
+> **Note:** the `question` command is now `/{project}:amend` and the `scenario` command is now `/{project}:amend`. Behavior described below is unchanged; only the command names differ in the current framework.
 
 ## Session Target Extension
 
@@ -52,7 +52,7 @@ The `target` command accepts an extended syntax to target scenarios:
 - `target {feature}` — targets the feature, clears any scenario (current behavior)
 - `target {feature}/{scenario-slug}` — targets the feature and a specific scenario within it
 
-When targeting a scenario, the command validates that the scenario file exists under the feature's `scenarios/` directory. If the `scenarios/` directory does not exist, it reports "No scenarios exist for this feature. Run `/{project}:ask` to create one." (Per the rename signpost above, this spec drafted the message with `/gov:scenario`; the shipped command is `/{project}:ask`.) If the directory exists but the slug does not match a file, it lists available scenarios and asks the user to choose.
+When targeting a scenario, the command validates that the scenario file exists under the feature's `scenarios/` directory. If the `scenarios/` directory does not exist, it reports "No scenarios exist for this feature. Run `/{project}:amend` to create one." (Per the rename signpost above, this spec drafted the message with `/gov:scenario`; the shipped command is `/{project}:amend`.) If the directory exists but the slug does not match a file, it lists available scenarios and asks the user to choose.
 
 When targeting a feature that does not exist, it reports "Feature `{feature}` does not exist."
 
