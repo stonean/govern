@@ -6,7 +6,7 @@ Cross-cutting decisions, conventions, and deferred work that span multiple featu
 
 - **Templates live at the `govern` root** — all templates (spec, plan, system, errors, events, project scaffolding) live in `templates/` at the `govern` root. This is the source. The init command copies spec templates to `{project}/specs/templates/` and system spec templates to `{project}/specs/` during bootstrap. `govern` is the source, not an adopting project.
 
-Historical renames (e.g., `/validate` → `/analyze`, `/capture` → `/specify`, `/elaborate` → `/amend`, `configuration.md` → `configuration-cross.md`) are recorded in git history. Spec bodies are kept current via the mechanical-sweep rule in [`AGENTS.md`](../AGENTS.md) (the "no dead references in live artifacts" entry); the sweep updates every live artifact in a single uniform-substitution commit and does not reopen done specs. See [§spec-lifecycle](../framework/constitution.md#spec-lifecycle) for the mechanical-vs-meaningful boundary.
+Historical renames (e.g., `/validate` → `/analyze`, `/capture` → `/specify`, `/elaborate` → `/amend`, `/ask` → `/amend`, `configuration.md` → `configuration-cross.md`) are recorded in git history. Spec bodies are kept current via the mechanical-sweep rule in [`AGENTS.md`](../AGENTS.md) (the "no dead references in live artifacts" entry); the sweep updates every live artifact in a single uniform-substitution commit and does not reopen done specs. See [§spec-lifecycle](../framework/constitution.md#spec-lifecycle) for the mechanical-vs-meaningful boundary.
 
 ## Future Considerations
 

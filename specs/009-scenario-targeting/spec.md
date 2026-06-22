@@ -18,7 +18,7 @@ Promote scenarios to first-class targets in the governance pipeline. Currently, 
 
 The motivation is context management: as specs grow, loading the entire spec to work on a single scenario wastes agent context. Scenario-level targeting keeps the agent focused on a bounded artifact.
 
-> **Note:** the `question` command is now `/{project}:amend` and the `scenario` command is now `/{project}:amend`. Behavior described below is unchanged; only the command names differ in the current framework.
+> **Note:** the `question` and `scenario` commands are now both `/{project}:amend`. Behavior described below is unchanged; only the command names differ in the current framework.
 
 ## Session Target Extension
 

@@ -51,6 +51,8 @@ RENAMED_TOKENS=(
   "/gov:validate|/gov:analyze|renamed to /analyze (spec 023)"
   "/gov:capture|/gov:specify|consolidated into /specify (spec 023)"
   "/gov:elaborate|/gov:amend|consolidated into /amend (spec 023)"
+  "/ask|/amend|renamed to /amend (slash-command clarity)"
+  "/gov:ask|/gov:amend|renamed to /amend (slash-command clarity)"
   "gov-rt:|gvrn:|MCP server name changed (spec 022 task 28)"
 )
 
