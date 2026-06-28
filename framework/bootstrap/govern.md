@@ -323,8 +323,9 @@ The Pre-flight Phase has passed (nothing in the pending-restart set), so this ru
 1. **Project name** — from `$ARGUMENTS` (a single non-flag word, per §Inputs), else `[project] name` in `.govern.toml` (else `[host] project` for configs predating the `[project]` table), else prompt. Used for `{project}` substitution and command directory naming.
 2. **Project description** — from `[project] description` in `.govern.toml`, else prompt. Used for AGENTS.md.
 3. **Primary language(s)** — from `[project] languages` in `.govern.toml`, else prompt. Used for .gitignore language patterns.
+4. **Rule surfaces** — from `[rules] surfaces` in `.govern.toml`, else prompt ("Which rule surfaces does this project need? backend / frontend / both"). Recorded as a list with members in `{backend, frontend}` ("both" records both). Selects which rule files `/govern` installs (§Shared Files) and which `/gov:review` enforces (`review.md` §Behavior step 5). When the recorded surfaces exclude a surface that `[project] languages` implies (e.g., a frontend language is listed but `surfaces` omits `frontend`), emit one advisory line and honor the explicit value.
 
-On a routine re-run (update mode) `.govern.toml` already carries all three, so this step prompts for nothing. On a first scaffold it prompts for whatever is missing, then **persists all three into `.govern.toml`'s `[project]` table** (`name`, `description`, `languages`; see §Project Configuration), preserving every other section, so the next run — and the session after any State B / stale-`govern.md` restart — reads them back instead of re-asking. `host.project` continues to be written from `project.name` as the runtime's slash-command namespace.
+On a routine re-run (update mode) `.govern.toml` already carries all four, so this step prompts for nothing. On a first scaffold it prompts for whatever is missing, then **persists the three project inputs into `.govern.toml`'s `[project]` table** (`name`, `description`, `languages`) **and the rule surfaces into the `[rules]` table** (`surfaces`; see §Project Configuration), preserving every other section, so the next run — and the session after any State B / stale-`govern.md` restart — reads them back instead of re-asking. `host.project` continues to be written from `project.name` as the runtime's slash-command namespace.
 
 When prompting (AskUserQuestion), every question **must** include an `options` array with 2–4 example choices (the user can always select "Other" for custom input):
 
@@ -396,6 +397,15 @@ name = "my-service"
 description = "A new microservice"
 languages = ["Go", "Python"]
 
+[rules]
+# Which rule surfaces /gov:review enforces and /govern installs. A list with
+# members in {"backend", "frontend"}; full-stack lists both. "cross" is not a
+# member — cross-cutting (-cross.md) rule files always apply. Unset means
+# "derive": /gov:review falls back to stack detection and /govern installs
+# every rule file (pre-033 behavior). Collected by /govern (§Collect Project
+# Inputs); read by /gov:review (§Behavior step 5).
+surfaces = ["backend"]
+
 [pinned]
 # Files listed here use 'skip' instead of 'update'.
 # Use destination paths (after placeholder resolution).
@@ -437,6 +447,8 @@ declined_categories = ["Linting", "Formatting"]
 `host.project` — the project's slash-command namespace, written by `/govern` into a managed block (`# govern (host)` line-prefix marker) in committed `.govern.toml` on every run (idempotent — re-runs update rather than append). The per-contributor `cli-config-dir` (the agent's config-dir name) is **not** committed: teammates on one project may each use a different agent, so `/govern` writes it to the gitignored `.govern.session.toml` instead (§Instructions step 6). The runtime reads `project` from `.govern.toml` and `cli-config-dir` from the session file at `gvrn exec` time to resolve `{cli-config-dir}/commands/{project}/<name>.md`; both fall back to `.claude` / the repo directory basename when absent. Adopters whose layout matches the defaults (this repo, anyone on Claude Code with the conventional `.claude/commands/<project>/`) never observe the difference; Auggie / OpenCode adopters and anyone with a non-standard layout do.
 
 `project.name`, `project.description`, and `project.languages` — the project inputs collected at §Collect Project Inputs (name; one-line description for AGENTS.md; primary languages for .gitignore patterns), written into the `[project]` table additively (preserving every other section) and read back on every subsequent run so the inputs are asked at most once. `[project]` is the source of truth for the answers; `host.project` is written from `project.name` as the runtime's slash-command namespace (the derived runtime view of the same value), so the two cannot diverge. Editing a `[project]` value re-runs the corresponding scaffold step with the new value on the next `/govern` — the documented way to rename a project or change its languages. The table is host-side state (the host gathers inputs before the runtime walks per §Instructions step 1), so it is written on every adoption path without a runtime primitive.
+
+`rules.surfaces` — the rule surfaces the project enforces and installs (§Collect Project Inputs, item 4). A list with members in `{backend, frontend}`; `-cross.md` rule files are unconditional and not selectable members. When unset, `/govern` installs every rule file and `/gov:review` derives the surface from stack detection (pre-033 behavior). When set, the **Shared Files** manifest pass installs only the rule files whose suffix matches a listed surface plus every `*-cross.md`, and `/gov:review` enforces only those (`review.md` §Behavior step 5). Editing `surfaces` takes effect on the next `/govern`: newly-listed surfaces are installed, and rule files for a removed surface are **left in place** (not deleted — they are not in `enforce-directories`), they simply stop receiving updates.
 
 `pinned.files` — any file listed that would normally use `update` strategy is treated as `skip` instead. Report pinned files in the post-scaffolding summary.
 
@@ -584,6 +596,8 @@ The user reviews the result via `git diff` and commits or aborts via `git restor
 ## Shared Files
 
 These files are scaffolded **once per `/govern` invocation**, regardless of how many agents are selected. They are unaffected by the agent registry.
+
+**Rule-file surface filter.** The six `framework/rules/*.md → specs/rules/*.md` entries below are filtered by `[rules] surfaces` (§Project Configuration) before the manifest is applied: an entry is kept when its suffix matches a configured surface (`*-backend.md` for `backend`, `*-frontend.md` for `frontend`), and every `*-cross.md` entry is kept unconditionally. When `surfaces` is unset, all rule files are kept (pre-033 behavior). Entries the filter omits are simply not applied — never pruned — so a rule file already on disk for a now-unconfigured surface is left in place (rule files are not in `enforce-directories`); it just stops receiving updates.
 
 ### `govern`-owned shared files (strategy: update)
 

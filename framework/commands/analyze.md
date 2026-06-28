@@ -154,7 +154,7 @@ When `--fix` is set, this check additionally reverts affected specs from `done` 
 
 ### Rules (blocking and advisory)
 
-Rules are the cross-cutting tier of the framework's three-tier requirement model (see §rules in `constitution.md`). Discover rule files by directory walk: list every `*.md` file in the project's rule-file directory and classify each by basename suffix per the closed-suffix policy declared in `constitution.md` §rules — `*-backend.md`, `*-frontend.md`, `*-cross.md`, or unrecognized. `/{project}:analyze` loads **every** discovered file regardless of detected stack — citation verification spans surfaces, so a backend project that cites `FE-XSS-001` in a scenario covering HTML output still needs that citation verified.
+Rules are the cross-cutting tier of the framework's three-tier requirement model (see §rules in `constitution.md`). Discover rule files by directory walk: list every `*.md` file in the project's rule-file directory and classify each by basename suffix per the closed-suffix policy declared in `constitution.md` §rules — `*-backend.md`, `*-frontend.md`, `*-cross.md`, or unrecognized. `/{project}:analyze` loads **every** discovered file regardless of detected stack — and regardless of the project's `[rules] surfaces` setting (`govern.md` §Project Configuration) — because citation verification spans surfaces: a backend project that cites `FE-XSS-001` in a scenario covering HTML output still needs that citation verified. `[rules] surfaces` scopes `/{project}:review` enforcement only (which surface's rules are checked against code); it never prunes the rule-file set `/{project}:analyze` loads for citation resolution.
 
 For each file with an unrecognized suffix, emit one stdout line:
 

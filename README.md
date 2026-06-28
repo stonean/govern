@@ -207,12 +207,16 @@ From that session on, the pipeline takes the deterministic path. File writes are
 `.govern.toml` is an optional project file — `/govern` runs fine without it. Create it only if you need one of these behaviors:
 
 - **`[pinned]`** — list destination paths `govern` should never overwrite, even files it normally updates (e.g. a customized `constitution.md`).
+- **`[rules]`** — declare which rule surfaces your project needs: `surfaces = ["backend"]`, `["frontend"]`, or both. `/govern` prompts for this on first run, then installs only the matching rule files (cross-cutting `-cross` rules always apply) and `/review` enforces only those. Leave it unset to let `govern` derive the surface from your stack and install every rule file.
 - **`[workflows]`** — record workflow categories you've declined so `/govern` stops offering them.
 - **`[services]`** — register sibling services so cross-service reference links resolve to the linked spec's lifecycle status (see [Cross-service references](#cross-service-references)). Add entries with `/link`, not by hand.
 
 ```toml
 [pinned]
 files = ["constitution.md"]
+
+[rules]
+surfaces = ["backend"]
 
 [workflows]
 declined_categories = ["Linting"]
@@ -284,7 +288,7 @@ Re-run `/govern` to pull the latest framework files. Each file is handled by one
 
 ## Security rules
 
-`govern` ships enforceable security rules using RFC 2119 language — **MUST/MUST NOT** are blocking, **SHOULD/SHOULD NOT** are advisory. `/review` loads the rule files that match your detected stack.
+`govern` ships enforceable security rules using RFC 2119 language — **MUST/MUST NOT** are blocking, **SHOULD/SHOULD NOT** are advisory. `/review` loads the rule files for your configured `[rules] surfaces` — or, when that setting is unset, the rule files that match your detected stack.
 
 - [framework/rules/security-backend.md](framework/rules/security-backend.md) — auth, input validation, data protection, API security, logging, dependencies, error handling
 - [framework/rules/security-frontend.md](framework/rules/security-frontend.md) — XSS, CSRF, secure storage, auth handling, content security, dependencies
