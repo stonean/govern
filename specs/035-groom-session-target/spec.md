@@ -1,5 +1,5 @@
 ---
-status: clarified
+status: planned
 dependencies: [006-bug-workflow, 017-derive-dont-ask, 023-govern-refinement]
 review:
   last-run: null
