@@ -138,6 +138,16 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Source:** RFC 9700 (OAuth 2.0 Security Best Current Practice), OpenID Connect Core 1.0, OWASP Authentication Cheat Sheet
 
+### BE-AUTHN-014
+
+> Cookies that carry session identifiers, authentication tokens, or any other privileged credential MUST be issued with the `HttpOnly`, `Secure`, and `SameSite` attributes set. `SameSite` MUST be `Lax` or `Strict`; `SameSite=None` MUST be used only when cross-site transmission is genuinely required, MUST be paired with `Secure`, and MUST be justified in the spec. The `Domain` attribute SHOULD be omitted unless cross-subdomain sharing is explicitly required.
+
+**Rationale:** These attributes are set server-side in the `Set-Cookie` response header — the server is the only place they can be enforced. `HttpOnly` denies JavaScript (and therefore XSS) access to the cookie; `Secure` keeps it off plaintext connections; `SameSite` blocks the cross-site request path CSRF relies on. A backend-only service that never loads the frontend rule set still issues these cookies, so the requirement lives here as well as in the client-facing `FE-STORAGE-002` / `FE-CSRF-002`.
+
+**Verification:** Any spec or plan that issues a session, authentication, or other privileged cookie MUST commit to `HttpOnly`, `Secure`, and `SameSite` on the `Set-Cookie` path, and MUST justify any `SameSite=None` or explicit `Domain`. Validate flags cookie-issuing specs that omit any of the three attributes, that set `SameSite=None` without `Secure` and a justification, or that set `Domain` without justification.
+
+**Source:** OWASP Session Management Cheat Sheet, OWASP HTTP Headers Cheat Sheet
+
 ## BE-AUTHZ — Authorization
 
 ### BE-AUTHZ-001
@@ -474,6 +484,16 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Source:** NIST SP 800-209 (Storage Security), OWASP Cryptographic Storage Cheat Sheet
 
+### BE-DATA-011
+
+> Outbound TLS connections the application initiates (third-party APIs, internal services, databases, message brokers) MUST validate the server's certificate chain and hostname against a trusted CA set. Certificate or hostname verification MUST NOT be disabled in production — `verify=False`, `rejectUnauthorized: false`, `InsecureSkipVerify: true`, `curl -k`/`--insecure`, and equivalent trust-all handlers are forbidden. Certificate pinning or a private CA is acceptable when the trust anchor is documented; any non-production deviation MUST be explicitly justified and MUST NOT ship to production.
+
+**Rationale:** Disabling certificate validation turns TLS into unauthenticated encryption — any on-path attacker can present a self-signed certificate and transparently man-in-the-middle the connection, defeating the confidentiality and integrity `BE-DATA-001` requires. The failure is invisible at runtime (the connection still "works"), so it survives to production unless forbidden outright. This rule is the client-side complement to `BE-DATA-001` (TLS on host-crossing traffic) and `BE-AUTHN-008` (TLS for credentials).
+
+**Verification:** Any spec or plan that introduces outbound TLS connections MUST commit to full certificate and hostname validation. Validate flags any commitment to `verify=False`, `rejectUnauthorized: false`, `InsecureSkipVerify`, `-k`/`--insecure`, or a custom trust-all certificate handler on a production path.
+
+**Source:** OWASP Transport Layer Security Cheat Sheet, OWASP Cryptographic Storage Cheat Sheet
+
 ## BE-API — API Security
 
 ### BE-API-001
@@ -587,6 +607,16 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 **Verification:** Any spec or plan that introduces inbound or outbound webhooks MUST commit to all four verification properties (signature, body coverage, replay window, constant-time comparison) and MUST name the algorithm. Validate flags webhook specs that omit signature verification, that verify only headers without the body, that lack a timestamp/nonce, or that use ordinary string comparison.
 
 **Source:** Stripe / GitHub / Slack webhook signing patterns, OWASP REST Security Cheat Sheet
+
+### BE-API-011
+
+> State-changing requests authenticated by an ambient credential the browser attaches automatically (session cookie, HTTP Basic, TLS client certificate) MUST be validated server-side against a CSRF defense before the state change is applied: a synchronizer or double-submit token verified on the server, or a `SameSite` cookie combined with a server-side `Origin`/`Sec-Fetch-Site` check. Token comparison MUST be constant-time per `BE-AUTHN-009`. Requests that fail the check MUST be rejected with `403`. Endpoints authenticated solely by a non-ambient bearer token (e.g., `Authorization: Bearer`, not stored in a cookie) are exempt.
+
+**Rationale:** CSRF is exploitable only when the browser attaches a credential without the calling site's involvement, so the defense must be enforced on the server — the client cannot be trusted to send it. `FE-CSRF-001` specifies the token generation and submission strategy; this rule is its server-side enforcement half, which a backend-only service must implement even when it ships no frontend rule file. The bearer-token exemption reflects that a token the attacker's page cannot read is not auto-attached and so cannot be forged cross-site.
+
+**Verification:** Any spec or plan that introduces cookie-authenticated (or otherwise ambient-credential) state-changing endpoints MUST name the server-side CSRF check and its rejection behavior. Validate flags state-changing endpoints that rely on an ambient credential without a documented server-side token or origin validation, and flags token checks that are not constant-time.
+
+**Source:** OWASP Cross-Site Request Forgery Prevention Cheat Sheet
 
 ## BE-ERR — Error Handling
 
