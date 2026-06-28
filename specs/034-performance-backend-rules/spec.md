@@ -1,9 +1,9 @@
 ---
-status: in-progress
+status: done
 dependencies: [008-security-rules, 016-cross-cutting-rules, 033-rule-surface-setting]
 review:
-  last-run: null
-  reviewed-against: null
+  last-run: 2026-06-28T13:49:21Z
+  reviewed-against: 0f28ba44089461eca4e7f8378ae836fee6a62936
   must-violations: 0
   should-violations: 0
   low-confidence: 0
@@ -45,13 +45,13 @@ Performance rules default to **SHOULD** (advisory; thresholds are context-depend
 
 ## Acceptance Criteria
 
-- [ ] `framework/rules/performance-backend.md` exists, ends in the `-backend.md` suffix, and follows the canonical rule schema (`### {ID}` headings; Statement / Rationale / Verification; RFC 2119 language) per [008-security-rules](../008-security-rules/spec.md)'s data-model.
-- [ ] Every rule ID uses the `BE-{CATEGORY}-{NNN}` format with a performance category (`QUERY`/`CACHE`/`POOL`/`PAYLOAD`/`ASYNC`) disjoint from the `security-backend.md` and `api-backend.md` category sets; `scripts/lint-rule-ids.sh` passes.
-- [ ] The file header declares the five performance category abbreviations (per the constitution's per-file category-declaration policy, as framed in [016-cross-cutting-rules](../016-cross-cutting-rules/spec.md)).
-- [ ] The rule set covers, at minimum, query efficiency (N+1 + indexes + bounded results), caching (TTL/invalidation, scope-complete keys, stampede), connection pooling (pooled + sized + bounded acquisition + release), and payload budgets (size cap + field selection + compression) — each with a Verification clause expressed as a **design-time commitment** the spec/plan must make (not a code-pattern grep), consistent with how `/gov:analyze` audits artifacts.
-- [ ] Each MUST rule is one whose absence is a DoS/exhaustion risk regardless of scale; tunable efficiency trade-offs are SHOULD. The split is evident from the Statements.
-- [ ] Rules whose surface overlaps an existing rule cite it rather than restating it (BE-PAGE for pagination, BE-INPUT-006 for input bounds, BE-IDEMP for retry-safe async, CFG-* for tunable-value config).
-- [ ] The file is added to the `/govern` **Shared Files** manifest in `framework/bootstrap/govern.md` and is selected under the `backend` surface by `/gov:review`, composing with [033-rule-surface-setting](../033-rule-surface-setting/spec.md).
+- [x] `framework/rules/performance-backend.md` exists, ends in the `-backend.md` suffix, and follows the canonical rule schema (`### {ID}` headings; Statement / Rationale / Verification; RFC 2119 language) per [008-security-rules](../008-security-rules/spec.md)'s data-model.
+- [x] Every rule ID uses the `BE-{CATEGORY}-{NNN}` format with a performance category (`QUERY`/`CACHE`/`POOL`/`PAYLOAD`/`ASYNC`) disjoint from the `security-backend.md` and `api-backend.md` category sets; `scripts/lint-rule-ids.sh` passes.
+- [x] The file header declares the five performance category abbreviations (per the constitution's per-file category-declaration policy, as framed in [016-cross-cutting-rules](../016-cross-cutting-rules/spec.md)).
+- [x] The rule set covers, at minimum, query efficiency (N+1 + indexes + bounded results), caching (TTL/invalidation, scope-complete keys, stampede), connection pooling (pooled + sized + bounded acquisition + release), and payload budgets (size cap + field selection + compression) — each with a Verification clause expressed as a **design-time commitment** the spec/plan must make (not a code-pattern grep), consistent with how `/gov:analyze` audits artifacts.
+- [x] Each MUST rule is one whose absence is a DoS/exhaustion risk regardless of scale; tunable efficiency trade-offs are SHOULD. The split is evident from the Statements.
+- [x] Rules whose surface overlaps an existing rule cite it rather than restating it (BE-PAGE for pagination, BE-INPUT-006 for input bounds, BE-IDEMP for retry-safe async, CFG-* for tunable-value config).
+- [x] The file is added to the `/govern` **Shared Files** manifest in `framework/bootstrap/govern.md` and is selected under the `backend` surface by `/gov:review`, composing with [033-rule-surface-setting](../033-rule-surface-setting/spec.md).
 
 ## Resolved Questions
 

@@ -24,5 +24,5 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 4. Review and complete
 
-- [ ] Run `/gov:review` over the change set; resolve any MUST findings.
+- [x] Run `/gov:review` over the change set; resolve any MUST findings. (0 MUST / 0 SHOULD / 0 low-confidence — clean; see `review.md`.)
 - Done when: `/gov:review` reports no blocking violations and the spec can advance to `done`.
