@@ -1,5 +1,5 @@
 ---
-status: clarified
+status: planned
 dependencies: [017-derive-dont-ask, 020-code-review, 024-rule-loader, 025-rule-opt-out]
 review:
   last-run: null
