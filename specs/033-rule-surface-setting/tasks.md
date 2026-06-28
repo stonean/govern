@@ -40,5 +40,5 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 - [x] Pre-commit generators regenerate `.claude/commands/gov/*.md` from the edited `framework/commands/*` sources cleanly.
 - [x] `npx markdownlint-cli2`, `scripts/lint-*.sh`, and `scripts/audit/*` pass (markdownlint, rule-ids, rule-filenames, frontmatter, tool-coverage, procedure-parseability, ssot-invariants, cross-doc-consistency — all green).
-- [ ] Run `/gov:review` over the change set; resolve any MUST findings before `done`.
+- [x] Run `/gov:review` over the change set; resolve any MUST findings before `done`. (0 MUST, not blocking; 2 low-confidence quality notes parked — see `review.md`.)
 - Done when: all lints/audits pass and `/gov:review` reports no blocking violations.

@@ -1,12 +1,12 @@
 ---
-status: in-progress
+status: done
 dependencies: [017-derive-dont-ask, 020-code-review, 024-rule-loader, 025-rule-opt-out]
 review:
-  last-run: null
-  reviewed-against: null
+  last-run: 2026-06-28T13:29:53Z
+  reviewed-against: fafb52b1841f45e8d14d6d13f43a31e3d85b9ae6
   must-violations: 0
   should-violations: 0
-  low-confidence: 0
+  low-confidence: 2
   blocking: false
 ---
 
@@ -55,16 +55,16 @@ A list (rather than a single enum) composes naturally with the suffix model and 
 
 ## Acceptance Criteria
 
-- [ ] `.govern.toml` accepts a `[rules] surfaces` list with member values `"backend"` and/or `"frontend"`; `"cross"` is rejected as invalid (cross-cutting files are unconditional).
-- [ ] On a `/govern` run with `[rules] surfaces` unset, `/govern` prompts the operator to choose surface(s) and persists the choice to `.govern.toml`.
-- [ ] On a `/govern` run with `[rules] surfaces` set, only rule files whose suffix matches a configured surface — plus all `-cross.md` files — are installed/updated; files for unconfigured surfaces are not written and their absence is not reported as drift.
-- [ ] When `surfaces` contradicts the detected stack, `/govern` installs per the explicit setting and emits a one-line notice naming the discrepancy.
-- [ ] When a surface is added to `surfaces`, the next `/govern` run installs the newly-relevant rule files; a removed surface's files are left in place and no longer updated.
-- [ ] `/gov:review` enforces only the configured surface(s) plus `-cross.md` when the setting is set, and falls back to 024 derivation when unset.
-- [ ] `/gov:analyze` still resolves rule citations against the full rule-file set regardless of `surfaces`, so an out-of-surface citation does not produce a spurious finding.
-- [ ] A pinned rule file (`[pinned] files`) is never overwritten regardless of surface configuration.
-- [ ] When `surfaces` is unset, no command outside `/govern` prompts for it and no command errors on its absence (behavior matches 024 derivation today).
-- [ ] The `[rules] surfaces` setting, its accepted values, and its precedence relative to 024 derivation are documented in the `.govern.toml` schema documentation and the relevant command sources.
+- [x] `.govern.toml` accepts a `[rules] surfaces` list with member values `"backend"` and/or `"frontend"`; `"cross"` is rejected as invalid (cross-cutting files are unconditional).
+- [x] On a `/govern` run with `[rules] surfaces` unset, `/govern` prompts the operator to choose surface(s) and persists the choice to `.govern.toml`.
+- [x] On a `/govern` run with `[rules] surfaces` set, only rule files whose suffix matches a configured surface — plus all `-cross.md` files — are installed/updated; files for unconfigured surfaces are not written and their absence is not reported as drift.
+- [x] When `surfaces` contradicts the detected stack, `/govern` installs per the explicit setting and emits a one-line notice naming the discrepancy.
+- [x] When a surface is added to `surfaces`, the next `/govern` run installs the newly-relevant rule files; a removed surface's files are left in place and no longer updated.
+- [x] `/gov:review` enforces only the configured surface(s) plus `-cross.md` when the setting is set, and falls back to 024 derivation when unset.
+- [x] `/gov:analyze` still resolves rule citations against the full rule-file set regardless of `surfaces`, so an out-of-surface citation does not produce a spurious finding.
+- [x] A pinned rule file (`[pinned] files`) is never overwritten regardless of surface configuration.
+- [x] When `surfaces` is unset, no command outside `/govern` prompts for it and no command errors on its absence (behavior matches 024 derivation today).
+- [x] The `[rules] surfaces` setting, its accepted values, and its precedence relative to 024 derivation are documented in the `.govern.toml` schema documentation and the relevant command sources.
 
 ## Resolved Questions
 
