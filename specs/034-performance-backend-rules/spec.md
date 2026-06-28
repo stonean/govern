@@ -1,5 +1,5 @@
 ---
-status: clarified
+status: planned
 dependencies: [008-security-rules, 016-cross-cutting-rules, 033-rule-surface-setting]
 review:
   last-run: null
