@@ -86,31 +86,40 @@ fn resolve(repo: &Path, path_arg: &str) -> std::path::PathBuf {
     }
 }
 
-/// `### BE-AUTHN-001` — matches rule-ID headings inside a rule file.
+/// `### BE-AUTHN-001` — matches rule-ID headings inside a rule file. The
+/// category segment follows the schema grammar `[A-Z][A-Z0-9]*` (digits are
+/// permitted after the first letter, e.g. `FE-A11YFORM-001`), per
+/// `specs/008-security-rules/data-model.md`.
 fn heading_id_regex() -> &'static Regex {
     static R: OnceLock<Regex> = OnceLock::new();
     R.get_or_init(|| {
-        Regex::new(r"(?m)^#{2,4}\s+([A-Z]{2,5}-[A-Z]{2,8}-\d{3,4})\b")
+        Regex::new(r"(?m)^#{2,4}\s+([A-Z]{2,5}-[A-Z][A-Z0-9]+-\d{3,4})\b")
             .expect("hard-coded regex compiles")
     })
 }
 
 /// Plain text citations: `BE-AUTHN-001` anywhere in a body (not the heading
-/// line itself for the rule file's self-references).
+/// line itself for the rule file's self-references). The category segment
+/// mirrors `heading_id_regex` and allows digit-bearing categories.
 fn citation_regex() -> &'static Regex {
     static R: OnceLock<Regex> = OnceLock::new();
     R.get_or_init(|| {
-        Regex::new(r"\b[A-Z]{2,5}-[A-Z]{2,8}-\d{3,4}\b").expect("hard-coded regex compiles")
+        Regex::new(r"\b[A-Z]{2,5}-[A-Z][A-Z0-9]+-\d{3,4}\b").expect("hard-coded regex compiles")
     })
 }
 
+/// Detect the canonical deprecation label `**DEPRECATED in {version}:**`
+/// (per `specs/008-security-rules/data-model.md` and constitution §rules)
+/// within a window following the rule ID. Matching the bold-uppercase
+/// `**DEPRECATED` token avoids false positives from prose mentions of
+/// "deprecated" (lowercase, unbolded) such as a rule's own rationale.
 fn is_deprecated(content: &str, id: &str) -> bool {
     let mut idx = 0usize;
     while let Some(pos) = content[idx..].find(id) {
         let abs = idx + pos;
         let window_end = (abs + 256).min(content.len());
         let window = &content[abs..window_end];
-        if window.contains("**Deprecated**") || window.contains("[DEPRECATED]") {
+        if window.contains("**DEPRECATED") {
             return true;
         }
         idx = abs + id.len();
@@ -196,7 +205,7 @@ mod tests {
         let rule_path = tmp.path().join("rules.md");
         std::fs::write(
             &rule_path,
-            "### BE-OLD-001\n\n**Deprecated** — replaced by BE-NEW-002.\n",
+            "### BE-OLD-001\n\n**DEPRECATED in 0.5.0:** replaced by BE-NEW-002.\n",
         )
         .unwrap();
         let result = run(
@@ -209,5 +218,42 @@ mod tests {
         .unwrap();
         assert_eq!(result.deprecated, vec!["BE-OLD-001".to_string()]);
         assert!(result.missing.is_empty());
+    }
+
+    #[test]
+    fn digit_bearing_category_is_recognized() {
+        // Schema permits `[A-Z][A-Z0-9]*` categories; `FE-A11YFORM-*` and
+        // `FE-A11YMEDIA-*` (accessibility-frontend.md) carry digits. The ID
+        // regex must harvest those headings and match their citations.
+        let tmp = tempfile::tempdir().unwrap();
+        let spec_path = tmp.path().join("spec.md");
+        std::fs::write(&spec_path, "Cites FE-A11YFORM-001 and FE-A11YMEDIA-002.\n").unwrap();
+        let rule_path = tmp.path().join("rules.md");
+        std::fs::write(
+            &rule_path,
+            "### FE-A11YFORM-001\n\n> Labels.\n\n### FE-A11YMEDIA-002\n\n> Alt text.\n",
+        )
+        .unwrap();
+        let result = run(
+            &CheckRuleIdsArgs {
+                path: spec_path.to_string_lossy().into(),
+                rule_files: vec![rule_path.to_string_lossy().into()],
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert!(
+            result.missing.is_empty(),
+            "digit-bearing categories misreported as missing: {:?}",
+            result.missing
+        );
+        let found: Vec<&str> = result
+            .citations
+            .iter()
+            .filter(|c| c.found)
+            .map(|c| c.rule_id.as_str())
+            .collect();
+        assert!(found.contains(&"FE-A11YFORM-001"));
+        assert!(found.contains(&"FE-A11YMEDIA-002"));
     }
 }

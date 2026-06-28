@@ -604,7 +604,7 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 > Error responses MUST use a consistent, structured format with a stable error code, a human-readable message, and a request correlation ID. The format SHOULD follow RFC 9457 (Problem Details for HTTP APIs, which obsoletes RFC 7807).
 
-**Rationale:** Stable error codes let clients react programmatically (retry, surface a localized message, branch on specific failures). Correlation IDs let support debug a user's report against the server's logs without exposing internals to the user.
+**Rationale:** Stable error codes let clients react programmatically (retry, surface a localized message, branch on specific failures). Correlation IDs let support debug a user's report against the server's logs without exposing internals to the user. The envelope's contract-quality requirements — codes documented in the published schema, stable across versions, and never parsed from the human-readable message — are specified in `api-backend.md` §BE-ERRENV; this rule covers the security angle (structured shape, correlation ID).
 
 **Verification:** Any spec or plan that describes error responses MUST commit to the structured format with code + message + correlation ID. Validate flags error-response specs that emit only a string message or a raw exception name.
 
