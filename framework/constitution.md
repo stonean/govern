@@ -266,7 +266,7 @@ Every rule has four required fields:
 - **Rationale** — the threat or risk the rule mitigates.
 - **Verification** — instruction to the validate agent on how to check compliance against feature artifacts.
 
-The full schema, ID stability invariants, category abbreviations, and Verification phrasing rules are canonically declared in `specs/008-security-rules/data-model.md`. New rule files follow the same schema.
+The full schema, ID-stability invariants, the ID grammar (including the `[A-Z][A-Z0-9]*` category-abbreviation format), and Verification phrasing rules are canonically declared in `specs/008-security-rules/data-model.md` — and, for configuration rules, in `specs/017-derive-dont-ask/data-model.md`. The specific category abbreviations a given rule file uses are declared in that file's own header (e.g., `api-backend.md` declares `SCHEMA`/`APIVER`/…). New rule files follow the same schema.
 
 #### When to write a rule
 
