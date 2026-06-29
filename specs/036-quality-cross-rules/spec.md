@@ -1,9 +1,9 @@
 ---
-status: draft
+status: done
 dependencies: [008-security-rules, 016-cross-cutting-rules, 017-derive-dont-ask, 024-rule-loader, 033-rule-surface-setting]
 review:
-  last-run: null
-  reviewed-against: null
+  last-run: 2026-06-29T02:01:56Z
+  reviewed-against: 7615f7fe656b26db674656e8c54068e6d892ae7c
   must-violations: 0
   should-violations: 0
   low-confidence: 0
@@ -36,17 +36,21 @@ Inaugural rule:
 
 ## Acceptance Criteria
 
-- [ ] `framework/rules/quality-cross.md` exists, ends in the `-cross.md` suffix, and follows the canonical rule schema (`### {ID}` headings; Statement / Rationale / Verification; RFC 2119 language) per [008-security-rules](../008-security-rules/spec.md)'s data-model.
-- [ ] `QUAL-STUB-001` is present with a Statement (RFC 2119), a Rationale, and a Verification clause.
-- [ ] Every rule ID uses the `QUAL-{CATEGORY}-{NNN}` format with the `QUAL` prefix and category abbreviation disjoint from the existing `BE-`/`FE-`/`CFG-` namespaces; `scripts/lint-rule-ids.sh` passes.
-- [ ] The file header declares the `QUAL` category abbreviation(s) per the per-file category-declaration policy ([016-cross-cutting-rules](../016-cross-cutting-rules/spec.md)).
-- [ ] The Verification clause is expressed as a check `/gov:review` can apply to code (silent passthrough vs. loud failure), and is scoped so legitimately-empty implementations are not flagged (see Open Questions).
-- [ ] Rules whose surface overlaps an existing rule cite it rather than restating it (`BE-SCHEMA-002` for the build-time fail-loud case).
-- [ ] The file is added to the `/govern` **Shared Files** manifest in `framework/bootstrap/govern.md` (slotted between `performance-frontend.md` and `security-backend.md`) and is auto-selected for every stack via the `-cross.md` suffix ([024-rule-loader](../024-rule-loader/spec.md)), composing with [033-rule-surface-setting](../033-rule-surface-setting/spec.md).
+- [x] `framework/rules/quality-cross.md` exists, ends in the `-cross.md` suffix, and follows the canonical rule schema (`### {ID}` headings; Statement / Rationale / Verification; RFC 2119 language) per [008-security-rules](../008-security-rules/spec.md)'s data-model.
+- [x] `QUAL-STUB-001` is present with a Statement (RFC 2119), a Rationale, and a Verification clause.
+- [x] Every rule ID uses the `QUAL-{CATEGORY}-{NNN}` format with the `QUAL` prefix and category abbreviation disjoint from the existing `BE-`/`FE-`/`CFG-` namespaces; `scripts/lint-rule-ids.sh` passes.
+- [x] The file header declares the `QUAL` category abbreviation(s) per the per-file category-declaration policy ([016-cross-cutting-rules](../016-cross-cutting-rules/spec.md)).
+- [x] The Verification clause is expressed as a check `/gov:review` can apply to code (silent passthrough vs. loud failure), and is scoped so legitimately-empty implementations are not flagged (the three-part discriminator and exemption list in Resolved Questions — Verification mechanism).
+- [x] Rules whose surface overlaps an existing rule cite it rather than restating it (`BE-SCHEMA-002` for the build-time fail-loud case).
+- [x] The file is added to the `/govern` **Shared Files** manifest in `framework/bootstrap/govern.md` (slotted between `performance-frontend.md` and `security-backend.md`) and is auto-selected for every stack via the `-cross.md` suffix ([024-rule-loader](../024-rule-loader/spec.md)), composing with [033-rule-surface-setting](../033-rule-surface-setting/spec.md).
 
 ## Open Questions
 
-- **Single category at launch, or seed siblings now?** Ship `STUB` alone (the file grows as concerns promote, mirroring how the performance set started), or also seed adjacent code-quality categories (e.g. swallowed errors, dead code) in this introducing spec?
-- **Verification mechanism.** `QUAL-STUB-001` is fundamentally a code-pattern concern, so its primary checker is `/gov:review` against source rather than `/gov:analyze` against artifacts (unlike the 034 performance rules, which were design-time commitments). Confirm the review-time framing, and decide how the Verification clause operationalizes "the surrounding contract implies the path performs work" so genuine no-ops (default interface implementations, intentional pass-through middleware, not-yet-reachable branches) are not false-flagged.
-- **MUST vs. SHOULD.** The statement is drafted as MUST (a silent stub is a correctness/availability hazard, not a tunable trade-off). Confirm MUST is the right severity.
-- **`-cross` vs. surface split.** Confirm the discipline belongs in a single `-cross.md` file rather than being split into `-backend.md`/`-frontend.md` variants.
+*None — all resolved.*
+
+## Resolved Questions
+
+- **Single category at launch, or seed siblings now?** Resolved: **ship `STUB` alone.** Mirrors how every prior rule set was introduced (008-security, 034-performance each started from a motivated nucleus and grew as concerns promoted) — a single-rule file is valid. `QUAL-STUB-001` has a concrete motivating incident (the anvil rate-limiter passthrough); "swallowed errors" and "dead code" have no grounding incident yet, so seeding them now would be speculative governance with no verifiable Statement/Rationale. The `QUAL-{CATEGORY}-{NNN}` grammar leaves room to promote adjacent categories later via `/gov:amend` or a follow-on spec when a concrete need appears.
+- **Verification mechanism.** Resolved: **review-time framing confirmed, with a three-part discriminator and an explicit exemption list.** `QUAL-STUB-001` is a source-code pattern, so its checker is `/gov:review`'s quality pass against code in scope — not `/gov:analyze` (which audits artifacts). The Verification clause flags a path only when **all three** hold: (1) it is **reachable** under the current spec, (2) its **surrounding contract implies work** (named for a behavior, documented to do something, or called by code that depends on its effect), and (3) it returns a success/zero/pass-through value with **no loud signal**. Exemptions named in the clause so genuine no-ops are not flagged: an explicit incompleteness marker *is* compliance (`panic`/`todo!`/`unimplemented!`, a raised `NotImplementedError`, or a failing/skipped test fixture — that *is* failing loudly); intentional pass-through middleware documented as deliberate; default/interface implementations meant to be empty; and not-yet-reachable branches behind a feature flag or guard. One-line discriminator: a stub is forbidden only when the contract implies work **and** there is no loud signal marking it incomplete.
+- **MUST vs. SHOULD.** Resolved: **MUST.** A silent stub is a correctness/availability hazard, not a tunable trade-off — the motivating incident (a rate-limiter that would have silently disabled itself in production) is exactly what RFC 2119 MUST exists for; SHOULD would let it pass `/gov:review` without blocking. The compliance cost is trivial and always available (one `panic`/`todo!`/error line to fail loudly), while the violation cost is a production outage, so it belongs at MUST — making it a blocking violation that gates `done`. MUST does not trap legitimate cases: the Verification exemptions exclude genuine no-ops, and per-finding waivers (`--waive` with a recorded reason) plus whole-file `[[review.disabled-rule-files]]` remain available for any case the rule should not apply to.
+- **`-cross` vs. surface split.** Resolved: **single `-cross.md` file.** The discipline is surface-independent — the failure mode (a contract-implying path that silently passes through) and the remedy (fail loudly) are identical for backend workers/domain methods/middleware and frontend stores/handlers/reducers. Splitting would duplicate one rule across two files (a `QUAL-STUB-001` wearing two IDs), which the framework avoids — overlapping rules cite, not restate. `-cross.md` is exactly the "applies to every stack" suffix: the rule-loader (024) auto-selects it regardless of detected stack and it composes with 033 (cross files are unconditional, never surface-filtered), so backend-only and frontend-only projects both get stub discipline. A genuinely surface-specific stub concern, if one ever emerges, can live in a `-backend.md`/`-frontend.md` file later; the general discipline stays cross.
