@@ -68,7 +68,7 @@ Projects without a backend can pin this file in `.govern.toml` or set `[rules] s
 
 **Verification:** Any spec or plan that introduces a concurrent update to shared persisted state MUST name its lost-update guard (version check, row lock, or atomic update). Validate flags read-modify-write plans that commit to none.
 
-**Source:** ANSI SQL (lost update / P4 anomaly).
+**Source:** Berenson et al., "A Critique of ANSI SQL Isolation Levels" (SIGMOD 1995) — lost update (P4).
 
 ## BE-COORD — Distributed coordination
 
@@ -86,6 +86,6 @@ Projects without a backend can pin this file in `.govern.toml` or set `[rules] s
 
 > An operation invoked under at-least-once delivery or automatic retry MUST be idempotent (see `api-backend.md` `BE-IDEMP`) or deduplication-guarded, with its delivery semantics (at-least-once vs. exactly-once) stated.
 
-**Rationale:** Retries and at-least-once brokers deliver duplicates by design; a non-idempotent handler double-applies them — a double charge, a double ship, a doubled balance — which is silent corruption regardless of scale. Stating the delivery semantics makes the duplicate-handling obligation explicit. Retry safety builds on `api-backend.md` `BE-IDEMP` rather than restating it.
+**Rationale:** Retries and at-least-once brokers deliver duplicates by design; a non-idempotent handler double-applies them — a double charge, a double ship, a doubled balance — which is silent corruption regardless of scale. Stating the delivery semantics makes the duplicate-handling obligation explicit. Retry safety builds on `api-backend.md` `BE-IDEMP` rather than restating it; this rule owns the delivery-semantics and duplicate-handling obligation, while the retry *mechanics* — attempt bounds, backoff, and jitter — are `reliability-backend.md` `BE-RETRY-001`.
 
 **Verification:** Any spec or plan that consumes from a broker, exposes a retried operation, or relies on at-least-once delivery MUST commit to idempotency or deduplication and state the delivery semantics. Validate flags retried or queue-consuming plans with no idempotency or dedup commitment.

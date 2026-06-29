@@ -36,7 +36,7 @@ Projects without a backend can pin this file in `.govern.toml` or set `[rules] s
 
 > Automatic retries MUST be bounded by a maximum attempt count, spaced with exponential backoff plus jitter, and limited to idempotent operations (see `api-backend.md` `BE-IDEMP`).
 
-**Rationale:** Unbounded or fixed-interval retries synchronize across callers and amplify a transient downstream blip into a self-sustaining retry storm that prevents recovery; backoff with jitter de-correlates and bounds the added load, and retrying a non-idempotent operation double-applies it. The storm is scale-independent — even a small fleet retrying in lockstep overwhelms a single recovering dependency — which is why it is MUST.
+**Rationale:** Unbounded or fixed-interval retries synchronize across callers and amplify a transient downstream blip into a self-sustaining retry storm that prevents recovery; backoff with jitter de-correlates and bounds the added load, and retrying a non-idempotent operation double-applies it. The storm is scale-independent — even a small fleet retrying in lockstep overwhelms a single recovering dependency — which is why it is MUST. This rule owns the retry mechanics (bound, backoff, jitter); the delivery-side duplicate-handling obligation for at-least-once consumers is `concurrency-backend.md` `BE-COORD-002`.
 
 **Verification:** Any spec or plan that introduces automatic retries MUST state the attempt bound, the backoff-with-jitter policy, and the idempotency basis for the retried operation. Validate flags retry plans missing a bound, jitter, or an idempotency basis.
 

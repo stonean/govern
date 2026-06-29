@@ -11,7 +11,7 @@ Registers the `QUAL` rule-ID surface and its inaugural `STUB` category. It does 
 | Surface prefix | `QUAL` (always uppercase) |
 | Scope | Cross-cutting code-quality discipline — applies to every stack |
 | File | `framework/rules/quality-cross.md` (the `-cross.md` suffix loads it for every stack via 024's rule-loader; 033's surface filter keeps cross files unconditionally) |
-| ID grammar | `QUAL-{CATEGORY}-{NNN}` — matches the runtime `check-rule-ids` harvester grammar (`[A-Z]{2,5}-[A-Z][A-Z0-9]+-\d{3,4}`) and the `scripts/lint-rule-ids.sh` allowlist (extended to include `QUAL` by this spec) |
+| ID grammar | `QUAL-{CATEGORY}-{NNN}` — accepted by both the `scripts/lint-rule-ids.sh` surface allowlist (extended to include `QUAL` by this spec) and the runtime `check-rule-ids` harvester. The two are close but not identical: the lint allows a one-character category (`[A-Z][A-Z0-9]*`) while the harvester requires at least two (`[A-Z]{2,5}-[A-Z][A-Z0-9]+-\d{3,4}`). Every shipped category (including `STUB`) is ≥2 characters, so the difference is latent. |
 
 The surface prefix disambiguates `QUAL-` IDs from `BE-`/`FE-`/`CFG-` IDs (AC #3). `scripts/lint-rule-ids.sh` is the machine-checked registry of accepted surfaces; this data-model is the documented source of truth its comment block cites for `QUAL`.
 
