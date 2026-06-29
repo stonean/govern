@@ -1,9 +1,9 @@
 ---
-status: draft
+status: done
 dependencies: [008-security-rules, 016-cross-cutting-rules, 024-rule-loader, 033-rule-surface-setting, 034-performance-backend-rules]
 review:
-  last-run: null
-  reviewed-against: null
+  last-run: 2026-06-29T02:16:18Z
+  reviewed-against: e375c1cffc3e2127cd3520fb61fd108d211d1c24
   must-violations: 0
   should-violations: 0
   low-confidence: 0
@@ -22,15 +22,13 @@ This spec closes that gap: a backend observability rule set citable by ID (`BE-{
 
 ## Rule set scope
 
-`observability-backend.md` uses the **backend** surface (`-backend.md` suffix, `BE-` ID prefix), with NEW categories disjoint from the existing `BE-` namespaces in `security-backend.md` (`AUTHN`/`AUTHZ`/`INPUT`/`DATA`/`API`/`LOG`/`DEPS`/`ERR`), `api-backend.md` (`SCHEMA`/`APIVER`/`ERRENV`/`STATUS`/`PAGE`/`IDEMP`/`COMPAT`), and `performance-backend.md` (`QUERY`/`CACHE`/`POOL`/`PAYLOAD`/`ASYNC`). Candidate category set (to be resolved at clarify):
+`observability-backend.md` uses the **backend** surface (`-backend.md` suffix, `BE-` ID prefix), with NEW categories disjoint from the existing `BE-` namespaces in `security-backend.md` (`AUTHN`/`AUTHZ`/`INPUT`/`DATA`/`API`/`LOG`/`DEPS`/`ERR`), `api-backend.md` (`SCHEMA`/`APIVER`/`ERRENV`/`STATUS`/`PAGE`/`IDEMP`/`COMPAT`), and `performance-backend.md` (`QUERY`/`CACHE`/`POOL`/`PAYLOAD`/`ASYNC`). Category set (resolved at clarify — three categories ship; `SLO` and `ALERT` are deferred as operational policy, see Resolved Questions):
 
 | Category | Abbrev | Concern |
 | --- | --- | --- |
 | Metrics | `METRIC` | RED (rate/errors/duration) for request handling; USE (utilization/saturation/errors) for resources; bounded-cardinality labels |
 | Distributed tracing | `TRACE` | spans around significant work; trace-context propagation across service boundaries (extends `BE-LOG-006`) |
 | Health endpoints | `HEALTH` | distinct liveness / readiness / startup probes; readiness reflects dependency reachability |
-| SLOs / error budgets | `SLO` | defined SLIs and SLO targets; an error-budget policy |
-| Alerting | `ALERT` | alert on symptoms (SLO burn), not causes; every alert actionable and linked to a runbook |
 
 ### Severity posture
 
@@ -43,17 +41,21 @@ Observability rules default to **SHOULD** (the right metrics, spans, and targets
 
 ## Acceptance Criteria
 
-- [ ] `framework/rules/observability-backend.md` exists, ends in the `-backend.md` suffix, and follows the canonical rule schema (`### {ID}` headings; Statement / Rationale / Verification; RFC 2119 language) per [008-security-rules](../008-security-rules/spec.md)'s data-model.
-- [ ] Every rule ID uses the `BE-{CATEGORY}-{NNN}` format with an observability category disjoint from the `security-backend.md`, `api-backend.md`, and `performance-backend.md` category sets; `scripts/lint-rule-ids.sh` passes.
-- [ ] The file header declares the observability category abbreviations per the per-file category-declaration policy ([016-cross-cutting-rules](../016-cross-cutting-rules/spec.md)).
-- [ ] The rule set covers, at minimum, metrics, distributed tracing, and health endpoints — each with a Verification clause expressed as a **design-time commitment** the spec/plan must make (not a code-pattern grep), consistent with how `/gov:analyze` audits artifacts.
-- [ ] Each MUST rule is one whose absence prevents detection or diagnosis of an outage regardless of scale; contextual observability trade-offs are SHOULD. The split is evident from the Statements.
-- [ ] Rules whose surface overlaps an existing rule cite it rather than restating it (`BE-LOG-006` for tracing/correlation, `CFG-*` for tunable config).
-- [ ] The file is added to the `/govern` **Shared Files** manifest in `framework/bootstrap/govern.md` and is selected under the `backend` surface by `/gov:review`, composing with [033-rule-surface-setting](../033-rule-surface-setting/spec.md) and [024-rule-loader](../024-rule-loader/spec.md).
+- [x] `framework/rules/observability-backend.md` exists, ends in the `-backend.md` suffix, and follows the canonical rule schema (`### {ID}` headings; Statement / Rationale / Verification; RFC 2119 language) per [008-security-rules](../008-security-rules/spec.md)'s data-model.
+- [x] Every rule ID uses the `BE-{CATEGORY}-{NNN}` format with an observability category disjoint from the `security-backend.md`, `api-backend.md`, and `performance-backend.md` category sets; `scripts/lint-rule-ids.sh` passes.
+- [x] The file header declares the observability category abbreviations per the per-file category-declaration policy ([016-cross-cutting-rules](../016-cross-cutting-rules/spec.md)).
+- [x] The rule set covers, at minimum, metrics, distributed tracing, and health endpoints — each with a Verification clause expressed as a **design-time commitment** the spec/plan must make (not a code-pattern grep), consistent with how `/gov:analyze` audits artifacts.
+- [x] Each MUST rule is one whose absence prevents detection or diagnosis of an outage regardless of scale; contextual observability trade-offs are SHOULD. The split is evident from the Statements.
+- [x] Rules whose surface overlaps an existing rule cite it rather than restating it (`BE-LOG-006` for tracing/correlation, `CFG-*` for tunable config).
+- [x] The file is added to the `/govern` **Shared Files** manifest in `framework/bootstrap/govern.md` and is selected under the `backend` surface by `/gov:review`, composing with [033-rule-surface-setting](../033-rule-surface-setting/spec.md) and [024-rule-loader](../024-rule-loader/spec.md).
 
 ## Open Questions
 
-- **Exact category set and abbreviations.** Five candidates above — confirm the set, or trim (e.g. defer `SLO`/`ALERT` if they read as operational policy rather than per-feature design commitments).
-- **Do SLOs and alerting belong in a rules file?** They are more operational than code-shaped; decide whether they are in scope here or out of scope for the rules tier.
-- **MUST vs. SHOULD default.** Confirm default SHOULD with MUST reserved for detection/diagnosis-blocking absences.
-- **Overlap with `BE-LOG-006`.** Confirm `TRACE` extends and cites the existing logging/tracing rule rather than duplicating it.
+*None — all resolved.*
+
+## Resolved Questions
+
+- **Exact category set and abbreviations.** Resolved: **ship three categories — `METRIC`, `TRACE`, `HEALTH`** (the minimum AC #4 requires), each disjoint from the existing `BE-` category sets in `security-backend.md` / `api-backend.md` / `performance-backend.md`. `SLO` and `ALERT` are deferred (see next question). The `BE-{CATEGORY}-{NNN}` grammar leaves room to add them later.
+- **Do SLOs and alerting belong in a rules file?** Resolved: **deferred — out of scope for this rule set.** SLOs and alerting are operational policy, not per-feature design commitments: `/gov:analyze` verifies a rule by checking whether a spec/plan makes a commitment, but a feature spec does not "define an SLO" or "author an alert" — those live at the service/ops layer. They do not fit the design-time-commitment verification model the other backend rules use. They can be promoted later if a concrete per-feature commitment shape emerges.
+- **MUST vs. SHOULD default.** Resolved: **default SHOULD; MUST only when the absence prevents detection or diagnosis of an outage regardless of scale.** Mirrors 034's performance posture. The two MUSTs at launch: a readiness probe (its absence ships silent bad deploys) and trace-context propagation (its absence makes distributed failures undebuggable). Metric/span *coverage* choices stay SHOULD.
+- **Overlap with `BE-LOG-006`.** Resolved: **`TRACE` extends and cites `BE-LOG-006`, never duplicates it.** `BE-LOG-006` owns correlation-ID / trace-context *in logs*; the new `TRACE` rules cover span creation around significant work and trace-context propagation across service boundaries, citing `BE-LOG-006` for the logging-correlation seam (and `CFG-*` for tunable config such as scrape intervals and probe timeouts).
