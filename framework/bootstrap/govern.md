@@ -608,6 +608,7 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 | `framework/constitution.md` | `constitution.md` |
 | `framework/rules/accessibility-frontend.md` | `specs/rules/accessibility-frontend.md` |
 | `framework/rules/api-backend.md` | `specs/rules/api-backend.md` |
+| `framework/rules/concurrency-backend.md` | `specs/rules/concurrency-backend.md` |
 | `framework/rules/configuration-cross.md` | `specs/rules/configuration-cross.md` |
 | `framework/rules/observability-backend.md` | `specs/rules/observability-backend.md` |
 | `framework/rules/performance-backend.md` | `specs/rules/performance-backend.md` |

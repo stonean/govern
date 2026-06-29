@@ -1,0 +1,27 @@
+# 038 — Backend concurrency rules Tasks
+
+Tasks derived from the [plan](plan.md). Complete in order.
+
+## 1. Author `framework/rules/concurrency-backend.md`
+
+- [x] Write the file header: title (`# Concurrency Rules — Backend`), an intro scoping it to server-side concurrency correctness, the RFC 2119 note, the `BE-{CATEGORY}-{NNN}` ID-format / category-declaration line (categories `RACE`/`LOCK`/`TXN`/`COORD`, with the `See specs/008-security-rules/data-model.md` pointer), the default-SHOULD + design-time-commitment paragraph, and the backend pin/surface note.
+- [x] Write the eight rules across the four `## BE-{CATEGORY}` sections per the plan's rule table: `BE-RACE-001` (MUST) / `BE-RACE-002` (SHOULD), `BE-LOCK-001/002` (SHOULD), `BE-TXN-001` (SHOULD) / `BE-TXN-002` (MUST), `BE-COORD-001` (MUST) / `BE-COORD-002` (MUST) — each with Statement (one RFC 2119 keyword), Rationale, and a design-time-commitment Verification clause, plus Source where apt.
+- [x] Cross-reference rather than restate: `BE-COORD-002` cites `api-backend.md` `BE-IDEMP`; lock/pool interaction cites `performance-backend.md` `BE-POOL-*`; tunable values cite `configuration-cross.md` `CFG-*`.
+- Done when: the file exists with eight well-formed rules (4 MUST / 4 SHOULD), categories disjoint from the other backend files, each MUST a scale-independent corruption hazard.
+
+## 2. Register the file in the `/govern` manifest
+
+- [x] Add `framework/rules/concurrency-backend.md → specs/rules/concurrency-backend.md` to the `### govern-owned shared files` table in `framework/bootstrap/govern.md`, slotted between `api-backend.md` and `configuration-cross.md` (alphabetical; strategy: update).
+- Done when: the manifest row is present; the `-backend.md` suffix makes 024's loader select it under the `backend` surface and 033's filter include it. (The §Shared Files note is count-free — no count edit.)
+
+## 3. Validate
+
+- [x] `scripts/lint-rule-ids.sh` passes (`BE-RACE`/`BE-LOCK`/`BE-TXN`/`BE-COORD` IDs well-formed; categories disjoint from the other backend files; no duplicates).
+- [x] `scripts/lint-rule-filenames.sh` passes (the `-backend.md` suffix).
+- [x] `npx markdownlint-cli2`, the other `scripts/lint-*.sh`, and `scripts/audit/*` pass (frontmatter, tool-coverage, procedure-parseability, manifest-parity, ssot-invariants, cross-doc-consistency — all green).
+- Done when: all lints/audits green.
+
+## 4. Review and complete
+
+- [x] Run `/gov:review` over the change set; resolve any MUST findings.
+- Done when: `/gov:review` reports no blocking violations and the spec can advance to `done`.
