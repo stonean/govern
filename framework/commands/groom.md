@@ -12,11 +12,11 @@ Backlog grooming for `specs/inbox.md`. Walks each raw item through the bug decis
 
 ## Context
 
-Use the session target from `.govern.session.toml` if set, but groom operates across all specs so a target is not *required* to start. When groom routes an item to an existing spec — a spec edit (Step 3) or a scenario under the matching spec (Step 4) — it **sets** the session target to that spec as part of the routing, so a follow-on `/{project}:amend` or `/{project}:implement` needs no manual `/{project}:target`. See **Setting the session target** below.
+Use the session target from `.govern.session.toml` if set, but groom operates across all specs so a target is not *required* to start. When groom routes an item to an existing spec — a spec edit (Step 3) or a scenario under the matching spec (Step 4) — it **sets** the session target to that spec as part of the routing, so a follow-on `/{project}:amend` or `/{project}:implement` needs no manual `/{project}:target`. Adding a scenario to a `done` spec (Step 4) also **reopens** it `done → in-progress` so that follow-on `/{project}:implement` has an actionable target. See **Setting the session target** and **Reopening a `done` spec** below.
 
 ## Scope Boundaries
 
-- This command grooms inbox items — it creates scenario files, appends tasks, and sets the session target (`.govern.session.toml`) when routing to an existing spec, but does NOT implement fixes. Do NOT read or modify source code or test files.
+- This command grooms inbox items — it creates scenario files, appends tasks, sets the session target (`.govern.session.toml`) when routing to an existing spec, and reopens a matched spec's frontmatter status `done → in-progress` when it adds a scenario to a `done` spec (Step 4), but does NOT implement fixes. Do NOT read or modify source code or test files.
 - For each item, read only the spec file of the matching feature (for decision tree evaluation) and its `tasks.md` (for appending). Do NOT read plans, data models, or source code.
 - Reference: §bug-handling, §rules, §scenarios, §brownfield-inbox (constitution loaded by `/{project}:target` — do not re-read).
 
@@ -53,7 +53,7 @@ For each item in the inbox list:
 
    **Step 4: Spec is clear — durable requirement, or a chore?**
    - The spec covers the area, so there is no rule, missing-spec, or spec-edit gap. Now decide what the item *is* (§bug-handling, durability test):
-     - **A durable behavioral requirement** — a new behavior, edge case, or contract the spec covers at a high level but does not yet describe in detail. Create a scenario inline under the matching spec's `scenarios/` directory using the `specs/templates/scenario.md` template, then append a task to the spec's `tasks.md` referencing the new scenario. After the scenario and task are written, **set the session target** to this feature plus the new scenario (see **Setting the session target**). (`/{project}:groom` keeps the inbox flow moving; for a deeper interactive walk through a single scenario, run `/{project}:amend` against the parent spec — the classifier routes the input to the scenario branch.)
+     - **A durable behavioral requirement** — a new behavior, edge case, or contract the spec covers at a high level but does not yet describe in detail. Create a scenario inline under the matching spec's `scenarios/` directory using the `specs/templates/scenario.md` template, then append a task to the spec's `tasks.md` referencing the new scenario. **If the matched spec's status is `done`, reopen it `done → in-progress`** as part of the same routing action (see **Reopening a `done` spec**), so a follow-on `/{project}:implement` finds an actionable target instead of gate-failing on a `done` spec; a spec already in `draft`, `clarified`, `planned`, or `in-progress` is left unchanged. After the scenario and task are written and any reopen is applied, **set the session target** to this feature plus the new scenario (see **Setting the session target**). (`/{project}:groom` keeps the inbox flow moving; for a deeper interactive walk through a single scenario, run `/{project}:amend` against the parent spec — the classifier routes the input to the scenario branch.)
      - **A chore** — project maintenance (lint or formatting cleanup, dependency cleanup, repo hygiene, a standalone refactor) that adds no durable requirement. It is **not** spec material: do not create a rule, spec, or scenario, and do not append it to any `tasks.md` — spec tasks are feature work derived from a plan, not standalone chores. Leave the item in `specs/inbox.md` (do **not** remove it), tell the user it is general maintenance to be done directly (the project's lint/format/test workflows cover the common cases), and continue. It clears from the inbox when it is done, not by grooming.
 
 3. After migrating an item to a spec, scenario, or rule (or otherwise resolving it), remove it from `specs/inbox.md`. A chore recognized in Step 4 is the exception — leave it in place; it is resolved by being done, not by grooming.
@@ -71,10 +71,20 @@ Write the file the way every session-target write does: first read any existing 
 
 Across a multi-item run, each spec-routed item performs this write, so the session target follows the current item and ends pointing at the most recently groomed spec.
 
+### Reopening a `done` spec
+
+When a Step 4 scenario is created under a matched spec whose status is `done`, reopen it `done → in-progress` as part of the same routing action — the documented back-edge §spec-lifecycle ("Backward via new scenario") defines, the same one `/{project}:amend`'s scenario route performs. The new scenario carries an unimplemented task, so leaving the spec `done` would make the follow-on `/{project}:implement` gate-fail; the reopen keeps status and on-disk content consistent.
+
+- **Only from `done`.** A matched spec in `draft`, `clarified`, `planned`, or `in-progress` is left unchanged — groom never advances or otherwise moves a non-`done` status.
+- **Guarded.** Confirm the on-disk status is still `done` immediately before writing; if it has changed since the match (a concurrent edit), surface the discrepancy rather than blindly overwriting — guarding the reopen against a lost concurrent update the way every status back-edge does.
+- **No separate prompt.** The per-item routing confirmation (which names the scenario and target) is the consent for the reopen as well; the Completion summary names any spec reopened so the status change is never silent.
+- **Step 3 is out of scope.** The spec-edit route has its own back-edge (§spec-lifecycle, "Backward via meaningful body edit") and this scenario-reopen does not apply to it.
+
 ### Completion
 
 After all items are groomed:
 
 - Report how many items were migrated, how many specs were created, how many scenarios were added, how many items were recognized as chores (left in the inbox to be done directly), and how many items remain.
+- Name any spec reopened `done → in-progress` during the run (per **Reopening a `done` spec**), so the status change is surfaced rather than silent.
 - Report the resulting session target — the spec (and scenario, if any) set by the most recently groomed spec-routed item, or "session target unchanged" when no groomed item set one.
 - If `specs/inbox.md` is now empty (no items left), report: "Inbox is clean."

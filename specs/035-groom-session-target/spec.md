@@ -1,12 +1,12 @@
 ---
-status: in-progress
+status: done
 dependencies: [006-bug-workflow, 017-derive-dont-ask, 023-govern-refinement]
 review:
-  last-run: 2026-06-28T14:17:35Z
-  reviewed-against: 43e4ad0d1acbe566d9b45342809247362b630212
+  last-run: 2026-06-29T01:10:12Z
+  reviewed-against: acffa851a0cb284d9766b0006930229955fb1da2
   must-violations: 0
   should-violations: 0
-  low-confidence: 0
+  low-confidence: 1
   blocking: false
 ---
 
