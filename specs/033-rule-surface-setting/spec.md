@@ -1,12 +1,12 @@
 ---
-status: in-progress
+status: done
 dependencies: [017-derive-dont-ask, 020-code-review, 024-rule-loader, 025-rule-opt-out]
 review:
-  last-run: 2026-06-28T13:29:53Z
-  reviewed-against: fafb52b1841f45e8d14d6d13f43a31e3d85b9ae6
+  last-run: 2026-06-29T01:00:19Z
+  reviewed-against: cbc5117e7d5fa009bcf7fec0a4c7c0fd48bd4d13
   must-violations: 0
   should-violations: 0
-  low-confidence: 2
+  low-confidence: 0
   blocking: false
 ---
 

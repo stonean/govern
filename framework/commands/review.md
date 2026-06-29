@@ -48,8 +48,10 @@ advances to `done`.
     both; `*-cross.md` files are unconditional and not members). When set,
     it is the source of truth for surface selection in Behavior step 5 and
     replaces stack detection; when unset, step 5 falls back to the detected
-    stack. Collected and persisted by `/govern` (`govern.md` §Collect
-    Project Inputs).
+    stack. The **empty list** (`[]`) is valid and means cross-only (not
+    the same as unset); an unrecognized member (including `"cross"`) or a
+    non-list value fails fast in Behavior step 5. Collected and persisted
+    by `/govern` (`govern.md` §Collect Project Inputs).
 
 ## Flags
 
@@ -121,15 +123,33 @@ For each targeted feature, in order:
    Determine the **surface selection** for this run. Read `.govern.toml`
    `[rules] surfaces` (see [Inputs](#inputs)):
 
-   - **Set** (a list with members in `{backend, frontend}`) — keep the
-     rule files whose surface is listed in `surfaces`, plus every
-     `*-cross.md`. This explicit operator-set selection _replaces_ the
-     detected-stack filter; the stack from step 4 is not consulted for
-     rule-file selection.
+   - **Set to a valid list** (every member in `{backend, frontend}`) —
+     keep the rule files whose surface is listed in `surfaces`, plus
+     every `*-cross.md`. This explicit operator-set selection _replaces_
+     the detected-stack filter; the stack from step 4 is not consulted
+     for rule-file selection. The **empty list** (`surfaces = []`) is a
+     valid value of this case and means **cross-only**: no
+     `*-backend.md`/`*-frontend.md` file is kept, only `*-cross.md`. The
+     empty list is distinct from the key being unset (below) — it is the
+     operator explicitly declaring "no surface rules, only cross-cutting
+     ones," not a request to derive.
+   - **Set to a degenerate value** — fail fast (do not silently ignore,
+     do not warn-and-continue), consistent with `CFG-ENV-003`'s
+     fail-fast-on-invalid-configuration posture:
+     - **Unrecognized member.** A member outside `{backend, frontend}` —
+       a typo like `"fullstack"`, or `"cross"` (cross-cutting files are
+       unconditional, not a selectable surface) — halts the run with
+       `/{project}:review: invalid [rules] surfaces member "<value>" — accepted members are "backend" and "frontend" (use [] for cross-only; -cross.md files always apply)`.
+       A list mixing valid and invalid members (`["backend", "fullstack"]`)
+       fails on the invalid member; a valid member does not rescue it.
+     - **Type mismatch.** A non-list value (`surfaces = "backend"`, a
+       bare string) halts the run with
+       `/{project}:review: [rules] surfaces must be a list of strings, got <type>`.
    - **Unset** — fall back to the detected stack from step 4: keep the
      matching surface, keep every `*-cross.md` (pre-033 behavior).
 
-   In both cases, keep every unrecognized-suffix file unconditionally.
+   In every non-error case, keep every unrecognized-suffix file
+   unconditionally.
 
    Then apply the **disabled-rule-files filter**. Read `.govern.toml`
    `[[review.disabled-rule-files]]` (see [Inputs](#inputs)). For each
