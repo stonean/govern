@@ -614,6 +614,7 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 | `framework/rules/performance-backend.md` | `specs/rules/performance-backend.md` |
 | `framework/rules/performance-frontend.md` | `specs/rules/performance-frontend.md` |
 | `framework/rules/quality-cross.md` | `specs/rules/quality-cross.md` |
+| `framework/rules/reliability-backend.md` | `specs/rules/reliability-backend.md` |
 | `framework/rules/security-backend.md` | `specs/rules/security-backend.md` |
 | `framework/rules/security-frontend.md` | `specs/rules/security-frontend.md` |
 | `framework/bootstrap/hooks/govern-pre-commit` | `.githooks/govern-pre-commit` |
