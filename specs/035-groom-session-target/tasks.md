@@ -31,3 +31,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 - [x] Implement the behavior described in `scenarios/reopen-done-spec-on-scenario.md`
 - Done when: `framework/commands/groom.md` Step 4 durable-requirement branch performs a `set-status` `done → in-progress` on the matched spec when its status is `done`, alongside creating the scenario, appending the task, and setting the session target; specs not in `done` are left unchanged. The behavior mirrors `/gov:amend`'s scenario route and §spec-lifecycle's "Backward via new scenario" edge, and the generated `.claude/commands/gov/groom.md` copy regenerates cleanly.
+
+## 6. Name the done-spec reopen in groom's routing confirmation
+
+- [x] Implement the behavior described in `scenarios/confirmation-names-reopen.md`
+
+- **Done when**: the scenario's described behavior is correctly implemented and tested

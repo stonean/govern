@@ -2,11 +2,11 @@
 status: done
 dependencies: [006-bug-workflow, 017-derive-dont-ask, 023-govern-refinement]
 review:
-  last-run: 2026-06-29T01:10:12Z
-  reviewed-against: acffa851a0cb284d9766b0006930229955fb1da2
+  last-run: 2026-06-29T01:23:45Z
+  reviewed-against: c97c5b9d64f6ce110ff8d9a447d0df8e21240dda
   must-violations: 0
   should-violations: 0
-  low-confidence: 1
+  low-confidence: 0
   blocking: false
 ---
 
