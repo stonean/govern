@@ -42,3 +42,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] `npx markdownlint-cli2`, `scripts/lint-*.sh`, and `scripts/audit/*` pass (markdownlint, rule-ids, rule-filenames, frontmatter, tool-coverage, procedure-parseability, ssot-invariants, cross-doc-consistency — all green).
 - [x] Run `/gov:review` over the change set; resolve any MUST findings before `done`. (0 MUST, not blocking; 2 low-confidence quality notes parked — see `review.md`.)
 - Done when: all lints/audits pass and `/gov:review` reports no blocking violations.
+
+## 8. Specify degenerate `[rules] surfaces` configs (empty list, invalid member)
+
+- [ ] Implement the behavior described in `scenarios/degenerate-surfaces-config.md`
+- Done when: `surfaces = []` selects cross-only (distinct from unset = derive); an unrecognized member, a mixed valid/invalid list, and a non-list value all fail fast per `CFG-ENV-003`, naming the offending value and the accepted members. `/govern` and `/gov:review` both honor the behavior, the spec's Setting section documents it, and tests cover the empty-list, unknown-member, mixed-list, and wrong-type cases.
