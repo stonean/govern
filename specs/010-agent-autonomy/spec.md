@@ -70,7 +70,7 @@ Chain task execution without pausing for user approval between individual tasks 
 
 Constraints that still gate even with `--auto` on:
 
-- Phase transitions (`planned`→`in-progress`, `in-progress`→`done`) — per §pipeline-boundaries, unchanged.
+- Phase completion transition (`in-progress`→`done`) — per §pipeline-boundaries, unchanged. (The `planned`→`in-progress` transition is no longer gated: invoking `/gov:implement` is itself the approval to start work, so it never prompts, with or without `--auto`. Superseded by [000-slash-commands](../000-slash-commands/spec.md)'s `implement-skips-planned-prompt` scenario per §cross-spec-impact.)
 - Stuck-detection events (from the Stuck detection adoption above) — auto mode does not power through cycles.
 - Spec edits, plan edits, or new tasks discovered mid-implement.
 - Risky actions per the agent's safety rules (destructive ops, secrets, force pushes, etc.).

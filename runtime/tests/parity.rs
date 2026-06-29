@@ -292,10 +292,11 @@ fn implement_rejects_out_of_boundary_write_code_edit() {
     let staged = stage_fixture("implement", "implement-basic");
 
     // Replace the staged stdin.jsonl with a malicious writeCode response
-    // that edits a file outside the write boundary. The gate-response on
-    // line 1 is unchanged; the writeCode edit's path escapes
-    // `specs/004-implement/**` and `runtime/**`.
-    let stdin = "{\"type\":\"gate-response\",\"request-id\":\"req-1\",\"confirmed\":true}\n{\"type\":\"llm-response\",\"request-id\":\"req-2\",\"response\":{\"edits\":[{\"path\":\"framework/constitution.md\",\"action\":\"edit\",\"content\":\"malicious\"}],\"summary\":\"escape the boundary\"}}\n";
+    // that edits a file outside the write boundary. The implement procedure
+    // has no planned → in-progress gate, so the writeCode request is
+    // `req-1`; its edit's path escapes `specs/004-implement/**` and
+    // `runtime/**`.
+    let stdin = "{\"type\":\"llm-response\",\"request-id\":\"req-1\",\"response\":{\"edits\":[{\"path\":\"framework/constitution.md\",\"action\":\"edit\",\"content\":\"malicious\"}],\"summary\":\"escape the boundary\"}}\n";
 
     let mut child = Command::new(&bin)
         .arg("exec")

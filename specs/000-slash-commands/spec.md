@@ -4,8 +4,8 @@ status: done
 dependencies: []
 tags: [commands, pipeline, templates]
 review:
-  last-run: 2026-05-23T00:00:00Z
-  reviewed-against: f63446b
+  last-run: 2026-06-28T00:00:00Z
+  reviewed-against: 98f859520f2672b58830911d891f6f9eeb14a98e
   must-violations: 0
   should-violations: 0
   low-confidence: 0

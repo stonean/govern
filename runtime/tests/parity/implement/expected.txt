@@ -7,8 +7,9 @@ Capture recipe (maintainer-only, requires an LLM-driven host):
   1. cp -r runtime/tests/fixtures/implement-basic <a-clean-tempdir>
   2. cp framework/commands/implement.md <a-clean-tempdir>/framework/commands/
   3. cd <a-clean-tempdir> && git init && git add . && git commit -m chore
-  4. Run `/gov:implement` in the LLM-driven host; confirm the
-     planned → in-progress gate when prompted.
+  4. Run `/gov:implement` in the LLM-driven host. Invoking the command
+     is itself the approval to start work — no planned → in-progress
+     gate fires.
   5. After the run, record:
      a. The contents of <a-clean-tempdir>/specs/004-implement/tasks.md
         with the task-1 subtask checkbox flipped to checked.

@@ -1,2 +1,1 @@
-{"type":"gate-response","request-id":"req-1","confirmed":true}
-{"type":"llm-response","request-id":"req-2","response":{"edits":[{"path":"runtime/src/foo.rs","action":"create","content":"pub fn noop() {}\n"}],"summary":"create runtime/src/foo.rs stub"}}
+{"type":"llm-response","request-id":"req-1","response":{"edits":[{"path":"runtime/src/foo.rs","action":"create","content":"pub fn noop() {}\n"}],"summary":"create runtime/src/foo.rs stub"}}

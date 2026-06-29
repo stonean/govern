@@ -114,3 +114,9 @@ Done when: the scenario's described behavior is correctly implemented; every gov
 - [x] Implement the behavior described in `scenarios/target-clear-flag.md`
 
 - **Done when**: the scenario's described behavior is correctly implemented and tested.
+
+## 16. Implement scenario: implement-skips-planned-prompt
+
+- [x] Implement the behavior described in `scenarios/implement-skips-planned-prompt.md`
+
+- **Done when**: the scenario's described behavior is correctly implemented and tested.

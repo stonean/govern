@@ -33,7 +33,7 @@ When `--auto` is set:
 
 The following gates **still fire and pause** even with `--auto` on:
 
-- Pipeline gates (planned → in-progress, in-progress → done) — confirmation required per §pipeline-boundaries.
+- Pipeline completion gate (in-progress → done) — confirmation required per §pipeline-boundaries. (The planned → in-progress transition is *not* gated: invoking the command is the user's approval to start work — see step 4.)
 - Stuck-detection events — auto mode does not power through cycles.
 - Out-of-bounds file writes — modifying a file outside the runtime boundary still requires user notification.
 - Spec edits, plan edits, or new tasks discovered mid-implement.
@@ -59,17 +59,14 @@ Default is unset — without the flag, the user confirms each task as today.
 
 3. Invoke `check-stuck` (MCP: `check-stuck`) against the feature with a threshold of 3 to detect stuck cycles before starting work. When the result reports stuck, surface the cycle to the user and pause for direction before proceeding — auto mode does not power through cycles. Otherwise, follow the markdown-only path: count commits on `tasks.md` since the spec entered in-progress.
 
-<!-- audit:ignore-promotion -->
-4. Ask the user to approve the transition from planned to in-progress before any code changes. On confirmation, continue to step 5; on denial, the walker exits cleanly without modifying the spec.
+4. Invoke `set-status` (MCP: `set-status`) to flip the spec frontmatter's status from planned to in-progress. Invoking `/{project}:implement` is itself the user's approval to begin work, so this transition is not separately gated — no confirmation is prompted, with or without `--auto`. The primitive guards against a stale "from" value so concurrent edits surface as an operational error rather than a silent overwrite.
 
-5. Invoke `set-status` (MCP: `set-status`) to flip the spec frontmatter's status from planned to in-progress; the primitive guards against a stale "from" value so concurrent edits surface as an operational error rather than a silent overwrite.
+5. <!-- llm:writeCode --> Implement the first incomplete task. The host receives the task description, plan-relevant files, the derived write boundary, and constitution excerpts; it returns an edits array plus a one-line summary. The walker validates every edit's path against the write boundary and emits an `out-of-boundary-edit` error envelope (halting the procedure) when any edit escapes the boundary. Otherwise, follow the markdown-only path: read the plan, write code, run tests.
 
-6. <!-- llm:writeCode --> Implement the first incomplete task. The host receives the task description, plan-relevant files, the derived write boundary, and constitution excerpts; it returns an edits array plus a one-line summary. The walker validates every edit's path against the write boundary and emits an `out-of-boundary-edit` error envelope (halting the procedure) when any edit escapes the boundary. Otherwise, follow the markdown-only path: read the plan, write code, run tests.
-
-7. Invoke `mark-task` (MCP: `mark-task`) to flip the first incomplete subtask's checkbox from unchecked to checked in `tasks.md` (atomic write via tempfile + rename). The primitive returns the previous and current states; a previous value of `true` surfaces as a no-op result.
+6. Invoke `mark-task` (MCP: `mark-task`) to flip the first incomplete subtask's checkbox from unchecked to checked in `tasks.md` (atomic write via tempfile + rename). The primitive returns the previous and current states; a previous value of `true` surfaces as a no-op result.
 
 <!-- audit:ignore-promotion -->
-8. Render the completion summary (host responsibility): list the task processed, surface the cross-spec impact diff (any changes outside `specs/{feature}/`), surface any issues captured to `specs/inbox.md` during this run (per §brownfield-inbox Automatic issue capture — list each captured item and suggest `/{project}:groom` to route them), remind the user to commit, and prompt for the next pipeline gate. The in-progress → done transition is its own invocation — re-run `/{project}:implement` after every task has been marked complete and review is clean.
+7. Render the completion summary (host responsibility): list the task processed, surface the cross-spec impact diff (any changes outside `specs/{feature}/`), surface any issues captured to `specs/inbox.md` during this run (per §brownfield-inbox Automatic issue capture — list each captured item and suggest `/{project}:groom` to route them), remind the user to commit, and prompt for the next pipeline gate. The in-progress → done transition is its own invocation — re-run `/{project}:implement` after every task has been marked complete and review is clean.
 
 ## Markdown-only reference
 

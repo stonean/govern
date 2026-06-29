@@ -19,8 +19,8 @@ pending task and a write boundary that admits edits inside
 ## Motivation
 
 Exercises the runtime's read-tasks → derive-boundary → check-stuck →
-gate-confirm → set-status → writeCode → mark-task pipeline, including
-the write-boundary check against the writeCode response payload.
+set-status → writeCode → mark-task pipeline, including the
+write-boundary check against the writeCode response payload.
 
 ## Acceptance Criteria
 
