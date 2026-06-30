@@ -253,7 +253,9 @@ fn load_plan_relevant_files(
     let Ok(canon_repo) = repo.canonicalize() else {
         return Ok(Vec::new());
     };
-    let plan_path = canon_repo.join("specs").join(feature).join("plan.md");
+    let plan_path = crate::schema::paths::specs_dir(&canon_repo)
+        .join(feature)
+        .join("plan.md");
     let Ok(plan_content) = std::fs::read_to_string(&plan_path) else {
         return Ok(Vec::new());
     };
@@ -467,7 +469,7 @@ fn read_existing_section(
     repo: &Path,
 ) -> Option<String> {
     let feature_dir = match feature {
-        Some(f) if !f.is_empty() => repo.join("specs").join(f),
+        Some(f) if !f.is_empty() => crate::schema::paths::specs_dir(repo).join(f),
         _ => repo.join(path_hint.unwrap_or_default()),
     };
     // Try both candidate files — the command name isn't threaded into the

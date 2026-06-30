@@ -21,6 +21,7 @@ use crate::primitives::{
     PrimitiveError, Result, TasksStructure, detect_tasks_structure, parse_atx_heading, read_text,
     rel_path,
 };
+use crate::schema::paths;
 use crate::schema::primitives::{ReadTasksArgs, ReadTasksResult, Subtask, Task};
 
 const DONE_WHEN_PREFIX: &str = "**Done when**";
@@ -32,7 +33,7 @@ const DONE_WHEN_PREFIX: &str = "**Done when**";
 /// Returns [`PrimitiveError::FeatureNotFound`] when `specs/<feature>/` does
 /// not exist, or [`PrimitiveError::Io`] when `tasks.md` cannot be read.
 pub fn run(args: &ReadTasksArgs, repo: &Path) -> Result<ReadTasksResult> {
-    let feature_dir = repo.join("specs").join(&args.feature);
+    let feature_dir = paths::specs_dir(repo).join(&args.feature);
     if !feature_dir.is_dir() {
         return Err(PrimitiveError::FeatureNotFound {
             feature: args.feature.clone(),

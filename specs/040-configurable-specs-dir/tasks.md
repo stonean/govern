@@ -13,9 +13,9 @@ Done when: the helper returns the configured value or `specs`, and unit tests co
 
 ## 2. Runtime primitives resolve the root
 
-- [ ] Replace `repo.join("specs")` with the resolver in `read_spec`, `set_status`, `mark_task`, `mark_criterion`, `read_tasks`, `traverse_deps`, `check_stuck`, `derive_boundary`, `resolve_references`, `dashboard`, and `interpreter/payload.rs`
-- [ ] Confirm full-path primitives (`write_session`, `lint_markdown`, `substitute_templates`) are untouched
-- [ ] Add a non-`specs` runtime fixture and assert each primitive resolves against it
+- [x] Replace `repo.join("specs")` with the resolver in `read_spec`, `set_status`, `mark_task`, `mark_criterion`, `read_tasks`, `traverse_deps`, `check_stuck`, `derive_boundary`, `resolve_references`, `dashboard`, and `interpreter/payload.rs`
+- [x] Confirm full-path primitives (`write_session`, `lint_markdown`, `substitute_templates`) are untouched
+- [x] Add a non-`specs` runtime fixture and assert each primitive resolves against it
 
 Done when: every listed site uses the resolver, the existing suite stays green under the default `specs`, and the non-`specs` fixture passes.
 

@@ -5,6 +5,7 @@ use std::path::Path;
 use crate::primitives::{
     PrimitiveError, Result, parse_atx_heading, read_text, rel_path, write_atomic,
 };
+use crate::schema::paths;
 use crate::schema::primitives::{CheckboxToggleResult, MarkCriterionArgs};
 
 use super::checkbox::{find_checkbox_line, flip_checkbox_at};
@@ -24,7 +25,7 @@ const ACCEPTANCE_HEADING: &str = "Acceptance Criteria";
 /// the number of criteria, or [`PrimitiveError::Io`] for filesystem
 /// failures.
 pub fn run(args: &MarkCriterionArgs, repo: &Path) -> Result<CheckboxToggleResult> {
-    let feature_dir = repo.join("specs").join(&args.feature);
+    let feature_dir = paths::specs_dir(repo).join(&args.feature);
     if !feature_dir.is_dir() {
         return Err(PrimitiveError::FeatureNotFound {
             feature: args.feature.clone(),

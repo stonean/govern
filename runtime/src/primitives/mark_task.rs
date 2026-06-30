@@ -18,6 +18,7 @@ use crate::primitives::{
     PrimitiveError, Result, TasksStructure, detect_tasks_structure, parse_atx_heading, read_text,
     rel_path, write_atomic,
 };
+use crate::schema::paths;
 use crate::schema::primitives::{CheckboxToggleResult, MarkTaskArgs};
 
 use super::checkbox::{find_checkbox_line, flip_checkbox_at};
@@ -37,7 +38,7 @@ use super::checkbox::{find_checkbox_line, flip_checkbox_at};
 /// exceeds the number of subtasks found, or [`PrimitiveError::Io`] for any
 /// filesystem failure.
 pub fn run(args: &MarkTaskArgs, repo: &Path) -> Result<CheckboxToggleResult> {
-    let feature_dir = repo.join("specs").join(&args.feature);
+    let feature_dir = paths::specs_dir(repo).join(&args.feature);
     if !feature_dir.is_dir() {
         return Err(PrimitiveError::FeatureNotFound {
             feature: args.feature.clone(),

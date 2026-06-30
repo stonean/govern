@@ -6,6 +6,7 @@ use crate::primitives::{
     PrimitiveError, Result, parse_atx_heading, read_text, rel_path, section_lines,
     split_frontmatter,
 };
+use crate::schema::paths;
 use crate::schema::primitives::{
     AcceptanceCriterion, Frontmatter, OpenQuestion, ReadSpecArgs, ReadSpecResult, SpecSection,
 };
@@ -19,7 +20,7 @@ use crate::schema::primitives::{
 /// [`PrimitiveError::MissingFrontmatter`] when the spec lacks `---` fences,
 /// or [`PrimitiveError::Yaml`] when the frontmatter is not valid YAML.
 pub fn run(args: &ReadSpecArgs, repo: &Path) -> Result<ReadSpecResult> {
-    let feature_dir = repo.join("specs").join(&args.feature);
+    let feature_dir = paths::specs_dir(repo).join(&args.feature);
     if !feature_dir.is_dir() {
         return Err(PrimitiveError::FeatureNotFound {
             feature: args.feature.clone(),

@@ -21,6 +21,7 @@ use serde::Deserialize;
 use serde_norway::Value as YamlValue;
 
 use crate::primitives::{PrimitiveError, Result, read_text, rel_path, split_frontmatter};
+use crate::schema::paths;
 use crate::schema::primitives::{
     ReferenceOutcome, ResolutionRecord, ResolveReferencesArgs, ResolveReferencesResult,
 };
@@ -57,7 +58,7 @@ struct IndexEntry {
 /// [`PrimitiveError::Toml`] when `.govern.toml` is present but malformed.
 /// Per-reference resolution failures are outcomes, not errors.
 pub fn run(args: &ResolveReferencesArgs, repo: &Path) -> Result<ResolveReferencesResult> {
-    let spec_path = repo.join("specs").join(&args.feature).join("spec.md");
+    let spec_path = paths::specs_dir(repo).join(&args.feature).join("spec.md");
     let content = read_text(&spec_path)?;
     let (fm_text, _body) = split_frontmatter(&content, &spec_path)?;
     let frontmatter: ConsumerFrontmatter =
@@ -125,7 +126,9 @@ fn classify(
     }
 
     // Reachable checkout: the target spec either resolves or is provably broken.
-    let target = checkout.join("specs").join(&entry.spec).join("spec.md");
+    let target = paths::specs_dir(&checkout)
+        .join(&entry.spec)
+        .join("spec.md");
     if !target.is_file() {
         return (ReferenceOutcome::Broken, None);
     }
@@ -239,6 +242,44 @@ mod tests {
         assert_eq!(rec.outcome, ReferenceOutcome::Ok);
         assert_eq!(rec.status.as_deref(), Some("clarified"));
         assert_eq!(result.path, "specs/001-consumer/spec.md");
+    }
+
+    #[test]
+    fn resolves_under_configured_specs_root_on_both_sides() {
+        // Spec 040: the consumer's spec path and the registered checkout's
+        // target spec path both resolve `[paths] specs-root`, so a reference
+        // resolves when either side renames its spec root to `governance`.
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = tmp.path();
+        write_file(
+            &repo.join(".govern.toml"),
+            "[paths]\nspecs-root = \"governance\"\n\n[services.api]\nrepo = \"https://github.com/acme/api\"\npath = \"checkouts/api\"\n",
+        );
+        write_file(
+            &repo.join("governance/001-consumer/spec.md"),
+            "---\nstatus: in-progress\ndependencies: []\nreferences:\n  - service: api\n    spec: 003-user\n---\n\n# Consumer\n",
+        );
+        // The registered checkout also renames its spec root.
+        write_file(
+            &repo.join("checkouts/api/.govern.toml"),
+            "[paths]\nspecs-root = \"governance\"\n",
+        );
+        write_file(
+            &repo.join("checkouts/api/governance/003-user/spec.md"),
+            "---\nstatus: clarified\n---\n# U\n",
+        );
+
+        let result = run(
+            &ResolveReferencesArgs {
+                feature: "001-consumer".into(),
+            },
+            repo,
+        )
+        .unwrap();
+        assert_eq!(result.path, "governance/001-consumer/spec.md");
+        let rec = &result.references[0];
+        assert_eq!(rec.outcome, ReferenceOutcome::Ok);
+        assert_eq!(rec.status.as_deref(), Some("clarified"));
     }
 
     #[test]

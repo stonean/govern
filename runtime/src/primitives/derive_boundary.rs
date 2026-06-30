@@ -7,6 +7,7 @@ use std::path::Path;
 use git2::{Repository, Sort};
 
 use crate::primitives::{PrimitiveError, Result};
+use crate::schema::paths;
 use crate::schema::primitives::{DeriveBoundaryArgs, DeriveBoundaryResult};
 
 /// Execute the `derive-boundary` primitive.
@@ -17,14 +18,15 @@ use crate::schema::primitives::{DeriveBoundaryArgs, DeriveBoundaryResult};
 /// is absent, [`PrimitiveError::NoSpecHistory`] when no commit touches the
 /// spec dir, and [`PrimitiveError::Git`] for any libgit2 failure.
 pub fn run(args: &DeriveBoundaryArgs, repo: &Path) -> Result<DeriveBoundaryResult> {
-    let feature_dir = repo.join("specs").join(&args.feature);
+    let layout = paths::Paths::load(repo);
+    let feature_dir = repo.join(&layout.specs_root).join(&args.feature);
     if !feature_dir.is_dir() {
         return Err(PrimitiveError::FeatureNotFound {
             feature: args.feature.clone(),
         });
     }
     let repository = Repository::discover(repo)?;
-    let spec_prefix = format!("specs/{}/", args.feature);
+    let spec_prefix = format!("{}/{}/", layout.specs_root, args.feature);
 
     let first_commit = first_commit_for_prefix(&repository, &spec_prefix)?.ok_or_else(|| {
         PrimitiveError::NoSpecHistory {
@@ -41,7 +43,7 @@ pub fn run(args: &DeriveBoundaryArgs, repo: &Path) -> Result<DeriveBoundaryResul
     let mut boundary: BTreeSet<String> = BTreeSet::new();
     // Always include the spec dir glob so the boundary covers files inside
     // the feature's own folder even when they aren't on disk yet.
-    boundary.insert(format!("specs/{}/**", args.feature));
+    boundary.insert(format!("{}/{}/**", layout.specs_root, args.feature));
 
     diff.foreach(
         &mut |delta, _| {
@@ -143,6 +145,46 @@ mod tests {
             fs::create_dir_all(parent).unwrap();
         }
         fs::write(path, body).unwrap();
+    }
+
+    #[test]
+    fn boundary_uses_configured_specs_root() {
+        // Spec 040: a repo that renames its spec root to `governance` derives a
+        // boundary glob and git-relative paths under `governance/`, never `specs/`.
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = Repository::init(tmp.path()).unwrap();
+        write(
+            &tmp.path().join(".govern.toml"),
+            "[paths]\nspecs-root = \"governance\"\n",
+        );
+        write(&tmp.path().join("README.md"), "# repo\n");
+        commit_all(&repo, "chore: init");
+        write(
+            &tmp.path().join("governance/020-demo/spec.md"),
+            "---\nstatus: planned\n---\n\n# 020\n",
+        );
+        commit_all(&repo, "feat(020): plan");
+        write(&tmp.path().join("runtime/src/main.rs"), "fn main() {}\n");
+        commit_all(&repo, "feat(020): runtime");
+
+        let result = run(
+            &DeriveBoundaryArgs {
+                feature: "020-demo".into(),
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        let boundary: std::collections::HashSet<&str> =
+            result.boundary.iter().map(String::as_str).collect();
+        assert!(
+            boundary.contains("governance/020-demo/**"),
+            "boundary glob under configured root: {boundary:?}"
+        );
+        assert!(
+            !boundary.iter().any(|b| b.starts_with("specs/")),
+            "no specs/ paths in boundary: {boundary:?}"
+        );
+        assert!(boundary.contains("runtime/src/main.rs"));
     }
 
     #[test]

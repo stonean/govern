@@ -20,6 +20,7 @@ use crate::primitives::write_session::SESSION_FILE;
 use crate::primitives::{
     PrimitiveError, Result, is_feature_slug, read_text, section_lines, split_frontmatter,
 };
+use crate::schema::paths;
 use crate::schema::primitives::{
     DashboardArgs, DashboardConfig, DashboardResult, DashboardScenarioDetail,
     DashboardSessionTarget, DashboardSpec, Frontmatter,
@@ -58,7 +59,7 @@ pub fn run(_args: &DashboardArgs, repo: &Path) -> Result<DashboardResult> {
 /// error. After the first pass, walks the list a second time to fill in
 /// each spec's `blocked-by` (needs every spec's status to be known).
 fn load_specs(repo: &Path) -> Result<Vec<DashboardSpec>> {
-    let specs_dir = repo.join("specs");
+    let specs_dir = paths::specs_dir(repo);
     let mut entries: Vec<DashboardSpec> = Vec::new();
     if !specs_dir.is_dir() {
         return Ok(entries);
@@ -113,7 +114,7 @@ fn load_specs(repo: &Path) -> Result<Vec<DashboardSpec>> {
 /// Load one spec's dashboard entry. `blocked_by` is filled in by the
 /// caller after every spec's status has been read.
 fn load_one_spec(repo: &Path, slug: &str) -> Result<DashboardSpec> {
-    let feature_dir = repo.join("specs").join(slug);
+    let feature_dir = paths::specs_dir(repo).join(slug);
     let spec_path = feature_dir.join("spec.md");
     if !spec_path.is_file() {
         return Err(PrimitiveError::MissingSpecFile {

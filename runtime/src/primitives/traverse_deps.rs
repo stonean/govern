@@ -22,6 +22,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use crate::primitives::{PrimitiveError, Result, read_text, split_frontmatter};
+use crate::schema::paths;
 use crate::schema::primitives::{
     DependencyEdge, Frontmatter, TraverseDepsArgs, TraverseDepsResult,
 };
@@ -40,7 +41,8 @@ const COMPATIBLE_STATUSES: &[&str] = &["planned", "in-progress", "done"];
 /// likewise the cycle walker tolerates missing or malformed downstream
 /// nodes by treating them as sinks (no outgoing edges).
 pub fn run(args: &TraverseDepsArgs, repo: &Path) -> Result<TraverseDepsResult> {
-    let feature_dir = repo.join("specs").join(&args.feature);
+    let specs_dir = paths::specs_dir(repo);
+    let feature_dir = specs_dir.join(&args.feature);
     if !feature_dir.is_dir() {
         return Err(PrimitiveError::FeatureNotFound {
             feature: args.feature.clone(),
@@ -58,7 +60,7 @@ pub fn run(args: &TraverseDepsArgs, repo: &Path) -> Result<TraverseDepsResult> {
     let mut edges: Vec<DependencyEdge> = Vec::with_capacity(frontmatter.dependencies.len());
     let mut overall = true;
     for dep_name in &frontmatter.dependencies {
-        let dep_dir = repo.join("specs").join(dep_name);
+        let dep_dir = specs_dir.join(dep_name);
         let dep_spec = dep_dir.join("spec.md");
         let exists = dep_dir.is_dir() && dep_spec.is_file();
         let status = if exists {
@@ -162,7 +164,7 @@ fn visit(
     index_of.insert(node.to_string(), idx);
     adj.push(Vec::new());
 
-    let spec_path = repo.join("specs").join(node).join("spec.md");
+    let spec_path = paths::specs_dir(repo).join(node).join("spec.md");
     let deps = read_dependencies(&spec_path);
     for dep in deps {
         let dep_idx = visit(&dep, repo, order, index_of, adj);

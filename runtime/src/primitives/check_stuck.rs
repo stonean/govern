@@ -6,6 +6,7 @@ use std::path::Path;
 use git2::{Repository, Sort};
 
 use crate::primitives::{PrimitiveError, Result};
+use crate::schema::paths;
 use crate::schema::primitives::{CheckStuckArgs, CheckStuckResult};
 
 /// Execute the `check-stuck` primitive.
@@ -16,15 +17,16 @@ use crate::schema::primitives::{CheckStuckArgs, CheckStuckResult};
 /// is absent and [`PrimitiveError::Git`] for any libgit2 failure (repo not
 /// found, walk failure, tree lookup, etc.).
 pub fn run(args: &CheckStuckArgs, repo: &Path) -> Result<CheckStuckResult> {
-    let feature_dir = repo.join("specs").join(&args.feature);
+    let layout = paths::Paths::load(repo);
+    let feature_dir = repo.join(&layout.specs_root).join(&args.feature);
     if !feature_dir.is_dir() {
         return Err(PrimitiveError::FeatureNotFound {
             feature: args.feature.clone(),
         });
     }
     let repository = Repository::discover(repo)?;
-    let spec_rel = format!("specs/{}/spec.md", args.feature);
-    let tasks_rel = format!("specs/{}/tasks.md", args.feature);
+    let spec_rel = format!("{}/{}/spec.md", layout.specs_root, args.feature);
+    let tasks_rel = format!("{}/{}/tasks.md", layout.specs_root, args.feature);
 
     let since = find_in_progress_commit(&repository, &spec_rel)?;
     let count = count_commits_touching(&repository, &tasks_rel, since.as_deref())?;
@@ -267,6 +269,45 @@ mod tests {
         format!(
             "---\nstatus: {status}\ndependencies: []\n---\n\n# X\n\n## Acceptance Criteria\n\n- [ ] one\n"
         )
+    }
+
+    #[test]
+    fn counts_commits_under_configured_specs_root() {
+        // Spec 040: the git-relative spec/tasks paths track `[paths] specs-root`,
+        // so stuck detection works when the spec root is renamed.
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = Repository::init(tmp.path()).unwrap();
+        write(
+            &tmp.path().join(".govern.toml"),
+            "[paths]\nspecs-root = \"governance\"\n",
+        );
+        let spec_path = tmp.path().join("governance/010-demo/spec.md");
+        let tasks_path = tmp.path().join("governance/010-demo/tasks.md");
+        write(&spec_path, &spec("planned"));
+        write(&tasks_path, "# Tasks\n\n## 1. Bootstrap\n\n- [ ] start\n");
+        commit_all(&repo, "feat(010): plan");
+
+        write(&spec_path, &spec("in-progress"));
+        commit_all(&repo, "chore(010): begin");
+
+        for i in 1..=3 {
+            write(
+                &tasks_path,
+                &format!("# Tasks v{i}\n\n## 1. Bootstrap\n\n- [ ] still\n"),
+            );
+            commit_all(&repo, &format!("wip(010): pass {i}"));
+        }
+
+        let result = run(
+            &CheckStuckArgs {
+                feature: "010-demo".into(),
+                threshold: 3,
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert_eq!(result.commit_count, 3, "counts commits under governance/");
+        assert!(result.stuck);
     }
 
     #[test]

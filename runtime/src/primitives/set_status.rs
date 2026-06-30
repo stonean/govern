@@ -5,6 +5,7 @@ use std::path::Path;
 use crate::primitives::{
     PrimitiveError, Result, read_text, rel_path, split_frontmatter, write_atomic,
 };
+use crate::schema::paths;
 use crate::schema::primitives::{SetStatusArgs, SetStatusResult};
 
 /// Execute the `set-status` primitive.
@@ -21,7 +22,7 @@ use crate::schema::primitives::{SetStatusArgs, SetStatusResult};
 /// key is present, [`PrimitiveError::StatusMismatch`] when `args.from`
 /// does not match disk, or [`PrimitiveError::Io`] for filesystem failures.
 pub fn run(args: &SetStatusArgs, repo: &Path) -> Result<SetStatusResult> {
-    let feature_dir = repo.join("specs").join(&args.feature);
+    let feature_dir = paths::specs_dir(repo).join(&args.feature);
     if !feature_dir.is_dir() {
         return Err(PrimitiveError::FeatureNotFound {
             feature: args.feature.clone(),
