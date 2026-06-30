@@ -12,14 +12,19 @@
 # any of these, and $SPECS_ROOT (resolve_specs_root's result) before calling
 # list_specs / staged_specs; both generators set them up top.
 
-# Spec-root directory name from $ROOT/.govern.toml [paths] specs-root,
-# defaulting to "specs" (spec 040). A value outside the [A-Za-z0-9_-] charset
-# (path separators, "..", ".", or any regex metacharacter) falls back to the
-# default — the same conservative charset the runtime's validate_specs_root
-# enforces, so the name is safe both as a path component and when interpolated
-# into the grep/awk regexes the generators build from it.
-resolve_specs_root() {
-  local toml="$ROOT/.govern.toml" name=""
+# Spec-root directory name from a given .govern.toml's [paths] specs-root,
+# defaulting to "specs" (spec 040) when the file is absent, the key is missing,
+# or the value is outside the [A-Za-z0-9_-] charset (path separators, "..",
+# ".", or any regex metacharacter). That conservative charset matches the
+# runtime's validate_specs_root, so the name is safe both as a path component
+# and when interpolated into the grep/awk regexes the generators build from it.
+#
+# Takes the .govern.toml path as an argument so callers can resolve THIS repo's
+# root (resolve_specs_root, below) or a *referenced* service's own root from its
+# local checkout (gen-cross-service-refs.sh's checkout-reachable matcher tier —
+# scenario referenced-service-spec-root).
+specs_root_of() {
+  local toml="$1" name=""
   if [ -f "$toml" ]; then
     name="$(awk '
       /^\[/ { in_paths = ($0 ~ /^\[paths\][[:space:]]*$/); next }
@@ -36,6 +41,11 @@ resolve_specs_root() {
     "" | *[!A-Za-z0-9_-]*) name="specs" ;;
   esac
   printf '%s' "$name"
+}
+
+# Spec-root directory name for THIS repo ($ROOT/.govern.toml).
+resolve_specs_root() {
+  specs_root_of "$ROOT/.govern.toml"
 }
 
 # Feature-spec files to process, scoped to the git index (tracked + staged)

@@ -20,6 +20,16 @@
 #      stale block is removed when its last link is deleted
 #   K. --staged rewrites only specs staged in the git index; an unstaged spec
 #      whose references have drifted is left untouched (adopter pre-commit path)
+#   L. a consumer under a renamed spec root (spec 040) still harvests refs
+#
+# Root-aware cross-service matching (spec 030 task 13, scenario
+# referenced-service-spec-root — the *referenced* service renames its root):
+#   M. referenced service checked out under a renamed root → link harvested
+#      (tier-1 reads the checkout's own .govern.toml [paths] specs-root)
+#   N. checked-out service, body link uses the wrong spec-root segment → not
+#      harvested (tier-1 exact match against the resolved root)
+#   O. registered but not-checked-out service, renamed-root link → harvested
+#      via the permissive fallback (tier-2, root unknowable)
 #
 # Usage: scripts/tests/test-gen-cross-service-refs.sh
 
@@ -429,6 +439,105 @@ EOF
   rm -rf "$tmp"
 }
 
+# ---------- M: referenced service renamed its root, checkout reachable ----------
+
+test_M_referenced_renamed_root_checked_out() {
+  local tmp; tmp="$(make_fixture)"
+  # The referenced service `api` is checked out locally and has renamed its own
+  # spec root to `governance`; its canonical URLs therefore carry
+  # `/governance/NNN-slug/`. Tier-1 (checkout reachable): the matcher reads the
+  # checkout's .govern.toml and harvests the renamed-root link.
+  write_govern_toml "$tmp" <<'EOF'
+[services.api]
+repo = "https://github.com/acme/api"
+path = "checkouts/api"
+EOF
+  mkdir -p "$tmp/checkouts/api"
+  cat > "$tmp/checkouts/api/.govern.toml" <<'EOF'
+[paths]
+specs-root = "governance"
+EOF
+  write_spec "$tmp" "001-alpha" <<'EOF'
+---
+status: clarified
+dependencies: []
+---
+
+# Alpha
+
+Uses the [api user model](https://github.com/acme/api/blob/main/governance/003-user/spec.md).
+EOF
+  "$GEN" --root="$tmp" > /dev/null
+  local f="$tmp/specs/001-alpha/spec.md"
+  fm_has "$f" "- service: api" "M: renamed-root reference harvested under service alias"
+  fm_has "$f" "spec: 003-user" "M: renamed-root spec slug recorded"
+  rm -rf "$tmp"
+}
+
+# ---------- N: checked-out service, wrong root segment not harvested ----------
+
+test_N_checked_out_wrong_root_skipped() {
+  local tmp; tmp="$(make_fixture)"
+  # api is checked out and rooted at `governance`; a body link that uses the
+  # wrong `/specs/` segment does not point at api's real spec root, so tier-1
+  # (exact match against the checkout's resolved root) does not harvest it.
+  write_govern_toml "$tmp" <<'EOF'
+[services.api]
+repo = "https://github.com/acme/api"
+path = "checkouts/api"
+EOF
+  mkdir -p "$tmp/checkouts/api"
+  cat > "$tmp/checkouts/api/.govern.toml" <<'EOF'
+[paths]
+specs-root = "governance"
+EOF
+  write_spec "$tmp" "001-alpha" <<'EOF'
+---
+status: clarified
+dependencies: []
+---
+
+# Alpha
+
+Wrong root: [api](https://github.com/acme/api/blob/main/specs/003-user/spec.md).
+EOF
+  "$GEN" --root="$tmp" > /dev/null
+  fm_lacks "$tmp/specs/001-alpha/spec.md" "references:" \
+    "N: checked-out service link with wrong spec-root segment is not harvested"
+  rm -rf "$tmp"
+}
+
+# ---------- O: registered but not checked out, renamed root (permissive) ----------
+
+test_O_not_checked_out_renamed_root_harvested() {
+  local tmp; tmp="$(make_fixture)"
+  # api is registered but NOT checked out (the `path` is absent on disk), so its
+  # spec-root is unknowable at harvest time. Tier-2: the permissive fallback
+  # still harvests the renamed-root link so the reference never silently drops
+  # (it resolves later to `unknown — not checked out`).
+  write_govern_toml "$tmp" <<'EOF'
+[services.api]
+repo = "https://github.com/acme/api"
+path = "checkouts/api"
+EOF
+  # checkouts/api intentionally absent — not checked out.
+  write_spec "$tmp" "001-alpha" <<'EOF'
+---
+status: clarified
+dependencies: []
+---
+
+# Alpha
+
+Uses the [api user model](https://github.com/acme/api/blob/main/governance/003-user/spec.md).
+EOF
+  "$GEN" --root="$tmp" > /dev/null
+  local f="$tmp/specs/001-alpha/spec.md"
+  fm_has "$f" "- service: api" "O: not-checked-out renamed-root reference harvested (permissive)"
+  fm_has "$f" "spec: 003-user" "O: not-checked-out renamed-root spec slug recorded"
+  rm -rf "$tmp"
+}
+
 # ---------- runner ----------
 
 run_all() {
@@ -445,6 +554,9 @@ run_all() {
   test_J_stale_block_removed
   test_K_staged_scopes_rewrite
   test_L_configured_specs_root
+  test_M_referenced_renamed_root_checked_out
+  test_N_checked_out_wrong_root_skipped
+  test_O_not_checked_out_renamed_root_harvested
 
   if [ "$failures" -gt 0 ]; then
     echo "$failures test(s) failed" >&2

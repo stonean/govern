@@ -68,3 +68,11 @@ Tasks derived from the [plan](plan.md). Complete in order. Tests are first-class
 ## 12. Full validation sweep
 
 - [x] **Done when:** `npx markdownlint-cli2`, the full runtime test suite (`cargo test`), `scripts/audit/run-all.sh`, and every generator `--dry-run` are all green, and `/{project}:review` passes on the implementation.
+
+## 13. Root-aware cross-service harvest (scenario: referenced-service-spec-root)
+
+- [x] Make `scripts/gen-cross-service-refs.sh`'s URL matcher resolve the referenced service's `[paths] specs-root` (read from the registered, checked-out reference's own `.govern.toml`, default `specs`) instead of a hardcoded `/specs/NNN-slug/`; see [scenario](scenarios/referenced-service-spec-root.md).
+- [x] Resolve the root-unknowable cases (registered-but-not-checked-out, unregistered) per the scenario's Open Questions, settled in `/gov:clarify`; reuse 040's `[A-Za-z0-9_-]` regex-safety guarantee for the interpolated root.
+- [x] Keep the markdown-only fallback and runtime harvest paths producing a byte-identical `references:` index (030 parity invariant).
+
+- **Done when**: shell tests cover a referenced service with a renamed root (harvested), a referenced service on the default `specs/` root (unchanged), and a registered-but-not-checked-out reference (per the resolved open question); `gen-cross-service-refs.sh --dry-run` stays clean on this repo and the cross-service parity goldens still match.
