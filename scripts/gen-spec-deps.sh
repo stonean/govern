@@ -55,37 +55,11 @@ shopt -s nullglob
 . "$(dirname "$0")/lib/specs-root.sh"
 SPECS_ROOT="$(resolve_specs_root)"
 
-# Enumerate feature-spec files to process, scoped to the git index (tracked +
-# staged) rather than a worktree glob. Untracked, in-progress drafts — e.g. a
-# `/specify` spec the author has not `git add`ed yet — are intentionally
-# excluded so they are never rewritten, never enter the dependency/cycle graph,
-# and never block an unrelated commit (spec 017 / tracked-specs-not-worktree).
-# Falls back to a worktree glob only outside a git repo, where there is no index.
-list_specs() {
-  if git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
-    git -C "$ROOT" ls-files -- "$SPECS_ROOT" \
-      | { grep -E "^$SPECS_ROOT/[0-9][0-9][0-9]-[^/]+/(spec|spec-and-plan)\.md$" || true; } \
-      | while IFS= read -r rel; do printf '%s/%s\n' "$ROOT" "$rel"; done
-  else
-    local f
-    for f in "$ROOT"/"$SPECS_ROOT"/[0-9][0-9][0-9]-*/spec.md "$ROOT"/"$SPECS_ROOT"/[0-9][0-9][0-9]-*/spec-and-plan.md; do
-      [ -e "$f" ] && printf '%s\n' "$f"
-    done
-  fi
-}
-
-# Feature-spec files staged in the git index for the pending commit. Under
-# --staged these are the only specs whose frontmatter is rewritten on disk, so
-# committing one spec never restages or dirties the derived `dependencies:` of
-# unrelated specs. The cycle check still spans the full graph (list_specs) — a
-# staged edge can close a cycle through an unstaged spec, so correctness needs
-# every spec's edges even though only staged specs are written.
-staged_specs() {
-  git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 || return 0
-  git -C "$ROOT" diff --cached --name-only -- "$SPECS_ROOT" \
-    | { grep -E "^$SPECS_ROOT/[0-9][0-9][0-9]-[^/]+/(spec|spec-and-plan)\.md$" || true; } \
-    | while IFS= read -r rel; do printf '%s/%s\n' "$ROOT" "$rel"; done
-}
+# list_specs / staged_specs come from lib/specs-root.sh (sourced above). Under
+# --staged only staged_specs are rewritten on disk, but the cycle check below
+# still spans the full graph (list_specs): a staged edge can close a cycle
+# through an unstaged spec, so correctness needs every spec's edges even though
+# only the staged specs are written.
 
 graph_file="$(mktemp)"
 staged_file="$(mktemp)"

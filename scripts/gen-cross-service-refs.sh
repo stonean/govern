@@ -63,35 +63,10 @@ shopt -s nullglob
 . "$(dirname "$0")/lib/specs-root.sh"
 SPECS_ROOT="$(resolve_specs_root)"
 
-# Enumerate feature-spec files, scoped to the git index (tracked + staged)
-# rather than a worktree glob, so untracked in-progress drafts are never
-# rewritten (mirrors gen-spec-deps.sh / spec 017 tracked-specs-not-worktree).
-# Falls back to a worktree glob only outside a git repo.
-list_specs() {
-  if git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
-    git -C "$ROOT" ls-files -- "$SPECS_ROOT" \
-      | { grep -E "^$SPECS_ROOT/[0-9][0-9][0-9]-[^/]+/(spec|spec-and-plan)\.md$" || true; } \
-      | while IFS= read -r rel; do printf '%s/%s\n' "$ROOT" "$rel"; done
-  else
-    local f
-    for f in "$ROOT"/"$SPECS_ROOT"/[0-9][0-9][0-9]-*/spec.md "$ROOT"/"$SPECS_ROOT"/[0-9][0-9][0-9]-*/spec-and-plan.md; do
-      [ -e "$f" ] && printf '%s\n' "$f"
-    done
-  fi
-}
-
-# Feature-spec files staged in the git index for the pending commit. Used by
-# --staged (the adopter pre-commit path) to restrict the rewrite set to specs
-# that are actually part of this commit, so committing one spec never rewrites
-# the derived `references:` of unrelated specs. Empty outside a git repo — each
-# spec's `references:` is a pure function of its own body, so there is no
-# cross-spec graph that would need the full set (unlike gen-spec-deps.sh).
-staged_specs() {
-  git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 || return 0
-  git -C "$ROOT" diff --cached --name-only -- "$SPECS_ROOT" \
-    | { grep -E "^$SPECS_ROOT/[0-9][0-9][0-9]-[^/]+/(spec|spec-and-plan)\.md$" || true; } \
-    | while IFS= read -r rel; do printf '%s/%s\n' "$ROOT" "$rel"; done
-}
+# list_specs / staged_specs come from lib/specs-root.sh (sourced above). Each
+# spec's `references:` is a pure function of its own body, so --staged needs
+# only the staged set — there is no cross-spec graph (unlike gen-spec-deps.sh,
+# whose cycle check spans the full list).
 
 # The set of specs to rewrite: only the staged ones under --staged, else all.
 enumerate_specs() {

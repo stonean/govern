@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/lib/specs-root.sh — shared spec-root resolver for the generators.
+# scripts/lib/specs-root.sh — shared spec-tree helpers for the generators.
 #
 # Sourced by gen-spec-deps.sh and gen-cross-service-refs.sh, which run in both
 # govern's own pre-commit and adopter pre-commit hooks. One definition rather
@@ -9,7 +9,8 @@
 # or a --root override (which retargets $ROOT but not the script location).
 #
 # The sourcing script MUST define $ROOT (its repo-root variable) before calling
-# resolve_specs_root; both generators set it from $(dirname "$0")/.. up top.
+# any of these, and $SPECS_ROOT (resolve_specs_root's result) before calling
+# list_specs / staged_specs; both generators set them up top.
 
 # Spec-root directory name from $ROOT/.govern.toml [paths] specs-root,
 # defaulting to "specs" (spec 040). A value outside the [A-Za-z0-9_-] charset
@@ -35,4 +36,35 @@ resolve_specs_root() {
     "" | *[!A-Za-z0-9_-]*) name="specs" ;;
   esac
   printf '%s' "$name"
+}
+
+# Feature-spec files to process, scoped to the git index (tracked + staged)
+# rather than a worktree glob. Untracked, in-progress drafts — e.g. a /specify
+# spec the author has not `git add`ed yet — are intentionally excluded so they
+# are never rewritten, never enter a generator's graph, and never block an
+# unrelated commit (spec 017 / tracked-specs-not-worktree). Falls back to a
+# worktree glob only outside a git repo, where there is no index.
+list_specs() {
+  if git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+    git -C "$ROOT" ls-files -- "$SPECS_ROOT" \
+      | { grep -E "^$SPECS_ROOT/[0-9][0-9][0-9]-[^/]+/(spec|spec-and-plan)\.md$" || true; } \
+      | while IFS= read -r rel; do printf '%s/%s\n' "$ROOT" "$rel"; done
+  else
+    local f
+    for f in "$ROOT"/"$SPECS_ROOT"/[0-9][0-9][0-9]-*/spec.md "$ROOT"/"$SPECS_ROOT"/[0-9][0-9][0-9]-*/spec-and-plan.md; do
+      [ -e "$f" ] && printf '%s\n' "$f"
+    done
+  fi
+}
+
+# Feature-spec files staged in the git index for the pending commit — the
+# --staged rewrite set (the adopter pre-commit path), so committing one spec
+# never rewrites the derived frontmatter of unrelated specs. Empty outside a
+# git repo. How each generator combines this with list_specs is its own
+# concern (see the call sites).
+staged_specs() {
+  git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 || return 0
+  git -C "$ROOT" diff --cached --name-only -- "$SPECS_ROOT" \
+    | { grep -E "^$SPECS_ROOT/[0-9][0-9][0-9]-[^/]+/(spec|spec-and-plan)\.md$" || true; } \
+    | while IFS= read -r rel; do printf '%s/%s\n' "$ROOT" "$rel"; done
 }
