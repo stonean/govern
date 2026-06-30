@@ -61,15 +61,15 @@ Done when: both constitutions carry the note and `README.md` documents the key.
 
 ## 8. Cross-spec audit (conditional signposts)
 
-- [ ] Audit `002`, `003`, `022` spec bodies for absolute `specs/` claims falsified by this feature
-- [ ] Add a back-linked signpost acceptance criterion (reopening that spec) only where a claim is actually falsified; otherwise record N/A
+- [x] Audit `002`, `003`, `022` spec bodies for absolute `specs/` claims falsified by this feature
+- [x] Add a back-linked signpost acceptance criterion (reopening that spec) only where a claim is actually falsified; otherwise record N/A
 
 Done when: each of `002`/`003`/`022` is audited and either carries a back-linked signpost or is explicitly recorded as needing none.
 
 ## 9. End-to-end and opt-in invariant
 
-- [ ] Run a full pipeline cycle on a non-`specs` fixture (`/gov:specify` → `done`) with no path errors
-- [ ] Confirm default-`specs` parity/golden suites are unchanged
-- [ ] Confirm the markdown-only opt-in CI stays green
+- [x] Run a full pipeline cycle on a non-`specs` fixture (`/gov:specify` → `done`) with no path errors
+- [x] Confirm default-`specs` parity/golden suites are unchanged
+- [x] Confirm the markdown-only opt-in CI stays green
 
 Done when: the non-`specs` cycle reaches `done`, and existing default-`specs` suites and the opt-in CI pass unchanged.

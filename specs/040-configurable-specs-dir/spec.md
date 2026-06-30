@@ -59,18 +59,18 @@ specs-root = "specs"     # default; an adopter may set e.g. "governance"
 
 ## Acceptance Criteria
 
-- [ ] `.govern.toml` accepts `[paths] specs-root`; when it is unset, the effective name is `specs` and no command or runtime behavior changes for existing adopters.
-- [ ] At initial configuration (`/govern`), the operator can choose a different spec-root name; the prompt defaults to `specs` and the choice is persisted to `.govern.toml`. No command other than `/govern` prompts for it.
-- [ ] A malformed value (empty, contains a path separator, contains `..`, or has a leading slash) is rejected with a clear message at configuration time rather than silently accepted.
-- [ ] When the chosen directory already exists on disk and is not a govern spec root (no `inbox.md`, no numbered `NNN-*` subdirs), configuration emits a one-line notice naming the directory and proceeds on operator confirmation; the choice is honored after the warning.
-- [ ] When the configured `specs-root` is absent on disk but a different govern-shaped directory exists, govern emits a one-line half-finished-rename notice instead of silently scaffolding a new empty tree.
-- [ ] `/gov:init` scaffolds the spec-root directory — including `inbox.md`, `rules/`, and shared docs — under the configured name, or under `specs` when the setting is unset.
-- [ ] No pipeline command reads or writes a hardcoded `specs/` path; each resolves the spec root from the setting, and a project configured with a non-`specs` name shows no stray `specs/` directory after running the pipeline.
-- [ ] The session file's `path` field uses the configured spec root (e.g., `governance/040-...` when the setting is `governance`), and self-corrects on the next `/gov:target` / `/gov:specify` write after a manual rename.
-- [ ] Rule files, the inbox, and shared docs (`system.md`, `events.md`, `errors.md`) resolve under the configured spec root.
-- [ ] The runtime resolves the spec root consistently with the markdown-only path: full-path primitives consume the root from their `path` argument unchanged, while every primitive that joins a bare feature name under the root or enumerates the tree resolves `[paths] specs-root` from `.govern.toml` (default `specs`) through one shared helper.
-- [ ] The constitution's §spec-phase directory-layout block carries a single one-line note that the spec-root name is configurable via `[paths] specs-root` (default `specs`), with a back-pointer from the `.govern.toml` schema docs; no other prose is parameterized.
-- [ ] A project configured with a non-`specs` spec-root name completes a full pipeline cycle (`/gov:specify` → … → `done`) with no path errors.
+- [x] `.govern.toml` accepts `[paths] specs-root`; when it is unset, the effective name is `specs` and no command or runtime behavior changes for existing adopters.
+- [x] At initial configuration (`/govern`), the operator can choose a different spec-root name; the prompt defaults to `specs` and the choice is persisted to `.govern.toml`. No command other than `/govern` prompts for it.
+- [x] A malformed value (empty, contains a path separator, contains `..`, or has a leading slash) is rejected with a clear message at configuration time rather than silently accepted.
+- [x] When the chosen directory already exists on disk and is not a govern spec root (no `inbox.md`, no numbered `NNN-*` subdirs), configuration emits a one-line notice naming the directory and proceeds on operator confirmation; the choice is honored after the warning.
+- [x] When the configured `specs-root` is absent on disk but a different govern-shaped directory exists, govern emits a one-line half-finished-rename notice instead of silently scaffolding a new empty tree.
+- [x] `/gov:init` scaffolds the spec-root directory — including `inbox.md`, `rules/`, and shared docs — under the configured name, or under `specs` when the setting is unset.
+- [x] No pipeline command reads or writes a hardcoded `specs/` path; each resolves the spec root from the setting, and a project configured with a non-`specs` name shows no stray `specs/` directory after running the pipeline.
+- [x] The session file's `path` field uses the configured spec root (e.g., `governance/040-...` when the setting is `governance`), and self-corrects on the next `/gov:target` / `/gov:specify` write after a manual rename.
+- [x] Rule files, the inbox, and shared docs (`system.md`, `events.md`, `errors.md`) resolve under the configured spec root.
+- [x] The runtime resolves the spec root consistently with the markdown-only path: full-path primitives consume the root from their `path` argument unchanged, while every primitive that joins a bare feature name under the root or enumerates the tree resolves `[paths] specs-root` from `.govern.toml` (default `specs`) through one shared helper.
+- [x] The constitution's §spec-phase directory-layout block carries a single one-line note that the spec-root name is configurable via `[paths] specs-root` (default `specs`), with a back-pointer from the `.govern.toml` schema docs; no other prose is parameterized.
+- [x] A project configured with a non-`specs` spec-root name completes a full pipeline cycle (`/gov:specify` → … → `done`) with no path errors.
 
 ## Open Questions
 
