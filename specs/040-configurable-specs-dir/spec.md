@@ -2,10 +2,10 @@
 status: in-progress
 dependencies: [002-project-scaffolding, 003-bootstrap-automation, 017-derive-dont-ask, 022-deterministic-runtime]
 review:
-  last-run: null
-  reviewed-against: null
+  last-run: 2026-06-30T02:41:41Z
+  reviewed-against: 41d25f6b81397527d701ff73933bc782758cc8cd
   must-violations: 0
-  should-violations: 0
+  should-violations: 3
   low-confidence: 0
   blocking: false
 ---
