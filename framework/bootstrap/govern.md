@@ -119,7 +119,7 @@ Flags may appear in any order alongside the project name.
 Before any scaffolding, verify:
 
 - The current directory **is** an existing git repository. If not, stop and report: "This is not a git repository. Run `git init` first."
-- If a `specs/` directory already exists, this is a re-run. Report: "Existing specs/ directory found — running in update mode." Proceed normally; `update` strategy files will be overwritten, `create` strategy files will be skipped, `skip` strategy files will be left alone.
+- If the spec-root directory already exists, this is a re-run. The spec-root name is `[paths] specs-root` from `.govern.toml` when that file is present, else `specs` (spec 040). Report: "Existing {spec-root}/ directory found — running in update mode." Proceed normally; `update` strategy files will be overwritten, `create` strategy files will be skipped, `skip` strategy files will be left alone.
 
 ## Agent Selection
 
@@ -324,14 +324,16 @@ The Pre-flight Phase has passed (nothing in the pending-restart set), so this ru
 2. **Project description** — from `[project] description` in `.govern.toml`, else prompt. Used for AGENTS.md.
 3. **Primary language(s)** — from `[project] languages` in `.govern.toml`, else prompt. Used for .gitignore language patterns.
 4. **Rule surfaces** — from `[rules] surfaces` in `.govern.toml`, else prompt ("Which rule surfaces does this project need? backend / frontend / both"). Recorded as a list with members in `{backend, frontend}` ("both" records both). Selects which rule files `/govern` installs (§Shared Files) and which `/gov:review` enforces (`review.md` §Behavior step 5). When the recorded surfaces exclude a surface that `[project] languages` implies (e.g., a frontend language is listed but `surfaces` omits `frontend`), emit one advisory line and honor the explicit value. **Validate a present value before using it** (degenerate configs fail fast per `CFG-ENV-003`, never silently ignored): the **empty list** (`surfaces = []`) is valid and means cross-only — install only `*-cross.md`, no surface-suffixed files — and is distinct from the key being unset (which derives/installs all); an **unrecognized member** outside `{backend, frontend}` (a typo, or `"cross"` — cross-cutting files are not a selectable surface) halts with `/govern: invalid [rules] surfaces member "<value>" — accepted members are "backend" and "frontend" (use [] for cross-only; -cross.md files always apply)`, and a list mixing valid and invalid members fails on the invalid one; a **non-list value** (a bare string) halts with `/govern: [rules] surfaces must be a list of strings, got <type>`.
+5. **Spec-root directory** — from `[paths] specs-root` in `.govern.toml`, else prompt ("What should the spec-root directory be named?") **defaulting to `specs`**. Names the top-level directory that holds every govern artifact (feature dirs, `inbox.md`, `rules/`, shared docs). The prompt lives **only** in `/govern` — no other command asks for it — and when the key stays unset every command and the runtime default to `specs`, so an adopter who never sets it sees unchanged behavior (spec [040](../../specs/040-configurable-specs-dir/spec.md)). **Validate a present or entered value before using it** (fail fast — a value that breaks path resolution is never silently accepted): a name that is empty, contains a path separator (`/` or `\`), contains `..`, or has a leading slash halts with `/govern: invalid [paths] specs-root "<value>" — must be a single directory name (no separators, no "..", no leading slash)`. Two **non-blocking** notices after a valid value is chosen: when the chosen directory **already exists on disk and is not a govern spec root** (no `inbox.md`, no numbered `NNN-*` subdirs), emit one line naming it and proceed — it may be a sibling framework's directory (e.g. RSpec's `spec/`), and the operator's choice is honored after the warning; when the configured `specs-root` is **absent on disk but a different govern-shaped directory exists**, emit a one-line half-finished-rename notice rather than silently scaffolding a new empty tree.
 
-On a routine re-run (update mode) `.govern.toml` already carries all four, so this step prompts for nothing. On a first scaffold it prompts for whatever is missing, then **persists the three project inputs into `.govern.toml`'s `[project]` table** (`name`, `description`, `languages`) **and the rule surfaces into the `[rules]` table** (`surfaces`; see §Project Configuration), preserving every other section, so the next run — and the session after any State B / stale-`govern.md` restart — reads them back instead of re-asking. `host.project` continues to be written from `project.name` as the runtime's slash-command namespace.
+On a routine re-run (update mode) `.govern.toml` already carries all five, so this step prompts for nothing. On a first scaffold it prompts for whatever is missing, then **persists the three project inputs into `.govern.toml`'s `[project]` table** (`name`, `description`, `languages`), **the rule surfaces into the `[rules]` table** (`surfaces`), **and the spec-root into the `[paths]` table** (`specs-root`; see §Project Configuration), preserving every other section, so the next run — and the session after any State B / stale-`govern.md` restart — reads them back instead of re-asking. `host.project` continues to be written from `project.name` as the runtime's slash-command namespace.
 
 When prompting (AskUserQuestion), every question **must** include an `options` array with 2–4 example choices (the user can always select "Other" for custom input):
 
 - **Project name** — example options: the current directory name, `my-service`.
 - **Project description** — example options: `A new microservice`, `CLI tool for X`.
 - **Primary language(s)** — comma-separated list. Example options: `Go`, `Python`, `Node`, `Go, Python`.
+- **Spec-root directory** — example options: `specs` (the default), `governance`, `design`.
 
 Validate the project name: must be lowercase, alphanumeric, and hyphens only. If invalid, reject with: "Project name must be lowercase, alphanumeric, and hyphens only."
 
@@ -407,6 +409,16 @@ languages = ["Go", "Python"]
 # member or a non-list value fails fast. Collected by /govern (§Collect
 # Project Inputs); read by /gov:review (§Behavior step 5).
 surfaces = ["backend"]
+
+[paths]
+# The top-level directory that holds every govern artifact — feature dirs,
+# inbox.md, rules/, and shared docs. Defaults to "specs" when unset, so an
+# adopter who never sets it sees byte-for-byte unchanged behavior. Set it to
+# rename the tree (e.g. to avoid colliding with RSpec's spec/). A single
+# directory name: no path separators, no "..", no leading slash. Collected by
+# /govern (§Collect Project Inputs); resolved by every command and the runtime
+# (spec 040). When unset, all of them default to "specs".
+specs-root = "specs"
 
 [pinned]
 # Files listed here use 'skip' instead of 'update'.
@@ -1078,3 +1090,5 @@ Re-runs are additive across agents — adopting a new agent leaves existing agen
 ## Directory Creation
 
 Create intermediate directories as needed (e.g., `specs/`, `specs/templates/`, and — by layout — `{config_dir}/commands/{project}/` for `claude-style`, `{config_dir}/command/{project}/` for `opencode`, or `{config_dir}/skills/` and `{config_dir}/rules/` for `antigravity`).
+
+Throughout this command, every `specs/…` destination — the §Shared Files manifest rows (`specs/system.md`, `specs/inbox.md`, `specs/rules/…`, …), the directories created here, and the spec-root named in the §Post-Scaffolding Output — is written under the configured `[paths] specs-root` (default `specs`, resolved in §Collect Project Inputs). The literal `specs/` paths in the manifest tables and prose are the documented default; substitute the configured name when the operator has set one. This keeps the manifest readable while honoring the override (spec 040).

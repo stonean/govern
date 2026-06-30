@@ -66,6 +66,8 @@ specs/
       {slug}.md          # One file per scenario
 ```
 
+The top-level directory name (`specs` above) is the documented default; a project may rename it via `.govern.toml` `[paths] specs-root` (e.g. to avoid colliding with a sibling framework's `spec/`, like RSpec's). When the key is unset every command and the optional runtime default to `specs`, so an adopter who never sets it sees unchanged behavior. The literal `specs/` throughout this constitution and the command sources is that default; wherever a command or the runtime constructs a path under it, it resolves `[paths] specs-root` (spec 040).
+
 <!-- §spec-requirements -->
 
 #### Spec requirements

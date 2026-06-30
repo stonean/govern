@@ -41,6 +41,8 @@ Collect from `$ARGUMENTS` or prompt the user interactively. When using AskUserQu
 
    For `fullstack` projects, ask backend questions first, then frontend questions. Every question can be skipped — the user is not required to answer any category.
 
+5. **Spec-root directory** — the top-level directory that will hold every `govern` artifact (feature dirs, `inbox.md`, `rules/`, shared docs). Defaults to `specs`; accept the default unless a different name is needed to avoid colliding with an existing directory (e.g. RSpec's `spec/`). Example options: `specs` (the default), `governance`, `design`. Validate the entered value: empty, a path separator (`/` or `\`), `..`, or a leading slash is rejected with "Spec-root must be a single directory name (no separators, no '..', no leading slash)." When a non-`specs` name is chosen, init records it in the new project's `.govern.toml` so every command and the runtime resolve it (spec 040). Referred to below as `{spec-root}`.
+
 Validate the project slug: must be lowercase, alphanumeric, and hyphens only. If invalid, reject with: "Project slug must be lowercase, alphanumeric, and hyphens only."
 
 ## Pre-flight Check
@@ -96,27 +98,34 @@ Only include rows for categories the user answered (not skipped). If all categor
 
 Copy `framework/templates/project/claude-md.md` from the `govern` repo into the new project as `CLAUDE.md`.
 
-### 5. Create specs directory with system spec templates
+### 5. Create the spec-root directory with system spec templates
 
-Create `specs/` and copy these files from `framework/templates/project/` in the `govern` repo:
+`{spec-root}` is the directory chosen in input 5 (default `specs`). When it is **not** `specs`, first write the new project's `.govern.toml` so every command and the runtime resolve the rename:
 
-- `framework/templates/project/system.md` → `specs/system.md`
-- `framework/templates/project/errors.md` → `specs/errors.md`
-- `framework/templates/project/events.md` → `specs/events.md`
-- `framework/templates/project/inbox.md` → `specs/inbox.md`
+```toml
+[paths]
+specs-root = "{spec-root}"
+```
 
-Also create `specs/rules/` and copy the shipped rule files from `framework/rules/` into it so `/{slug}:review` and `/{slug}:analyze` have rules to load on day one:
+Create `{spec-root}/` and copy these files from `framework/templates/project/` in the `govern` repo:
 
-- `framework/rules/accessibility-frontend.md` → `specs/rules/accessibility-frontend.md`
-- `framework/rules/api-backend.md` → `specs/rules/api-backend.md`
-- `framework/rules/configuration-cross.md` → `specs/rules/configuration-cross.md`
-- `framework/rules/performance-frontend.md` → `specs/rules/performance-frontend.md`
-- `framework/rules/security-backend.md` → `specs/rules/security-backend.md`
-- `framework/rules/security-frontend.md` → `specs/rules/security-frontend.md`
+- `framework/templates/project/system.md` → `{spec-root}/system.md`
+- `framework/templates/project/errors.md` → `{spec-root}/errors.md`
+- `framework/templates/project/events.md` → `{spec-root}/events.md`
+- `framework/templates/project/inbox.md` → `{spec-root}/inbox.md`
+
+Also create `{spec-root}/rules/` and copy the shipped rule files from `framework/rules/` into it so `/{slug}:review` and `/{slug}:analyze` have rules to load on day one:
+
+- `framework/rules/accessibility-frontend.md` → `{spec-root}/rules/accessibility-frontend.md`
+- `framework/rules/api-backend.md` → `{spec-root}/rules/api-backend.md`
+- `framework/rules/configuration-cross.md` → `{spec-root}/rules/configuration-cross.md`
+- `framework/rules/performance-frontend.md` → `{spec-root}/rules/performance-frontend.md`
+- `framework/rules/security-backend.md` → `{spec-root}/rules/security-backend.md`
+- `framework/rules/security-frontend.md` → `{spec-root}/rules/security-frontend.md`
 
 ### 6. Copy spec templates
 
-Create `specs/templates/` and copy all spec-pipeline templates from `framework/templates/spec/` in the `govern` repo (the destination is flat — no `spec/` subdirectory):
+Create `{spec-root}/templates/` and copy all spec-pipeline templates from `framework/templates/spec/` in the `govern` repo (the destination is flat — no `spec/` subdirectory):
 
 - `spec.md`
 - `spec-and-plan.md`
@@ -202,7 +211,7 @@ Next steps:
 1. Start a new Claude Code session in the project directory: `cd {path}/{slug}`
 2. Run `/{slug}:configure` to apply the full permission set
 3. Fill in `AGENTS.md` — project structure, code style, testing conventions, and gotchas (Tech Stack table was populated from your selections)
-4. Fill in `specs/system.md` — architecture, request lifecycle, shared infrastructure
+4. Fill in `{spec-root}/system.md` — architecture, request lifecycle, shared infrastructure
 5. Create your first feature spec: `/{slug}:specify {feature description}`
 
 ---

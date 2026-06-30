@@ -208,6 +208,7 @@ From that session on, the pipeline takes the deterministic path. File writes are
 
 - **`[pinned]`** — list destination paths `govern` should never overwrite, even files it normally updates (e.g. a customized `constitution.md`).
 - **`[rules]`** — declare which rule surfaces your project needs: `surfaces = ["backend"]`, `["frontend"]`, or both. `/govern` prompts for this on first run, then installs only the matching rule files (cross-cutting `-cross` rules always apply) and `/review` enforces only those. Leave it unset to let `govern` derive the surface from your stack and install every rule file.
+- **`[paths]`** — rename the top-level directory that holds every `govern` artifact: `specs-root = "governance"`. Defaults to `specs`; set it to avoid colliding with a sibling framework's directory (e.g. RSpec's `spec/`). `/govern` prompts for it on first run; once set, every command and the runtime resolve it. A single directory name — no path separators, no `..`, no leading slash.
 - **`[workflows]`** — record workflow categories you've declined so `/govern` stops offering them.
 - **`[services]`** — register sibling services so cross-service reference links resolve to the linked spec's lifecycle status (see [Cross-service references](#cross-service-references)). Add entries with `/link`, not by hand.
 
@@ -217,6 +218,9 @@ files = ["constitution.md"]
 
 [rules]
 surfaces = ["backend"]
+
+[paths]
+specs-root = "governance"
 
 [workflows]
 declined_categories = ["Linting"]

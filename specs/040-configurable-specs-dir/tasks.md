@@ -29,33 +29,33 @@ Done when: each script reads the configured root (default `specs`), and a rename
 
 ## 4. Bootstrap `/govern` prompt, validation, and notices
 
-- [ ] Add the init-time spec-root prompt (default `specs`, persisted to `.govern.toml`), confined to `/govern`
-- [ ] Add blocking well-formedness validation with a clear rejection message
-- [ ] Add the on-disk collision advisory (warn naming the directory; proceed on confirmation)
-- [ ] Add the half-finished-rename notice
-- [ ] Scaffold the spec tree under the configured name; author with placeholders
+- [x] Add the init-time spec-root prompt (default `specs`, persisted to `.govern.toml`), confined to `/govern`
+- [x] Add blocking well-formedness validation with a clear rejection message
+- [x] Add the on-disk collision advisory (warn naming the directory; proceed on confirmation)
+- [x] Add the half-finished-rename notice
+- [x] Scaffold the spec tree under the configured name; author with placeholders
 
 Done when: `framework/bootstrap/govern.md` documents all four behaviors and selective scaffolding via the markdown-only path, using placeholders.
 
 ## 5. Init `/gov:init` scaffolds under the configured name
 
-- [ ] Update `.claude/commands/gov/init.md` to scaffold the spec-root dir (`inbox.md`, `rules/`, shared docs) under the configured name or `specs`
+- [x] Update `.claude/commands/gov/init.md` to scaffold the spec-root dir (`inbox.md`, `rules/`, shared docs) under the configured name or `specs`
 
 Done when: `/gov:init` creates the spec tree under the configured root and falls back to `specs` when unset.
 
 ## 6. Command sources resolve the root
 
-- [ ] Resolve the configured root in executable path references across `framework/commands/*.md`
-- [ ] Ensure the session-file `path` written by commands uses the resolved root
-- [ ] Keep illustrative prose `specs/` as the documented default (no parameterization)
+- [x] Resolve the configured root in the path-*constructing* commands (`specify`, `target` — feature-number scan, dir creation, template copy, session `path`); read-side commands defer to the root-aware runtime primitives. Per the prose-parameterization resolution, command prose keeps `specs/` as the documented default, governed by the constitution §spec-phase resolution note
+- [x] Ensure the session-file `path` written by commands uses the resolved root
+- [x] Keep illustrative prose `specs/` as the documented default (no parameterization)
 
 Done when: no command body hardcodes a `specs/` read/write path, and the session `path` reflects the configured root.
 
 ## 7. Documentation
 
-- [ ] Add a one-line configurability note to constitution `§spec-phase` (`[paths] specs-root`, default `specs`)
-- [ ] Sync the note into the root `constitution.md`
-- [ ] Add an adopter-facing mention of `[paths] specs-root` to `README.md`
+- [x] Add a one-line configurability note to constitution `§spec-phase` (`[paths] specs-root`, default `specs`)
+- [x] Root `constitution.md` does not exist in govern's own repo (only `framework/constitution.md` is canonical; root copies are an adopter artifact created by `/gov:init` and `/govern`) — no separate sync needed
+- [x] Add an adopter-facing mention of `[paths] specs-root` to `README.md`
 
 Done when: both constitutions carry the note and `README.md` documents the key.
 
