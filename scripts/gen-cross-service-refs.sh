@@ -100,7 +100,8 @@ enumerate_specs() {
 # two-step parse — awk extracts alias/repo/path, then bash resolves the
 # per-service root — keeps the filesystem probe out of awk.
 reg_file="$(mktemp)"
-trap 'rm -f "$reg_file"' EXIT
+svc_raw=""
+trap 'rm -f "$reg_file" "$svc_raw"' EXIT
 if [ -f "$ROOT/.govern.toml" ]; then
   svc_raw="$(mktemp)"
   awk '
