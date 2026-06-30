@@ -2,6 +2,27 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.14.0] — 2026-06-30
+
+### Added
+
+- **Configurable spec-root directory name (spec 040).** The directory holding all govern artifacts is no longer hardcoded to `specs`. A new optional `[paths] specs-root` key in the committed `.govern.toml` names it, defaulting to `specs` so every existing adopter is unaffected. New `runtime/src/schema/paths.rs` parses and validates the value: a single directory-name segment in the conservative `[A-Za-z0-9_-]` charset (no path separators, no `.`/`..`, no regex metacharacters), so the name is safe both as a literal path component and when interpolated into the generators' regexes; an empty or out-of-charset value falls back to `specs`. Per [§runtime-boundary](../framework/constitution.md#runtime-boundary) the runtime reads this git-tracked source of truth — it does not own it. New `runtime/tests/specs_root_override.rs` covers the default, a non-`specs` override, and rejection of malformed values end-to-end.
+
+### Changed
+
+- **Every spec-root-joining primitive resolves the configured root through one shared resolver.** The primitives that take a bare *feature name* and join it under the root internally — `read-spec`, `set-status`, `mark-task`, `mark-criterion`, `read-tasks`, `traverse-deps`, `check-stuck`, `derive-boundary`, `resolve-references` — and the tree-enumerating `dashboard` previously hardcoded `repo.join("specs")`; they now resolve `[paths] specs-root` from `.govern.toml` (default `specs`) through a single helper in `primitives/mod.rs`, so the two resolutions cannot drift and the default path stays byte-identical to before. Primitives that take a full spec *path* argument (`write-session`, `lint-markdown`, `substitute-templates`) are unchanged — the host bakes the resolved root into that path. Runtime error messages that name a spec artifact now reflect the configured root (e.g. `governance/040-foo`) with no hardcoded `specs/` prefix.
+- **`/gov:implement` no longer emits the `planned → in-progress` gate-confirm (spec 000).** Invoking the command is itself the user's approval to start work, so the implement walk drops the gate-confirm step and `writeCode` becomes the first request; the `implement-basic` golden, fixtures, and parity expectation are re-blessed to match.
+
+### Fixed
+
+- **`check-rule-ids` harvests digit-bearing rule-ID categories and matches the canonical deprecation label.** The rule-ID regex is widened to the schema grammar `[A-Z][A-Z0-9]+`, so digit-bearing categories (e.g. `FE-A11YFORM-*`, `FE-A11YMEDIA-*`) are harvested instead of being reported missing; `is_deprecated` now matches the canonical `**DEPRECATED in {version}:**` label rather than a bare `**Deprecated**` / `[DEPRECATED]`.
+
+### Notes
+
+- The `/ask` slash command was renamed to `/amend`; the runtime's mechanical references (the legacy-prose-command list, primitive doc strings and comments) were updated in lockstep — no behavior change.
+- **Framework, shipping in this tagged archive (no runtime-crate impact):** `gen-cross-service-refs.sh` is now root-aware — it resolves a *referenced* service's own `[paths] specs-root` (spec 030 task 13, scenario `referenced-service-spec-root`) instead of assuming `specs/`, so a referenced service that renamed its spec root still harvests. `lib/specs-root.sh` gained a reusable `specs_root_of <toml>` helper.
+- Ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary). `cargo test` (412 tests + the integration suites), `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, both generator suites, the framework self-audit, and markdownlint are clean.
+
 ## [0.13.0] — 2026-06-20
 
 ### Added
