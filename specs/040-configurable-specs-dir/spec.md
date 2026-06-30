@@ -71,6 +71,7 @@ specs-root = "specs"     # default; an adopter may set e.g. "governance"
 - [x] The runtime resolves the spec root consistently with the markdown-only path: full-path primitives consume the root from their `path` argument unchanged, while every primitive that joins a bare feature name under the root or enumerates the tree resolves `[paths] specs-root` from `.govern.toml` (default `specs`) through one shared helper.
 - [x] The constitution's §spec-phase directory-layout block carries a single one-line note that the spec-root name is configurable via `[paths] specs-root` (default `specs`), with a back-pointer from the `.govern.toml` schema docs; no other prose is parameterized.
 - [x] A project configured with a non-`specs` spec-root name completes a full pipeline cycle (`/gov:specify` → … → `done`) with no path errors.
+- [x] Runtime error messages that name a spec artifact reflect the configured spec-root (e.g. `governance/040-foo`), with no hardcoded `specs/` prefix, so they stay accurate under a renamed root.
 
 ## Open Questions
 

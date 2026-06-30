@@ -68,9 +68,11 @@ pub enum PrimitiveError {
         /// Path of the offending file.
         path: PathBuf,
     },
-    /// Feature directory does not exist under `specs/`.
-    #[error("feature directory not found: specs/{feature}")]
+    /// Feature directory does not exist under the configured spec-root.
+    #[error("feature directory not found: {root}/{feature}")]
     FeatureNotFound {
+        /// Configured spec-root directory name (default `specs`; spec 040).
+        root: String,
         /// Requested feature name.
         feature: String,
     },
@@ -78,14 +80,18 @@ pub enum PrimitiveError {
     #[error("git error: {0}")]
     Git(#[from] git2::Error),
     /// Repository contains no commits that touch the requested spec dir.
-    #[error("no commits found that touch specs/{feature}")]
+    #[error("no commits found that touch {root}/{feature}")]
     NoSpecHistory {
+        /// Configured spec-root directory name (default `specs`; spec 040).
+        root: String,
         /// Requested feature name.
         feature: String,
     },
     /// Requested task number not found in `tasks.md`.
-    #[error("task '{task_number}' not found in specs/{feature}/tasks.md")]
+    #[error("task '{task_number}' not found in {root}/{feature}/tasks.md")]
     TaskNotFound {
+        /// Configured spec-root directory name (default `specs`; spec 040).
+        root: String,
         /// Feature whose tasks file was scanned.
         feature: String,
         /// Task number that was requested.
@@ -107,9 +113,11 @@ pub enum PrimitiveError {
     },
     /// Acceptance-criterion index is out of bounds.
     #[error(
-        "criterion index {criterion_index} is out of range for specs/{feature}/spec.md (found {total})"
+        "criterion index {criterion_index} is out of range for {root}/{feature}/spec.md (found {total})"
     )]
     CriterionOutOfRange {
+        /// Configured spec-root directory name (default `specs`; spec 040).
+        root: String,
         /// Feature whose spec was scanned.
         feature: String,
         /// Requested criterion index.
@@ -118,8 +126,10 @@ pub enum PrimitiveError {
         total: usize,
     },
     /// `set-status` was invoked with a `from` value that does not match disk.
-    #[error("status mismatch in specs/{feature}/spec.md: expected '{expected}', found '{actual}'")]
+    #[error("status mismatch in {root}/{feature}/spec.md: expected '{expected}', found '{actual}'")]
     StatusMismatch {
+        /// Configured spec-root directory name (default `specs`; spec 040).
+        root: String,
         /// Feature whose spec was scanned.
         feature: String,
         /// Status the caller expected on disk.
@@ -128,8 +138,10 @@ pub enum PrimitiveError {
         actual: String,
     },
     /// Frontmatter does not contain a `status:` field.
-    #[error("frontmatter in specs/{feature}/spec.md has no `status:` field")]
+    #[error("frontmatter in {root}/{feature}/spec.md has no `status:` field")]
     StatusFieldMissing {
+        /// Configured spec-root directory name (default `specs`; spec 040).
+        root: String,
         /// Feature whose spec was scanned.
         feature: String,
     },
@@ -282,10 +294,12 @@ pub enum PrimitiveError {
         source: toml::de::Error,
     },
     /// Spec directory missing its `spec.md` file. `dashboard` raises this
-    /// when an `NNN-feature` directory under `specs/` lacks the expected
-    /// `spec.md` — the directory naming convention promises one.
-    #[error("missing spec.md in specs/{feature}")]
+    /// when an `NNN-feature` directory under the configured spec-root lacks
+    /// the expected `spec.md` — the directory naming convention promises one.
+    #[error("missing spec.md in {root}/{feature}")]
     MissingSpecFile {
+        /// Configured spec-root directory name (default `specs`; spec 040).
+        root: String,
         /// Feature directory name that lacks a `spec.md`.
         feature: String,
     },

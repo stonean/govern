@@ -33,9 +33,11 @@ const DONE_WHEN_PREFIX: &str = "**Done when**";
 /// Returns [`PrimitiveError::FeatureNotFound`] when `specs/<feature>/` does
 /// not exist, or [`PrimitiveError::Io`] when `tasks.md` cannot be read.
 pub fn run(args: &ReadTasksArgs, repo: &Path) -> Result<ReadTasksResult> {
-    let feature_dir = paths::specs_dir(repo).join(&args.feature);
+    let root = paths::Paths::load(repo).specs_root;
+    let feature_dir = repo.join(&root).join(&args.feature);
     if !feature_dir.is_dir() {
         return Err(PrimitiveError::FeatureNotFound {
+            root,
             feature: args.feature.clone(),
         });
     }

@@ -21,6 +21,7 @@ pub fn run(args: &CheckStuckArgs, repo: &Path) -> Result<CheckStuckResult> {
     let feature_dir = repo.join(&layout.specs_root).join(&args.feature);
     if !feature_dir.is_dir() {
         return Err(PrimitiveError::FeatureNotFound {
+            root: layout.specs_root.clone(),
             feature: args.feature.clone(),
         });
     }

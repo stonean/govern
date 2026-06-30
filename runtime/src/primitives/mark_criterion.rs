@@ -25,9 +25,11 @@ const ACCEPTANCE_HEADING: &str = "Acceptance Criteria";
 /// the number of criteria, or [`PrimitiveError::Io`] for filesystem
 /// failures.
 pub fn run(args: &MarkCriterionArgs, repo: &Path) -> Result<CheckboxToggleResult> {
-    let feature_dir = paths::specs_dir(repo).join(&args.feature);
+    let root = paths::Paths::load(repo).specs_root;
+    let feature_dir = repo.join(&root).join(&args.feature);
     if !feature_dir.is_dir() {
         return Err(PrimitiveError::FeatureNotFound {
+            root: root.clone(),
             feature: args.feature.clone(),
         });
     }
@@ -39,6 +41,7 @@ pub fn run(args: &MarkCriterionArgs, repo: &Path) -> Result<CheckboxToggleResult
     let checkbox_lines = collect_checkbox_line_indices(&lines, section_range);
     let (line_idx, marker_idx) = *checkbox_lines.get(args.criterion_index).ok_or_else(|| {
         PrimitiveError::CriterionOutOfRange {
+            root: root.clone(),
             feature: args.feature.clone(),
             criterion_index: args.criterion_index,
             total: checkbox_lines.len(),

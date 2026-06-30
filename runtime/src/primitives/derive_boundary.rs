@@ -22,6 +22,7 @@ pub fn run(args: &DeriveBoundaryArgs, repo: &Path) -> Result<DeriveBoundaryResul
     let feature_dir = repo.join(&layout.specs_root).join(&args.feature);
     if !feature_dir.is_dir() {
         return Err(PrimitiveError::FeatureNotFound {
+            root: layout.specs_root.clone(),
             feature: args.feature.clone(),
         });
     }
@@ -30,6 +31,7 @@ pub fn run(args: &DeriveBoundaryArgs, repo: &Path) -> Result<DeriveBoundaryResul
 
     let first_commit = first_commit_for_prefix(&repository, &spec_prefix)?.ok_or_else(|| {
         PrimitiveError::NoSpecHistory {
+            root: layout.specs_root.clone(),
             feature: args.feature.clone(),
         }
     })?;
@@ -240,7 +242,10 @@ mod tests {
             tmp.path(),
         );
         match result {
-            Err(PrimitiveError::NoSpecHistory { feature }) => assert_eq!(feature, "030-orphan"),
+            Err(PrimitiveError::NoSpecHistory { feature, root }) => {
+                assert_eq!(feature, "030-orphan");
+                assert_eq!(root, "specs");
+            }
             other => panic!("expected NoSpecHistory, got {other:?}"),
         }
     }

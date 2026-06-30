@@ -114,10 +114,12 @@ fn load_specs(repo: &Path) -> Result<Vec<DashboardSpec>> {
 /// Load one spec's dashboard entry. `blocked_by` is filled in by the
 /// caller after every spec's status has been read.
 fn load_one_spec(repo: &Path, slug: &str) -> Result<DashboardSpec> {
-    let feature_dir = paths::specs_dir(repo).join(slug);
+    let root = paths::Paths::load(repo).specs_root;
+    let feature_dir = repo.join(&root).join(slug);
     let spec_path = feature_dir.join("spec.md");
     if !spec_path.is_file() {
         return Err(PrimitiveError::MissingSpecFile {
+            root,
             feature: slug.to_string(),
         });
     }
@@ -471,7 +473,10 @@ mod tests {
         std::fs::create_dir_all(tmp.path().join("specs/099-broken")).unwrap();
         let err = run(&DashboardArgs::default(), tmp.path()).unwrap_err();
         match err {
-            PrimitiveError::MissingSpecFile { feature } => assert_eq!(feature, "099-broken"),
+            PrimitiveError::MissingSpecFile { feature, root } => {
+                assert_eq!(feature, "099-broken");
+                assert_eq!(root, "specs");
+            }
             other => panic!("expected MissingSpecFile, got {other:?}"),
         }
     }

@@ -203,3 +203,29 @@ fn unset_setting_keeps_default_specs_root() {
     .unwrap();
     assert_eq!(result.path, "specs/001-demo/spec.md");
 }
+
+#[test]
+fn error_messages_name_the_configured_root() {
+    // A "feature not found" error must name the configured spec-root, not a
+    // hardcoded `specs/` — otherwise a renamed-root adopter sees a misleading
+    // path (spec 040).
+    let tmp = tempfile::tempdir().unwrap();
+    write(&tmp.path().join(".govern.toml"), GOVERNANCE_TOML);
+    let err = primitives::read_spec::run(
+        &ReadSpecArgs {
+            feature: "404-missing".into(),
+            include_body: false,
+        },
+        tmp.path(),
+    )
+    .unwrap_err();
+    let msg = err.to_string();
+    assert!(
+        msg.contains("governance/404-missing"),
+        "error names the configured root: {msg}"
+    );
+    assert!(
+        !msg.contains("specs/"),
+        "no hardcoded specs/ in the message: {msg}"
+    );
+}

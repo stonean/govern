@@ -22,9 +22,11 @@ use crate::schema::primitives::{SetStatusArgs, SetStatusResult};
 /// key is present, [`PrimitiveError::StatusMismatch`] when `args.from`
 /// does not match disk, or [`PrimitiveError::Io`] for filesystem failures.
 pub fn run(args: &SetStatusArgs, repo: &Path) -> Result<SetStatusResult> {
-    let feature_dir = paths::specs_dir(repo).join(&args.feature);
+    let root = paths::Paths::load(repo).specs_root;
+    let feature_dir = repo.join(&root).join(&args.feature);
     if !feature_dir.is_dir() {
         return Err(PrimitiveError::FeatureNotFound {
+            root: root.clone(),
             feature: args.feature.clone(),
         });
     }
@@ -32,10 +34,12 @@ pub fn run(args: &SetStatusArgs, repo: &Path) -> Result<SetStatusResult> {
     let content = read_text(&spec_path)?;
     let (fm_text, _body) = split_frontmatter(&content, &spec_path)?;
 
-    let (line_offset, current_value, value_range) = locate_status_field(fm_text, &args.feature)?;
+    let (line_offset, current_value, value_range) =
+        locate_status_field(fm_text, &root, &args.feature)?;
 
     if current_value != args.from {
         return Err(PrimitiveError::StatusMismatch {
+            root: root.clone(),
             feature: args.feature.clone(),
             expected: args.from.clone(),
             actual: current_value,
@@ -64,6 +68,7 @@ pub fn run(args: &SetStatusArgs, repo: &Path) -> Result<SetStatusResult> {
 /// `(byte_offset_of_fm_inside_full_content, current_value, value_range_within_fm)`.
 fn locate_status_field(
     fm_text: &str,
+    root: &str,
     feature: &str,
 ) -> Result<(usize, String, std::ops::Range<usize>)> {
     let fm_start_in_full = "---\n".len();
@@ -83,6 +88,7 @@ fn locate_status_field(
         return Ok((fm_start_in_full, value.to_string(), value_start..value_end));
     }
     Err(PrimitiveError::StatusFieldMissing {
+        root: root.to_owned(),
         feature: feature.into(),
     })
 }

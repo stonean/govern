@@ -20,9 +20,11 @@ use crate::schema::primitives::{
 /// [`PrimitiveError::MissingFrontmatter`] when the spec lacks `---` fences,
 /// or [`PrimitiveError::Yaml`] when the frontmatter is not valid YAML.
 pub fn run(args: &ReadSpecArgs, repo: &Path) -> Result<ReadSpecResult> {
-    let feature_dir = paths::specs_dir(repo).join(&args.feature);
+    let root = paths::Paths::load(repo).specs_root;
+    let feature_dir = repo.join(&root).join(&args.feature);
     if !feature_dir.is_dir() {
         return Err(PrimitiveError::FeatureNotFound {
+            root,
             feature: args.feature.clone(),
         });
     }

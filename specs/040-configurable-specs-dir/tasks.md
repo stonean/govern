@@ -73,3 +73,10 @@ Done when: each of `002`/`003`/`022` is audited and either carries a back-linked
 - [x] Confirm the markdown-only opt-in CI stays green
 
 Done when: the non-`specs` cycle reaches `done`, and existing default-`specs` suites and the opt-in CI pass unchanged.
+
+## 10. Runtime error messages reflect the configured root
+
+- [x] Carry the resolved spec-root in the path-bearing `PrimitiveError` variants (`FeatureNotFound`, `NoSpecHistory`, `TaskNotFound`, `CriterionOutOfRange`, `StatusMismatch`, `StatusFieldMissing`, `MissingSpecFile`) and interpolate it so messages read `{root}/{feature}…`, never a hardcoded `specs/`
+- [x] Test that an error raised under a renamed root names the configured root and contains no `specs/`
+
+Done when: every spec-path error message reflects `[paths] specs-root`, and a renamed-root test asserts it. Discovered at the completion gate — the in-scope fix that replaced the deferred inbox item (a renamed-root adopter must not see a misleading `specs/foo` path on error).

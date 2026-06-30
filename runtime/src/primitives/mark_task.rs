@@ -38,9 +38,11 @@ use super::checkbox::{find_checkbox_line, flip_checkbox_at};
 /// exceeds the number of subtasks found, or [`PrimitiveError::Io`] for any
 /// filesystem failure.
 pub fn run(args: &MarkTaskArgs, repo: &Path) -> Result<CheckboxToggleResult> {
-    let feature_dir = paths::specs_dir(repo).join(&args.feature);
+    let root = paths::Paths::load(repo).specs_root;
+    let feature_dir = repo.join(&root).join(&args.feature);
     if !feature_dir.is_dir() {
         return Err(PrimitiveError::FeatureNotFound {
+            root: root.clone(),
             feature: args.feature.clone(),
         });
     }
@@ -55,6 +57,7 @@ pub fn run(args: &MarkTaskArgs, repo: &Path) -> Result<CheckboxToggleResult> {
     let lines: Vec<&str> = content.split_inclusive('\n').collect();
     let task_range = locate_task_range(&lines, &args.task_number, task_level).ok_or_else(|| {
         PrimitiveError::TaskNotFound {
+            root: root.clone(),
             feature: args.feature.clone(),
             task_number: args.task_number.clone(),
         }
