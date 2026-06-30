@@ -100,6 +100,14 @@ write_spec() {
   cat > "$tmp/specs/$slug/spec.md"
 }
 
+# Write a spec.md under a custom spec-root dir (spec 040 renamed-root coverage).
+# Usage: write_spec_in_root <tmp> <root> <slug> <heredoc>
+write_spec_in_root() {
+  local tmp="$1" root="$2" slug="$3"
+  mkdir -p "$tmp/$root/$slug"
+  cat > "$tmp/$root/$slug/spec.md"
+}
+
 # ---------- skip-prose-cross-references ----------
 
 test_A_see_also_skips_edge() {
@@ -617,6 +625,51 @@ EOF
   rm -rf "$tmp"
 }
 
+# ---------- configurable spec-root (spec 040) ----------
+
+test_Q_configured_specs_root() {
+  local tmp; tmp="$(make_fixture)"
+  printf '[paths]\nspecs-root = "governance"\n' > "$tmp/.govern.toml"
+  # 001-alpha links to 002-beta using the absolute root-relative form, which
+  # exercises BOTH the directory enumeration (governance/ is walked) and the
+  # awk link matcher's configured-root alternative.
+  write_spec_in_root "$tmp" "governance" "001-alpha" <<'EOF'
+---
+status: clarified
+dependencies: []
+---
+
+# Alpha
+
+Depends on [002-beta](governance/002-beta/spec.md).
+EOF
+  write_spec_in_root "$tmp" "governance" "002-beta" <<'EOF'
+---
+status: clarified
+dependencies: []
+---
+
+# Beta
+EOF
+  # A stray default-named tree must NOT be walked or rewritten.
+  write_spec "$tmp" "999-stray" <<'EOF'
+---
+status: clarified
+dependencies: []
+---
+
+# Stray
+
+Depends on [002-beta](../002-beta/spec.md).
+EOF
+  "$GEN" --root="$tmp" > /dev/null
+  assert_deps "$tmp/governance/001-alpha/spec.md" "dependencies: [002-beta]" \
+    "Q: renamed specs-root is walked and its absolute-form links harvested"
+  assert_deps "$tmp/specs/999-stray/spec.md" "dependencies: []" \
+    "Q: stray specs/ tree is not walked when specs-root is renamed"
+  rm -rf "$tmp"
+}
+
 # ---------- runner ----------
 
 run_all() {
@@ -637,6 +690,7 @@ run_all() {
   test_N_untracked_draft_ignored
   test_O_staged_scopes_rewrite
   test_P_staged_cycle_spans_full_graph
+  test_Q_configured_specs_root
 
   if [ "$failures" -gt 0 ]; then
     echo "$failures test(s) failed" >&2

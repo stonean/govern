@@ -54,18 +54,46 @@ done
 
 shopt -s nullglob
 
+# Spec-root directory name from .govern.toml [paths] specs-root (spec 040),
+# defaulting to "specs". A malformed value (empty, path separator, "..") falls
+# back to the default. Mirrors the runtime's schema::paths resolver. Kept
+# self-contained (not sourced) so each shipped generator runs standalone in an
+# adopter pre-commit hook. Note: this resolves THIS repo's spec root for
+# enumeration; the cross-service URL matcher below intentionally keeps the
+# conventional `specs/` path because it targets another service's repo layout.
+resolve_specs_root() {
+  local toml="$ROOT/.govern.toml" name=""
+  if [ -f "$toml" ]; then
+    name="$(awk '
+      /^\[/ { in_paths = ($0 ~ /^\[paths\][[:space:]]*$/); next }
+      in_paths && /^[[:space:]]*specs-root[[:space:]]*=/ {
+        line = $0
+        sub(/^[^=]*=[[:space:]]*/, "", line)
+        if (match(line, /"[^"]*"/)) { print substr(line, RSTART + 1, RLENGTH - 2) }
+        else { sub(/[[:space:]]*(#.*)?$/, "", line); print line }
+        exit
+      }
+    ' "$toml")"
+  fi
+  case "$name" in
+    "" | */* | *..*) name="specs" ;;
+  esac
+  printf '%s' "$name"
+}
+SPECS_ROOT="$(resolve_specs_root)"
+
 # Enumerate feature-spec files, scoped to the git index (tracked + staged)
 # rather than a worktree glob, so untracked in-progress drafts are never
 # rewritten (mirrors gen-spec-deps.sh / spec 017 tracked-specs-not-worktree).
 # Falls back to a worktree glob only outside a git repo.
 list_specs() {
   if git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
-    git -C "$ROOT" ls-files -- specs \
-      | { grep -E '^specs/[0-9][0-9][0-9]-[^/]+/(spec|spec-and-plan)\.md$' || true; } \
+    git -C "$ROOT" ls-files -- "$SPECS_ROOT" \
+      | { grep -E "^$SPECS_ROOT/[0-9][0-9][0-9]-[^/]+/(spec|spec-and-plan)\.md$" || true; } \
       | while IFS= read -r rel; do printf '%s/%s\n' "$ROOT" "$rel"; done
   else
     local f
-    for f in "$ROOT"/specs/[0-9][0-9][0-9]-*/spec.md "$ROOT"/specs/[0-9][0-9][0-9]-*/spec-and-plan.md; do
+    for f in "$ROOT"/"$SPECS_ROOT"/[0-9][0-9][0-9]-*/spec.md "$ROOT"/"$SPECS_ROOT"/[0-9][0-9][0-9]-*/spec-and-plan.md; do
       [ -e "$f" ] && printf '%s\n' "$f"
     done
   fi
@@ -79,8 +107,8 @@ list_specs() {
 # cross-spec graph that would need the full set (unlike gen-spec-deps.sh).
 staged_specs() {
   git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 || return 0
-  git -C "$ROOT" diff --cached --name-only -- specs \
-    | { grep -E '^specs/[0-9][0-9][0-9]-[^/]+/(spec|spec-and-plan)\.md$' || true; } \
+  git -C "$ROOT" diff --cached --name-only -- "$SPECS_ROOT" \
+    | { grep -E "^$SPECS_ROOT/[0-9][0-9][0-9]-[^/]+/(spec|spec-and-plan)\.md$" || true; } \
     | while IFS= read -r rel; do printf '%s/%s\n' "$ROOT" "$rel"; done
 }
 

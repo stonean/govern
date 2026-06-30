@@ -397,6 +397,38 @@ EOF
   rm -rf "$tmp"
 }
 
+# ---------- L: configurable spec-root (spec 040) ----------
+
+test_L_configured_specs_root() {
+  local tmp; tmp="$(make_fixture)"
+  # Consumer renames its spec root to `governance`; the registered service URL
+  # keeps its own `specs/` layout (a different repo's convention, unchanged).
+  write_govern_toml "$tmp" <<'EOF'
+[paths]
+specs-root = "governance"
+
+[services.api]
+repo = "https://github.com/acme/api"
+path = "../api"
+EOF
+  mkdir -p "$tmp/governance/001-alpha"
+  cat > "$tmp/governance/001-alpha/spec.md" <<'EOF'
+---
+status: clarified
+dependencies: []
+---
+
+# Alpha
+
+Uses the [api user model](https://github.com/acme/api/blob/main/specs/003-user/spec.md).
+EOF
+  "$GEN" --root="$tmp" > /dev/null
+  local f="$tmp/governance/001-alpha/spec.md"
+  fm_has "$f" "references:" "L: references harvested from a spec under renamed root"
+  fm_has "$f" "spec: 003-user" "L: target spec slug recorded under renamed root"
+  rm -rf "$tmp"
+}
+
 # ---------- runner ----------
 
 run_all() {
@@ -412,6 +444,7 @@ run_all() {
   test_I_idempotent
   test_J_stale_block_removed
   test_K_staged_scopes_rewrite
+  test_L_configured_specs_root
 
   if [ "$failures" -gt 0 ]; then
     echo "$failures test(s) failed" >&2

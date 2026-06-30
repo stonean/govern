@@ -21,9 +21,9 @@ Done when: every listed site uses the resolver, the existing suite stays green u
 
 ## 3. Generators and lints resolve the root
 
-- [ ] Resolve `[paths] specs-root` (default `specs`) in `gen-spec-deps.sh` and `gen-cross-service-refs.sh` before walking the tree
-- [ ] Resolve the root in `lint-rule-ids.sh` and `lint-frontmatter.sh`
-- [ ] Add a renamed-root fixture under `scripts/tests/` and assert correct walking
+- [x] Resolve `[paths] specs-root` (default `specs`) in `gen-spec-deps.sh` and `gen-cross-service-refs.sh` before walking the tree
+- [x] Confirm `lint-rule-ids.sh` (walks `framework/rules/`) and `lint-frontmatter.sh` (govern-CI-only, walks govern's own `specs/`) need no change — neither walks the adopter-configurable spec tree, and neither ships to or runs in an adopter pre-commit
+- [x] Add a renamed-root fixture under `scripts/tests/` and assert correct walking
 
 Done when: each script reads the configured root (default `specs`), and a renamed-root fixture is walked correctly without touching adopter wiring beyond these scripts.
 

@@ -49,6 +49,32 @@ done
 
 shopt -s nullglob
 
+# Spec-root directory name from .govern.toml [paths] specs-root (spec 040),
+# defaulting to "specs". A malformed value (empty, path separator, "..") falls
+# back to the default. Mirrors the runtime's schema::paths resolver so the
+# markdown-only and runtime paths agree. Kept self-contained (not sourced) so
+# each shipped generator runs standalone in an adopter pre-commit hook.
+resolve_specs_root() {
+  local toml="$ROOT/.govern.toml" name=""
+  if [ -f "$toml" ]; then
+    name="$(awk '
+      /^\[/ { in_paths = ($0 ~ /^\[paths\][[:space:]]*$/); next }
+      in_paths && /^[[:space:]]*specs-root[[:space:]]*=/ {
+        line = $0
+        sub(/^[^=]*=[[:space:]]*/, "", line)
+        if (match(line, /"[^"]*"/)) { print substr(line, RSTART + 1, RLENGTH - 2) }
+        else { sub(/[[:space:]]*(#.*)?$/, "", line); print line }
+        exit
+      }
+    ' "$toml")"
+  fi
+  case "$name" in
+    "" | */* | *..*) name="specs" ;;
+  esac
+  printf '%s' "$name"
+}
+SPECS_ROOT="$(resolve_specs_root)"
+
 # Enumerate feature-spec files to process, scoped to the git index (tracked +
 # staged) rather than a worktree glob. Untracked, in-progress drafts — e.g. a
 # `/specify` spec the author has not `git add`ed yet — are intentionally
@@ -57,12 +83,12 @@ shopt -s nullglob
 # Falls back to a worktree glob only outside a git repo, where there is no index.
 list_specs() {
   if git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
-    git -C "$ROOT" ls-files -- specs \
-      | { grep -E '^specs/[0-9][0-9][0-9]-[^/]+/(spec|spec-and-plan)\.md$' || true; } \
+    git -C "$ROOT" ls-files -- "$SPECS_ROOT" \
+      | { grep -E "^$SPECS_ROOT/[0-9][0-9][0-9]-[^/]+/(spec|spec-and-plan)\.md$" || true; } \
       | while IFS= read -r rel; do printf '%s/%s\n' "$ROOT" "$rel"; done
   else
     local f
-    for f in "$ROOT"/specs/[0-9][0-9][0-9]-*/spec.md "$ROOT"/specs/[0-9][0-9][0-9]-*/spec-and-plan.md; do
+    for f in "$ROOT"/"$SPECS_ROOT"/[0-9][0-9][0-9]-*/spec.md "$ROOT"/"$SPECS_ROOT"/[0-9][0-9][0-9]-*/spec-and-plan.md; do
       [ -e "$f" ] && printf '%s\n' "$f"
     done
   fi
@@ -76,8 +102,8 @@ list_specs() {
 # every spec's edges even though only staged specs are written.
 staged_specs() {
   git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 || return 0
-  git -C "$ROOT" diff --cached --name-only -- specs \
-    | { grep -E '^specs/[0-9][0-9][0-9]-[^/]+/(spec|spec-and-plan)\.md$' || true; } \
+  git -C "$ROOT" diff --cached --name-only -- "$SPECS_ROOT" \
+    | { grep -E "^$SPECS_ROOT/[0-9][0-9][0-9]-[^/]+/(spec|spec-and-plan)\.md$" || true; } \
     | while IFS= read -r rel; do printf '%s/%s\n' "$ROOT" "$rel"; done
 }
 
@@ -100,7 +126,7 @@ while IFS= read -r spec; do
 
   # Extract sorted unique sibling slugs from body inline links (skipping code
   # fences, blockquote-prefixed lines, and `## See also` opt-out sections).
-  deps_csv="$(awk -v own="$own_slug" '
+  deps_csv="$(awk -v own="$own_slug" -v root="$SPECS_ROOT" '
     BEGIN { fm_seen = 0; in_fm = 0; in_fence = 0; in_see_also = 0 }
     /^---[[:space:]]*$/ {
       if (!fm_seen) { in_fm = 1; fm_seen = 1; next }
@@ -133,9 +159,9 @@ while IFS= read -r spec; do
     in_see_also { next }
     {
       line = $0
-      while (match(line, /\]\((\.\.\/|specs\/)[0-9][0-9][0-9]-[a-z0-9-]+/)) {
+      while (match(line, "\\]\\((\\.\\./|" root "/)[0-9][0-9][0-9]-[a-z0-9-]+")) {
         m = substr(line, RSTART, RLENGTH)
-        sub(/^\]\((\.\.\/|specs\/)/, "", m)
+        sub("^\\]\\((\\.\\./|" root "/)", "", m)
         # Self-references are recorded so the downstream cycle check can
         # surface them as 1-cycles (per spec 017 / detect-dependency-cycles —
         # the generator does not silently strip self-references).
