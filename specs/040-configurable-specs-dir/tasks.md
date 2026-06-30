@@ -4,10 +4,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 1. Runtime config resolver
 
-- [ ] Parse `[paths] specs-root` in the runtime config/schema layer
-- [ ] Add a shared `specs_root(repo)` helper returning the configured name or `specs`
-- [ ] Unit-test the default branch (key absent/empty → `specs`) and the override branch
-- [ ] Reject a malformed value (empty, separator, `..`, leading slash) at the parse boundary
+- [x] Parse `[paths] specs-root` in the runtime config/schema layer
+- [x] Add a shared `specs_root(repo)` helper returning the configured name or `specs`
+- [x] Unit-test the default branch (key absent/empty → `specs`) and the override branch
+- [x] Reject a malformed value (empty, separator, `..`, leading slash) at the parse boundary
 
 Done when: the helper returns the configured value or `specs`, and unit tests cover both branches plus malformed input.
 

@@ -1,6 +1,6 @@
 ---
-status: clarified
-dependencies: [002-project-scaffolding, 003-bootstrap-automation, 017-derive-dont-ask, 022-deterministic-runtime, 033-rule-surface-setting]
+status: in-progress
+dependencies: [002-project-scaffolding, 003-bootstrap-automation, 017-derive-dont-ask, 022-deterministic-runtime]
 review:
   last-run: null
   reviewed-against: null
@@ -28,7 +28,7 @@ The fix is one operator-set source of truth for the directory name, set once at 
 
 ## Setting
 
-A new `.govern.toml` key names the spec-root directory, mirroring the operator-setting pattern established by [033-rule-surface-setting](../033-rule-surface-setting/spec.md):
+A new `.govern.toml` key names the spec-root directory, mirroring the operator-setting pattern established by spec 033's `[rules] surfaces` (see also below):
 
 ```toml
 [paths]

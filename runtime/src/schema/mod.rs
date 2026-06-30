@@ -10,8 +10,11 @@
 //! - [`extensions`] — the three initial-release extension-point payloads.
 //! - [`services`] — the `[services]` registry shape from `.govern.toml`
 //!   (spec 030 cross-service references).
+//! - [`paths`] — the `[paths]` block shape from `.govern.toml`, resolving the
+//!   configurable spec-root directory name (spec 040).
 
 pub mod extensions;
+pub mod paths;
 pub mod primitives;
 pub mod procedure;
 pub mod protocol;
