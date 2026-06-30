@@ -49,30 +49,10 @@ done
 
 shopt -s nullglob
 
-# Spec-root directory name from .govern.toml [paths] specs-root (spec 040),
-# defaulting to "specs". A malformed value (empty, path separator, "..") falls
-# back to the default. Mirrors the runtime's schema::paths resolver so the
-# markdown-only and runtime paths agree. Kept self-contained (not sourced) so
-# each shipped generator runs standalone in an adopter pre-commit hook.
-resolve_specs_root() {
-  local toml="$ROOT/.govern.toml" name=""
-  if [ -f "$toml" ]; then
-    name="$(awk '
-      /^\[/ { in_paths = ($0 ~ /^\[paths\][[:space:]]*$/); next }
-      in_paths && /^[[:space:]]*specs-root[[:space:]]*=/ {
-        line = $0
-        sub(/^[^=]*=[[:space:]]*/, "", line)
-        if (match(line, /"[^"]*"/)) { print substr(line, RSTART + 1, RLENGTH - 2) }
-        else { sub(/[[:space:]]*(#.*)?$/, "", line); print line }
-        exit
-      }
-    ' "$toml")"
-  fi
-  case "$name" in
-    "" | */* | *..*) name="specs" ;;
-  esac
-  printf '%s' "$name"
-}
+# Resolve the spec-root directory name (spec 040), shared with the other
+# generator via a sourced helper — one definition, no drift (040 review).
+# shellcheck source=lib/specs-root.sh
+. "$(dirname "$0")/lib/specs-root.sh"
 SPECS_ROOT="$(resolve_specs_root)"
 
 # Enumerate feature-spec files to process, scoped to the git index (tracked +

@@ -82,7 +82,7 @@ pub fn run(args: &TraverseDepsArgs, repo: &Path) -> Result<TraverseDepsResult> {
         });
     }
 
-    let cycles = detect_cycles(repo, &args.feature);
+    let cycles = detect_cycles(&specs_dir, &args.feature);
     if !cycles.is_empty() {
         overall = false;
     }
@@ -127,12 +127,12 @@ fn read_dependencies(spec_path: &Path) -> Vec<String> {
 /// Walk the reachable dep subgraph from `start`, then run Tarjan's SCC
 /// over the resulting directed graph. Returns one entry per non-trivial
 /// SCC: size ≥ 2 (multi-node cycle) or size 1 with a self-edge.
-fn detect_cycles(repo: &Path, start: &str) -> Vec<Vec<String>> {
+fn detect_cycles(specs_dir: &Path, start: &str) -> Vec<Vec<String>> {
     let mut order: Vec<String> = Vec::new();
     let mut index_of: HashMap<String, usize> = HashMap::new();
     let mut adj: Vec<Vec<usize>> = Vec::new();
 
-    visit(start, repo, &mut order, &mut index_of, &mut adj);
+    visit(start, specs_dir, &mut order, &mut index_of, &mut adj);
 
     let mut tarjan = Tarjan::new(&adj);
     tarjan.run();
@@ -153,7 +153,7 @@ fn detect_cycles(repo: &Path, start: &str) -> Vec<Vec<String>> {
 
 fn visit(
     node: &str,
-    repo: &Path,
+    specs_dir: &Path,
     order: &mut Vec<String>,
     index_of: &mut HashMap<String, usize>,
     adj: &mut Vec<Vec<usize>>,
@@ -166,10 +166,10 @@ fn visit(
     index_of.insert(node.to_string(), idx);
     adj.push(Vec::new());
 
-    let spec_path = paths::specs_dir(repo).join(node).join("spec.md");
+    let spec_path = specs_dir.join(node).join("spec.md");
     let deps = read_dependencies(&spec_path);
     for dep in deps {
-        let dep_idx = visit(&dep, repo, order, index_of, adj);
+        let dep_idx = visit(&dep, specs_dir, order, index_of, adj);
         adj[idx].push(dep_idx);
     }
     idx

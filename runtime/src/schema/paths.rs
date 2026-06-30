@@ -39,11 +39,18 @@ pub const DEFAULT_SPECS_ROOT: &str = "specs";
 
 /// Validate a configured spec-root directory name for well-formedness.
 ///
-/// A well-formed name is a single relative path segment: non-empty, with no
-/// path separator (`/` or `\`), no `..`, and no leading slash. These are the
-/// values that would break — or escape — path resolution if accepted. The
-/// predicate is shared so the runtime's best-effort resolver ([`Paths::load`])
-/// and the `/govern` configuration prompt apply the same rule.
+/// A well-formed name is a single directory-name segment using only the
+/// conservative charset `[A-Za-z0-9_-]` (letters, digits, hyphen, underscore)
+/// and is non-empty. This is deliberately stricter than "no separators / no
+/// `..`": the runtime uses the name only as a literal path component (safe at
+/// any charset), but the bash generators interpolate it **unescaped** into
+/// `grep -E` / awk regexes, where a `.`, `+`, `*`, `(`, … would act as a
+/// regex metacharacter (over-matching, or a syntax error that silently drops a
+/// spec). Restricting the charset keeps both sides safe with one rule and also
+/// rejects a lone `.` (which would resolve the spec-root to the repo root).
+/// See spec 040's review. The predicate is shared so the runtime's
+/// best-effort resolver ([`Paths::load`]) and the `/govern` configuration
+/// prompt apply the same rule.
 ///
 /// # Errors
 ///
@@ -53,16 +60,20 @@ pub fn validate_specs_root(name: &str) -> Result<(), String> {
     if name.is_empty() {
         return Err("spec-root name must not be empty".to_owned());
     }
-    if name.starts_with('/') {
-        return Err(format!("spec-root name must not start with '/': {name:?}"));
-    }
+    // A path separator is the most common mistake — give it a specific message
+    // before the general charset check.
     if name.contains('/') || name.contains('\\') {
         return Err(format!(
             "spec-root name must not contain a path separator: {name:?}"
         ));
     }
-    if name.contains("..") {
-        return Err(format!("spec-root name must not contain '..': {name:?}"));
+    if let Some(bad) = name
+        .chars()
+        .find(|c| !matches!(c, 'A'..='Z' | 'a'..='z' | '0'..='9' | '-' | '_'))
+    {
+        return Err(format!(
+            "spec-root name must use only letters, digits, '-', or '_': {name:?} (offending character {bad:?})"
+        ));
     }
     Ok(())
 }
@@ -216,6 +227,21 @@ mod tests {
         assert!(validate_specs_root("..").is_err());
         assert!(validate_specs_root("../escape").is_err());
         assert!(validate_specs_root("a..b").is_err());
+    }
+
+    #[test]
+    fn validate_rejects_regex_metachars_and_dot() {
+        // Characters outside [A-Za-z0-9_-] are rejected so they cannot act as
+        // regex metacharacters when the bash generators interpolate the name
+        // (spec 040 review). A lone `.` (repo-root) is rejected too.
+        for name in [
+            ".", "v1.0", "a.b", "spec+s", "spec(s", "spec*s", "a b", "a[b",
+        ] {
+            assert!(
+                validate_specs_root(name).is_err(),
+                "{name:?} should be rejected"
+            );
+        }
     }
 
     // --- Paths::load / specs_dir: default fallbacks --------------------------

@@ -59,7 +59,8 @@ pub fn run(_args: &DashboardArgs, repo: &Path) -> Result<DashboardResult> {
 /// error. After the first pass, walks the list a second time to fill in
 /// each spec's `blocked-by` (needs every spec's status to be known).
 fn load_specs(repo: &Path) -> Result<Vec<DashboardSpec>> {
-    let specs_dir = paths::specs_dir(repo);
+    let layout = paths::Paths::load(repo);
+    let specs_dir = repo.join(&layout.specs_root);
     let mut entries: Vec<DashboardSpec> = Vec::new();
     if !specs_dir.is_dir() {
         return Ok(entries);
@@ -90,7 +91,7 @@ fn load_specs(repo: &Path) -> Result<Vec<DashboardSpec>> {
     dir_names.sort();
 
     for slug in dir_names {
-        entries.push(load_one_spec(repo, &slug)?);
+        entries.push(load_one_spec(&specs_dir, &layout.specs_root, &slug)?);
     }
 
     let status_by_slug: HashMap<String, String> = entries
@@ -113,13 +114,12 @@ fn load_specs(repo: &Path) -> Result<Vec<DashboardSpec>> {
 
 /// Load one spec's dashboard entry. `blocked_by` is filled in by the
 /// caller after every spec's status has been read.
-fn load_one_spec(repo: &Path, slug: &str) -> Result<DashboardSpec> {
-    let root = paths::Paths::load(repo).specs_root;
-    let feature_dir = repo.join(&root).join(slug);
+fn load_one_spec(specs_dir: &Path, root: &str, slug: &str) -> Result<DashboardSpec> {
+    let feature_dir = specs_dir.join(slug);
     let spec_path = feature_dir.join("spec.md");
     if !spec_path.is_file() {
         return Err(PrimitiveError::MissingSpecFile {
-            root,
+            root: root.to_owned(),
             feature: slug.to_string(),
         });
     }
