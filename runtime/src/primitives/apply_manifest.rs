@@ -193,9 +193,11 @@ fn apply_update(
             return Ok(ACTION_UNCHANGED);
         }
         write_atomic_bytes(dest, &new_bytes)?;
+        mirror_source_mode(source, dest)?;
         Ok(ACTION_UPDATED)
     } else {
         write_atomic_bytes(dest, &new_bytes)?;
+        mirror_source_mode(source, dest)?;
         Ok(ACTION_CREATED)
     }
 }
@@ -212,6 +214,7 @@ fn apply_create(
     }
     let new_bytes = read_and_substitute(source, entry.keep_literals.as_deref(), substitutions)?;
     write_atomic_bytes(dest, &new_bytes)?;
+    mirror_source_mode(source, dest)?;
     Ok(ACTION_CREATED)
 }
 
@@ -224,7 +227,34 @@ fn apply_skip_if_conflict(source: &Path, dest: &Path, dest_exists: bool) -> Resu
         source: src,
     })?;
     write_atomic_bytes(dest, &bytes)?;
+    mirror_source_mode(source, dest)?;
     Ok(ACTION_CREATED)
+}
+
+/// Mirror the source file's permission bits onto a freshly-written
+/// destination. `write_atomic_bytes` materializes the destination from a
+/// new tempfile (mode `0600` on Unix), which strips the source's
+/// executable bit. That is fatal for the generator scripts shipped via
+/// the Shared Files manifest (`scripts/gen-*.sh`, `update` strategy): the
+/// `govern-pre-commit` hook must be able to exec them, and on a fresh
+/// adopter the `created` action would otherwise emit a non-executable
+/// generator. Copying the source's `Permissions` (the readonly flag on
+/// Windows, the full mode on Unix) restores `cp -p`-style fidelity.
+///
+/// Only called on the write paths (`created` / `updated`); the
+/// `unchanged` path never touches the destination, so its mode — already
+/// correct from the write that created it — is preserved untouched.
+fn mirror_source_mode(source: &Path, dest: &Path) -> Result<()> {
+    let perms = fs::metadata(source)
+        .map_err(|src| PrimitiveError::Io {
+            path: source.into(),
+            source: src,
+        })?
+        .permissions();
+    fs::set_permissions(dest, perms).map_err(|src| PrimitiveError::Io {
+        path: dest.into(),
+        source: src,
+    })
 }
 
 /// Read `source` and, if its bytes decode as UTF-8, apply the
@@ -750,6 +780,79 @@ mod tests {
         let result = run(&args, tmp.path()).unwrap();
         assert_eq!(result.created, 1);
         assert_eq!(fs::read(dst.join("logo.png")).unwrap(), bin);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn source_executable_bit_propagates_to_dest_on_create_and_update() {
+        // Regression: `write_atomic_bytes` lands every write as mode 0600,
+        // stripping +x. The Shared Files manifest ships `scripts/gen-*.sh`
+        // with `update` strategy; the dest must stay executable so the
+        // govern-pre-commit hook can run it.
+        use std::os::unix::fs::PermissionsExt;
+
+        let tmp = tempfile::tempdir().unwrap();
+        let src = write_source(tmp.path(), &[("gen.sh", "#!/bin/sh\necho {project}\n")]);
+        fs::set_permissions(src.join("gen.sh"), fs::Permissions::from_mode(0o755)).unwrap();
+        let dst = tmp.path().join("dst");
+
+        let args = args_for(
+            &src,
+            &dst,
+            vec![entry("gen.sh", "scripts/gen.sh", "update")],
+            vec![],
+            subs(&[("project", "anvil")]),
+        );
+
+        // create (dest absent) keeps the executable bit.
+        let first = run(&args, tmp.path()).unwrap();
+        assert_eq!(first.created, 1);
+        let mode = fs::metadata(dst.join("scripts/gen.sh"))
+            .unwrap()
+            .permissions()
+            .mode();
+        assert_ne!(mode & 0o111, 0, "created dest must keep +x, got {mode:o}");
+
+        // update (dest exists, bytes differ) keeps the executable bit.
+        fs::write(src.join("gen.sh"), "#!/bin/sh\necho {project} v2\n").unwrap();
+        fs::set_permissions(src.join("gen.sh"), fs::Permissions::from_mode(0o755)).unwrap();
+        let second = run(&args, tmp.path()).unwrap();
+        assert_eq!(second.updated, 1);
+        let mode = fs::metadata(dst.join("scripts/gen.sh"))
+            .unwrap()
+            .permissions()
+            .mode();
+        assert_ne!(mode & 0o111, 0, "updated dest must keep +x, got {mode:o}");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn skip_if_conflict_propagates_source_executable_bit() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let tmp = tempfile::tempdir().unwrap();
+        let src = write_source(tmp.path(), &[("hook.sh", "#!/bin/sh\nexit 0\n")]);
+        fs::set_permissions(src.join("hook.sh"), fs::Permissions::from_mode(0o755)).unwrap();
+        let dst = tmp.path().join("dst");
+
+        let args = args_for(
+            &src,
+            &dst,
+            vec![entry("hook.sh", ".githooks/hook.sh", "skip-if-conflict")],
+            vec![],
+            BTreeMap::new(),
+        );
+        let result = run(&args, tmp.path()).unwrap();
+        assert_eq!(result.created, 1);
+        let mode = fs::metadata(dst.join(".githooks/hook.sh"))
+            .unwrap()
+            .permissions()
+            .mode();
+        assert_ne!(
+            mode & 0o111,
+            0,
+            "seeded hook must be executable, got {mode:o}"
+        );
     }
 
     #[test]

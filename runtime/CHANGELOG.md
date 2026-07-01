@@ -2,6 +2,12 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.14.1] — 2026-06-30
+
+### Fixed
+
+- **`apply-manifest` preserves the source file's executable bit on the destination.** Every primitive write goes through `write_atomic_bytes`, which materializes the destination from a fresh `NamedTempFile` (mode `0600` on Unix) and renames it into place — so the written file always lost its executable bit. Invisible for the markdown/JSON the manifest mostly ships (git tracks only the exec bit), but fatal for the generator scripts: the **Shared Files** manifest ships `scripts/gen-spec-deps.sh` and `scripts/gen-cross-service-refs.sh` with `update` strategy, and the `govern-pre-commit` hook execs them. A `/govern` run therefore rewrote those generators to `0600`, failing the adopter's pre-commit hook; worse, a fresh adopter's first run hit the `created` path and emitted a non-executable generator from the start. `apply-manifest` now mirrors the source file's `Permissions` onto the destination after each write (`mirror_source_mode`, `cp -p` semantics) on the `created` / `updated` / `skip-if-conflict`-created paths; the `unchanged` path still never touches the file, preserving its mtime and its already-correct mode. This makes `apply-manifest` consistent with `extract-archive`, which already preserves archive-header modes (`apply_unix_mode`) so the staging source carries `+x` for the mirror to copy. New Unix-only regression tests `source_executable_bit_propagates_to_dest_on_create_and_update` and `skip_if_conflict_propagates_source_executable_bit`.
+
 ## [0.14.0] — 2026-06-30
 
 ### Added
