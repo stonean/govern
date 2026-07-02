@@ -90,6 +90,7 @@ Configure `.claude/settings.local.json` with the permissions needed for slash co
    - `mcp__gvrn__derive-boundary`
    - `mcp__gvrn__discover-rule-files`
    - `mcp__gvrn__process-waivers`
+   - `mcp__gvrn__compute-review-scope`
    - `mcp__gvrn__check-stuck`
    - `mcp__gvrn__validate-frontmatter`
    - `mcp__gvrn__resolve-anchor`

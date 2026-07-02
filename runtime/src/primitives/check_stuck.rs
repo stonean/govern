@@ -126,7 +126,10 @@ fn first_incomplete_subtask_index(content: &str) -> Option<usize> {
 /// Walk commits oldest-first looking for the most recent commit whose
 /// `spec.md` content transitions `status` *into* `in-progress`. Returns the
 /// sha of that commit, or `None` when no such transition exists.
-fn find_in_progress_commit(repo: &Repository, spec_rel: &str) -> Result<Option<String>> {
+///
+/// Shared with `compute-review-scope`, which uses the same commit as its
+/// default `diff-base`.
+pub(crate) fn find_in_progress_commit(repo: &Repository, spec_rel: &str) -> Result<Option<String>> {
     let mut walk = repo.revwalk()?;
     walk.push_head()?;
     walk.set_sorting(Sort::TOPOLOGICAL | Sort::REVERSE)?;

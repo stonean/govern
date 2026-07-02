@@ -10,12 +10,12 @@ use std::io;
 use gvrn::mcp::server::GovRuntimeServer;
 use gvrn::primitives;
 use gvrn::schema::primitives::{
-    AppendTaskArgs, ApplyManifestArgs, CheckRuleIdsArgs, CheckStuckArgs, CreateScenarioArgs,
-    DashboardArgs, DeriveBoundaryArgs, DiscoverRuleFilesArgs, EnforceManifestArgs,
-    ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs,
-    MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs, MergePermissionsArgs,
-    MigrateSessionFileArgs, ProcessWaiversArgs, ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs,
-    RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs,
+    AppendTaskArgs, ApplyManifestArgs, CheckRuleIdsArgs, CheckStuckArgs, ComputeReviewScopeArgs,
+    CreateScenarioArgs, DashboardArgs, DeriveBoundaryArgs, DiscoverRuleFilesArgs,
+    EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs,
+    MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs,
+    MergePermissionsArgs, MigrateSessionFileArgs, ProcessWaiversArgs, ReadSpecArgs, ReadTasksArgs,
+    ResolveAnchorArgs, RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs,
     ValidateFrontmatterArgs, WriteSessionArgs,
 };
 
@@ -77,6 +77,8 @@ enum Command {
     DiscoverRuleFiles(DiscoverRuleFilesArgs),
     /// Classify a spec's review.waivers against currently-firing findings.
     ProcessWaivers(ProcessWaiversArgs),
+    /// Resolve /gov:review's diff-base, file scope, and captured issues.
+    ComputeReviewScope(ComputeReviewScopeArgs),
     /// Flip a single subtask checkbox in `tasks.md` (atomic rewrite).
     MarkTask(MarkTaskArgs),
     /// Flip a single acceptance-criterion checkbox in `spec.md`.
@@ -373,6 +375,9 @@ fn main() -> ExitCode {
         }
         Command::ProcessWaivers(args) => {
             emit_result(primitives::process_waivers::run(&args, &repo))
+        }
+        Command::ComputeReviewScope(args) => {
+            emit_result(primitives::compute_review_scope::run(&args, &repo))
         }
         Command::MarkTask(args) => emit_result(primitives::mark_task::run(&args, &repo)),
         Command::MarkCriterion(args) => emit_result(primitives::mark_criterion::run(&args, &repo)),

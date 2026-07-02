@@ -133,6 +133,39 @@ pub struct ProcessWaiversResult {
     pub notices: Vec<String>,
 }
 
+// -- compute-review-scope ----------------------------------------------------
+
+/// Args for `compute-review-scope`.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct ComputeReviewScopeArgs {
+    /// Feature directory name whose review scope is computed.
+    #[arg(long)]
+    pub feature: String,
+    /// Optional diff-base override (a git ref or sha). When omitted, the
+    /// commit the spec advanced to `in-progress` at is used.
+    #[serde(default)]
+    #[arg(long)]
+    pub since: Option<String>,
+}
+
+/// Result for `compute-review-scope`.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct ComputeReviewScopeResult {
+    /// Resolved diff-base sha (empty when the spec never reached `in-progress`
+    /// and no `--since` was given).
+    pub diff_base: String,
+    /// The review scope: the larger of `plan-affected` and `modified-since`.
+    pub scope: Vec<String>,
+    /// Files changed between `diff-base` and HEAD, sorted.
+    pub modified_since: Vec<String>,
+    /// Files listed under the plan's `## Affected Files` section.
+    pub plan_affected: Vec<String>,
+    /// Lines added to `{specs-root}/inbox.md` in the `diff-base..HEAD` window.
+    pub captured_issues: Vec<String>,
+}
+
 /// Parsed spec frontmatter.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]

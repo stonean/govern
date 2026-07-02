@@ -27,8 +27,9 @@ use crate::primitives;
 use crate::primitives::gate_confirm::GatePromptPayload;
 use crate::schema::primitives::{
     AppendTaskArgs, AppendTaskResult, ApplyManifestArgs, ApplyManifestResult, CheckRuleIdsArgs,
-    CheckRuleIdsResult, CheckStuckArgs, CheckStuckResult, CheckboxToggleResult, CreateScenarioArgs,
-    CreateScenarioResult, DashboardArgs, DashboardResult, DeriveBoundaryArgs, DeriveBoundaryResult,
+    CheckRuleIdsResult, CheckStuckArgs, CheckStuckResult, CheckboxToggleResult,
+    ComputeReviewScopeArgs, ComputeReviewScopeResult, CreateScenarioArgs, CreateScenarioResult,
+    DashboardArgs, DashboardResult, DeriveBoundaryArgs, DeriveBoundaryResult,
     DiscoverRuleFilesArgs, DiscoverRuleFilesResult, EnforceManifestArgs, EnforceManifestResult,
     ExtractArchiveArgs, ExtractArchiveResult, FetchArchiveArgs, FetchArchiveResult,
     GateConfirmArgs, LintMarkdownArgs, LintMarkdownResult, MarkCriterionArgs, MarkTaskArgs,
@@ -51,6 +52,7 @@ pub const TOOL_NAMES: &[&str] = &[
     "derive-boundary",
     "discover-rule-files",
     "process-waivers",
+    "compute-review-scope",
     "check-stuck",
     "validate-frontmatter",
     "resolve-anchor",
@@ -502,6 +504,19 @@ impl GovRuntimeServer {
         params: Parameters<ProcessWaiversArgs>,
     ) -> Result<Json<ProcessWaiversResult>, String> {
         primitives::process_waivers::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "compute-review-scope",
+        description = "Resolve /gov:review's diff-base, file scope, and inbox-window captured issues."
+    )]
+    async fn compute_review_scope(
+        &self,
+        params: Parameters<ComputeReviewScopeArgs>,
+    ) -> Result<Json<ComputeReviewScopeResult>, String> {
+        primitives::compute_review_scope::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
     }

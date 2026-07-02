@@ -14,6 +14,7 @@ pub mod append_task;
 pub mod apply_manifest;
 pub mod check_rule_ids;
 pub mod check_stuck;
+pub mod compute_review_scope;
 pub mod create_scenario;
 pub mod dashboard;
 pub mod derive_boundary;
