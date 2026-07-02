@@ -17,6 +17,7 @@ pub mod check_stuck;
 pub mod create_scenario;
 pub mod dashboard;
 pub mod derive_boundary;
+pub mod discover_rule_files;
 pub mod enforce_manifest;
 pub mod extract_archive;
 pub mod fetch_archive;
@@ -302,6 +303,21 @@ pub enum PrimitiveError {
         root: String,
         /// Feature directory name that lacks a `spec.md`.
         feature: String,
+    },
+    /// `[rules] surfaces` named a member outside `{backend, frontend}`.
+    /// `discover-rule-files` fails fast rather than silently ignoring it.
+    #[error(
+        "invalid [rules] surfaces member \"{value}\" — accepted members are \"backend\" and \"frontend\" (use [] for cross-only; -cross.md files always apply)"
+    )]
+    InvalidSurfacesMember {
+        /// The offending member string.
+        value: String,
+    },
+    /// `[rules] surfaces` was set to something other than a list of strings.
+    #[error("[rules] surfaces must be a list of strings, got {got}")]
+    InvalidSurfacesType {
+        /// Human-readable description of the actual type found.
+        got: String,
     },
 }
 

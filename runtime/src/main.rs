@@ -11,11 +11,12 @@ use gvrn::mcp::server::GovRuntimeServer;
 use gvrn::primitives;
 use gvrn::schema::primitives::{
     AppendTaskArgs, ApplyManifestArgs, CheckRuleIdsArgs, CheckStuckArgs, CreateScenarioArgs,
-    DashboardArgs, DeriveBoundaryArgs, EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs,
-    GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs,
-    MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs, ReadSpecArgs,
-    ReadTasksArgs, ResolveAnchorArgs, RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs,
-    TraverseDepsArgs, ValidateFrontmatterArgs, WriteSessionArgs,
+    DashboardArgs, DeriveBoundaryArgs, DiscoverRuleFilesArgs, EnforceManifestArgs,
+    ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs,
+    MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs, MergePermissionsArgs,
+    MigrateSessionFileArgs, ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs, RunGeneratorArgs,
+    SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs, ValidateFrontmatterArgs,
+    WriteSessionArgs,
 };
 
 #[derive(Parser, Debug)]
@@ -72,6 +73,8 @@ enum Command {
     CheckStuck(CheckStuckArgs),
     /// Derive the runtime write boundary from git history.
     DeriveBoundary(DeriveBoundaryArgs),
+    /// Select rule files for /gov:review (suffix, [rules] surfaces, disabled-rule-files).
+    DiscoverRuleFiles(DiscoverRuleFilesArgs),
     /// Flip a single subtask checkbox in `tasks.md` (atomic rewrite).
     MarkTask(MarkTaskArgs),
     /// Flip a single acceptance-criterion checkbox in `spec.md`.
@@ -362,6 +365,9 @@ fn main() -> ExitCode {
         Command::CheckStuck(args) => emit_result(primitives::check_stuck::run(&args, &repo)),
         Command::DeriveBoundary(args) => {
             emit_result(primitives::derive_boundary::run(&args, &repo))
+        }
+        Command::DiscoverRuleFiles(args) => {
+            emit_result(primitives::discover_rule_files::run(&args, &repo))
         }
         Command::MarkTask(args) => emit_result(primitives::mark_task::run(&args, &repo)),
         Command::MarkCriterion(args) => emit_result(primitives::mark_criterion::run(&args, &repo)),

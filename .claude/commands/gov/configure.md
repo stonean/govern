@@ -88,6 +88,7 @@ Configure `.claude/settings.local.json` with the permissions needed for slash co
    - `mcp__gvrn__mark-criterion`
    - `mcp__gvrn__set-status`
    - `mcp__gvrn__derive-boundary`
+   - `mcp__gvrn__discover-rule-files`
    - `mcp__gvrn__check-stuck`
    - `mcp__gvrn__validate-frontmatter`
    - `mcp__gvrn__resolve-anchor`

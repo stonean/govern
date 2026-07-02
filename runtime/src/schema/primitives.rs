@@ -49,6 +49,38 @@ pub struct ReviewBlock {
     pub blocking: bool,
 }
 
+// -- discover-rule-files -----------------------------------------------------
+
+/// Args for `discover-rule-files`.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct DiscoverRuleFilesArgs {
+    /// Surfaces detected by the host's stack detection, consulted ONLY when
+    /// `.govern.toml` `[rules] surfaces` is unset. Members are `backend`
+    /// and/or `frontend`. When the config key is set it wins; when both are
+    /// absent, every recognized surface is loaded.
+    #[serde(default)]
+    #[arg(long = "detected-surface")]
+    pub detected_surfaces: Vec<String>,
+}
+
+/// Result for `discover-rule-files`.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct DiscoverRuleFilesResult {
+    /// Repo-relative rule-file directory that was listed (`framework/rules`
+    /// in govern's own repo, `{specs-root}/rules` in adopters). Empty when
+    /// neither exists.
+    pub rules_dir: String,
+    /// Selected rule-file basenames, sorted, after surface selection and the
+    /// disabled-rule-files filter.
+    pub selected: Vec<String>,
+    /// Ordered stdout notice lines to emit verbatim: unrecognized-suffix
+    /// warnings, then disabled-rule-file notices, then the closing
+    /// `loading rule files: …` line.
+    pub notices: Vec<String>,
+}
+
 /// Parsed spec frontmatter.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]

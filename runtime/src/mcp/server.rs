@@ -29,13 +29,14 @@ use crate::schema::primitives::{
     AppendTaskArgs, AppendTaskResult, ApplyManifestArgs, ApplyManifestResult, CheckRuleIdsArgs,
     CheckRuleIdsResult, CheckStuckArgs, CheckStuckResult, CheckboxToggleResult, CreateScenarioArgs,
     CreateScenarioResult, DashboardArgs, DashboardResult, DeriveBoundaryArgs, DeriveBoundaryResult,
-    EnforceManifestArgs, EnforceManifestResult, ExtractArchiveArgs, ExtractArchiveResult,
-    FetchArchiveArgs, FetchArchiveResult, GateConfirmArgs, LintMarkdownArgs, LintMarkdownResult,
-    MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeClaudeMdResult, MergeManagedBlockArgs,
-    MergeManagedBlockResult, MergePermissionsArgs, MergePermissionsResult, MigrateSessionFileArgs,
-    MigrateSessionFileResult, ReadSpecArgs, ReadSpecResult, ReadTasksArgs, ReadTasksResult,
-    ResolveAnchorArgs, ResolveAnchorResult, ResolveReferencesArgs, ResolveReferencesResult,
-    RunGeneratorArgs, RunGeneratorResult, SetStatusArgs, SetStatusResult, SubstituteTemplatesArgs,
+    DiscoverRuleFilesArgs, DiscoverRuleFilesResult, EnforceManifestArgs, EnforceManifestResult,
+    ExtractArchiveArgs, ExtractArchiveResult, FetchArchiveArgs, FetchArchiveResult,
+    GateConfirmArgs, LintMarkdownArgs, LintMarkdownResult, MarkCriterionArgs, MarkTaskArgs,
+    MergeClaudeMdArgs, MergeClaudeMdResult, MergeManagedBlockArgs, MergeManagedBlockResult,
+    MergePermissionsArgs, MergePermissionsResult, MigrateSessionFileArgs, MigrateSessionFileResult,
+    ReadSpecArgs, ReadSpecResult, ReadTasksArgs, ReadTasksResult, ResolveAnchorArgs,
+    ResolveAnchorResult, ResolveReferencesArgs, ResolveReferencesResult, RunGeneratorArgs,
+    RunGeneratorResult, SetStatusArgs, SetStatusResult, SubstituteTemplatesArgs,
     SubstituteTemplatesResult, TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs,
     ValidateFrontmatterResult, WriteSessionArgs, WriteSessionResult,
 };
@@ -48,6 +49,7 @@ pub const TOOL_NAMES: &[&str] = &[
     "mark-criterion",
     "set-status",
     "derive-boundary",
+    "discover-rule-files",
     "check-stuck",
     "validate-frontmatter",
     "resolve-anchor",
@@ -473,6 +475,19 @@ impl GovRuntimeServer {
         params: Parameters<CreateScenarioArgs>,
     ) -> Result<Json<CreateScenarioResult>, String> {
         primitives::create_scenario::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "discover-rule-files",
+        description = "Select rule files for /gov:review by suffix, [rules] surfaces, and disabled-rule-files."
+    )]
+    async fn discover_rule_files(
+        &self,
+        params: Parameters<DiscoverRuleFilesArgs>,
+    ) -> Result<Json<DiscoverRuleFilesResult>, String> {
+        primitives::discover_rule_files::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
     }

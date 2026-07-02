@@ -24,6 +24,7 @@ mark-task
 mark-criterion
 set-status
 derive-boundary
+discover-rule-files
 check-stuck
 validate-frontmatter
 resolve-anchor

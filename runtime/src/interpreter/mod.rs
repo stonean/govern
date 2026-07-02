@@ -31,11 +31,12 @@ use crate::primitives;
 use crate::schema::extensions::{self, ValidationError, WriteCodeResponse};
 use crate::schema::primitives::{
     AppendTaskArgs, ApplyManifestArgs, CheckRuleIdsArgs, CheckStuckArgs, CreateScenarioArgs,
-    DashboardArgs, DeriveBoundaryArgs, EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs,
-    GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs,
-    MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs, ReadSpecArgs,
-    ReadTasksArgs, ResolveAnchorArgs, RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs,
-    TraverseDepsArgs, ValidateFrontmatterArgs, WriteSessionArgs,
+    DashboardArgs, DeriveBoundaryArgs, DiscoverRuleFilesArgs, EnforceManifestArgs,
+    ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs,
+    MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs, MergePermissionsArgs,
+    MigrateSessionFileArgs, ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs, RunGeneratorArgs,
+    SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs, ValidateFrontmatterArgs,
+    WriteSessionArgs,
 };
 use crate::schema::procedure::{Procedure, Step, StepNumber};
 use crate::schema::protocol::{ErrorLocation, ProtocolMessage};
@@ -486,6 +487,7 @@ fn dispatch_primitive(
         "mark-criterion" => call!(MarkCriterionArgs, mark_criterion),
         "set-status" => call!(SetStatusArgs, set_status),
         "derive-boundary" => call!(DeriveBoundaryArgs, derive_boundary),
+        "discover-rule-files" => call!(DiscoverRuleFilesArgs, discover_rule_files),
         "check-stuck" => call!(CheckStuckArgs, check_stuck),
         "validate-frontmatter" => call!(ValidateFrontmatterArgs, validate_frontmatter),
         "resolve-anchor" => call!(ResolveAnchorArgs, resolve_anchor),
