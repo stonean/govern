@@ -116,6 +116,49 @@ async fn lists_every_manifest_tool_and_canonical_set() {
     }
 }
 
+/// `schemars` stamps OpenAPI-style numeric `format` hints (`uint32`,
+/// `uint64`, `uint8`, …) onto Rust integer/float fields. JSON Schema
+/// defines no `format` for numeric types, so strict MCP clients (opencode)
+/// log `unknown format "uint32" ignored` for each one. The server strips
+/// them at construction; assert none survive on any served tool schema.
+#[tokio::test]
+async fn no_tool_schema_carries_a_nonstandard_numeric_format() {
+    fn collect_formats(value: &Value, out: &mut Vec<String>) {
+        match value {
+            Value::Object(map) => {
+                if let Some(Value::String(fmt)) = map.get("format") {
+                    out.push(fmt.clone());
+                }
+                for child in map.values() {
+                    collect_formats(child, out);
+                }
+            }
+            Value::Array(items) => items.iter().for_each(|v| collect_formats(v, out)),
+            _ => {}
+        }
+    }
+
+    let is_numeric_format =
+        |f: &str| f.starts_with("int") || f.starts_with("uint") || matches!(f, "float" | "double");
+
+    let client = start_pair(fixture_repo()).await;
+    let tools = client.list_tools(Option::default()).await.unwrap();
+
+    for tool in &tools.tools {
+        let mut formats = Vec::new();
+        collect_formats(&Value::Object((*tool.input_schema).clone()), &mut formats);
+        if let Some(output) = &tool.output_schema {
+            collect_formats(&Value::Object((**output).clone()), &mut formats);
+        }
+        let offenders: Vec<&String> = formats.iter().filter(|f| is_numeric_format(f)).collect();
+        assert!(
+            offenders.is_empty(),
+            "tool {} exposes non-standard numeric format(s): {offenders:?}",
+            tool.name
+        );
+    }
+}
+
 #[tokio::test]
 async fn read_spec_returns_structured_frontmatter() {
     let client = start_pair(fixture_repo()).await;

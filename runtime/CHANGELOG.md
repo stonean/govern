@@ -2,6 +2,12 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.14.2] — 2026-07-01
+
+### Fixed
+
+- **MCP tool schemas no longer carry non-standard numeric `format` hints.** `schemars` stamps OpenAPI-style `format` values (`uint32`, `uint64`, `uint8`) onto every Rust integer/float field, so every tool's input/output schema exposed over MCP annotated its numeric properties (`task-number`, `created`, `updated`, `unchanged`, `commit-count`, `line`, `bytes`, …) with a `format` JSON Schema defines no meaning for. Strict clients validate the served schemas and log a `unknown format "uint32" ignored in schema at path …` warning for each occurrence — opencode emits dozens on connect. `GovRuntimeServer::new` now walks every tool's input and output schema at construction and drops `format` from any node typed `integer`/`number`, leaving string formats (`date-time`, `uri`, …) untouched. This required pointing the `#[tool_handler]` at the stored, sanitized `self.tool_router` (`router = self.tool_router`) instead of its default `Self::tool_router()`, which regenerated a fresh, unsanitized router on every `list_tools`/`call_tool`. New `tests/mcp.rs` regression `no_tool_schema_carries_a_nonstandard_numeric_format` asserts no served schema exposes a numeric `format`. Schema-only change: no primitive behavior or parity golden is affected.
+
 ## [0.14.1] — 2026-06-30
 
 ### Fixed

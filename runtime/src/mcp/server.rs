@@ -19,8 +19,9 @@ use std::sync::Arc;
 
 use rmcp::handler::server::router::tool::ToolRouter;
 use rmcp::handler::server::wrapper::{Json, Parameters};
-use rmcp::model::{ServerCapabilities, ServerInfo};
+use rmcp::model::{JsonObject, ServerCapabilities, ServerInfo};
 use rmcp::{ServerHandler, tool, tool_handler, tool_router};
+use serde_json::Value;
 
 use crate::primitives;
 use crate::primitives::gate_confirm::GatePromptPayload;
@@ -76,10 +77,12 @@ pub const TOOL_NAMES: &[&str] = &[
 #[derive(Clone)]
 pub struct GovRuntimeServer {
     repo: Arc<PathBuf>,
-    // The `#[tool_router]` macro emits dispatch code that constructs and
-    // consumes this field at compile time, but rustc's dead-code analysis
-    // doesn't see through the macro. Required to remain on the struct.
-    #[allow(dead_code)]
+    // Dispatch router the `#[tool_handler(router = self.tool_router)]` impl
+    // reads for both `list_tools` and `call_tool`. Built once in `new()` and
+    // post-processed by `strip_nonstandard_formats` so every served schema is
+    // sanitized. The handler must point here rather than at its default
+    // `Self::tool_router()`, which would regenerate a fresh, unsanitized
+    // router on every call.
     tool_router: ToolRouter<Self>,
 }
 
@@ -88,14 +91,73 @@ impl GovRuntimeServer {
     /// resolves relative paths against).
     #[must_use]
     pub fn new(repo: PathBuf) -> Self {
+        let mut tool_router = Self::tool_router();
+        strip_nonstandard_formats(&mut tool_router);
         Self {
             repo: Arc::new(repo),
-            tool_router: Self::tool_router(),
+            tool_router,
         }
     }
 
     fn repo(&self) -> &std::path::Path {
         self.repo.as_path()
+    }
+}
+
+/// Strip non-standard numeric `format` hints from every tool schema.
+///
+/// `schemars` stamps OpenAPI-style `format` values (`uint32`, `uint64`,
+/// `uint8`, …) onto every Rust integer/float field. JSON Schema defines
+/// no `format` values for numeric types, so strict MCP clients (opencode
+/// and other Ajv-based validators) log `unknown format "uint32" ignored`
+/// for each occurrence in a tool's input/output schema. The hints carry no
+/// validation meaning for our consumers, so we drop them at construction —
+/// leaving string formats (`date-time`, `uri`, `uuid`, …) untouched.
+fn strip_nonstandard_formats(router: &mut ToolRouter<GovRuntimeServer>) {
+    for route in router.map.values_mut() {
+        route.attr.input_schema = sanitized_schema(&route.attr.input_schema);
+        if let Some(output) = route.attr.output_schema.as_ref() {
+            route.attr.output_schema = Some(sanitized_schema(output));
+        }
+    }
+}
+
+/// Clone a tool schema, drop each numeric node's `format`, and re-wrap it.
+fn sanitized_schema(schema: &Arc<JsonObject>) -> Arc<JsonObject> {
+    let mut value = Value::Object(schema.as_ref().clone());
+    strip_numeric_formats(&mut value);
+    let Value::Object(map) = value else {
+        unreachable!("a JSON Schema root is always an object");
+    };
+    Arc::new(map)
+}
+
+/// Recursively remove `format` from any node typed `integer` or `number`.
+fn strip_numeric_formats(value: &mut Value) {
+    match value {
+        Value::Object(map) => {
+            if node_is_numeric(map) {
+                map.remove("format");
+            }
+            for child in map.values_mut() {
+                strip_numeric_formats(child);
+            }
+        }
+        Value::Array(items) => items.iter_mut().for_each(strip_numeric_formats),
+        _ => {}
+    }
+}
+
+/// A schema node is numeric when its `type` is (or includes) `integer` or
+/// `number` — the two JSON Schema types that admit no standard `format`.
+fn node_is_numeric(map: &JsonObject) -> bool {
+    fn is_numeric_type(ty: &Value) -> bool {
+        matches!(ty.as_str(), Some("integer" | "number"))
+    }
+    match map.get("type") {
+        Some(ty @ Value::String(_)) => is_numeric_type(ty),
+        Some(Value::Array(types)) => types.iter().any(is_numeric_type),
+        _ => false,
     }
 }
 
@@ -468,7 +530,7 @@ impl GovRuntimeServer {
     }
 }
 
-#[tool_handler]
+#[tool_handler(router = self.tool_router)]
 impl ServerHandler for GovRuntimeServer {
     fn get_info(&self) -> ServerInfo {
         ServerInfo::new(ServerCapabilities::builder().enable_tools().build()).with_instructions(
