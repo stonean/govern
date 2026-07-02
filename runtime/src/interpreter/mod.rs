@@ -34,9 +34,9 @@ use crate::schema::primitives::{
     DashboardArgs, DeriveBoundaryArgs, DiscoverRuleFilesArgs, EnforceManifestArgs,
     ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs,
     MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs, MergePermissionsArgs,
-    MigrateSessionFileArgs, ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs, RunGeneratorArgs,
-    SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs, ValidateFrontmatterArgs,
-    WriteSessionArgs,
+    MigrateSessionFileArgs, ProcessWaiversArgs, ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs,
+    RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs,
+    ValidateFrontmatterArgs, WriteSessionArgs,
 };
 use crate::schema::procedure::{Procedure, Step, StepNumber};
 use crate::schema::protocol::{ErrorLocation, ProtocolMessage};
@@ -488,6 +488,7 @@ fn dispatch_primitive(
         "set-status" => call!(SetStatusArgs, set_status),
         "derive-boundary" => call!(DeriveBoundaryArgs, derive_boundary),
         "discover-rule-files" => call!(DiscoverRuleFilesArgs, discover_rule_files),
+        "process-waivers" => call!(ProcessWaiversArgs, process_waivers),
         "check-stuck" => call!(CheckStuckArgs, check_stuck),
         "validate-frontmatter" => call!(ValidateFrontmatterArgs, validate_frontmatter),
         "resolve-anchor" => call!(ResolveAnchorArgs, resolve_anchor),

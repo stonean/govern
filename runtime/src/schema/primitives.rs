@@ -81,6 +81,58 @@ pub struct DiscoverRuleFilesResult {
     pub notices: Vec<String>,
 }
 
+// -- process-waivers ---------------------------------------------------------
+
+/// A currently-firing `(rule, file)` finding — input to `process-waivers`.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct FiredFinding {
+    /// Rule ID that fires.
+    pub rule: String,
+    /// Repo-relative file path where it fires.
+    pub file: String,
+}
+
+/// A resolved waiver reference in a `process-waivers` result.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct WaiverRef {
+    /// Waived rule ID.
+    pub rule: String,
+    /// Anchored file path.
+    pub file: String,
+    /// Operator-supplied justification.
+    pub reason: String,
+}
+
+/// Args for `process-waivers`.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct ProcessWaiversArgs {
+    /// Feature directory name whose `spec.md` carries `review.waivers`.
+    #[arg(long)]
+    pub feature: String,
+    /// Currently-firing `(rule, file)` findings from the review passes.
+    /// Supplied via MCP/interpreter JSON; not a CLI flag.
+    #[serde(default)]
+    #[arg(skip)]
+    pub fired: Vec<FiredFinding>,
+}
+
+/// Result for `process-waivers`.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct ProcessWaiversResult {
+    /// Waivers that apply this run (anchor exists and the rule still fires).
+    pub applied: Vec<WaiverRef>,
+    /// Waivers that expired this run (anchor gone or rule no longer fires);
+    /// `write-review` drops these on the next frontmatter write.
+    pub expired: Vec<WaiverRef>,
+    /// Ordered notice lines: `waiver expired: …`, `malformed waiver …`, and
+    /// `duplicate waiver: …`, in entry order.
+    pub notices: Vec<String>,
+}
+
 /// Parsed spec frontmatter.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]

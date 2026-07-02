@@ -34,11 +34,11 @@ use crate::schema::primitives::{
     GateConfirmArgs, LintMarkdownArgs, LintMarkdownResult, MarkCriterionArgs, MarkTaskArgs,
     MergeClaudeMdArgs, MergeClaudeMdResult, MergeManagedBlockArgs, MergeManagedBlockResult,
     MergePermissionsArgs, MergePermissionsResult, MigrateSessionFileArgs, MigrateSessionFileResult,
-    ReadSpecArgs, ReadSpecResult, ReadTasksArgs, ReadTasksResult, ResolveAnchorArgs,
-    ResolveAnchorResult, ResolveReferencesArgs, ResolveReferencesResult, RunGeneratorArgs,
-    RunGeneratorResult, SetStatusArgs, SetStatusResult, SubstituteTemplatesArgs,
-    SubstituteTemplatesResult, TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs,
-    ValidateFrontmatterResult, WriteSessionArgs, WriteSessionResult,
+    ProcessWaiversArgs, ProcessWaiversResult, ReadSpecArgs, ReadSpecResult, ReadTasksArgs,
+    ReadTasksResult, ResolveAnchorArgs, ResolveAnchorResult, ResolveReferencesArgs,
+    ResolveReferencesResult, RunGeneratorArgs, RunGeneratorResult, SetStatusArgs, SetStatusResult,
+    SubstituteTemplatesArgs, SubstituteTemplatesResult, TraverseDepsArgs, TraverseDepsResult,
+    ValidateFrontmatterArgs, ValidateFrontmatterResult, WriteSessionArgs, WriteSessionResult,
 };
 
 /// Canonical MCP tool names exposed by the server, in manifest order.
@@ -50,6 +50,7 @@ pub const TOOL_NAMES: &[&str] = &[
     "set-status",
     "derive-boundary",
     "discover-rule-files",
+    "process-waivers",
     "check-stuck",
     "validate-frontmatter",
     "resolve-anchor",
@@ -488,6 +489,19 @@ impl GovRuntimeServer {
         params: Parameters<DiscoverRuleFilesArgs>,
     ) -> Result<Json<DiscoverRuleFilesResult>, String> {
         primitives::discover_rule_files::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "process-waivers",
+        description = "Classify a spec's review.waivers against currently-firing findings (apply/expire/dedup)."
+    )]
+    async fn process_waivers(
+        &self,
+        params: Parameters<ProcessWaiversArgs>,
+    ) -> Result<Json<ProcessWaiversResult>, String> {
+        primitives::process_waivers::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
     }

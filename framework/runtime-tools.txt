@@ -25,6 +25,7 @@ mark-criterion
 set-status
 derive-boundary
 discover-rule-files
+process-waivers
 check-stuck
 validate-frontmatter
 resolve-anchor

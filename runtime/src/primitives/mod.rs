@@ -29,6 +29,7 @@ pub mod merge_claude_md;
 pub mod merge_managed_block;
 pub mod merge_permissions;
 pub mod migrate_session_file;
+pub mod process_waivers;
 pub mod read_spec;
 pub mod read_tasks;
 pub mod resolve_anchor;

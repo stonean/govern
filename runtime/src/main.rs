@@ -14,9 +14,9 @@ use gvrn::schema::primitives::{
     DashboardArgs, DeriveBoundaryArgs, DiscoverRuleFilesArgs, EnforceManifestArgs,
     ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs,
     MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs, MergePermissionsArgs,
-    MigrateSessionFileArgs, ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs, RunGeneratorArgs,
-    SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs, ValidateFrontmatterArgs,
-    WriteSessionArgs,
+    MigrateSessionFileArgs, ProcessWaiversArgs, ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs,
+    RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs,
+    ValidateFrontmatterArgs, WriteSessionArgs,
 };
 
 #[derive(Parser, Debug)]
@@ -75,6 +75,8 @@ enum Command {
     DeriveBoundary(DeriveBoundaryArgs),
     /// Select rule files for /gov:review (suffix, [rules] surfaces, disabled-rule-files).
     DiscoverRuleFiles(DiscoverRuleFilesArgs),
+    /// Classify a spec's review.waivers against currently-firing findings.
+    ProcessWaivers(ProcessWaiversArgs),
     /// Flip a single subtask checkbox in `tasks.md` (atomic rewrite).
     MarkTask(MarkTaskArgs),
     /// Flip a single acceptance-criterion checkbox in `spec.md`.
@@ -368,6 +370,9 @@ fn main() -> ExitCode {
         }
         Command::DiscoverRuleFiles(args) => {
             emit_result(primitives::discover_rule_files::run(&args, &repo))
+        }
+        Command::ProcessWaivers(args) => {
+            emit_result(primitives::process_waivers::run(&args, &repo))
         }
         Command::MarkTask(args) => emit_result(primitives::mark_task::run(&args, &repo)),
         Command::MarkCriterion(args) => emit_result(primitives::mark_criterion::run(&args, &repo)),
