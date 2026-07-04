@@ -166,6 +166,128 @@ pub struct ComputeReviewScopeResult {
     pub captured_issues: Vec<String>,
 }
 
+// -- write-review ------------------------------------------------------------
+
+/// One review finding — the record shape a `performReview` pass returns and
+/// `write-review` consumes. `rule` / `severity` / `file` / `line-range` /
+/// `confidence` are the extension-point contract; the render extras
+/// (`summary` / `finding` / `rule-text` / `auto-fixable` / `suggested-fix`)
+/// populate the per-finding block in `review.md` and default to empty so a
+/// minimal finding still deserializes.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct ReviewFinding {
+    /// Rule ID (e.g., "SEC-BE-014").
+    pub rule: String,
+    /// Severity tier: `must` or `should`.
+    pub severity: String,
+    /// Repo-relative file path the finding anchors to.
+    pub file: String,
+    /// Line range within the file (e.g., "42-55" or "42"); empty means the
+    /// whole file (overlaps any range with the same rule + file for dedup).
+    #[serde(default)]
+    pub line_range: String,
+    /// Confidence tier: `high` or `low`. A `low` finding lands in the
+    /// Low-confidence section regardless of severity.
+    #[serde(default)]
+    pub confidence: String,
+    /// One-line finding summary (the `### … — <summary>` heading tail).
+    #[serde(default)]
+    pub summary: String,
+    /// One-to-three-sentence explanation.
+    #[serde(default)]
+    pub finding: String,
+    /// Verbatim rule text quoted from the rule file.
+    #[serde(default)]
+    pub rule_text: String,
+    /// Whether a mechanical auto-fix exists.
+    #[serde(default)]
+    pub auto_fixable: bool,
+    /// Suggested fix (code block or prose); omitted from the render when empty.
+    #[serde(default)]
+    pub suggested_fix: String,
+}
+
+/// Args for `write-review`. Findings cross the runtime boundary as a single
+/// `findings` array (the content-ingestion convention), never as several
+/// large per-section prose params.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct WriteReviewArgs {
+    /// Feature directory name whose `review.md` is written.
+    #[arg(long)]
+    pub feature: String,
+    /// ISO-8601 UTC timestamp recorded as `reviewed-at` / `review.last-run`.
+    #[arg(long)]
+    pub reviewed_at: String,
+    /// HEAD sha the review ran against (`reviewed-against`).
+    #[arg(long)]
+    pub reviewed_against: String,
+    /// diff-base sha from `compute-review-scope` (recorded in the report).
+    #[arg(long)]
+    pub diff_base: String,
+    /// Scenario slug, when the run was scenario-targeted.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[arg(long)]
+    pub scenario: Option<String>,
+    /// When true, render the "nothing to review yet" empty-scope report.
+    #[serde(default)]
+    #[arg(long)]
+    pub empty_scope: bool,
+    /// Optional Summary override; a deterministic count line is generated when
+    /// absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[arg(long)]
+    pub summary: Option<String>,
+    /// Dimensions skipped this run (via `--security` / `--simplicity` / …);
+    /// echoed to `skipped-passes` and omitted from the counts.
+    #[serde(default)]
+    #[arg(long = "skipped-pass")]
+    pub skipped_passes: Vec<String>,
+    /// Pass findings as a single array (the content-ingestion convention).
+    /// Supplied via MCP/interpreter JSON; not a CLI flag.
+    #[serde(default)]
+    #[arg(skip)]
+    pub findings: Vec<ReviewFinding>,
+    /// Applied waivers from `process-waivers`; matching findings are excluded
+    /// from the counts and listed under Waived findings.
+    #[serde(default)]
+    #[arg(skip)]
+    pub applied_waivers: Vec<WaiverRef>,
+    /// Expired waivers from `process-waivers`; dropped from the spec
+    /// frontmatter `review.waivers` list on this write.
+    #[serde(default)]
+    #[arg(skip)]
+    pub expired_waivers: Vec<WaiverRef>,
+    /// Inbox additions in the review window from `compute-review-scope`;
+    /// listed under Captured issues (informational).
+    #[serde(default)]
+    #[arg(skip)]
+    pub captured_issues: Vec<String>,
+}
+
+/// Result for `write-review`.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct WriteReviewResult {
+    /// Repo-relative path of the `review.md` written.
+    pub path: String,
+    /// Repo-relative path of the spec file whose `review:` block was updated.
+    pub spec_path: String,
+    /// MUST violations counted (waived findings excluded).
+    pub must_violations: u32,
+    /// SHOULD violations counted (waived findings excluded).
+    pub should_violations: u32,
+    /// Low-confidence findings counted.
+    pub low_confidence: u32,
+    /// Findings excluded by an applied waiver.
+    pub waived: u32,
+    /// `true` when `must-violations` exceeds zero.
+    pub blocking: bool,
+    /// Derived exit code: 1 when blocking, else 0.
+    pub exit_code: i32,
+}
+
 /// Parsed spec frontmatter.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]

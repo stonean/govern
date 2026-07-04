@@ -27,6 +27,7 @@ derive-boundary
 discover-rule-files
 process-waivers
 compute-review-scope
+write-review
 check-stuck
 validate-frontmatter
 resolve-anchor

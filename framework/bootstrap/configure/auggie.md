@@ -74,6 +74,7 @@ Configure `{cli-config-dir}/settings.local.json` with the tool permissions neede
    - `{ "toolName": "mcp:gvrn:discover-rule-files", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gvrn:process-waivers", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gvrn:compute-review-scope", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:write-review", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gvrn:check-stuck", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gvrn:validate-frontmatter", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gvrn:resolve-anchor", "permission": { "type": "allow" } }`

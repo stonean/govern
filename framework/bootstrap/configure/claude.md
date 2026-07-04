@@ -91,6 +91,7 @@ Configure `{cli-config-dir}/settings.local.json` with the permissions needed for
    - `mcp__gvrn__discover-rule-files`
    - `mcp__gvrn__process-waivers`
    - `mcp__gvrn__compute-review-scope`
+   - `mcp__gvrn__write-review`
    - `mcp__gvrn__check-stuck`
    - `mcp__gvrn__validate-frontmatter`
    - `mcp__gvrn__resolve-anchor`

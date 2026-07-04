@@ -36,7 +36,7 @@ use crate::schema::primitives::{
     MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs,
     MergePermissionsArgs, MigrateSessionFileArgs, ProcessWaiversArgs, ReadSpecArgs, ReadTasksArgs,
     ResolveAnchorArgs, RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs,
-    ValidateFrontmatterArgs, WriteSessionArgs,
+    ValidateFrontmatterArgs, WriteReviewArgs, WriteSessionArgs,
 };
 use crate::schema::procedure::{Procedure, Step, StepNumber};
 use crate::schema::protocol::{ErrorLocation, ProtocolMessage};
@@ -490,6 +490,7 @@ fn dispatch_primitive(
         "discover-rule-files" => call!(DiscoverRuleFilesArgs, discover_rule_files),
         "process-waivers" => call!(ProcessWaiversArgs, process_waivers),
         "compute-review-scope" => call!(ComputeReviewScopeArgs, compute_review_scope),
+        "write-review" => call!(WriteReviewArgs, write_review),
         "check-stuck" => call!(CheckStuckArgs, check_stuck),
         "validate-frontmatter" => call!(ValidateFrontmatterArgs, validate_frontmatter),
         "resolve-anchor" => call!(ResolveAnchorArgs, resolve_anchor),

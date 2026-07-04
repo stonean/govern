@@ -16,7 +16,7 @@ use gvrn::schema::primitives::{
     MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs,
     MergePermissionsArgs, MigrateSessionFileArgs, ProcessWaiversArgs, ReadSpecArgs, ReadTasksArgs,
     ResolveAnchorArgs, RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs,
-    ValidateFrontmatterArgs, WriteSessionArgs,
+    ValidateFrontmatterArgs, WriteReviewArgs, WriteSessionArgs,
 };
 
 #[derive(Parser, Debug)]
@@ -79,6 +79,8 @@ enum Command {
     ProcessWaivers(ProcessWaiversArgs),
     /// Resolve /gov:review's diff-base, file scope, and captured issues.
     ComputeReviewScope(ComputeReviewScopeArgs),
+    /// Render specs/NNN/review.md and update the spec `review:` frontmatter block.
+    WriteReview(WriteReviewArgs),
     /// Flip a single subtask checkbox in `tasks.md` (atomic rewrite).
     MarkTask(MarkTaskArgs),
     /// Flip a single acceptance-criterion checkbox in `spec.md`.
@@ -379,6 +381,7 @@ fn main() -> ExitCode {
         Command::ComputeReviewScope(args) => {
             emit_result(primitives::compute_review_scope::run(&args, &repo))
         }
+        Command::WriteReview(args) => emit_result(primitives::write_review::run(&args, &repo)),
         Command::MarkTask(args) => emit_result(primitives::mark_task::run(&args, &repo)),
         Command::MarkCriterion(args) => emit_result(primitives::mark_criterion::run(&args, &repo)),
         Command::SetStatus(args) => emit_result(primitives::set_status::run(&args, &repo)),

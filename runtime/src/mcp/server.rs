@@ -39,7 +39,8 @@ use crate::schema::primitives::{
     ReadTasksResult, ResolveAnchorArgs, ResolveAnchorResult, ResolveReferencesArgs,
     ResolveReferencesResult, RunGeneratorArgs, RunGeneratorResult, SetStatusArgs, SetStatusResult,
     SubstituteTemplatesArgs, SubstituteTemplatesResult, TraverseDepsArgs, TraverseDepsResult,
-    ValidateFrontmatterArgs, ValidateFrontmatterResult, WriteSessionArgs, WriteSessionResult,
+    ValidateFrontmatterArgs, ValidateFrontmatterResult, WriteReviewArgs, WriteReviewResult,
+    WriteSessionArgs, WriteSessionResult,
 };
 
 /// Canonical MCP tool names exposed by the server, in manifest order.
@@ -53,6 +54,7 @@ pub const TOOL_NAMES: &[&str] = &[
     "discover-rule-files",
     "process-waivers",
     "compute-review-scope",
+    "write-review",
     "check-stuck",
     "validate-frontmatter",
     "resolve-anchor",
@@ -517,6 +519,19 @@ impl GovRuntimeServer {
         params: Parameters<ComputeReviewScopeArgs>,
     ) -> Result<Json<ComputeReviewScopeResult>, String> {
         primitives::compute_review_scope::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "write-review",
+        description = "Render specs/NNN/review.md and update the spec `review:` frontmatter block. Consumes the pass findings as a single array (plus waiver results, scope scalars, and skipped-pass flags), applies the cross-pass dedup (highest-severity-wins on rule-id + file + overlapping range) before counting, buckets survivors into MUST / SHOULD / low-confidence / waived, prunes expired waivers, and emits the 0-findings / blocking:false report for empty scope. Both writes are atomic."
+    )]
+    async fn write_review(
+        &self,
+        params: Parameters<WriteReviewArgs>,
+    ) -> Result<Json<WriteReviewResult>, String> {
+        primitives::write_review::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
     }
