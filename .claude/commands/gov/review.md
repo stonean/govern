@@ -78,9 +78,26 @@ can advance to `done`. The recommended sequence is:
 `/gov:implement` MUST NOT mark a spec `done` while the target's `review.md`
 records `must-violations: > 0`. See [Blocking semantics](#blocking-semantics).
 
-## Behavior
+## Instructions
 
-For each targeted feature, in order:
+> **For agent runtimes**: backticked primitive names in this section map to MCP tools the optional [gvrn runtime](https://crates.io/crates/gvrn) exposes under bare `<primitive>` names (e.g., `compute-review-scope`). Hosts wrap them with a server-name prefix taken from the agent's MCP registration (Claude: `mcp__gvrn__compute-review-scope`; Auggie: `mcp:gvrn:compute-review-scope`). When the server is registered for your session, **call the corresponding tool** for each step listed below — that is the deterministic path. If your host loads MCP tool schemas lazily (e.g., Claude Code lists tool names in a deferred-tool system reminder before exposing their schemas), the runtime is still registered: fetch the schema via the host's mechanism (`ToolSearch` on Claude Code) and call the tool — do not bail to the markdown-only fallback. When no `gvrn` MCP server is configured, walk the prose using the host's file-reading tool (e.g., `Read`) to produce the same result; do **not** substitute shell utilities (`awk`, `sed`, `grep` pipelines, `for` loops over files) for the prescribed file reads. The two paths share a contract; neither one wraps the other.
+
+Run once per targeted feature (every in-progress or done spec under `--all`, otherwise the current `/gov:target`), in order. The detailed walk — rule-selection notices, waiver semantics, the report skeleton, and the pass definitions — lives under the Markdown-only reference section below.
+
+1. Invoke `compute-review-scope` (MCP: `compute-review-scope`) to resolve the diff base (the commit the spec advanced to in-progress at, or a `--since` override), the review file scope (the plan's Affected Files unioned with the files modified since the diff base, larger set wins), and the inbox additions captured in that window. When the scope is empty, jump straight to the write-review step (step 10) — it emits the nothing-to-review-yet, non-blocking report. Otherwise, follow the markdown-only path: compute the same scope by hand.
+2. Confirm tech-stack alignment (host judgment; no primitive). Read `.govern.toml`; when its `[review] tech-stack-verified` flag is true, skip this check. Otherwise compare the AGENTS.md Tech Stack section against the code in scope, halting with the tech-stack-misalignment message on a mismatch; on success, offer to persist the flag. Only the config-flag read is deterministic — the alignment judgment stays with the host.
+3. Invoke `discover-rule-files` (MCP: `discover-rule-files`) to select this run's rule files — suffix classification, the `[rules] surfaces` selection, and the disabled-rule-files filter — and emit the ordered notice lines it returns verbatim. Otherwise, follow the markdown-only path: walk the rule-file directory and apply the selection by hand.
+4. Invoke `process-waivers` (MCP: `process-waivers`) to classify the spec's `review.waivers` against the currently-firing findings (apply / expire / malformed / duplicate), emitting each notice it returns. The applied set is excluded from the blocking count; the expired set is dropped on the next write. Otherwise, follow the markdown-only path: walk the waiver list by hand.
+5. <!-- llm:performReview --> Run the **security** pass over the in-scope files against the loaded security rules, returning one finding per violation (rule id, severity, file, line range, confidence, explanation).
+6. <!-- llm:performReview --> Run the **reuse** pass: flag logic that duplicates existing utilities or belongs in shared code.
+7. <!-- llm:performReview --> Run the **quality** pass: detect bugs, missing error handling, unhandled edge cases, and contract violations; low-confidence findings are recorded separately and do not block.
+8. <!-- llm:performReview --> Run the **efficiency** pass: flag N+1 queries, repeated work, and unbounded loops over user-controlled input.
+9. <!-- llm:performReview --> Run the **simplicity** pass: flag overengineering, premature abstraction, and dead branches; mark a finding auto-fixable when a simpler form is mechanically derivable. A dimension-restricting flag (`--security` / `--simplicity` / `--quality`) skips the unselected passes.
+10. Invoke `write-review` (MCP: `write-review`) with the accumulated pass findings, the waiver results, and the scope to render `specs/NNN-feature/review.md` and update the spec `review:` frontmatter block: it applies the cross-pass dedup (highest-severity-wins on rule + file + overlapping range), buckets findings into MUST / SHOULD / low-confidence / waived, prunes expired waivers, records the skipped passes, and sets blocking when MUST violations remain. With `--fix`, apply the auto-fixable findings, re-run the affected passes, and invoke `write-review` a second time for the post-fix counts. Otherwise, follow the markdown-only path: write the report and the frontmatter by hand.
+
+## Markdown-only reference
+
+The numbered Instructions above are the deterministic path — the runtime's primitives own the rule-file selection, waiver arithmetic, scope resolution, and report scaffolding, and the five passes cross the boundary at the `performReview` extension point. When no runtime is available, walk the detailed procedure below by hand, for each targeted feature, in order.
 
 ### 1. Resolve target and scope
 
