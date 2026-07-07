@@ -1,0 +1,5 @@
+{"type":"llm-response","request-id":"req-1","response":{"findings":[{"rule":"SEC-BE-001","severity":"must","file":"src/reviewed.rs","line-range":"1","confidence":"high"}]}}
+{"type":"llm-response","request-id":"req-2","response":{"findings":[]}}
+{"type":"llm-response","request-id":"req-3","response":{"findings":[]}}
+{"type":"llm-response","request-id":"req-4","response":{"findings":[]}}
+{"type":"llm-response","request-id":"req-5","response":{"findings":[]}}

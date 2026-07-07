@@ -8,8 +8,9 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use std::io::Cursor;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
+use git2::{IndexAddOption, Repository, Signature};
 use serde_json::{Map, Value};
 
 use gvrn::interpreter::{WalkOutcome, Walker};
@@ -26,6 +27,32 @@ fn loc() -> SourceRange {
 
 fn fixture_repo() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/primitives/sample-repo")
+}
+
+/// Stage everything under `repo` and commit; returns the new commit sha.
+fn commit_all(repo: &Repository, message: &str) -> String {
+    let mut index = repo.index().unwrap();
+    index.add_all(["*"], IndexAddOption::DEFAULT, None).unwrap();
+    index.write().unwrap();
+    let tree = repo.find_tree(index.write_tree().unwrap()).unwrap();
+    let sig = Signature::now("Test", "test@example.com").unwrap();
+    let parent = repo
+        .head()
+        .ok()
+        .and_then(|h| h.target())
+        .and_then(|oid| repo.find_commit(oid).ok());
+    let parents: Vec<&git2::Commit> = parent.as_ref().into_iter().collect();
+    repo.commit(Some("HEAD"), &sig, &sig, message, &tree, &parents)
+        .unwrap()
+        .to_string()
+}
+
+/// Write `body` to `path`, creating parent directories as needed.
+fn write_file(path: &Path, body: &str) {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).unwrap();
+    }
+    std::fs::write(path, body).unwrap();
 }
 
 #[test]
@@ -177,4 +204,132 @@ fn walker_halts_on_primitive_failure_with_error_envelope() {
     assert_eq!(types, vec!["progress", "error"]);
     assert_eq!(envelopes[1]["code"], "primitive-failure");
     assert!(envelopes[1]["runtime-version"].is_string());
+}
+
+/// Task 46a ABI test: a primitive's structured result threads through the
+/// walker context to a later extension's payload builder and a later
+/// primitive. Walks the review pipeline shape
+/// `compute-review-scope → discover-rule-files → performReview → write-review`
+/// and asserts that `compute-review-scope`'s `scope`/`diff-base` and
+/// `discover-rule-files`'s `selected`/`rules-dir` reach
+/// `build_perform_review_request` (as `scope-files`/`rule-files`) and
+/// `write-review` (which renders `diff-base` and the accumulated findings).
+#[test]
+fn review_primitive_results_thread_into_perform_review_and_write_review() {
+    let tmp = tempfile::tempdir().unwrap();
+    let repo = Repository::init(tmp.path()).unwrap();
+    let spec = |status: &str| format!("---\nstatus: {status}\ndependencies: []\n---\n\n# X\n");
+    let spec_path = tmp.path().join("specs/001-x/spec.md");
+
+    // History: 001-x goes planned → in-progress (the diff-base commit),
+    // then a source file is added — the review scope. The rule file lands
+    // in the first commit so it predates diff-base and stays out of scope.
+    write_file(&spec_path, &spec("planned"));
+    write_file(
+        &tmp.path().join("framework/rules/security-backend.md"),
+        "# Security\n\n- **SEC-BE-001**: no secrets in logs.\n",
+    );
+    commit_all(&repo, "feat: plan");
+    write_file(&spec_path, &spec("in-progress"));
+    let diff_base = commit_all(&repo, "chore: begin");
+    write_file(&tmp.path().join("src/a.rs"), "fn a() {}\n");
+    commit_all(&repo, "feat: implement");
+
+    let procedure = Procedure {
+        command: "review".into(),
+        steps: vec![
+            Step::Primitive {
+                number: StepNumber(vec![1]),
+                name: "compute-review-scope".into(),
+                prose: String::new(),
+                location: loc(),
+            },
+            Step::Primitive {
+                number: StepNumber(vec![2]),
+                name: "discover-rule-files".into(),
+                prose: String::new(),
+                location: loc(),
+            },
+            Step::Extension {
+                number: StepNumber(vec![3]),
+                identifier: "performReview".into(),
+                prose: "Run the security pass.".into(),
+                location: loc(),
+            },
+            Step::Primitive {
+                number: StepNumber(vec![4]),
+                name: "write-review".into(),
+                prose: String::new(),
+                location: loc(),
+            },
+        ],
+    };
+
+    // Seed only the values the review pipeline can't derive itself.
+    // `diff-base` is deliberately NOT seeded — it must come from
+    // `compute-review-scope` for this test to prove the threading.
+    let mut context = Map::new();
+    context.insert("feature".into(), Value::String("001-x".into()));
+    context.insert(
+        "reviewed-at".into(),
+        Value::String("2026-07-06T00:00:00Z".into()),
+    );
+    context.insert("reviewed-against".into(), Value::String("headsha0".into()));
+    context.insert("pass".into(), Value::String("security".into()));
+
+    // One security pass returns a single MUST finding against the scoped file.
+    let responses = "{\"type\":\"llm-response\",\"request-id\":\"req-1\",\"response\":{\"findings\":[{\"rule\":\"SEC-BE-001\",\"severity\":\"must\",\"file\":\"src/a.rs\",\"line-range\":\"1\",\"confidence\":\"high\"}]}}\n";
+
+    let mut reader = Cursor::new(responses.to_string());
+    let mut writer: Vec<u8> = Vec::new();
+    let mut walker = Walker::new(
+        &procedure,
+        tmp.path().to_path_buf(),
+        context,
+        &mut reader,
+        &mut writer,
+    );
+    assert_eq!(walker.run().unwrap(), WalkOutcome::Complete);
+
+    let envelopes: Vec<Value> = std::str::from_utf8(&writer)
+        .unwrap()
+        .lines()
+        .map(|l| serde_json::from_str(l).unwrap())
+        .collect();
+
+    // `compute-review-scope`'s `scope` and `discover-rule-files`'s
+    // `selected`/`rules-dir` reached `build_perform_review_request`.
+    let request = envelopes
+        .iter()
+        .find(|e| e["type"] == "llm-request" && e["extension-point"] == "performReview")
+        .expect("a performReview llm-request was emitted");
+    let scope_files = request["request"]["scope-files"].as_array().unwrap();
+    assert!(
+        scope_files.iter().any(|f| f["path"] == "src/a.rs"),
+        "compute-review-scope `scope` threaded into the performReview payload: {scope_files:?}"
+    );
+    let rule_files = request["request"]["rule-files"].as_array().unwrap();
+    assert!(
+        rule_files
+            .iter()
+            .any(|f| f["name"] == "security-backend.md"),
+        "discover-rule-files `selected`/`rules-dir` threaded into the payload: {rule_files:?}"
+    );
+
+    // `write-review` consumed `compute-review-scope`'s `diff-base` (rendered
+    // to review.md frontmatter) and the accumulated performReview `findings`.
+    let review = std::fs::read_to_string(tmp.path().join("specs/001-x/review.md")).unwrap();
+    assert!(
+        review.contains(&format!("diff-base: {diff_base}")),
+        "diff-base threaded from compute-review-scope into write-review:\n{review}"
+    );
+    assert!(
+        review.contains("SEC-BE-001"),
+        "accumulated performReview findings reached write-review:\n{review}"
+    );
+    let spec_after = std::fs::read_to_string(&spec_path).unwrap();
+    assert!(
+        spec_after.contains("blocking: true"),
+        "the MUST finding set blocking in the spec review block:\n{spec_after}"
+    );
 }

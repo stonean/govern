@@ -3,8 +3,11 @@
 //! [`Walker`] is the synchronous engine that consumes a parsed
 //! [`Procedure`] step by step. For each step it either:
 //!
-//! - Dispatches to a primitive's pure-Rust function and emits a
-//!   `progress` envelope (`Step::Primitive`).
+//! - Dispatches to a primitive's pure-Rust function, merges its structured
+//!   result into the walker context (so a later step's payload builder or a
+//!   later primitive can read prior results), and emits a `progress`
+//!   envelope (`Step::Primitive`). See [`Walker::merge_primitive_result`]
+//!   for the merge policy.
 //! - Emits an `llm-request` envelope and reads a matching
 //!   `llm-response` from stdin (`Step::Extension`).
 //! - Detects a gate trigger in the prose ("Ask the user to approve") and
@@ -21,6 +24,7 @@
 
 pub mod payload;
 
+use std::collections::HashSet;
 use std::io::{BufRead, Write};
 use std::path::{Path, PathBuf};
 
@@ -49,6 +53,10 @@ pub struct Walker<'a, R: BufRead, W: Write> {
     procedure: &'a Procedure,
     repo: PathBuf,
     context: Map<String, Value>,
+    /// Keys present in `context` at construction — the session-seeded
+    /// bindings (e.g. `feature`, `write-boundary`). A primitive result may
+    /// never overwrite one of these; see [`Walker::merge_primitive_result`].
+    seeded_keys: HashSet<String>,
     reader: &'a mut R,
     writer: &'a mut W,
     request_counter: u64,
@@ -79,10 +87,12 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
         reader: &'a mut R,
         writer: &'a mut W,
     ) -> Self {
+        let seeded_keys = context.keys().cloned().collect();
         Self {
             procedure,
             repo,
             context,
+            seeded_keys,
             reader,
             writer,
             request_counter: 0,
@@ -152,7 +162,10 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
             Some(name.into()),
         )?;
         match dispatch_primitive(name, &self.context, &self.repo) {
-            Ok(_) => Ok(None),
+            Ok(result) => {
+                self.merge_primitive_result(result);
+                Ok(None)
+            }
             Err(err) => {
                 let code = match &err {
                     DispatchError::UnknownPrimitive(_) => "unknown-primitive".to_string(),
@@ -171,6 +184,37 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
                 )?;
                 Ok(Some(WalkOutcome::Errored { code, message }))
             }
+        }
+    }
+
+    /// Merge a primitive's structured result into the walker context so a
+    /// later step can read prior results — e.g. `compute-review-scope`'s
+    /// `scope`/`diff-base` and `discover-rule-files`'s `selected`/`rules-dir`
+    /// feed `build_perform_review_request`, and `write-review` reads
+    /// `diff-base` plus the accumulated `findings`.
+    ///
+    /// Merge policy (kept deliberately explicit):
+    /// - Only an object result merges; a non-object result (array, scalar,
+    ///   null) is ignored — there are no top-level keys to thread.
+    /// - Each top-level key of the result is inserted into the context,
+    ///   **except** a session-seeded key (one present at construction, such
+    ///   as `write-boundary` or `feature`), which is load-bearing and is
+    ///   never overwritten by a primitive result.
+    /// - Among keys first introduced by primitives, last-write-wins.
+    ///
+    /// Results merge at the top level rather than under a per-primitive
+    /// namespace because the payload builders and primitive arg binders read
+    /// prior results by their bare key (`scope`, `selected`, `rules-dir`,
+    /// `diff-base`); namespacing would hide them.
+    fn merge_primitive_result(&mut self, result: Value) {
+        let Value::Object(map) = result else {
+            return;
+        };
+        for (key, value) in map {
+            if self.seeded_keys.contains(&key) {
+                continue;
+            }
+            self.context.insert(key, value);
         }
     }
 

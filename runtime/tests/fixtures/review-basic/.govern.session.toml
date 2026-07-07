@@ -1,0 +1,6 @@
+feature = "007-review"
+path = "specs/007-review"
+diff-base = "0000000000000000000000000000000000000000"
+reviewed-at = "2026-07-06T00:00:00Z"
+reviewed-against = "abcdef0"
+set-at = "2026-07-06T00:00:00Z"

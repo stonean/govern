@@ -1,0 +1,27 @@
+TODO: capture the LLM-driven `/gov:review` output against
+`runtime/tests/fixtures/review-basic/` and replace this file's body with
+the captured post-run state.
+
+Capture recipe (maintainer-only, requires an LLM-driven host):
+
+  1. cp -r runtime/tests/fixtures/review-basic <a-clean-tempdir>
+  2. cp framework/commands/review.md <a-clean-tempdir>/framework/commands/
+  3. cd <a-clean-tempdir> && git init && git add . && git commit -m chore
+  4. Run `/gov:review` in the LLM-driven host (the five passes cross the
+     boundary at the performReview extension point).
+  5. After the run, capture:
+     a. The rendered <a-clean-tempdir>/specs/007-review/review.md.
+     b. The post-run spec `review:` frontmatter block from
+        <a-clean-tempdir>/specs/007-review/spec.md.
+
+Parity bound for `/gov:review`:
+  - strict-files: `specs/{feature}/review.md` — the rendered report
+    skeleton (frontmatter counts, section buckets) must match the
+    runtime-driven path exactly.
+  - strict-fields: `review-block` — the spec's `review:` frontmatter
+    (last-run, must-violations, blocking) must match.
+  - semantic-fields: `finding-prose` — per-finding explanations are the
+    LLM's; wording may differ between responses without failing the check.
+
+Until this file is filled in, the parity test for `/gov:review` is
+recorded as SKIPPED and does not block CI.

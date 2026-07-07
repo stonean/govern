@@ -86,6 +86,11 @@ fn plan_basic_stream_matches_golden() {
 }
 
 #[test]
+fn review_basic_stream_matches_golden() {
+    run_parity_case("review", "review-basic");
+}
+
+#[test]
 fn specify_basic_stream_matches_golden() {
     run_parity_case("specify", "specify-basic");
 }
@@ -544,7 +549,7 @@ impl MockHttp {
 }
 
 fn init_git_repo(path: &Path) {
-    use git2::{IndexAddOption, Repository, Signature};
+    use git2::{IndexAddOption, Repository, Signature, Time};
     let repo = Repository::init(path).expect("git init");
     let mut index = repo.index().unwrap();
     index
@@ -553,7 +558,15 @@ fn init_git_repo(path: &Path) {
     index.write().expect("index write");
     let tree_id = index.write_tree().expect("write tree");
     let tree = repo.find_tree(tree_id).unwrap();
-    let sig = Signature::now("Parity Test", "parity@example.com").expect("signature");
+    // A FIXED-time signature (not `Signature::now`) makes the commit sha
+    // deterministic. Since the result-threading merge (spec 022 task 46)
+    // surfaces git-derived values into extension payloads — e.g.
+    // `derive-boundary`'s `first-commit`/`current-head` land in the
+    // writeCode request — the sha must be byte-stable across runs and
+    // machines or the golden would be flaky. A frozen `Time` plus the fixed
+    // tree, message, and (absent) parents fully determine the commit OID.
+    let when = Time::new(1_704_067_200, 0); // 2024-01-01T00:00:00Z
+    let sig = Signature::new("Parity Test", "parity@example.com", &when).expect("signature");
     repo.commit(Some("HEAD"), &sig, &sig, "chore: fixture", &tree, &[])
         .expect("initial commit");
 }
