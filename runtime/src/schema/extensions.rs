@@ -187,6 +187,56 @@ pub struct WriteSpecBodyResponse {
     pub section: String,
 }
 
+// -- performReview -----------------------------------------------------------
+
+/// One in-scope file a review pass reads.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct ReviewScopeFile {
+    /// Repo-relative file path.
+    pub path: String,
+    /// File contents at request time.
+    pub content: String,
+}
+
+/// One rule file loaded for the pass (basename + full text).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct ReviewRuleFile {
+    /// Rule-file basename (e.g., "security-backend.md").
+    pub name: String,
+    /// Full rule-file contents.
+    pub content: String,
+}
+
+/// Request payload for `performReview` — one single-shot request per pass
+/// (five passes: security, reuse, quality, efficiency, simplicity).
+///
+/// `scope-files` is identical across every pass of a run, so it leads the
+/// payload as the cache-stable prefix; `rule-files` and `pass` vary per pass
+/// and trail it.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct PerformReviewRequest {
+    /// In-scope files under review (same set across all passes).
+    pub scope_files: Vec<ReviewScopeFile>,
+    /// Rule files loaded for this pass.
+    pub rule_files: Vec<ReviewRuleFile>,
+    /// Pass name: `security` / `reuse` / `quality` / `efficiency` /
+    /// `simplicity`.
+    pub pass: String,
+}
+
+/// Response payload for `performReview`. The `findings` array flows directly
+/// into `write-review`'s `findings` input — the walker accumulates each pass's
+/// findings across the run (see [`crate::interpreter`]).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct PerformReviewResponse {
+    /// Findings from this pass, in the shape `write-review` consumes.
+    pub findings: Vec<crate::schema::primitives::ReviewFinding>,
+}
+
 // -- validation --------------------------------------------------------------
 
 /// Validation errors raised by [`validate_response`] and
@@ -224,8 +274,8 @@ pub enum ValidationError {
 /// # Errors
 ///
 /// Returns [`ValidationError::UnknownExtension`] when `identifier` is not
-/// `assessSpecQuality`, `writeCode`, or `writeSpecBody`; otherwise
-/// [`ValidationError::Schema`] when deserialization fails.
+/// `assessSpecQuality`, `writeCode`, `writeSpecBody`, or `performReview`;
+/// otherwise [`ValidationError::Schema`] when deserialization fails.
 pub fn validate_response(identifier: &str, response: &Value) -> Result<(), ValidationError> {
     macro_rules! check {
         ($ty:ty) => {{
@@ -241,6 +291,7 @@ pub fn validate_response(identifier: &str, response: &Value) -> Result<(), Valid
         "assessSpecQuality" => check!(AssessSpecQualityResponse),
         "writeCode" => check!(WriteCodeResponse),
         "writeSpecBody" => check!(WriteSpecBodyResponse),
+        "performReview" => check!(PerformReviewResponse),
         other => Err(ValidationError::UnknownExtension(other.into())),
     }
 }
@@ -297,10 +348,12 @@ mod tests {
 
     use super::{
         AssessSpecQualityFinding, AssessSpecQualityRequest, AssessSpecQualityResponse,
-        AssessSpecQualityRule, FindingLocation, PlanRelevantFile, WriteCodeAction, WriteCodeEdit,
+        AssessSpecQualityRule, FindingLocation, PerformReviewRequest, PerformReviewResponse,
+        PlanRelevantFile, ReviewRuleFile, ReviewScopeFile, WriteCodeAction, WriteCodeEdit,
         WriteCodeRequest, WriteCodeResponse, WriteCodeTask, WriteSpecBodyRequest,
         WriteSpecBodyResponse,
     };
+    use crate::schema::primitives::ReviewFinding;
 
     fn round_trip<T>(value: &T) -> T
     where
@@ -601,5 +654,77 @@ mod tests {
             section: "Motivation".into(),
         };
         assert_eq!(round_trip(&response), response);
+    }
+
+    #[test]
+    fn perform_review_round_trip() {
+        let request = PerformReviewRequest {
+            scope_files: vec![ReviewScopeFile {
+                path: "runtime/src/main.rs".into(),
+                content: "fn main() {}".into(),
+            }],
+            rule_files: vec![ReviewRuleFile {
+                name: "security-backend.md".into(),
+                content: "# Security".into(),
+            }],
+            pass: "security".into(),
+        };
+        let value: serde_json::Value = serde_json::to_value(&request).unwrap();
+        // Cache-stable prefix leads: scope-files, then rule-files, then pass.
+        let keys: Vec<&str> = value
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect();
+        assert_eq!(keys, vec!["scope-files", "rule-files", "pass"]);
+        assert_eq!(value["scope-files"][0]["path"], "runtime/src/main.rs");
+        assert_eq!(round_trip(&request), request);
+
+        let response = PerformReviewResponse {
+            findings: vec![ReviewFinding {
+                rule: "SEC-BE-014".into(),
+                severity: "must".into(),
+                file: "runtime/src/main.rs".into(),
+                line_range: "1-1".into(),
+                confidence: "high".into(),
+                ..ReviewFinding::default()
+            }],
+        };
+        let r_value: serde_json::Value = serde_json::to_value(&response).unwrap();
+        assert_eq!(r_value["findings"][0]["rule"], "SEC-BE-014");
+        assert_eq!(r_value["findings"][0]["line-range"], "1-1");
+        assert_eq!(round_trip(&response), response);
+    }
+
+    #[test]
+    fn validate_response_accepts_perform_review_and_defaults_finding_extras() {
+        use super::validate_response;
+        // The 6 core fields the performReview contract names; the render extras
+        // (summary / finding / rule-text / auto-fixable / suggested-fix) default.
+        let response = serde_json::json!({
+            "findings": [
+                {
+                    "rule": "SIM-001",
+                    "severity": "should",
+                    "file": "runtime/src/lib.rs",
+                    "line-range": "10-20",
+                    "confidence": "low"
+                }
+            ]
+        });
+        validate_response("performReview", &response).unwrap();
+    }
+
+    #[test]
+    fn validate_response_rejects_malformed_perform_review() {
+        use super::{ValidationError, validate_response};
+        // `findings` must be an array of finding objects, not a bare string.
+        let response = serde_json::json!({ "findings": "oops" });
+        let err = validate_response("performReview", &response).unwrap_err();
+        match err {
+            ValidationError::Schema { identifier, .. } => assert_eq!(identifier, "performReview"),
+            other => panic!("expected Schema, got {other:?}"),
+        }
     }
 }

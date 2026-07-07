@@ -206,6 +206,21 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
                 if let Some(outcome) = self.validate_llm_response(identifier, &response)? {
                     return Ok(Some(outcome));
                 }
+                // `performReview` runs once per pass; accumulate each pass's
+                // findings into the shared `findings` context key so a later
+                // `write-review` step consumes the union across all passes.
+                if identifier == "performReview"
+                    && let Some(Value::Array(findings)) = response.get("findings")
+                {
+                    let findings = findings.clone();
+                    match self.context.get_mut("findings") {
+                        Some(Value::Array(existing)) => existing.extend(findings),
+                        _ => {
+                            self.context
+                                .insert("findings".into(), Value::Array(findings));
+                        }
+                    }
+                }
                 self.context.insert(format!("llm:{identifier}"), response);
                 self.emit_progress(
                     format!("received llm-response for `{identifier}`"),
@@ -693,6 +708,122 @@ mod tests {
         assert_eq!(lines[0]["request-id"], "req-1");
         assert_eq!(lines[1]["type"], "progress");
         assert_eq!(lines[2]["type"], "complete");
+    }
+
+    #[test]
+    fn perform_review_emits_one_llm_request_per_pass_step() {
+        // One `performReview` step per pass → one llm-request each. A skipped
+        // pass is simply an absent step (this procedure carries three of the
+        // five), so no request is emitted for it.
+        let step = |n: u32| Step::Extension {
+            number: StepNumber(vec![n]),
+            identifier: "performReview".into(),
+            prose: String::new(),
+            location: loc(),
+        };
+        let procedure = Procedure {
+            command: "review".into(),
+            steps: vec![step(1), step(2), step(3)],
+        };
+        let responses = concat!(
+            "{\"type\":\"llm-response\",\"request-id\":\"req-1\",\"response\":{\"findings\":[]}}\n",
+            "{\"type\":\"llm-response\",\"request-id\":\"req-2\",\"response\":{\"findings\":[]}}\n",
+            "{\"type\":\"llm-response\",\"request-id\":\"req-3\",\"response\":{\"findings\":[]}}\n",
+        );
+        let mut reader = Cursor::new(responses.to_string());
+        let mut writer: Vec<u8> = Vec::new();
+        let mut walker = Walker::new(
+            &procedure,
+            fixture_repo(),
+            Map::new(),
+            &mut reader,
+            &mut writer,
+        );
+        assert_eq!(walker.run().unwrap(), WalkOutcome::Complete);
+        let lines: Vec<Value> = std::str::from_utf8(&writer)
+            .unwrap()
+            .lines()
+            .map(|l| serde_json::from_str(l).unwrap())
+            .collect();
+        let requests: Vec<&Value> = lines
+            .iter()
+            .filter(|l| l["type"] == "llm-request")
+            .collect();
+        assert_eq!(requests.len(), 3);
+        for request in requests {
+            assert_eq!(request["extension-point"], "performReview");
+        }
+    }
+
+    #[test]
+    fn perform_review_findings_flow_into_write_review() {
+        // Two pass steps then a write-review step: each pass's findings
+        // accumulate into `context["findings"]`, which write-review consumes.
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path().join("specs/001-x");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("spec.md"),
+            "---\nstatus: in-progress\ndependencies: []\n---\n\n# x\n",
+        )
+        .unwrap();
+
+        let procedure = Procedure {
+            command: "review".into(),
+            steps: vec![
+                Step::Extension {
+                    number: StepNumber(vec![1]),
+                    identifier: "performReview".into(),
+                    prose: String::new(),
+                    location: loc(),
+                },
+                Step::Extension {
+                    number: StepNumber(vec![2]),
+                    identifier: "performReview".into(),
+                    prose: String::new(),
+                    location: loc(),
+                },
+                Step::Primitive {
+                    number: StepNumber(vec![3]),
+                    name: "write-review".into(),
+                    prose: String::new(),
+                    location: loc(),
+                },
+            ],
+        };
+        let responses = concat!(
+            "{\"type\":\"llm-response\",\"request-id\":\"req-1\",\"response\":{\"findings\":[{\"rule\":\"SEC-BE-001\",\"severity\":\"must\",\"file\":\"runtime/src/a.rs\",\"line-range\":\"1-5\",\"confidence\":\"high\"}]}}\n",
+            "{\"type\":\"llm-response\",\"request-id\":\"req-2\",\"response\":{\"findings\":[{\"rule\":\"QUAL-002\",\"severity\":\"should\",\"file\":\"runtime/src/b.rs\",\"line-range\":\"1-5\",\"confidence\":\"high\"}]}}\n",
+        );
+        let mut context = Map::new();
+        context.insert("feature".into(), Value::String("001-x".into()));
+        context.insert(
+            "reviewed-at".into(),
+            Value::String("2026-07-04T00:00:00Z".into()),
+        );
+        context.insert("reviewed-against".into(), Value::String("abc1234".into()));
+        context.insert("diff-base".into(), Value::String("def5678".into()));
+
+        let mut reader = Cursor::new(responses.to_string());
+        let mut writer: Vec<u8> = Vec::new();
+        let mut walker = Walker::new(
+            &procedure,
+            tmp.path().to_path_buf(),
+            context,
+            &mut reader,
+            &mut writer,
+        );
+        assert_eq!(walker.run().unwrap(), WalkOutcome::Complete);
+
+        // write-review rendered the union of both passes' findings.
+        let review = std::fs::read_to_string(dir.join("review.md")).unwrap();
+        assert!(review.contains("must-violations: 1"));
+        assert!(review.contains("should-violations: 1"));
+        assert!(review.contains("### MUST: SEC-BE-001"));
+        assert!(review.contains("### SHOULD: QUAL-002"));
+        // Blocking flowed to the spec review block.
+        let spec = std::fs::read_to_string(dir.join("spec.md")).unwrap();
+        assert!(spec.contains("blocking: true"));
     }
 
     #[test]

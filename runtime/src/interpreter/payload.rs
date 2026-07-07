@@ -24,7 +24,8 @@ use serde_json::{Map, Value};
 use crate::host::Host;
 use crate::primitives::read_tasks;
 use crate::schema::extensions::{
-    PlanRelevantFile, WriteCodeRequest, WriteCodeTask, WriteSpecBodyRequest,
+    PerformReviewRequest, PlanRelevantFile, ReviewRuleFile, ReviewScopeFile, WriteCodeRequest,
+    WriteCodeTask, WriteSpecBodyRequest,
 };
 use crate::schema::primitives::ReadTasksArgs;
 
@@ -93,8 +94,87 @@ pub fn build_extension_request(
     match identifier {
         "writeCode" => build_write_code_request(context, repo, command_name),
         "writeSpecBody" => Ok(build_write_spec_body_request(context, repo, step_prose)),
+        "performReview" => Ok(build_perform_review_request(context, repo)),
         _ => Ok(Value::Object(context.clone())),
     }
+}
+
+/// Build the `performReview` request for one pass. Loads the in-scope files
+/// (`scope`, from `compute-review-scope`) and the pass's rule files
+/// (`selected` basenames under `rules-dir`, from `discover-rule-files`) off
+/// disk, and pairs them with the `pass` name. Missing/unreadable files are
+/// skipped rather than erroring — the pass reviews what it can read. The
+/// typed prefix leads (cache-anchor order: `scope-files` is stable across
+/// passes); legacy context fields follow for hosts that already parse them.
+fn build_perform_review_request(context: &Map<String, Value>, repo: &Path) -> Value {
+    let pass = context
+        .get("pass")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .to_string();
+    let scope_files = load_scope_files(context, repo);
+    let rule_files = load_rule_files(context, repo);
+
+    let typed = PerformReviewRequest {
+        scope_files,
+        rule_files,
+        pass,
+    };
+    let typed_value = serde_json::to_value(&typed).unwrap_or(Value::Null);
+    let mut object = match typed_value {
+        Value::Object(map) => map,
+        _ => Map::new(),
+    };
+    for (key, value) in context {
+        object.entry(key.clone()).or_insert_with(|| value.clone());
+    }
+    Value::Object(object)
+}
+
+/// Load `scope` paths (from `compute-review-scope`) into `ReviewScopeFile`
+/// records, reading each file's content. Unreadable paths are skipped.
+fn load_scope_files(context: &Map<String, Value>, repo: &Path) -> Vec<ReviewScopeFile> {
+    string_array(context, "scope")
+        .into_iter()
+        .filter_map(|path| {
+            std::fs::read_to_string(repo.join(&path))
+                .ok()
+                .map(|content| ReviewScopeFile { path, content })
+        })
+        .collect()
+}
+
+/// Load the pass's `selected` rule basenames (from `discover-rule-files`)
+/// under `rules-dir` into `ReviewRuleFile` records. Unreadable files are
+/// skipped.
+fn load_rule_files(context: &Map<String, Value>, repo: &Path) -> Vec<ReviewRuleFile> {
+    let rules_dir = context
+        .get("rules-dir")
+        .and_then(Value::as_str)
+        .unwrap_or_default();
+    string_array(context, "selected")
+        .into_iter()
+        .filter_map(|name| {
+            let path = repo.join(rules_dir).join(&name);
+            std::fs::read_to_string(&path)
+                .ok()
+                .map(|content| ReviewRuleFile { name, content })
+        })
+        .collect()
+}
+
+/// Read a context key as a `Vec<String>`, dropping non-string members.
+/// Empty when the key is absent or not an array.
+fn string_array(context: &Map<String, Value>, key: &str) -> Vec<String> {
+    context
+        .get(key)
+        .and_then(Value::as_array)
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str().map(str::to_string))
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 fn build_write_code_request(
@@ -1032,5 +1112,59 @@ mod tests {
         assert!(keys.contains(&"legacy-extra"));
         assert_eq!(value["task"]["number"], "1");
         assert_eq!(value["task"]["heading"], "Stub a module");
+    }
+
+    #[test]
+    fn build_perform_review_request_bundles_scope_and_rules() {
+        let tmp = tempdir().unwrap();
+        // In-scope file and a rule file the pass should read off disk.
+        fs::create_dir_all(tmp.path().join("runtime/src")).unwrap();
+        fs::write(tmp.path().join("runtime/src/main.rs"), "fn main() {}").unwrap();
+        fs::create_dir_all(tmp.path().join("framework/rules")).unwrap();
+        fs::write(
+            tmp.path().join("framework/rules/security-backend.md"),
+            "# Security\n",
+        )
+        .unwrap();
+
+        let mut ctx = Map::new();
+        ctx.insert("pass".into(), Value::String("security".into()));
+        ctx.insert(
+            "scope".into(),
+            Value::Array(vec![
+                Value::String("runtime/src/main.rs".into()),
+                // An absent path is skipped, not an error.
+                Value::String("runtime/src/absent.rs".into()),
+            ]),
+        );
+        ctx.insert("rules-dir".into(), Value::String("framework/rules".into()));
+        ctx.insert(
+            "selected".into(),
+            Value::Array(vec![Value::String("security-backend.md".into())]),
+        );
+
+        let value = build_perform_review_request(&ctx, tmp.path());
+        let obj = value.as_object().unwrap();
+        // Typed prefix leads in cache-anchor order.
+        let prefix: Vec<&str> = obj.keys().map(String::as_str).take(3).collect();
+        assert_eq!(prefix, vec!["scope-files", "rule-files", "pass"]);
+        assert_eq!(value["pass"], "security");
+        // Only the readable scope file is bundled.
+        assert_eq!(value["scope-files"].as_array().unwrap().len(), 1);
+        assert_eq!(value["scope-files"][0]["path"], "runtime/src/main.rs");
+        assert_eq!(value["scope-files"][0]["content"], "fn main() {}");
+        assert_eq!(value["rule-files"][0]["name"], "security-backend.md");
+        assert_eq!(value["rule-files"][0]["content"], "# Security\n");
+    }
+
+    #[test]
+    fn build_perform_review_request_is_empty_without_scope_or_rules() {
+        let tmp = tempdir().unwrap();
+        let mut ctx = Map::new();
+        ctx.insert("pass".into(), Value::String("reuse".into()));
+        let value = build_perform_review_request(&ctx, tmp.path());
+        assert_eq!(value["pass"], "reuse");
+        assert!(value["scope-files"].as_array().unwrap().is_empty());
+        assert!(value["rule-files"].as_array().unwrap().is_empty());
     }
 }
