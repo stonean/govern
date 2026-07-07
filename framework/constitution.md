@@ -434,6 +434,12 @@ For non-frontmatter checks (spec integrity, artifact completeness, plan/task con
 4. **Schema follows the constitution** — the runtime MUST read frontmatter and artifact structure according to the schemas declared in this document. Schema changes ship through the constitution; the runtime MUST update to match. The constitution MUST NOT import runtime types.
 5. **MCP is the seam** — the runtime MUST expose its capabilities as MCP tools so slash commands can call them when they want determinism. This keeps the runtime accessible to any agent host and prevents `govern`-specific coupling.
 
+<!-- §runtime-host-integration -->
+
+#### Host integration (for agent runtimes)
+
+The backticked primitive names in a rewritten command's Instructions section map to the MCP tools the runtime exposes under bare `<verb>-<noun>` names. A host wraps them with a server-name prefix taken from its MCP registration — Claude Code: `mcp__gvrn__<verb>-<noun>`; Auggie / Antigravity: `mcp:gvrn:<verb>-<noun>`. When the `gvrn` server is registered for the session, the agent **calls the corresponding tool** for each step — the deterministic path. If a host loads MCP tool schemas lazily (e.g., Claude Code lists tool names in a deferred-tool reminder before exposing their schemas), the runtime is still registered: the agent fetches the schema through the host's mechanism (`ToolSearch` on Claude Code) and calls the tool rather than bailing to the fallback. When no `gvrn` server is configured, the agent walks the same prose with the host's file tools (`Read`, `Edit`, `Write`); the shell-pipeline substitutes named in principle 3 are **not** a sanctioned stand-in for either the runtime primitives or those file tools. The two paths share one contract; neither wraps the other. A rewritten command opens its Instructions with a one-line pointer to this subsection (§runtime-host-integration) rather than restating it — the contract lives here once.
+
 #### Eligibility criteria
 
 A capability is runtime-eligible only when **all three** hold:

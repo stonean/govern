@@ -12,6 +12,14 @@
 # command file are skipped — that section *is* the fallback, so any
 # mention there does not require a paired fallback marker.
 #
+# A command that carries the constitution's host-integration pointer
+# (a reference to §runtime-host-integration) is exempt file-wide: the
+# pointer declares the markdown-only fallback contract once for the whole
+# command instead of restating it per Invoke step (constitution
+# §runtime-host-integration; spec 022 scenario review-runtime-acceleration
+# #3/#4 prose tightening). Legacy commands without the pointer keep the
+# per-reference proximity check below.
+#
 # Source of truth: framework/constitution.md §runtime-boundary
 # Consumed by: .github/workflows/markdown-only-pipeline.yml
 
@@ -64,6 +72,12 @@ for cmd in "$ROOT"/framework/commands/*.md; do
   # tool reference at or after that line is itself part of the fallback
   # path and does not need a paired fallback marker.
   md_only_start="$(grep -n '^## Markdown-only reference' "$cmd" | head -n1 | cut -d: -f1 || true)"
+  # File-wide exemption: a command that points to the constitution's
+  # host-integration contract has declared the markdown-only fallback once
+  # for every Invoke step, so no per-reference proximity marker is required.
+  if grep -q 'runtime-host-integration' "$cmd"; then
+    continue
+  fi
   for tool in "${tools[@]}"; do
     while IFS=: read -r lineno _; do
       [ -z "$lineno" ] && continue
