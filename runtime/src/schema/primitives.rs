@@ -1319,16 +1319,13 @@ pub struct CreateScenarioArgs {
     /// Parent-spec section name written into the scenario frontmatter.
     #[arg(long)]
     pub section: String,
-    /// Body content for the `## Context` section.
+    /// Assembled scenario body — the `## Context` … `## Edge Cases` markdown
+    /// the LLM authored, crossing the runtime boundary as one payload (the
+    /// content-ingestion convention). The primitive frames it with the
+    /// `section:` frontmatter, the H1-from-slug, and the auto-appended
+    /// Open / Resolved Questions scaffolding.
     #[arg(long)]
-    pub context: String,
-    /// Body content for the `## Behavior` section.
-    #[arg(long)]
-    pub behavior: String,
-    /// Optional body content for the `## Edge Cases` section. When omitted,
-    /// the section is left out of the rendered scenario file entirely.
-    #[arg(long)]
-    pub edge_cases: Option<String>,
+    pub body: String,
 }
 
 /// Result for `create-scenario`.

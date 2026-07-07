@@ -2,6 +2,22 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.15.0] — 2026-07-06
+
+The **review-runtime-acceleration** series (spec 022 scenario `review-runtime-acceleration`): the deterministic bookkeeping around `/gov:review`'s five semantic passes moves into primitives, and the passes themselves become a new `performReview` extension point. The bump to `0.15.0` is driven by the breaking `create-scenario` arg-shape change below.
+
+### Added
+
+- **`discover-rule-files`** — owns `/gov:review` rule-file selection: rule-dir listing, suffix classification (`-backend` / `-frontend` / `-cross` / unrecognized), `[rules] surfaces` selection (valid list / `[]` cross-only / unset derive-from-stack / degenerate fail-fast), and the `[[review.disabled-rule-files]]` filter — returning the selected set plus the ordered stdout notices verbatim.
+- **`process-waivers`** — per-run classification of a spec's `review.waivers` against the currently-firing `(rule, file)` findings: apply / expire (with the `waiver expired: …` notice) / do-not-extend / malformed (skip-and-warn, never prune) / duplicate (first applies, dup warns). The anchor is the `(rule, file)` pair, so code moving within a file does not expire a waiver.
+- **`compute-review-scope`** — resolves the `diff-base` (the status-to-`in-progress` commit, or a `--since` override), the file scope (plan `Affected Files` unioned with files modified since `diff-base`, larger set wins), and the inbox additions in the window, using `git2`.
+- **`write-review`** — renders `specs/NNN/review.md` (frontmatter + fixed skeleton) and updates the spec `review:` frontmatter block. Applies the deterministic cross-pass dedup (highest-severity-wins on rule-id + file + overlapping range) before counting, buckets survivors into MUST / SHOULD / low-confidence / waived (applied waivers drop out of the counts), prunes expired waivers from `review.waivers`, and emits the 0-findings / `blocking: false` report for empty scope. `blocking` is true exactly when `must-violations` exceeds zero; both writes are atomic.
+- **`performReview` extension point** — the LLM seam for each review pass. `PerformReviewRequest` carries the in-scope files (the cache-stable prefix) plus the rules loaded for the pass; `PerformReviewResponse` returns findings in the shape `write-review` consumes. The interpreter emits one `llm-request` per pass step and accumulates each pass's findings into the shared `findings` context key so a later `write-review` step consumes the union across all passes.
+
+### Changed
+
+- **BREAKING — `create-scenario` takes a single `body` argument** instead of separate `context` / `behavior` / `edge-cases` params. LLM-authored content now crosses the runtime boundary as one payload (the content-ingestion convention): the host assembles the `## Context` … `## Edge Cases` markdown in-context and hands it over whole, and the primitive keeps framing it with the `section:` frontmatter, the H1-from-slug, the atomic write, the slug-conflict refusal, and the auto-appended Open / Resolved Questions scaffolding. This removes the host MCP-encoder failure mode where one of several large sibling string params is silently dropped. `framework/commands/amend.md`'s scenario-branch prose is updated to match.
+
 ## [0.14.2] — 2026-07-01
 
 ### Fixed

@@ -51,9 +51,11 @@ pub fn run(args: &CreateScenarioArgs, repo: &Path) -> Result<CreateScenarioResul
 }
 
 /// Render the scenario markdown body. The shape mirrors
-/// `framework/templates/spec/scenario.md`: frontmatter, H1 from the slug,
-/// Context / Behavior / (optional) Edge Cases / Open Questions / Resolved
-/// Questions sections.
+/// `framework/templates/spec/scenario.md`: frontmatter, H1 from the slug, the
+/// caller-assembled `body` (the `## Context` … `## Edge Cases` markdown), then
+/// the auto-appended Open Questions / Resolved Questions scaffolding. Framing
+/// stays with the primitive; section decomposition is the LLM's job, done
+/// in-context and handed over as one `body` payload.
 fn render(args: &CreateScenarioArgs) -> String {
     let title = title_from_slug(&args.slug);
     let mut out = String::new();
@@ -61,17 +63,8 @@ fn render(args: &CreateScenarioArgs) -> String {
     let _ = writeln!(out, "section: \"{}\"", args.section);
     out.push_str("---\n\n");
     let _ = writeln!(out, "# {title}\n");
-    out.push_str("## Context\n\n");
-    out.push_str(args.context.trim_end());
+    out.push_str(args.body.trim());
     out.push_str("\n\n");
-    out.push_str("## Behavior\n\n");
-    out.push_str(args.behavior.trim_end());
-    out.push_str("\n\n");
-    if let Some(edge_cases) = &args.edge_cases {
-        out.push_str("## Edge Cases\n\n");
-        out.push_str(edge_cases.trim_end());
-        out.push_str("\n\n");
-    }
     out.push_str("## Open Questions\n\n");
     out.push_str("*None — captured during scenario authoring.*\n\n");
     out.push_str("## Resolved Questions\n\n");
@@ -100,13 +93,22 @@ mod tests {
     use tempfile::tempdir;
 
     fn args(feature_path: &str, slug: &str, edge_cases: Option<&str>) -> CreateScenarioArgs {
+        // The LLM assembles the section markdown in-context and hands it over
+        // as one `body` payload; `edge_cases` toggles the optional third
+        // section so the retrofit still exercises with/without Edge Cases.
+        let mut body = String::from(
+            "## Context\n\nUpstream may time out.\n\n\
+             ## Behavior\n\nClient retries up to three times.",
+        );
+        if let Some(edge) = edge_cases {
+            body.push_str("\n\n## Edge Cases\n\n");
+            body.push_str(edge);
+        }
         CreateScenarioArgs {
             feature_path: feature_path.into(),
             slug: slug.into(),
             section: "Follow-on scenarios".into(),
-            context: "Upstream may time out.".into(),
-            behavior: "Client retries up to three times.".into(),
-            edge_cases: edge_cases.map(str::to_string),
+            body,
         }
     }
 
