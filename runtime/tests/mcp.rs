@@ -436,3 +436,122 @@ async fn set_status_against_scratch_copy_updates_field() {
     assert_eq!(obj["previous"], "clarified");
     assert_eq!(obj["current"], "planned");
 }
+
+// -- review-runtime-acceleration primitives (spec 022 scenario) --------------
+
+#[tokio::test]
+async fn discover_rule_files_selects_via_mcp() {
+    // The shared fixture repo ships framework/rules/security-backend.md.
+    let client = start_pair(fixture_repo()).await;
+    let result = call_tool(&client, "discover-rule-files", json!({})).await;
+    let obj = structured_object(&result);
+    let selected: Vec<&str> = obj["selected"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(Value::as_str)
+        .collect();
+    assert!(
+        selected.iter().any(|s| s.contains("security-backend")),
+        "expected security-backend.md in {selected:?}"
+    );
+    assert!(obj["notices"].is_array());
+}
+
+#[tokio::test]
+async fn process_waivers_applies_via_mcp() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path().join("specs/001-x");
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(
+        dir.join("spec.md"),
+        "---\nstatus: in-progress\ndependencies: []\nreview:\n  waivers:\n    \
+         - rule: SEC-BE-014\n      file: src/x.ts\n      reason: internal-only endpoint behind mTLS\n      \
+         waived-at: 2026-01-01T00:00:00Z\n      waived-by: dev@example.com\n---\n\n# x\n",
+    )
+    .unwrap();
+    fs::create_dir_all(tmp.path().join("src")).unwrap();
+    fs::write(tmp.path().join("src/x.ts"), "code\n").unwrap();
+
+    let client = start_pair(tmp.path().to_path_buf()).await;
+    let result = call_tool(
+        &client,
+        "process-waivers",
+        json!({
+            "feature": "001-x",
+            "fired": [{"rule": "SEC-BE-014", "file": "src/x.ts"}],
+        }),
+    )
+    .await;
+    let obj = structured_object(&result);
+    let applied = obj["applied"].as_array().unwrap();
+    assert_eq!(applied.len(), 1);
+    assert_eq!(applied[0]["rule"], "SEC-BE-014");
+    assert!(obj["expired"].as_array().unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn compute_review_scope_returns_structured_scope_via_mcp() {
+    use git2::{IndexAddOption, Repository, Signature};
+    let tmp = tempfile::tempdir().unwrap();
+    let repo = Repository::init(tmp.path()).unwrap();
+    let dir = tmp.path().join("specs/001-x");
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(
+        dir.join("spec.md"),
+        "---\nstatus: planned\ndependencies: []\n---\n\n# x\n",
+    )
+    .unwrap();
+    let mut index = repo.index().unwrap();
+    index.add_all(["*"], IndexAddOption::DEFAULT, None).unwrap();
+    index.write().unwrap();
+    let tree = repo.find_tree(index.write_tree().unwrap()).unwrap();
+    let sig = Signature::now("Test", "test@example.com").unwrap();
+    repo.commit(Some("HEAD"), &sig, &sig, "init", &tree, &[])
+        .unwrap();
+
+    let client = start_pair(tmp.path().to_path_buf()).await;
+    let result = call_tool(&client, "compute-review-scope", json!({"feature": "001-x"})).await;
+    let obj = structured_object(&result);
+    // Never reached in-progress → empty diff-base and scope, but the wire
+    // returns the structured shape.
+    assert!(obj["diff-base"].is_string());
+    assert!(obj["scope"].is_array());
+    assert!(obj["captured-issues"].is_array());
+}
+
+#[tokio::test]
+async fn write_review_renders_report_via_mcp() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path().join("specs/001-x");
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(
+        dir.join("spec.md"),
+        "---\nstatus: in-progress\ndependencies: []\n---\n\n# x\n",
+    )
+    .unwrap();
+
+    let client = start_pair(tmp.path().to_path_buf()).await;
+    let result = call_tool(
+        &client,
+        "write-review",
+        json!({
+            "feature": "001-x",
+            "reviewed-at": "2026-07-06T00:00:00Z",
+            "reviewed-against": "abc1234",
+            "diff-base": "def5678",
+            "findings": [{
+                "rule": "SEC-BE-001", "severity": "must", "file": "src/a.rs",
+                "line-range": "1-5", "confidence": "high"
+            }],
+        }),
+    )
+    .await;
+    let obj = structured_object(&result);
+    assert_eq!(obj["must-violations"], 1);
+    assert_eq!(obj["blocking"], true);
+    assert!(
+        tmp.path().join("specs/001-x/review.md").exists(),
+        "write-review must render review.md"
+    );
+}

@@ -17,6 +17,12 @@ The **review-runtime-acceleration** series (spec 022 scenario `review-runtime-ac
 ### Changed
 
 - **BREAKING — `create-scenario` takes a single `body` argument** instead of separate `context` / `behavior` / `edge-cases` params. LLM-authored content now crosses the runtime boundary as one payload (the content-ingestion convention): the host assembles the `## Context` … `## Edge Cases` markdown in-context and hands it over whole, and the primitive keeps framing it with the `section:` frontmatter, the H1-from-slug, the atomic write, the slug-conflict refusal, and the auto-appended Open / Resolved Questions scaffolding. This removes the host MCP-encoder failure mode where one of several large sibling string params is silently dropped. `framework/commands/amend.md`'s scenario-branch prose is updated to match.
+- **The procedure parser recognizes the four review primitives.** `discover-rule-files`, `process-waivers`, `compute-review-scope`, and `write-review` are added to `parser::PRIMITIVE_NAMES`, so the rewritten `/gov:review` Instructions resolve their backticked `Invoke` steps instead of raising `ParseError::Invalid`.
+
+### Notes
+
+- **Framework, shipping in this tagged archive (no runtime-crate behavior change):** `framework/commands/review.md` is rewritten from 604 lines of prose into a parseable nine-step procedure — `compute-review-scope` → `discover-rule-files` → `process-waivers` → five `performReview` passes → `write-review` — with the mechanical bookkeeping delegated to the primitives; `review.md` is removed from `runtime/legacy-prose-commands.txt`. The `#3/#4` prose tightening moves the ~1.1 KB "For agent runtimes" host-integration blockquote into `framework/constitution.md` §runtime-host-integration once and replaces it in every command with a one-line pointer, dropping the redundant `(MCP: …)` parentheticals and "Otherwise, follow the markdown-only path" tails; `scripts/lint-tool-coverage.sh` now exempts a command that carries the pointer from the per-reference proximity check.
+- Ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary). `cargo test` (475 lib tests + the integration suites, including new MCP coverage for the four review primitives and a review-command parse-parity test), `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, the parseability / tool-coverage lints, the framework self-audit, and markdownlint are clean.
 
 ## [0.14.2] — 2026-07-01
 
