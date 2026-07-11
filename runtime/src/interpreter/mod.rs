@@ -17,8 +17,12 @@
 //! At the end of the procedure the walker emits `complete`. Operational
 //! errors halt the walk and emit an `error` envelope before returning.
 //! Step ordering and message emission are deterministic given the same
-//! procedure + inputs; the runtime panics on malformed JSON on stdin
-//! (host-implementation bug, not a recoverable runtime condition).
+//! procedure + inputs. While suspended awaiting an `llm-response` or
+//! `gate-response`, any other inbound line — a wrong-type envelope, a
+//! response with a mismatched request-id, malformed JSON, or a blank
+//! keepalive — is logged to stderr and skipped, and the walker keeps
+//! waiting (data-model §JSON-over-stdio ignore-and-continue rule). Only
+//! stdin EOF while awaiting a response is an operational error.
 
 #![allow(clippy::module_name_repetitions)]
 
@@ -39,8 +43,9 @@ use crate::schema::primitives::{
     EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs,
     MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs,
     MergePermissionsArgs, MigrateSessionFileArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs,
-    ReadTasksArgs, ResolveAnchorArgs, RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs,
-    TraverseDepsArgs, ValidateFrontmatterArgs, WriteReviewArgs, WriteSessionArgs,
+    ReadTasksArgs, ResolveAnchorArgs, ResolveReferencesArgs, RunGeneratorArgs, SetStatusArgs,
+    SubstituteTemplatesArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteReviewArgs,
+    WriteSessionArgs,
 };
 use crate::schema::procedure::{Procedure, Step, StepNumber};
 use crate::schema::protocol::{ErrorLocation, ProtocolMessage};
@@ -241,56 +246,87 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
             }
         };
         self.emit_llm_request(identifier, &request_id, request)?;
-        let parsed = self.read_envelope()?;
-        match parsed {
-            ProtocolMessage::LlmResponse {
-                request_id: response_id,
-                response,
-            } if response_id == request_id => {
-                if let Some(outcome) = self.validate_llm_response(identifier, &response)? {
-                    return Ok(Some(outcome));
+        let response = self.await_llm_response(&request_id)?;
+        if let Some(outcome) = self.validate_llm_response(identifier, &response)? {
+            return Ok(Some(outcome));
+        }
+        // `performReview` runs once per pass; accumulate each pass's
+        // findings into the shared `findings` context key so a later
+        // `write-review` step consumes the union across all passes.
+        if identifier == "performReview"
+            && let Some(Value::Array(findings)) = response.get("findings")
+        {
+            let findings = findings.clone();
+            match self.context.get_mut("findings") {
+                Some(Value::Array(existing)) => existing.extend(findings),
+                _ => {
+                    self.context
+                        .insert("findings".into(), Value::Array(findings));
                 }
-                // `performReview` runs once per pass; accumulate each pass's
-                // findings into the shared `findings` context key so a later
-                // `write-review` step consumes the union across all passes.
-                if identifier == "performReview"
-                    && let Some(Value::Array(findings)) = response.get("findings")
-                {
-                    let findings = findings.clone();
-                    match self.context.get_mut("findings") {
-                        Some(Value::Array(existing)) => existing.extend(findings),
-                        _ => {
-                            self.context
-                                .insert("findings".into(), Value::Array(findings));
-                        }
-                    }
+            }
+        }
+        self.context.insert(format!("llm:{identifier}"), response);
+        self.emit_progress(
+            format!("received llm-response for `{identifier}`"),
+            Some(format_step_number(number)),
+            None,
+        )?;
+        Ok(None)
+    }
+
+    /// Block until the host delivers an `llm-response` matching
+    /// `request_id`. Any other inbound envelope — a wrong type, or an
+    /// `llm-response` for a superseded request-id — is logged to stderr
+    /// and skipped per the protocol's ignore-and-continue rule; the
+    /// framing layer ([`read_envelope`]) already skips malformed and
+    /// blank lines the same way.
+    fn await_llm_response(&mut self, request_id: &str) -> std::io::Result<Value> {
+        loop {
+            match self.read_envelope()? {
+                ProtocolMessage::LlmResponse {
+                    request_id: response_id,
+                    response,
+                } if response_id == request_id => return Ok(response),
+                ProtocolMessage::LlmResponse {
+                    request_id: other, ..
+                } => {
+                    eprintln!(
+                        "runtime: ignoring llm-response for request-id `{other}` while awaiting `{request_id}`"
+                    );
                 }
-                self.context.insert(format!("llm:{identifier}"), response);
-                self.emit_progress(
-                    format!("received llm-response for `{identifier}`"),
-                    Some(format_step_number(number)),
-                    None,
-                )?;
-                Ok(None)
+                other => {
+                    eprintln!(
+                        "runtime: ignoring {} envelope while awaiting llm-response `{request_id}`",
+                        envelope_kind(&other)
+                    );
+                }
             }
-            ProtocolMessage::LlmResponse {
-                request_id: other, ..
-            } => {
-                let message =
-                    format!("llm-response request-id mismatch: expected {request_id}, got {other}");
-                self.emit_error("protocol-mismatch".into(), message.clone(), None)?;
-                Ok(Some(WalkOutcome::Errored {
-                    code: "protocol-mismatch".into(),
-                    message,
-                }))
-            }
-            other => {
-                let message = format!("expected llm-response, got {other:?}");
-                self.emit_error("protocol-mismatch".into(), message.clone(), None)?;
-                Ok(Some(WalkOutcome::Errored {
-                    code: "protocol-mismatch".into(),
-                    message,
-                }))
+        }
+    }
+
+    /// Block until the host delivers a `gate-response` matching
+    /// `request_id`; returns the user's decision. Same ignore-and-continue
+    /// rule as [`Walker::await_llm_response`].
+    fn await_gate_response(&mut self, request_id: &str) -> std::io::Result<bool> {
+        loop {
+            match self.read_envelope()? {
+                ProtocolMessage::GateResponse {
+                    request_id: response_id,
+                    confirmed,
+                } if response_id == request_id => return Ok(confirmed),
+                ProtocolMessage::GateResponse {
+                    request_id: other, ..
+                } => {
+                    eprintln!(
+                        "runtime: ignoring gate-response for request-id `{other}` while awaiting `{request_id}`"
+                    );
+                }
+                other => {
+                    eprintln!(
+                        "runtime: ignoring {} envelope while awaiting gate-response `{request_id}`",
+                        envelope_kind(&other)
+                    );
+                }
             }
         }
     }
@@ -303,50 +339,21 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
         let request_id = self.fresh_request_id();
         let gate = format!("step-{}", format_step_number(number));
         self.emit_gate_confirm(&gate, &request_id, prose)?;
-        let parsed = self.read_envelope()?;
-        match parsed {
-            ProtocolMessage::GateResponse {
-                request_id: response_id,
-                confirmed,
-            } if response_id == request_id => {
-                self.emit_progress(
-                    format!(
-                        "gate `{gate}` {}",
-                        if confirmed { "confirmed" } else { "denied" }
-                    ),
-                    Some(format_step_number(number)),
-                    None,
-                )?;
-                if confirmed {
-                    Ok(None)
-                } else {
-                    // Denial is a clean exit per §partial-failure-semantics.
-                    self.emit_complete_with(
-                        serde_json::json!({ "confirmed": false, "gate": gate }),
-                    )?;
-                    Ok(Some(WalkOutcome::Complete))
-                }
-            }
-            ProtocolMessage::GateResponse {
-                request_id: other, ..
-            } => {
-                let message = format!(
-                    "gate-response request-id mismatch: expected {request_id}, got {other}"
-                );
-                self.emit_error("protocol-mismatch".into(), message.clone(), None)?;
-                Ok(Some(WalkOutcome::Errored {
-                    code: "protocol-mismatch".into(),
-                    message,
-                }))
-            }
-            other => {
-                let message = format!("expected gate-response, got {other:?}");
-                self.emit_error("protocol-mismatch".into(), message.clone(), None)?;
-                Ok(Some(WalkOutcome::Errored {
-                    code: "protocol-mismatch".into(),
-                    message,
-                }))
-            }
+        let confirmed = self.await_gate_response(&request_id)?;
+        self.emit_progress(
+            format!(
+                "gate `{gate}` {}",
+                if confirmed { "confirmed" } else { "denied" }
+            ),
+            Some(format_step_number(number)),
+            None,
+        )?;
+        if confirmed {
+            Ok(None)
+        } else {
+            // Denial is a clean exit per §partial-failure-semantics.
+            self.emit_complete_with(serde_json::json!({ "confirmed": false, "gate": gate }))?;
+            Ok(Some(WalkOutcome::Complete))
         }
     }
 
@@ -489,6 +496,19 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
     }
 }
 
+/// The envelope's `type` discriminator, for stderr ignore-and-continue logs.
+fn envelope_kind(message: &ProtocolMessage) -> &'static str {
+    match message {
+        ProtocolMessage::LlmRequest { .. } => "llm-request",
+        ProtocolMessage::LlmResponse { .. } => "llm-response",
+        ProtocolMessage::GateConfirm { .. } => "gate-confirm",
+        ProtocolMessage::GateResponse { .. } => "gate-response",
+        ProtocolMessage::Progress { .. } => "progress",
+        ProtocolMessage::Complete { .. } => "complete",
+        ProtocolMessage::Error { .. } => "error",
+    }
+}
+
 fn step_prose(step: &Step) -> &str {
     match step {
         Step::Primitive { prose, .. } | Step::Extension { prose, .. } => prose,
@@ -531,7 +551,20 @@ fn dispatch_primitive(
     context: &Map<String, Value>,
     repo: &Path,
 ) -> Result<Value, DispatchError> {
-    let value = Value::Object(context.clone());
+    let mut bindings = context.clone();
+    // Exec-path binding for `process-waivers`: the `performReview` passes
+    // accumulate their findings under the walker's `findings` context key,
+    // and the primitive classifies waivers against exactly that set via
+    // its `fired` argument. Bind `findings` → `fired` unless the caller
+    // seeded `fired` explicitly — `FiredFinding` deserialization keeps the
+    // `(rule, file)` anchor and ignores the extra severity/range keys.
+    if name == "process-waivers"
+        && !bindings.contains_key("fired")
+        && let Some(findings @ Value::Array(_)) = bindings.get("findings").cloned()
+    {
+        bindings.insert("fired".into(), findings);
+    }
+    let value = Value::Object(bindings);
     macro_rules! call {
         ($args:ty, $module:ident) => {{
             let args: $args = serde_json::from_value(value).map_err(DispatchError::BadArgs)?;
@@ -553,6 +586,7 @@ fn dispatch_primitive(
         "check-stuck" => call!(CheckStuckArgs, check_stuck),
         "validate-frontmatter" => call!(ValidateFrontmatterArgs, validate_frontmatter),
         "resolve-anchor" => call!(ResolveAnchorArgs, resolve_anchor),
+        "resolve-references" => call!(ResolveReferencesArgs, resolve_references),
         "traverse-deps" => call!(TraverseDepsArgs, traverse_deps),
         "check-rule-ids" => call!(CheckRuleIdsArgs, check_rule_ids),
         "run-generator" => call!(RunGeneratorArgs, run_generator),

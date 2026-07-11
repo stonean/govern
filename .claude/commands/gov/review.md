@@ -86,12 +86,12 @@ Run once per targeted feature (every in-progress or done spec under `--all`, oth
 
 1. Invoke `compute-review-scope` to resolve the diff base (the commit the spec advanced to in-progress at, or a `--since` override), the review file scope (the plan's Affected Files unioned with the files modified since the diff base, larger set wins), and the inbox additions captured in that window. When the scope is empty, jump straight to the write-review step (step 9) — it emits the nothing-to-review-yet, non-blocking report. Otherwise confirm tech-stack alignment first (host judgment, not a primitive): read `.govern.toml`; when its `[review] tech-stack-verified` flag is true, skip the check; else compare the AGENTS.md Tech Stack section against the code in scope, halting with the tech-stack-misalignment message on a mismatch, and offer to persist the flag on success. Only the flag read is deterministic — the alignment judgment stays with the host.
 2. Invoke `discover-rule-files` to select this run's rule files — suffix classification, the `[rules] surfaces` selection, and the disabled-rule-files filter — and emit the ordered notice lines it returns verbatim.
-3. Invoke `process-waivers` to classify the spec's `review.waivers` against the currently-firing findings (apply / expire / malformed / duplicate), emitting each notice it returns. The applied set is excluded from the blocking count; the expired set is dropped on the next write.
-4. <!-- llm:performReview --> Run the **security** pass over the in-scope files against the loaded security rules, returning one finding per violation (rule id, severity, file, line range, confidence, explanation).
-5. <!-- llm:performReview --> Run the **reuse** pass: flag logic that duplicates existing utilities or belongs in shared code.
-6. <!-- llm:performReview --> Run the **quality** pass: detect bugs, missing error handling, unhandled edge cases, and contract violations; low-confidence findings are recorded separately and do not block.
-7. <!-- llm:performReview --> Run the **efficiency** pass: flag N+1 queries, repeated work, and unbounded loops over user-controlled input.
-8. <!-- llm:performReview --> Run the **simplicity** pass: flag overengineering, premature abstraction, and dead branches; mark a finding auto-fixable when a simpler form is mechanically derivable. A dimension-restricting flag (`--security` / `--simplicity` / `--quality`) skips the unselected passes.
+3. <!-- llm:performReview --> Run the **security** pass over the in-scope files against the loaded security rules, returning one finding per violation (rule id, severity, file, line range, confidence, explanation).
+4. <!-- llm:performReview --> Run the **reuse** pass: flag logic that duplicates existing utilities or belongs in shared code.
+5. <!-- llm:performReview --> Run the **quality** pass: detect bugs, missing error handling, unhandled edge cases, and contract violations; low-confidence findings are recorded separately and do not block.
+6. <!-- llm:performReview --> Run the **efficiency** pass: flag N+1 queries, repeated work, and unbounded loops over user-controlled input.
+7. <!-- llm:performReview --> Run the **simplicity** pass: flag overengineering, premature abstraction, and dead branches; mark a finding auto-fixable when a simpler form is mechanically derivable. A dimension-restricting flag (`--security` / `--simplicity` / `--quality`) skips the unselected passes.
+8. Invoke `process-waivers` to classify the spec's `review.waivers` against the findings the passes just accumulated (apply / expire / malformed / duplicate), emitting each notice it returns. The applied set is excluded from the blocking count; the expired set is dropped on the next write. Waivers are judged only after the passes run — a waiver expires when its file is gone or its rule genuinely no longer fires, never because no findings existed yet; a dimension-restricted run classifies against only the passes that ran, so waivers anchored to skipped dimensions apply unchanged.
 9. Invoke `write-review` with the accumulated pass findings, the waiver results, and the scope to render `specs/NNN-feature/review.md` and update the spec `review:` frontmatter block: it applies the cross-pass dedup (highest-severity-wins on rule + file + overlapping range), buckets findings into MUST / SHOULD / low-confidence / waived, prunes expired waivers, records the skipped passes, and sets blocking when MUST violations remain. With `--fix`, apply the auto-fixable findings, re-run the affected passes, and invoke `write-review` a second time for the post-fix counts.
 
 ## Markdown-only reference
@@ -476,8 +476,13 @@ expire the waiver.
 
 ### Per-run waiver processing
 
-At the start of every `/gov:review` run, before counting findings into
-`must-violations`, walk `review.waivers` and process each entry:
+On every `/gov:review` run, after the review passes have produced their
+findings (§Run review passes) and before counting them into `must-violations`
+or writing `review.md`, walk `review.waivers` and classify each entry against
+those findings. A waiver can only be judged against findings that exist — when
+an empty scope skips the passes entirely, leave the waivers untouched; and on
+a dimension-restricted run, waivers anchored to skipped dimensions apply
+unchanged rather than expiring:
 
 1. **Apply** when the file exists at the anchored path AND the rule still
    fires there. The finding appears under **Waived findings** in

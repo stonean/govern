@@ -62,6 +62,7 @@ pub const PRIMITIVE_NAMES: &[&str] = &[
     "prune-tasks",
     "dashboard",
     "write-session",
+    "resolve-references",
 ];
 
 /// Parse errors raised by [`parse`] and [`check`].
@@ -561,6 +562,23 @@ mod tests {
         );
         assert_eq!(parse_extension_marker("<!-- comment -->"), None);
         assert_eq!(parse_extension_marker("not a comment"), None);
+    }
+
+    #[test]
+    fn primitive_names_match_mcp_tool_names_exactly() {
+        // Guard against the six-site wiring gap (AGENTS.md gotcha,
+        // recorded 2026-06-14 for `resolve-references`): a primitive
+        // exposed over MCP must also be recognizable in command prose.
+        // The two registries are exact-set equal today; if a deliberate
+        // asymmetry ever appears, downgrade this to a superset check
+        // with a comment naming the exception.
+        use std::collections::BTreeSet;
+        let parser: BTreeSet<&str> = PRIMITIVE_NAMES.iter().copied().collect();
+        let mcp: BTreeSet<&str> = crate::mcp::server::TOOL_NAMES.iter().copied().collect();
+        assert_eq!(
+            parser, mcp,
+            "parser PRIMITIVE_NAMES and mcp TOOL_NAMES diverged — wire the missing sites (see AGENTS.md Gotchas)"
+        );
     }
 
     #[test]

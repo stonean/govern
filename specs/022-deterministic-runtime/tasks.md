@@ -448,36 +448,36 @@ Follow-on to task 45c: `compute-review-scope`'s `read_plan_affected` parses `## 
 
 ## 48. Implement scenario: [spec-side-parser-hardening](scenarios/spec-side-parser-hardening.md)
 
-- [ ] Implement the behavior described in `scenarios/spec-side-parser-hardening.md`
+- [x] Implement the behavior described in `scenarios/spec-side-parser-hardening.md`
 
 - **Done when**: `validate-frontmatter` reports missing `status`/`dependencies` as blocking findings; `read-spec`/`mark-criterion` skip comment- and fence-embedded checkboxes (template-state specs report zero criteria); `set-status` splices correctly on CRLF files; `check-rule-ids` cannot panic on multibyte content — each with a regression test, and `cargo test` green.
 
 ## 49. Implement scenario: [host-protocol-conformance](scenarios/host-protocol-conformance.md)
 
-- [ ] Implement the behavior described in `scenarios/host-protocol-conformance.md`
+- [x] Implement the behavior described in `scenarios/host-protocol-conformance.md`
 
 - **Done when**: `gvrn exec` emits a terminal `error` envelope (with runtime version and version-mismatch note) on parse failure; unknown/malformed inbound stdio lines are logged and ignored per the data model; `build_extension_request` constructs the typed `assessSpecQuality` request — each behavior pinned by a test, affected goldens re-blessed with verified diffs, `cargo test` green.
 
 ## 50. Implement scenario: [write-boundary-path-normalization](scenarios/write-boundary-path-normalization.md)
 
-- [ ] Implement the behavior described in `scenarios/write-boundary-path-normalization.md`
+- [x] Implement the behavior described in `scenarios/write-boundary-path-normalization.md`
 
 - **Done when**: `validate_write_code_boundary` rejects absolute paths and `.`/`..` segments before pattern matching, with tests proving `runtime/../framework/x` no longer satisfies `runtime/**`; `cargo test` green.
 
 ## 51. Implement scenario: [merge-managed-block-trailing-append](scenarios/merge-managed-block-trailing-append.md)
 
-- [ ] Implement the behavior described in `scenarios/merge-managed-block-trailing-append.md`
+- [x] Implement the behavior described in `scenarios/merge-managed-block-trailing-append.md`
 
 - **Done when**: Appending canonical subsections at the end of a managed block inserts them without consuming adopter content after the block, pinned by regression tests covering single and multiple trailing appends plus an adopter tail with a colliding heading; `cargo test` green.
 
 ## 52. Implement scenario: [resolve-references-cli-exec-wiring](scenarios/resolve-references-cli-exec-wiring.md)
 
-- [ ] Implement the behavior described in `scenarios/resolve-references-cli-exec-wiring.md`
+- [x] Implement the behavior described in `scenarios/resolve-references-cli-exec-wiring.md`
 
 - **Done when**: `gvrn resolve-references` works as a CLI subcommand, the interpreter dispatches it, `PRIMITIVE_NAMES` contains it, and a test asserts `PRIMITIVE_NAMES` ⊇ `TOOL_NAMES` so the lists cannot silently diverge again; `cargo test` green.
 
 ## 53. Implement scenario: [waiver-processing-order](scenarios/waiver-processing-order.md)
 
-- [ ] Implement the behavior described in `scenarios/waiver-processing-order.md`
+- [x] Implement the behavior described in `scenarios/waiver-processing-order.md`
 
 - **Done when**: `framework/commands/review.md` (source, placeholder form) orders `process-waivers` after the five passes and before `write-review` in both the numbered steps and the markdown-only reference; the exec walker binds accumulated findings to `fired`; `review_command.rs` and the review golden/parity capture pin the corrected sequence; `cargo test` green.

@@ -2,6 +2,28 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.16.1] — 2026-07-11
+
+Bug-fix release for the eleven MUST-level defects surfaced by the 2026-07-11 full-runtime accuracy review, recorded as six scenarios on spec 022 (`spec-side-parser-hardening`, `host-protocol-conformance`, `write-boundary-path-normalization`, `merge-managed-block-trailing-append`, `resolve-references-cli-exec-wiring`, `waiver-processing-order`).
+
+### Fixed
+
+- **`merge-managed-block`** — the group-alignment walk consumed the first adopter section *after* the managed block as a "rewrite" whenever the new canonical block appended trailing subsection(s), deleting adopter content on every `/govern` update. Unmatched trailing canonical groups are now pure insertions; adopter content beyond the block is preserved verbatim (including when an adopter heading collides with an appended canonical heading).
+- **`validate-frontmatter`** — a spec missing `status` or `dependencies` entirely returned `clean: true`; both now produce blocking findings per the constitution's hard-fail tier. A present-but-empty frontmatter block (`---`/`---`) is treated as an empty mapping (both missing-field findings) rather than a `MissingFrontmatter` operational error — a small widening that applies to every frontmatter consumer.
+- **`read-spec` / `mark-criterion`** — the acceptance-criteria walkers had no HTML-comment/fence awareness, so the spec template's comment-embedded example checkbox counted as a phantom criterion (and was flippable). Both now share a single `SkipScanner`-aware section walker, keeping their index contract aligned by construction; template-state specs report zero criteria.
+- **`set-status`** — the frontmatter splice offset hardcoded the 4-byte `---` + LF opener; on CRLF spec files every transition wrote one byte early and corrupted the frontmatter. The offset now comes from the opener actually matched.
+- **`check-rule-ids`** — the deprecation scan sliced the rule file at a raw byte offset and panicked when the window edge landed mid-UTF-8 character (em-dash-dense rule files made this reachable); the slice now backs up to a char boundary.
+- **`writeCode` boundary validation** — edit paths were prefix-matched without normalization, so `runtime/../framework/x` satisfied `runtime/**`; absolute paths and `.`/`..`/empty segments are now rejected before pattern matching.
+- **`assessSpecQuality`** — the extension point sent a raw walker-context dump instead of its documented request; it now builds the typed `spec-path` / `spec-content` / `rule{id, verification, severity}` shape (analyze golden re-blessed).
+- **`gvrn exec` parse failures** — exited 2 with no terminal message, violating the exit-code contract; they now emit a terminal `error` envelope carrying the runtime version and a version-mismatch note.
+- **stdio robustness** — a stray envelope, mismatched request-id, malformed line, or blank keepalive on stdin halted the walk (or surfaced a raw I/O error); per the data model these are now logged to stderr and ignored while the runtime keeps waiting. Stdin EOF remains an operational error.
+- **`resolve-references`** — was reachable only over MCP; now wired as a CLI subcommand, an interpreter dispatch arm, and a `PRIMITIVE_NAMES` entry, with a registry-equality test so the name lists cannot silently diverge again.
+- **`/gov:review` waiver ordering** — the procedure classified waivers *before* the passes produced findings, mass-expiring every valid waiver on the exec path; `process-waivers` now runs after the five passes (binding the accumulated findings to `fired`) and immediately before `write-review` (review golden re-blessed).
+
+### Notes
+
+- Ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary). `cargo test`, `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, and `scripts/audit/run-all.sh` are clean.
+
 ## [0.16.0] — 2026-07-10
 
 Adds the `prune-tasks` primitive backing the new `/gov:prune` command (spec 041).

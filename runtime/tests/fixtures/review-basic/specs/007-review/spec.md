@@ -14,8 +14,8 @@ review:
 # 007 — Review Fixture
 
 A minimal fixture for the `/gov:review` exec parity test. Drives the
-`compute-review-scope → discover-rule-files → process-waivers →
-performReview ×5 → write-review` pipeline against a single-commit repo.
+`compute-review-scope → discover-rule-files → performReview ×5 →
+process-waivers → write-review` pipeline against a single-commit repo.
 
 ## Motivation
 

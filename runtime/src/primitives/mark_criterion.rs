@@ -3,7 +3,7 @@
 use std::path::Path;
 
 use crate::primitives::{
-    PrimitiveError, Result, parse_atx_heading, read_text, rel_path, write_atomic,
+    PrimitiveError, Result, read_text, rel_path, section_line_indices, write_atomic,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{CheckboxToggleResult, MarkCriterionArgs};
@@ -37,8 +37,7 @@ pub fn run(args: &MarkCriterionArgs, repo: &Path) -> Result<CheckboxToggleResult
     let content = read_text(&spec_path)?;
     let lines: Vec<&str> = content.split_inclusive('\n').collect();
 
-    let section_range = locate_acceptance_range(&lines);
-    let checkbox_lines = collect_checkbox_line_indices(&lines, section_range);
+    let checkbox_lines = collect_checkbox_line_indices(&lines);
     let (line_idx, marker_idx) = *checkbox_lines.get(args.criterion_index).ok_or_else(|| {
         PrimitiveError::CriterionOutOfRange {
             root: root.clone(),
@@ -69,36 +68,19 @@ pub fn run(args: &MarkCriterionArgs, repo: &Path) -> Result<CheckboxToggleResult
     })
 }
 
-fn locate_acceptance_range(lines: &[&str]) -> std::ops::Range<usize> {
-    let mut start: Option<usize> = None;
-    let mut section_level: u8 = 0;
-    for (idx, line) in lines.iter().enumerate() {
-        let Some((level, heading)) = parse_atx_heading(line) else {
-            continue;
-        };
-        if let Some(s) = start {
-            if level <= section_level {
-                return s..idx;
-            }
-        } else if heading == ACCEPTANCE_HEADING {
-            start = Some(idx);
-            section_level = level;
-        }
-    }
-    start.map_or(0..0, |s| s..lines.len())
-}
-
-fn collect_checkbox_line_indices(
-    lines: &[&str],
-    range: std::ops::Range<usize>,
-) -> Vec<(usize, usize)> {
-    let mut out = Vec::new();
-    for idx in range {
-        if let Some((_bracket, marker_idx)) = find_checkbox_line(lines[idx]) {
-            out.push((idx, marker_idx));
-        }
-    }
-    out
+/// Collect `(line_index, marker_index)` for every addressable checkbox in
+/// the Acceptance Criteria section. Uses the shared comment/fence-aware
+/// walker ([`section_line_indices`]) — the same walker `read-spec`'s
+/// criteria listing consumes — so criterion index N here is exactly the
+/// criterion `read-spec` reports at index N, and a checkbox embedded in a
+/// template guidance comment or fenced code block is never flippable.
+fn collect_checkbox_line_indices(lines: &[&str]) -> Vec<(usize, usize)> {
+    section_line_indices(lines, ACCEPTANCE_HEADING)
+        .into_iter()
+        .filter_map(|idx| {
+            find_checkbox_line(lines[idx]).map(|(_bracket, marker_idx)| (idx, marker_idx))
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -176,6 +158,68 @@ mod tests {
             PrimitiveError::CriterionOutOfRange { total, .. } => assert_eq!(total, 3),
             other => panic!("expected CriterionOutOfRange, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn template_state_spec_has_no_flippable_criteria() {
+        // The shipped spec template embeds an example `- [ ]` checkbox
+        // inside the Acceptance Criteria guidance comment; it must not be
+        // addressable (scenario spec-side-parser-hardening).
+        let repo_root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .unwrap()
+            .to_path_buf();
+        let template =
+            fs::read_to_string(repo_root.join("framework/templates/spec/spec.md")).unwrap();
+        let tmp = tempdir().unwrap();
+        let feature_dir = tmp.path().join("specs/feat");
+        fs::create_dir_all(&feature_dir).unwrap();
+        fs::write(feature_dir.join("spec.md"), &template).unwrap();
+
+        let err = run(
+            &MarkCriterionArgs {
+                feature: "feat".into(),
+                criterion_index: 0,
+                checked: true,
+            },
+            tmp.path(),
+        )
+        .unwrap_err();
+        match err {
+            PrimitiveError::CriterionOutOfRange { total, .. } => assert_eq!(total, 0),
+            other => panic!("expected CriterionOutOfRange, got {other:?}"),
+        }
+        // The comment-embedded example checkbox is untouched.
+        let on_disk = fs::read_to_string(tmp.path().join("specs/feat/spec.md")).unwrap();
+        assert_eq!(on_disk, template);
+    }
+
+    #[test]
+    fn comment_embedded_checkbox_does_not_shift_indexes() {
+        // A guidance-comment checkbox ahead of the real criteria must be
+        // invisible to index addressing: index 0 is the first REAL checkbox.
+        let tmp = tempdir().unwrap();
+        let feature_dir = tmp.path().join("specs/feat");
+        fs::create_dir_all(&feature_dir).unwrap();
+        let spec = "---\nstatus: in-progress\ndependencies: []\n---\n\n# feat\n\n\
+                    ## Acceptance Criteria\n\n\
+                    <!--\n- [ ] Example inside comment\n-->\n\n\
+                    - [ ] Real criterion.\n";
+        fs::write(feature_dir.join("spec.md"), spec).unwrap();
+
+        let result = run(
+            &MarkCriterionArgs {
+                feature: "feat".into(),
+                criterion_index: 0,
+                checked: true,
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert!(!result.previous);
+        let new_content = fs::read_to_string(tmp.path().join("specs/feat/spec.md")).unwrap();
+        assert!(new_content.contains("- [ ] Example inside comment"));
+        assert!(new_content.contains("- [x] Real criterion."));
     }
 
     #[test]

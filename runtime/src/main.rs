@@ -15,8 +15,9 @@ use gvrn::schema::primitives::{
     EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs,
     MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs,
     MergePermissionsArgs, MigrateSessionFileArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs,
-    ReadTasksArgs, ResolveAnchorArgs, RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs,
-    TraverseDepsArgs, ValidateFrontmatterArgs, WriteReviewArgs, WriteSessionArgs,
+    ReadTasksArgs, ResolveAnchorArgs, ResolveReferencesArgs, RunGeneratorArgs, SetStatusArgs,
+    SubstituteTemplatesArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteReviewArgs,
+    WriteSessionArgs,
 };
 
 #[derive(Parser, Debug)]
@@ -65,6 +66,8 @@ enum Command {
     ValidateFrontmatter(ValidateFrontmatterArgs),
     /// Verify `§anchor` references resolve to `<!-- §anchor -->` markers.
     ResolveAnchor(ResolveAnchorArgs),
+    /// Resolve a consumer feature's `references:` index against the `[services]` registry.
+    ResolveReferences(ResolveReferencesArgs),
     /// Traverse spec dependencies and check status compatibility.
     TraverseDeps(TraverseDepsArgs),
     /// Verify cited rule IDs exist in rule files and aren't deprecated.
@@ -212,6 +215,50 @@ fn run_parse(path: &std::path::Path, check_only: bool) -> ExitCode {
     }
 }
 
+/// Terminal `error` envelope for a command-file parse failure under
+/// `gvrn exec`. Protocol contract (spec 022 + the versioning-enforcement
+/// resolution): every non-zero exit in the 1–127 clean band is preceded
+/// by a terminal `error` message on stdout carrying the runtime version,
+/// so a host can suspect a framework/runtime version mismatch instead of
+/// facing a message-less failure.
+fn emit_exec_parse_error(path: &std::path::Path, err: &gvrn::parser::ParseError) -> ExitCode {
+    use gvrn::io::write_envelope;
+    use gvrn::parser::ParseError;
+    use gvrn::schema::protocol::{ErrorLocation, ProtocolMessage};
+
+    let location = match err {
+        ParseError::Invalid {
+            location: Some(loc),
+            ..
+        } => Some(ErrorLocation {
+            file: path.display().to_string(),
+            line: loc.start_line,
+            col: loc.start_col,
+        }),
+        _ => None,
+    };
+    let message = format!(
+        "failed to parse command file {}: {err} — a framework/runtime \
+         version mismatch is a possible cause (this runtime is v{}; \
+         re-run /govern to realign the installed framework files)",
+        path.display(),
+        env!("CARGO_PKG_VERSION"),
+    );
+    let envelope = ProtocolMessage::Error {
+        code: "parse-error".into(),
+        message: message.clone(),
+        runtime_version: env!("CARGO_PKG_VERSION").into(),
+        location,
+    };
+    let stdout = io::stdout();
+    let mut writer = stdout.lock();
+    if let Err(io_err) = write_envelope(&mut writer, &envelope) {
+        eprintln!("runtime exec: failed to emit parse-error envelope: {io_err}");
+    }
+    eprintln!("{message}");
+    ExitCode::from(2)
+}
+
 fn run_exec(command: &str, args: &[String], repo: &std::path::Path) -> ExitCode {
     use gvrn::host::Host;
     use gvrn::interpreter::{WalkOutcome, Walker};
@@ -260,10 +307,7 @@ fn run_exec(command: &str, args: &[String], repo: &std::path::Path) -> ExitCode 
     };
     let procedure = match parser::parse(&source, command) {
         Ok(p) => p,
-        Err(err) => {
-            eprintln!("{}: {err}", path.display());
-            return ExitCode::from(2);
-        }
+        Err(err) => return emit_exec_parse_error(path, &err),
     };
 
     // Seed the walker context: session file (when present) overlaid with
@@ -368,6 +412,9 @@ fn main() -> ExitCode {
             emit_result(primitives::validate_frontmatter::run(&args, &repo))
         }
         Command::ResolveAnchor(args) => emit_result(primitives::resolve_anchor::run(&args, &repo)),
+        Command::ResolveReferences(args) => {
+            emit_result(primitives::resolve_references::run(&args, &repo))
+        }
         Command::TraverseDeps(args) => emit_result(primitives::traverse_deps::run(&args, &repo)),
         Command::CheckRuleIds(args) => emit_result(primitives::check_rule_ids::run(&args, &repo)),
         Command::CheckStuck(args) => emit_result(primitives::check_stuck::run(&args, &repo)),

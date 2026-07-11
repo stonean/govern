@@ -2,7 +2,8 @@
 //!
 //! Bundles the static context (`constitution-excerpts`, `plan-relevant-files`,
 //! `write-boundary`) that LLM extension points need into the typed
-//! [`WriteCodeRequest`] / [`WriteSpecBodyRequest`] shapes defined in
+//! [`WriteCodeRequest`] / [`WriteSpecBodyRequest`] /
+//! [`AssessSpecQualityRequest`] shapes defined in
 //! [`crate::schema::extensions`]. The interpreter calls
 //! [`build_extension_request`] just before emitting an `llm-request` envelope;
 //! the result replaces the previous "dump the walker context as the request"
@@ -12,6 +13,7 @@
 //!
 //! [`WriteCodeRequest`]: crate::schema::extensions::WriteCodeRequest
 //! [`WriteSpecBodyRequest`]: crate::schema::extensions::WriteSpecBodyRequest
+//! [`AssessSpecQualityRequest`]: crate::schema::extensions::AssessSpecQualityRequest
 
 #![allow(clippy::expect_used)]
 
@@ -24,8 +26,8 @@ use serde_json::{Map, Value};
 use crate::host::Host;
 use crate::primitives::read_tasks;
 use crate::schema::extensions::{
-    PerformReviewRequest, PlanRelevantFile, ReviewRuleFile, ReviewScopeFile, WriteCodeRequest,
-    WriteCodeTask, WriteSpecBodyRequest,
+    AssessSpecQualityRequest, AssessSpecQualityRule, PerformReviewRequest, PlanRelevantFile,
+    ReviewRuleFile, ReviewScopeFile, WriteCodeRequest, WriteCodeTask, WriteSpecBodyRequest,
 };
 use crate::schema::primitives::ReadTasksArgs;
 
@@ -78,6 +80,12 @@ impl PayloadError {
 ///   the procedure's step prose names a section that already has body
 ///   content on disk. Other typed fields are left to the host (the runtime
 ///   does not yet template the spec/plan templates here).
+/// - `assessSpecQuality` — builds [`AssessSpecQualityRequest`] from the
+///   walker context's `path` (the spec under review, read off disk for
+///   `spec-content`) and the rule under assessment resolved from
+///   `citations` / `rule-files`, with the severity tier taken from the
+///   step prose (`MUST-tier` / `SHOULD-tier`). Emits the documented typed
+///   shape only — the data model sanctions no legacy context dump here.
 /// - any other identifier — passthrough; emits the walker context as-is.
 ///
 /// # Errors
@@ -95,6 +103,7 @@ pub fn build_extension_request(
         "writeCode" => build_write_code_request(context, repo, command_name),
         "writeSpecBody" => Ok(build_write_spec_body_request(context, repo, step_prose)),
         "performReview" => Ok(build_perform_review_request(context, repo)),
+        "assessSpecQuality" => Ok(build_assess_spec_quality_request(context, repo, step_prose)),
         _ => Ok(Value::Object(context.clone())),
     }
 }
@@ -304,6 +313,181 @@ fn build_write_spec_body_request(
         }
     }
     Value::Object(object)
+}
+
+/// Build the `assessSpecQuality` request for one per-rule Verification
+/// read (`/gov:analyze` steps 8–9). Mirrors `build_write_code_request`'s
+/// structure: typed fields sourced from the walker context and disk.
+///
+/// - `spec-path` — the context's `path` (seeded by `/gov:target`, echoed
+///   by `read-spec`).
+/// - `spec-content` — the spec read off disk, repo-confined
+///   (BE-INPUT-004); empty when missing or out of repo.
+/// - `rule` — the rule under assessment: the first `citations` entry
+///   (from `check-rule-ids`) that is found and not deprecated, falling
+///   back to the first rule defined in the loaded `rule-files`. Its
+///   `**Verification:**` phrase is extracted from the rule file; the
+///   severity tier comes from the step prose (`MUST-tier` → `must`,
+///   `SHOULD-tier` → `should`).
+///
+/// Unlike `writeCode`, no legacy context fields are appended: the data
+/// model documents the bare typed shape for this point, and the previous
+/// raw walker-context dump is exactly the behavior this builder replaces.
+fn build_assess_spec_quality_request(
+    context: &Map<String, Value>,
+    repo: &Path,
+    step_prose: &str,
+) -> Value {
+    let spec_path = context
+        .get("path")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .to_string();
+    let spec_content = read_repo_file(repo, &spec_path).unwrap_or_default();
+    let severity = severity_from_step_prose(step_prose);
+    let rule = resolve_assessed_rule(context, repo, severity);
+    let typed = AssessSpecQualityRequest {
+        spec_path,
+        spec_content,
+        rule,
+    };
+    serde_json::to_value(&typed).unwrap_or(Value::Null)
+}
+
+/// Read a repo-relative file with the BE-INPUT-004 containment check.
+/// `None` when `rel` is empty, the repo cannot be canonicalized, the path
+/// escapes the repo, or the file is missing/unreadable.
+fn read_repo_file(repo: &Path, rel: &str) -> Option<String> {
+    if rel.is_empty() {
+        return None;
+    }
+    let canon_repo = repo.canonicalize().ok()?;
+    match classify_contained(&canon_repo, Path::new(rel)) {
+        Contained::Inside(abs) => std::fs::read_to_string(abs).ok(),
+        Contained::Missing | Contained::Outside => None,
+    }
+}
+
+/// Map the step prose's rule-tier phrase to the request severity:
+/// `MUST-tier` → `must`, `SHOULD-tier` → `should`, `INFO-tier` → `info`
+/// (case-insensitive). Empty when the prose names no tier.
+fn severity_from_step_prose(prose: &str) -> String {
+    let lower = prose.to_lowercase();
+    for tier in ["must", "should", "info"] {
+        if lower.contains(&format!("{tier}-tier")) {
+            return tier.to_string();
+        }
+    }
+    String::new()
+}
+
+/// Resolve the rule an `assessSpecQuality` request assesses. Preference
+/// order: the first cited rule (`citations`, found and not deprecated)
+/// whose definition and Verification phrase resolve in the loaded
+/// `rule-files`; then the first rule defined in those files; then a
+/// placeholder carrying the first cited ID (empty when none) so the typed
+/// shape is always present.
+fn resolve_assessed_rule(
+    context: &Map<String, Value>,
+    repo: &Path,
+    severity: String,
+) -> AssessSpecQualityRule {
+    let cited: Vec<String> = context
+        .get("citations")
+        .and_then(Value::as_array)
+        .map(|arr| {
+            arr.iter()
+                .filter(|c| {
+                    c.get("found").and_then(Value::as_bool).unwrap_or(false)
+                        && !c
+                            .get("deprecated")
+                            .and_then(Value::as_bool)
+                            .unwrap_or(false)
+                })
+                .filter_map(|c| c.get("rule-id").and_then(Value::as_str).map(str::to_string))
+                .collect()
+        })
+        .unwrap_or_default();
+    let contents: Vec<String> = string_array(context, "rule-files")
+        .iter()
+        .filter_map(|rel| read_repo_file(repo, rel))
+        .collect();
+    for id in &cited {
+        for content in &contents {
+            if let Some(verification) = extract_rule_verification(content, id) {
+                return AssessSpecQualityRule {
+                    id: id.clone(),
+                    verification,
+                    severity,
+                };
+            }
+        }
+    }
+    for content in &contents {
+        if let Some((id, verification)) = first_rule_with_verification(content) {
+            return AssessSpecQualityRule {
+                id,
+                verification,
+                severity,
+            };
+        }
+    }
+    AssessSpecQualityRule {
+        id: cited.first().cloned().unwrap_or_default(),
+        verification: String::new(),
+        severity,
+    }
+}
+
+/// Extract the `**Verification:**` phrase for `rule_id` from a rule file.
+/// Rule sections open with a level-3 heading holding only the ID
+/// (`### CFG-CONST-001`); the Verification field is a paragraph starting
+/// `**Verification:**` whose text may wrap across lines. Wrapped lines are
+/// joined with single spaces. `None` when the rule or its Verification
+/// field is absent or empty.
+fn extract_rule_verification(content: &str, rule_id: &str) -> Option<String> {
+    let mut in_rule = false;
+    let mut collecting: Option<Vec<&str>> = None;
+    for line in content.lines() {
+        let trimmed = line.trim();
+        // A heading of any level ends the current rule section.
+        if trimmed.starts_with('#') {
+            if in_rule {
+                break;
+            }
+            in_rule = trimmed.strip_prefix("### ").map(str::trim) == Some(rule_id);
+            continue;
+        }
+        if !in_rule {
+            continue;
+        }
+        if let Some(acc) = collecting.as_mut() {
+            // The paragraph ends at a blank line or the next `**Field:**`.
+            if trimmed.is_empty() || trimmed.starts_with("**") {
+                break;
+            }
+            acc.push(trimmed);
+        } else if let Some(rest) = trimmed.strip_prefix("**Verification:**") {
+            collecting = Some(vec![rest.trim()]);
+        }
+    }
+    collecting
+        .map(|parts| parts.join(" ").trim().to_string())
+        .filter(|phrase| !phrase.is_empty())
+}
+
+/// First rule in a rule file (in heading order) whose Verification phrase
+/// resolves, as an `(id, verification)` pair.
+fn first_rule_with_verification(content: &str) -> Option<(String, String)> {
+    for line in content.lines() {
+        if let Some(id) = line.trim().strip_prefix("### ") {
+            let id = id.trim();
+            if let Some(verification) = extract_rule_verification(content, id) {
+                return Some((id.to_string(), verification));
+            }
+        }
+    }
+    None
 }
 
 fn read_write_boundary(context: &Map<String, Value>) -> Vec<String> {
@@ -1056,6 +1240,167 @@ mod tests {
         assert!(keys.contains(&"legacy-extra"));
         assert_eq!(value["task"]["number"], "1");
         assert_eq!(value["task"]["heading"], "Stub a module");
+    }
+
+    /// Stage a repo with a spec file and one rule file carrying a wrapped
+    /// Verification paragraph, for the assessSpecQuality builder tests.
+    fn stage_assess_fixture(repo: &Path) {
+        fs::create_dir_all(repo.join("specs/003-analyze")).unwrap();
+        fs::write(repo.join("specs/003-analyze/spec.md"), "# Spec body\n").unwrap();
+        fs::create_dir_all(repo.join("framework/rules")).unwrap();
+        fs::write(
+            repo.join("framework/rules/configuration.md"),
+            "# Configuration Rules\n\n\
+             ### CFG-CONST-001\n\n\
+             > **Statement:** Constants live in one central module.\n\n\
+             **Rationale:** Centralizing makes drift impossible.\n\n\
+             **Verification:** Every constant is sourced from\n\
+             the central module.\n",
+        )
+        .unwrap();
+    }
+
+    fn assess_context() -> Map<String, Value> {
+        let mut ctx = Map::new();
+        ctx.insert("feature".into(), Value::String("003-analyze".into()));
+        ctx.insert(
+            "path".into(),
+            Value::String("specs/003-analyze/spec.md".into()),
+        );
+        ctx.insert(
+            "rule-files".into(),
+            Value::Array(vec![Value::String(
+                "framework/rules/configuration.md".into(),
+            )]),
+        );
+        ctx.insert(
+            "citations".into(),
+            serde_json::json!([
+                { "rule-id": "CFG-CONST-001", "found": true, "deprecated": false }
+            ]),
+        );
+        // A legacy dump key that must NOT leak into the typed payload.
+        ctx.insert("stdout".into(), Value::String("noise".into()));
+        ctx
+    }
+
+    #[test]
+    fn build_assess_spec_quality_request_emits_documented_typed_shape() {
+        let tmp = tempdir().unwrap();
+        stage_assess_fixture(tmp.path());
+        let prose = "For every loaded MUST-tier rule whose Verification trigger \
+                     fires against the spec, request a semantic assessment.";
+        let value = build_assess_spec_quality_request(&assess_context(), tmp.path(), prose);
+        let keys: Vec<&str> = value
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect();
+        // The typed fields lead — and, per the data model, are the entire
+        // payload: no raw walker-context dump trails them.
+        assert_eq!(keys, vec!["spec-path", "spec-content", "rule"]);
+        assert_eq!(value["spec-path"], "specs/003-analyze/spec.md");
+        assert_eq!(value["spec-content"], "# Spec body\n");
+        assert_eq!(value["rule"]["id"], "CFG-CONST-001");
+        assert_eq!(value["rule"]["severity"], "must");
+        // Wrapped Verification lines are joined into one phrase.
+        assert_eq!(
+            value["rule"]["verification"],
+            "Every constant is sourced from the central module."
+        );
+    }
+
+    #[test]
+    fn build_assess_spec_quality_request_reads_severity_from_step_tier() {
+        let tmp = tempdir().unwrap();
+        stage_assess_fixture(tmp.path());
+        let prose = "For every loaded SHOULD-tier rule whose Verification trigger \
+                     fires against the spec, request a semantic assessment.";
+        let value = build_assess_spec_quality_request(&assess_context(), tmp.path(), prose);
+        assert_eq!(value["rule"]["severity"], "should");
+    }
+
+    #[test]
+    fn build_assess_spec_quality_request_falls_back_to_first_defined_rule() {
+        // No usable citation (the only one is deprecated) → the first rule
+        // defined in the loaded rule files is assessed instead.
+        let tmp = tempdir().unwrap();
+        stage_assess_fixture(tmp.path());
+        let mut ctx = assess_context();
+        ctx.insert(
+            "citations".into(),
+            serde_json::json!([
+                { "rule-id": "CFG-CONST-001", "found": true, "deprecated": true }
+            ]),
+        );
+        let prose = "For every loaded MUST-tier rule, request an assessment.";
+        let value = build_assess_spec_quality_request(&ctx, tmp.path(), prose);
+        assert_eq!(value["rule"]["id"], "CFG-CONST-001");
+        assert!(
+            value["rule"]["verification"]
+                .as_str()
+                .unwrap()
+                .starts_with("Every constant")
+        );
+    }
+
+    #[test]
+    fn build_assess_spec_quality_request_is_typed_even_when_context_is_bare() {
+        // Missing spec file, no citations, no rule files: the typed shape
+        // still leads with empty fields rather than reverting to a dump.
+        let tmp = tempdir().unwrap();
+        let mut ctx = Map::new();
+        ctx.insert("path".into(), Value::String("specs/absent/spec.md".into()));
+        let value = build_assess_spec_quality_request(&ctx, tmp.path(), "no tier named");
+        let keys: Vec<&str> = value
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect();
+        assert_eq!(keys, vec!["spec-path", "spec-content", "rule"]);
+        assert_eq!(value["spec-content"], "");
+        assert_eq!(value["rule"]["id"], "");
+        assert_eq!(value["rule"]["severity"], "");
+    }
+
+    #[test]
+    fn build_extension_request_routes_assess_spec_quality_to_typed_builder() {
+        let tmp = tempdir().unwrap();
+        stage_assess_fixture(tmp.path());
+        let prose = "For every loaded MUST-tier rule, request an assessment.";
+        let value = build_extension_request(
+            "assessSpecQuality",
+            &assess_context(),
+            tmp.path(),
+            "analyze",
+            prose,
+        )
+        .unwrap();
+        let obj = value.as_object().unwrap();
+        assert!(obj.contains_key("spec-path"));
+        assert!(obj.contains_key("rule"));
+        // The raw context dump no longer reaches the host.
+        assert!(!obj.contains_key("stdout"));
+    }
+
+    #[test]
+    fn extract_rule_verification_scopes_to_the_named_rule() {
+        let rules = "# Rules\n\n\
+                     ### AAA-001\n\n\
+                     **Verification:** First rule phrase.\n\n\
+                     ### BBB-002\n\n\
+                     **Verification:** Second rule phrase.\n";
+        assert_eq!(
+            extract_rule_verification(rules, "BBB-002").as_deref(),
+            Some("Second rule phrase.")
+        );
+        assert_eq!(
+            extract_rule_verification(rules, "AAA-001").as_deref(),
+            Some("First rule phrase.")
+        );
+        assert!(extract_rule_verification(rules, "CCC-003").is_none());
     }
 
     #[test]

@@ -2,11 +2,14 @@
 //!
 //! Parses the shipped `framework/commands/review.md` and asserts it walks the
 //! review-runtime-acceleration procedure end-to-end: `compute-review-scope` →
-//! `discover-rule-files` → `process-waivers` → five `performReview` passes →
-//! `write-review`. This is the parity check for the command rewrite (spec 022
-//! scenario review-runtime-acceleration, tasks 45g/45i) — it fails if a future
-//! edit drops a primitive, reorders the passes, or lets the file regress to
-//! legacy prose.
+//! `discover-rule-files` → five `performReview` passes → `process-waivers` →
+//! `write-review`. `process-waivers` runs after the passes so waivers are
+//! classified against real findings (spec 022 scenario
+//! waiver-processing-order) — the pre-pass ordering mass-expired every waiver
+//! against an empty `fired` set. This is the parity check for the command
+//! rewrite (spec 022 scenario review-runtime-acceleration, tasks 45g/45i) —
+//! it fails if a future edit drops a primitive, reorders the passes, or lets
+//! the file regress to legacy prose.
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
@@ -47,12 +50,12 @@ fn review_command_parses_to_the_expected_procedure() {
     let expected: Vec<(String, String)> = [
         ("1", "primitive:compute-review-scope"),
         ("2", "primitive:discover-rule-files"),
-        ("3", "primitive:process-waivers"),
+        ("3", "extension:performReview"),
         ("4", "extension:performReview"),
         ("5", "extension:performReview"),
         ("6", "extension:performReview"),
         ("7", "extension:performReview"),
-        ("8", "extension:performReview"),
+        ("8", "primitive:process-waivers"),
         ("9", "primitive:write-review"),
     ]
     .into_iter()

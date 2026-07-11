@@ -9,14 +9,15 @@
 //!   behavior): paired `<!-- BEGIN {marker} -->` / `<!-- END {marker}
 //!   -->` markers; body between them is the managed region.
 //! - **`line-prefix`**: a single `# {marker}` line preamble followed
-//!   by the block. The block's extent on disk is identified by walking
-//!   up to `block.lines().count()` lines using the supplied block as a
-//!   structural template; an unexpected blank line (where the supplied
-//!   block has non-blank content) is the end-of-block terminator. This
-//!   matches `.gitignore` / `.gitattributes` conventions where a `#`
-//!   line serves as both a comment and an inline section header, and
-//!   correctly handles blocks containing interior blank lines between
-//!   subsections (the shipped `.gitignore` template is shaped this way).
+//!   by the block. The block's extent on disk is identified by aligning
+//!   the on-disk blank-line-delimited subsections against the supplied
+//!   block's subsections (see [`walk_body_extent`]); unmatched trailing
+//!   canonical subsections are insertions, and the first unaligned
+//!   on-disk group ends the block. This matches `.gitignore` /
+//!   `.gitattributes` conventions where a `#` line serves as both a
+//!   comment and an inline section header, and correctly handles blocks
+//!   containing interior blank lines between subsections (the shipped
+//!   `.gitignore` template is shaped this way).
 //!
 //! In either style the primitive chooses one of four actions:
 //!
@@ -276,28 +277,55 @@ fn find_line_prefix_block<'a>(
     None
 }
 
-/// Split a managed block into its blank-line-delimited subsections, each
-/// reduced to its pattern lines (non-blank, non-comment). Comments and blank
-/// positions are deliberately dropped: those are the parts that drift between
-/// framework releases (wording tweaks, reflow), so the pattern lines are the
-/// stable identity used to align an on-disk block against a structurally
-/// changed canonical.
-fn block_groups(block: &str) -> Vec<Vec<&str>> {
-    let mut groups: Vec<Vec<&str>> = Vec::new();
-    let mut current: Vec<&str> = Vec::new();
+/// One blank-line-delimited subsection of a managed block, reduced to the
+/// parts that carry identity across framework releases.
+#[derive(Debug, Default)]
+struct Group<'a> {
+    /// The subsection header — the group's first line, when that line is a
+    /// comment (`# …`). Identity fallback for comment-only groups, which
+    /// have no pattern lines to match on.
+    heading: Option<&'a str>,
+    /// Non-blank, non-comment lines — the stable identity. Comment wording
+    /// and blank positions drift between framework releases (tweaks,
+    /// reflow); pattern lines don't.
+    patterns: Vec<&'a str>,
+}
+
+/// Whether an on-disk group and a canonical group refer to the same
+/// subsection: they share a pattern line, or — when both are comment-only
+/// and therefore have no pattern identity — their headers are identical.
+fn groups_match(on_disk: &Group<'_>, canonical: &Group<'_>) -> bool {
+    canonical
+        .patterns
+        .iter()
+        .any(|p| on_disk.patterns.contains(p))
+        || (on_disk.patterns.is_empty()
+            && canonical.patterns.is_empty()
+            && canonical.heading.is_some()
+            && on_disk.heading == canonical.heading)
+}
+
+/// Split a managed block into its blank-line-delimited subsection [`Group`]s.
+fn block_groups(block: &str) -> Vec<Group<'_>> {
+    let mut groups: Vec<Group<'_>> = Vec::new();
+    let mut current = Group::default();
     let mut started = false;
     for line in block.lines() {
         let l = line.trim_end_matches('\r');
         if l.is_empty() {
             if started {
-                groups.push(current);
-                current = Vec::new();
+                groups.push(std::mem::take(&mut current));
                 started = false;
             }
         } else {
-            started = true;
+            if !started {
+                started = true;
+                if l.starts_with('#') {
+                    current.heading = Some(l);
+                }
+            }
             if !l.starts_with('#') {
-                current.push(l);
+                current.patterns.push(l);
             }
         }
     }
@@ -308,12 +336,13 @@ fn block_groups(block: &str) -> Vec<Vec<&str>> {
 }
 
 /// Read one blank-line-delimited group from `text` starting at `start`.
-/// Returns the group's pattern lines, the byte offset just past the group's
-/// last line, and the byte offset of the next group's first line. The two
-/// offsets differ by the blank-line separator that terminates the group; at
-/// EOF they coincide.
-fn read_group(text: &str, start: usize) -> (Vec<&str>, usize, usize) {
-    let mut patterns: Vec<&str> = Vec::new();
+/// Returns the [`Group`], the byte offset just past the group's last line,
+/// and the byte offset of the next group's first line. The two offsets
+/// differ by the blank-line separator that terminates the group; at EOF they
+/// coincide.
+fn read_group(text: &str, start: usize) -> (Group<'_>, usize, usize) {
+    let mut group = Group::default();
+    let mut started = false;
     let mut scan = start;
     let mut content_end = start;
     while scan < text.len() {
@@ -324,15 +353,21 @@ fn read_group(text: &str, start: usize) -> (Vec<&str>, usize, usize) {
         if line.is_empty() {
             // Blank separator — not part of the group. Report the offset past
             // it as the next group's start.
-            return (patterns, content_end, next);
+            return (group, content_end, next);
+        }
+        if !started {
+            started = true;
+            if line.starts_with('#') {
+                group.heading = Some(line);
+            }
         }
         if !line.starts_with('#') {
-            patterns.push(line);
+            group.patterns.push(line);
         }
         scan = next;
         content_end = next;
     }
-    (patterns, content_end, scan)
+    (group, content_end, scan)
 }
 
 /// Find the byte offset where the on-disk managed block ends, given the new
@@ -343,44 +378,60 @@ fn read_group(text: &str, start: usize) -> (Vec<&str>, usize, usize) {
 /// terminator once the structures diverge, so this aligns on-disk groups
 /// against canonical groups with a two-pointer walk:
 ///
-/// - **shares a pattern with the current canonical group** → structure-
+/// - **matches the current canonical group** ([`groups_match`]) → structure-
 ///   preserving edit (e.g. a comment-wording tweak); consume it.
-/// - **shares a pattern with a *later* canonical group** → the canonical
-///   inserted one or more groups not on disk (e.g. a new agent's subsection);
-///   skip past them, then consume this group against the group it matches.
-/// - **shares no pattern with any remaining canonical group** → a full rewrite
-///   of the current canonical group; consume it.
+/// - **matches a *later* canonical group** → the canonical inserted one or
+///   more groups not on disk (e.g. a new agent's subsection); skip past
+///   them, then consume this group against the group it matches.
+/// - **matches no remaining canonical group, and nothing has been consumed
+///   yet** → a full-content rewrite of the block (the single-group
+///   replacement path). The first group after the marker is always part of
+///   the old managed block; consume it.
+/// - **matches no remaining canonical group, after at least one group was
+///   consumed** → the block has ended: the remaining canonical groups are
+///   trailing insertions (subsections appended by a framework release) and
+///   this group is the first adopter group past the block. Stop without
+///   consuming it. Consuming here — the old behavior — swallowed the
+///   adopter's first tail section as a "full rewrite" of the appended
+///   canonical group, deleting adopter content. See
+///   `scenarios/merge-managed-block-trailing-append.md`. (A framework group
+///   removed or fully renamed mid-block also stops the walk now; its old
+///   content survives below the merged block instead of being replaced —
+///   preservation over consumption when identity is ambiguous.)
 ///
-/// The block ends at the first on-disk group reached after the canonical's
-/// groups are exhausted — that group is adopter territory and is preserved.
-/// Returns the byte offset immediately past the last in-block group's final
-/// line (or `body_start` if the block is empty).
+/// The block also ends at the first on-disk group reached after the
+/// canonical's groups are exhausted — adopter territory, preserved. Returns
+/// the byte offset immediately past the last in-block group's final line (or
+/// `body_start` if the block is empty).
 fn walk_body_extent(text: &str, body_start: usize, expected_block: &str) -> usize {
     let canon = block_groups(expected_block);
     let mut ci = 0;
     let mut offset = body_start;
     let mut block_end = body_start;
+    let mut consumed_any = false;
     while offset < text.len() {
         // Canonical groups exhausted: everything from here is adopter content.
         if ci >= canon.len() {
             break;
         }
-        let (patterns, content_end, next_start) = read_group(text, offset);
-        if canon[ci].iter().any(|p| patterns.contains(p)) {
+        let (group, content_end, next_start) = read_group(text, offset);
+        if groups_match(&group, &canon[ci]) {
             ci += 1;
-        } else if let Some(rel) = canon[ci + 1..]
-            .iter()
-            .position(|g| g.iter().any(|p| patterns.contains(p)))
-        {
+        } else if let Some(rel) = canon[ci + 1..].iter().position(|g| groups_match(&group, g)) {
             // Skip the inserted canonical group(s); re-match this on-disk group
-            // against the later canonical group it shares a pattern with
-            // without advancing past it on disk.
+            // against the later canonical group it matches without advancing
+            // past it on disk.
             ci += rel + 1;
             continue;
+        } else if consumed_any {
+            // Unmatched after alignment began: trailing canonical groups are
+            // pure insertions; this group is adopter territory.
+            break;
         } else {
-            // Full rewrite of the current canonical group.
+            // Full rewrite of the block, starting at its first group.
             ci += 1;
         }
+        consumed_any = true;
         block_end = content_end;
         offset = next_start;
     }
@@ -1188,6 +1239,178 @@ Thumbs.db";
         let rerun = run(&args(&path, new_canonical, Some("line-prefix")), tmp.path()).unwrap();
         assert_eq!(rerun.action, "unchanged");
         assert_eq!(fs::read_to_string(&path).unwrap(), expected);
+    }
+
+    #[test]
+    fn line_prefix_trailing_append_preserves_adopter_tail() {
+        // Regression: the new canonical APPENDS a subsection at the end
+        // (on-disk block {Env, IDE}, new canonical {Env, IDE, OS}) while
+        // adopter content follows the managed block. The group-alignment
+        // walk must treat the unmatched trailing canonical group as a pure
+        // insertion — not consume the adopter's first tail section as a
+        // "full rewrite" of it, which deleted `# Rust\n/target` outright.
+        // See scenarios/merge-managed-block-trailing-append.md.
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join(".gitignore");
+        let old_canonical = "\
+# Environment and secrets
+.env
+
+# IDE
+.vscode/";
+        let new_canonical = "\
+# Environment and secrets
+.env
+
+# IDE
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db";
+        let on_disk = format!("# govern-managed\n{old_canonical}\n\n# Rust\n/target\n");
+        fs::write(&path, &on_disk).unwrap();
+
+        let result = run(&args(&path, new_canonical, Some("line-prefix")), tmp.path()).unwrap();
+        assert_eq!(result.action, "updated");
+
+        let body = fs::read_to_string(&path).unwrap();
+        let expected = format!("# govern-managed\n{new_canonical}\n\n# Rust\n/target\n");
+        assert_eq!(
+            body, expected,
+            "appended canonical group must insert; adopter tail must survive"
+        );
+
+        // Idempotent: a second run with the same canonical is a no-op.
+        let rerun = run(&args(&path, new_canonical, Some("line-prefix")), tmp.path()).unwrap();
+        assert_eq!(rerun.action, "unchanged");
+        assert_eq!(fs::read_to_string(&path).unwrap(), expected);
+    }
+
+    #[test]
+    fn line_prefix_multiple_trailing_appends_preserve_adopter_tail() {
+        // Edge case: several canonical groups appended at once are all
+        // inserted at the end of the managed block; the adopter tail still
+        // survives. See scenarios/merge-managed-block-trailing-append.md.
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join(".gitignore");
+        let old_canonical = "\
+# Environment and secrets
+.env
+
+# IDE
+.vscode/";
+        let new_canonical = "\
+# Environment and secrets
+.env
+
+# IDE
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/";
+        let on_disk =
+            format!("# govern-managed\n{old_canonical}\n\n# Rust\n/target\n\n# Go\n/bin\n");
+        fs::write(&path, &on_disk).unwrap();
+
+        let result = run(&args(&path, new_canonical, Some("line-prefix")), tmp.path()).unwrap();
+        assert_eq!(result.action, "updated");
+
+        let body = fs::read_to_string(&path).unwrap();
+        let expected =
+            format!("# govern-managed\n{new_canonical}\n\n# Rust\n/target\n\n# Go\n/bin\n");
+        assert_eq!(
+            body, expected,
+            "all appended groups must insert; every adopter tail section must survive"
+        );
+
+        let rerun = run(&args(&path, new_canonical, Some("line-prefix")), tmp.path()).unwrap();
+        assert_eq!(rerun.action, "unchanged");
+        assert_eq!(fs::read_to_string(&path).unwrap(), expected);
+    }
+
+    #[test]
+    fn line_prefix_trailing_append_with_colliding_adopter_heading_keeps_adopter_copy() {
+        // Edge case: the adopter's tail section heading happens to equal the
+        // newly appended canonical group's heading (`# OS`). It is still
+        // adopter content: the canonical group lands inside the managed
+        // block, and the adopter's outside copy is left untouched (its
+        // patterns differ from the canonical's, so dedup leaves it alone —
+        // resolving the duplication is the adopter's judgment, not the
+        // merge's). See scenarios/merge-managed-block-trailing-append.md.
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join(".gitignore");
+        let old_canonical = "\
+# Environment and secrets
+.env
+
+# IDE
+.vscode/";
+        let new_canonical = "\
+# Environment and secrets
+.env
+
+# IDE
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db";
+        let on_disk = format!("# govern-managed\n{old_canonical}\n\n# OS\n*.swp\n");
+        fs::write(&path, &on_disk).unwrap();
+
+        let result = run(&args(&path, new_canonical, Some("line-prefix")), tmp.path()).unwrap();
+        assert_eq!(result.action, "updated");
+
+        let body = fs::read_to_string(&path).unwrap();
+        let expected = format!("# govern-managed\n{new_canonical}\n\n# OS\n*.swp\n");
+        assert_eq!(
+            body, expected,
+            "canonical group inserts inside the block; adopter's colliding-heading copy survives"
+        );
+        // Both `# OS` headings present: canonical inside, adopter's outside.
+        assert_eq!(body.matches("# OS\n").count(), 2);
+
+        let rerun = run(&args(&path, new_canonical, Some("line-prefix")), tmp.path()).unwrap();
+        assert_eq!(rerun.action, "unchanged");
+        assert_eq!(fs::read_to_string(&path).unwrap(), expected);
+    }
+
+    #[test]
+    fn line_prefix_comment_only_subsection_rerun_is_unchanged() {
+        // A canonical subsection made only of comment lines has no pattern
+        // identity; group alignment falls back to its header. A rerun with
+        // the same canonical must still bound the block correctly and reach
+        // `unchanged` — the comment-only group must not end the walk early
+        // and spill the tail subsections as orphans.
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join(".gitignore");
+        let canonical = "\
+# Environment and secrets
+.env
+
+# govern session state — per-user, ephemeral; managed by /project:target.
+# (nothing tracked here yet)
+
+# OS
+.DS_Store
+Thumbs.db";
+        let on_disk = format!("# govern-managed\n{canonical}\n\n# Rust\n/target\n");
+        fs::write(&path, &on_disk).unwrap();
+        let mtime_before = fs::metadata(&path).unwrap().modified().unwrap();
+
+        let result = run(&args(&path, canonical, Some("line-prefix")), tmp.path()).unwrap();
+        assert_eq!(result.action, "unchanged");
+        assert_eq!(
+            fs::metadata(&path).unwrap().modified().unwrap(),
+            mtime_before,
+            "comment-only subsection must not break rerun idempotency"
+        );
+        assert_eq!(fs::read_to_string(&path).unwrap(), on_disk);
     }
 
     #[test]

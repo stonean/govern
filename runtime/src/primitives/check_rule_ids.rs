@@ -117,7 +117,13 @@ fn is_deprecated(content: &str, id: &str) -> bool {
     let mut idx = 0usize;
     while let Some(pos) = content[idx..].find(id) {
         let abs = idx + pos;
-        let window_end = (abs + 256).min(content.len());
+        // The 256-byte window can land mid-UTF-8-character (rule files are
+        // em-dash-dense); walk back to a char boundary so the slice cannot
+        // panic. `abs` is a match start, so it is always a boundary.
+        let mut window_end = (abs + 256).min(content.len());
+        while !content.is_char_boundary(window_end) {
+            window_end -= 1;
+        }
         let window = &content[abs..window_end];
         if window.contains("**DEPRECATED") {
             return true;
@@ -218,6 +224,46 @@ mod tests {
         .unwrap();
         assert_eq!(result.deprecated, vec!["BE-OLD-001".to_string()]);
         assert!(result.missing.is_empty());
+    }
+
+    #[test]
+    fn multibyte_content_at_window_edge_does_not_panic() {
+        // Byte `abs + 256` of the deprecation window must be walked back to
+        // a char boundary when it lands inside a multibyte character
+        // (scenario spec-side-parser-hardening). Padding is sized so the
+        // window edge lands mid-em-dash.
+        let rule_content = format!(
+            "### BE-EM-001\n\n{}{}\n",
+            "a".repeat(243),
+            "\u{2014}".repeat(20)
+        );
+        let abs = rule_content.find("BE-EM-001").unwrap();
+        assert!(
+            !rule_content.is_char_boundary(abs + 256),
+            "fixture must place the window edge inside a multibyte char"
+        );
+
+        let tmp = tempfile::tempdir().unwrap();
+        let spec_path = tmp.path().join("spec.md");
+        std::fs::write(&spec_path, "Cites BE-EM-001.\n").unwrap();
+        let rule_path = tmp.path().join("rules.md");
+        std::fs::write(&rule_path, &rule_content).unwrap();
+        let result = run(
+            &CheckRuleIdsArgs {
+                path: spec_path.to_string_lossy().into(),
+                rule_files: vec![rule_path.to_string_lossy().into()],
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert!(result.missing.is_empty());
+        assert!(result.deprecated.is_empty());
+        assert!(
+            result
+                .citations
+                .iter()
+                .any(|c| c.rule_id == "BE-EM-001" && c.found && !c.deprecated)
+        );
     }
 
     #[test]

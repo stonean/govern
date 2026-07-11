@@ -350,14 +350,45 @@ pub type Result<T> = std::result::Result<T, PrimitiveError>;
 /// body that follows. Returns an error if no `---` opening fence is present
 /// or no closing fence is found.
 pub(crate) fn split_frontmatter<'a>(content: &'a str, path: &Path) -> Result<(&'a str, &'a str)> {
-    let after_open = content
-        .strip_prefix("---\n")
-        .or_else(|| content.strip_prefix("---\r\n"))
+    let (fm_text, body, _fm_offset) = split_frontmatter_with_offset(content, path)?;
+    Ok((fm_text, body))
+}
+
+/// Like [`split_frontmatter`], but also returns the byte offset of the
+/// frontmatter text within `content` — the length of the opener fence that
+/// actually matched (4 for `---\n`, 5 for `---\r\n`). Callers that splice
+/// edits back into the full file (e.g. `set-status`) need the real offset;
+/// hardcoding the LF opener corrupts CRLF checkouts by one byte.
+pub(crate) fn split_frontmatter_with_offset<'a>(
+    content: &'a str,
+    path: &Path,
+) -> Result<(&'a str, &'a str, usize)> {
+    let (after_open, fm_offset) = ["---\n", "---\r\n"]
+        .iter()
+        .find_map(|opener| {
+            content
+                .strip_prefix(opener)
+                .map(|rest| (rest, opener.len()))
+        })
         .ok_or_else(|| PrimitiveError::MissingFrontmatter { path: path.into() })?;
+
+    // Empty frontmatter (`---\n---\n`): the closing fence is the very next
+    // line, so there is no preceding newline for the `\n---` search below
+    // to find. Present-but-empty frontmatter is a validation concern
+    // (missing required fields), not a missing-frontmatter halt.
+    for fence in ["---\n", "---\r\n"] {
+        if let Some(body) = after_open.strip_prefix(fence) {
+            return Ok(("", body, fm_offset));
+        }
+    }
 
     for fence in ["\n---\n", "\n---\r\n"] {
         if let Some(idx) = after_open.find(fence) {
-            return Ok((&after_open[..idx], &after_open[idx + fence.len()..]));
+            return Ok((
+                &after_open[..idx],
+                &after_open[idx + fence.len()..],
+                fm_offset,
+            ));
         }
     }
     Err(PrimitiveError::MissingFrontmatter { path: path.into() })
@@ -768,6 +799,45 @@ pub(crate) fn section_lines<'a>(body: &'a str, heading: &str) -> Vec<&'a str> {
     out
 }
 
+/// Comment/fence-aware variant of [`section_lines`]: returns the 0-based
+/// indices (into `lines`) of the content lines inside the section named
+/// `heading`, applying [`SkipScanner`] semantics to the whole document.
+/// Lines inside fenced code blocks or HTML comments are neither yielded
+/// nor treated as section-boundary headings, so a template guidance
+/// comment that embeds example checkboxes or headings contributes
+/// nothing. As with [`section_lines`], every matching section's lines are
+/// yielded in document order when the heading repeats.
+///
+/// This is the single source of truth for "structural lines inside
+/// section X": `read-spec`'s acceptance-criteria walk and
+/// `mark-criterion`'s checkbox addressing both consume it, which keeps
+/// their criterion indexes in lockstep (the two-paths guarantee).
+pub(crate) fn section_line_indices(lines: &[&str], heading: &str) -> Vec<usize> {
+    let mut out = Vec::new();
+    let mut skip = SkipScanner::default();
+    let mut in_section = false;
+    let mut section_level: u8 = 0;
+    for (idx, line) in lines.iter().enumerate() {
+        if skip.skip(line) {
+            continue;
+        }
+        if let Some((level, h)) = parse_atx_heading(line) {
+            if in_section && level <= section_level {
+                in_section = false;
+            }
+            if h == heading {
+                in_section = true;
+                section_level = level;
+                continue;
+            }
+        }
+        if in_section {
+            out.push(idx);
+        }
+    }
+    out
+}
+
 /// `true` when `name` matches the `NNN-feature` convention: three ASCII
 /// digits, a literal hyphen, and at least one trailing character. Used
 /// by primitives that walk `specs/` and need to distinguish feature
@@ -990,6 +1060,67 @@ mod tests {
         let body = "## A\n\nfirst\n\n## B\n\nx\n\n## A\n\nsecond\n";
         let a = section_lines(body, "A");
         assert_eq!(a, vec!["", "first", "", "", "second"]);
+    }
+
+    #[test]
+    fn section_line_indices_skips_comment_and_fence_content() {
+        let body = "## A\n\n<!--\n- [ ] fake\n-->\n- [ ] real\n```\n- [ ] fenced\n```\n\n## B\n";
+        let lines: Vec<&str> = body.lines().collect();
+        // Comment and fence content (delimiter lines included) is skipped;
+        // only the blank lines and the real checkbox line survive.
+        assert_eq!(section_line_indices(&lines, "A"), vec![1, 5, 9]);
+    }
+
+    #[test]
+    fn section_line_indices_ignores_headings_inside_comments() {
+        // A sibling heading inside a comment must not close the section.
+        let body = "## A\n\n<!--\n## B\n-->\n- [ ] still in A\n";
+        let lines: Vec<&str> = body.lines().collect();
+        assert_eq!(section_line_indices(&lines, "A"), vec![1, 5]);
+    }
+
+    #[test]
+    fn section_line_indices_keeps_inline_comment_lines() {
+        // A comment that opens and closes on the same line is inline — the
+        // line is real content (documented SkipScanner delimiter behavior).
+        let body = "## A\n- [ ] real <!-- note -->\n";
+        let lines: Vec<&str> = body.lines().collect();
+        assert_eq!(section_line_indices(&lines, "A"), vec![1]);
+    }
+
+    #[test]
+    fn split_frontmatter_offset_matches_lf_opener() {
+        let content = "---\nstatus: x\n---\nbody\n";
+        let (fm, body, offset) =
+            split_frontmatter_with_offset(content, Path::new("spec.md")).unwrap();
+        assert_eq!(fm, "status: x");
+        assert_eq!(body, "body\n");
+        assert_eq!(offset, "---\n".len());
+    }
+
+    #[test]
+    fn split_frontmatter_offset_matches_crlf_opener() {
+        let content = "---\r\nstatus: draft\r\n---\r\n\r\nbody\r\n";
+        let (fm, body, offset) =
+            split_frontmatter_with_offset(content, Path::new("spec.md")).unwrap();
+        assert_eq!(fm, "status: draft\r");
+        assert_eq!(body, "\r\nbody\r\n");
+        assert_eq!(offset, "---\r\n".len());
+    }
+
+    #[test]
+    fn split_frontmatter_accepts_empty_block() {
+        let (fm, body, offset) =
+            split_frontmatter_with_offset("---\n---\nbody\n", Path::new("spec.md")).unwrap();
+        assert_eq!(fm, "");
+        assert_eq!(body, "body\n");
+        assert_eq!(offset, "---\n".len());
+
+        let (fm, body, offset) =
+            split_frontmatter_with_offset("---\r\n---\r\n", Path::new("spec.md")).unwrap();
+        assert_eq!(fm, "");
+        assert_eq!(body, "");
+        assert_eq!(offset, "---\r\n".len());
     }
 
     #[test]

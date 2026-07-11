@@ -3,8 +3,8 @@
 use std::path::Path;
 
 use crate::primitives::{
-    PrimitiveError, Result, parse_atx_heading, read_text, rel_path, section_lines,
-    split_frontmatter,
+    PrimitiveError, Result, parse_atx_heading, read_text, rel_path, section_line_indices,
+    section_lines, split_frontmatter,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{
@@ -92,10 +92,17 @@ fn parse_sections(body: &str, include_body: bool) -> Vec<SpecSection> {
     sections
 }
 
+/// Walk the named section's checkboxes with comment/fence awareness
+/// ([`section_line_indices`]): example checkboxes inside a template
+/// guidance comment or a fenced code block are not criteria. The indexes
+/// of the returned criteria form a contract with `mark-criterion`'s
+/// addressing — both consume the same shared walker, so index N here is
+/// the checkbox index N flips.
 fn parse_checkboxes(body: &str, section_heading: &str) -> Vec<AcceptanceCriterion> {
+    let lines: Vec<&str> = body.lines().collect();
     let mut out = Vec::new();
-    for line in section_lines(body, section_heading) {
-        if let Some((checked, text)) = parse_checkbox_item(line) {
+    for idx in section_line_indices(&lines, section_heading) {
+        if let Some((checked, text)) = parse_checkbox_item(lines[idx]) {
             out.push(AcceptanceCriterion { checked, text });
         }
     }
@@ -242,6 +249,68 @@ mod tests {
         .unwrap();
         assert_eq!(result.frontmatter.status, "planned");
         assert_eq!(result.frontmatter.dependencies, vec!["001-basic"]);
+    }
+
+    #[test]
+    fn template_state_spec_reports_zero_criteria() {
+        // The shipped spec template embeds example `- [ ]` checkboxes inside
+        // the Acceptance Criteria guidance comment; a template-state spec
+        // must report zero criteria (scenario spec-side-parser-hardening).
+        let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .unwrap()
+            .to_path_buf();
+        let template =
+            std::fs::read_to_string(repo_root.join("framework/templates/spec/spec.md")).unwrap();
+        let tmp = tempfile::tempdir().unwrap();
+        let feature_dir = tmp.path().join("specs/042-fresh");
+        std::fs::create_dir_all(&feature_dir).unwrap();
+        std::fs::write(feature_dir.join("spec.md"), template).unwrap();
+
+        let result = run(
+            &ReadSpecArgs {
+                feature: "042-fresh".into(),
+                include_body: false,
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert!(
+            result.acceptance_criteria.is_empty(),
+            "template guidance-comment checkboxes counted as criteria: {:?}",
+            result.acceptance_criteria
+        );
+    }
+
+    #[test]
+    fn criteria_inside_comments_and_fences_are_skipped() {
+        let tmp = tempfile::tempdir().unwrap();
+        let feature_dir = tmp.path().join("specs/042-fresh");
+        std::fs::create_dir_all(&feature_dir).unwrap();
+        let spec = "---\nstatus: draft\ndependencies: []\n---\n\n# T\n\n\
+                    ## Acceptance Criteria\n\n\
+                    <!--\n- [ ] Example inside comment\n-->\n\
+                    - [ ] Real criterion.\n\
+                    ```text\n- [ ] Example inside fence\n```\n\
+                    - [x] Second real criterion.\n";
+        std::fs::write(feature_dir.join("spec.md"), spec).unwrap();
+
+        let result = run(
+            &ReadSpecArgs {
+                feature: "042-fresh".into(),
+                include_body: false,
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        let texts: Vec<&str> = result
+            .acceptance_criteria
+            .iter()
+            .map(|c| c.text.as_str())
+            .collect();
+        assert_eq!(texts, vec!["Real criterion.", "Second real criterion."]);
+        assert!(!result.acceptance_criteria[0].checked);
+        assert!(result.acceptance_criteria[1].checked);
     }
 
     #[test]

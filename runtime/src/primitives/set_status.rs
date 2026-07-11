@@ -3,7 +3,7 @@
 use std::path::Path;
 
 use crate::primitives::{
-    PrimitiveError, Result, read_text, rel_path, split_frontmatter, write_atomic,
+    PrimitiveError, Result, read_text, rel_path, split_frontmatter_with_offset, write_atomic,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{SetStatusArgs, SetStatusResult};
@@ -32,10 +32,12 @@ pub fn run(args: &SetStatusArgs, repo: &Path) -> Result<SetStatusResult> {
     }
     let spec_path = feature_dir.join("spec.md");
     let content = read_text(&spec_path)?;
-    let (fm_text, _body) = split_frontmatter(&content, &spec_path)?;
+    // The offset is the length of the opener fence the splitter actually
+    // matched (`---\n` vs `---\r\n`); hardcoding the LF form would splice
+    // one byte early on CRLF checkouts and corrupt the frontmatter.
+    let (fm_text, _body, fm_start) = split_frontmatter_with_offset(&content, &spec_path)?;
 
-    let (line_offset, current_value, value_range) =
-        locate_status_field(fm_text, &root, &args.feature)?;
+    let (current_value, value_range) = locate_status_field(fm_text, &root, &args.feature)?;
 
     if current_value != args.from {
         return Err(PrimitiveError::StatusMismatch {
@@ -47,8 +49,8 @@ pub fn run(args: &SetStatusArgs, repo: &Path) -> Result<SetStatusResult> {
     }
 
     let mut new_content = String::with_capacity(content.len() + args.to.len());
-    let absolute_start = line_offset + value_range.start;
-    let absolute_end = line_offset + value_range.end;
+    let absolute_start = fm_start + value_range.start;
+    let absolute_end = fm_start + value_range.end;
     new_content.push_str(&content[..absolute_start]);
     new_content.push_str(&args.to);
     new_content.push_str(&content[absolute_end..]);
@@ -65,13 +67,13 @@ pub fn run(args: &SetStatusArgs, repo: &Path) -> Result<SetStatusResult> {
 }
 
 /// Find the `status:` line inside the frontmatter text. Returns
-/// `(byte_offset_of_fm_inside_full_content, current_value, value_range_within_fm)`.
+/// `(current_value, value_range_within_fm)`; the caller adds the
+/// frontmatter's offset within the full file to splice the replacement.
 fn locate_status_field(
     fm_text: &str,
     root: &str,
     feature: &str,
-) -> Result<(usize, String, std::ops::Range<usize>)> {
-    let fm_start_in_full = "---\n".len();
+) -> Result<(String, std::ops::Range<usize>)> {
     let mut cursor: usize = 0;
     for line in fm_text.split_inclusive('\n') {
         let line_start = cursor;
@@ -85,7 +87,7 @@ fn locate_status_field(
         let value = value_with_trailing.trim_end();
         let value_start = line_start + "status:".len() + leading_ws_in_value;
         let value_end = value_start + value.len();
-        return Ok((fm_start_in_full, value.to_string(), value_start..value_end));
+        return Ok((value.to_string(), value_start..value_end));
     }
     Err(PrimitiveError::StatusFieldMissing {
         root: root.to_owned(),
@@ -126,6 +128,34 @@ mod tests {
         let content = fs::read_to_string(tmp.path().join("specs/feat/spec.md")).unwrap();
         assert!(content.contains("status: planned"));
         assert!(!content.contains("status: clarified"));
+    }
+
+    #[test]
+    fn crlf_spec_splices_at_the_correct_byte() {
+        // A CRLF checkout's opener fence is 5 bytes (`---\r\n`), not 4;
+        // deriving the offset from the matched opener keeps the splice
+        // aligned (scenario spec-side-parser-hardening).
+        let tmp = tempdir().unwrap();
+        let feature_dir = tmp.path().join("specs/feat");
+        fs::create_dir_all(&feature_dir).unwrap();
+        fs::write(
+            feature_dir.join("spec.md"),
+            "---\r\nstatus: draft\r\n---\r\n\r\n# T\r\n",
+        )
+        .unwrap();
+        let result = run(
+            &SetStatusArgs {
+                feature: "feat".into(),
+                from: "draft".into(),
+                to: "clarified".into(),
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert_eq!(result.previous, "draft");
+        assert_eq!(result.current, "clarified");
+        let content = fs::read_to_string(tmp.path().join("specs/feat/spec.md")).unwrap();
+        assert_eq!(content, "---\r\nstatus: clarified\r\n---\r\n\r\n# T\r\n");
     }
 
     #[test]

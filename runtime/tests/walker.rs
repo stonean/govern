@@ -334,6 +334,228 @@ fn review_primitive_results_thread_into_perform_review_and_write_review() {
     );
 }
 
+/// Protocol robustness (data-model §JSON-over-stdio ignore-and-continue):
+/// while suspended awaiting an `llm-response`, a wrong-type envelope, a
+/// malformed line, a blank keepalive line, and a response for a superseded
+/// request-id are each logged to stderr and skipped — the walk still
+/// completes once the valid response arrives, with no `error` envelope.
+#[test]
+fn stray_and_malformed_stdin_lines_are_ignored_while_awaiting_llm_response() {
+    let procedure = Procedure {
+        command: "noise".into(),
+        steps: vec![Step::Extension {
+            number: StepNumber(vec![1]),
+            identifier: "assessSpecQuality".into(),
+            prose: String::new(),
+            location: loc(),
+        }],
+    };
+
+    // Noise before the valid response: wrong-type envelope, malformed JSON,
+    // blank keepalive, then an llm-response for a superseded request-id.
+    let host_lines = "\
+        {\"type\":\"gate-response\",\"request-id\":\"req-1\",\"confirmed\":true}\n\
+        this is not json\n\
+        \n\
+        {\"type\":\"llm-response\",\"request-id\":\"req-0\",\"response\":{\"passed\":false}}\n\
+        {\"type\":\"llm-response\",\"request-id\":\"req-1\",\"response\":{\"passed\":true}}\n\
+    ";
+    let mut reader = Cursor::new(host_lines.to_string());
+    let mut writer: Vec<u8> = Vec::new();
+    let mut walker = Walker::new(
+        &procedure,
+        fixture_repo(),
+        Map::new(),
+        &mut reader,
+        &mut writer,
+    );
+    assert_eq!(walker.run().unwrap(), WalkOutcome::Complete);
+
+    let types: Vec<String> = std::str::from_utf8(&writer)
+        .unwrap()
+        .lines()
+        .map(|l| {
+            serde_json::from_str::<Value>(l).unwrap()["type"]
+                .as_str()
+                .unwrap()
+                .to_string()
+        })
+        .collect();
+    // llm-request, progress(received), complete — no error envelope, and
+    // the consumed response is the one matching req-1.
+    assert_eq!(types, vec!["llm-request", "progress", "complete"]);
+}
+
+/// Same ignore-and-continue rule while awaiting a `gate-response`: stray
+/// and malformed lines are skipped and the gate still resolves.
+#[test]
+fn stray_and_malformed_stdin_lines_are_ignored_while_awaiting_gate_response() {
+    let procedure = Procedure {
+        command: "noise-gate".into(),
+        steps: vec![Step::Prose {
+            number: StepNumber(vec![1]),
+            text: "Ask the user to approve the change.".into(),
+            location: loc(),
+        }],
+    };
+    let host_lines = "\
+        {\"type\":\"llm-response\",\"request-id\":\"req-1\",\"response\":{}}\n\
+        {not json}\n\
+        {\"type\":\"gate-response\",\"request-id\":\"req-9\",\"confirmed\":false}\n\
+        {\"type\":\"gate-response\",\"request-id\":\"req-1\",\"confirmed\":true}\n\
+    ";
+    let mut reader = Cursor::new(host_lines.to_string());
+    let mut writer: Vec<u8> = Vec::new();
+    let mut walker = Walker::new(
+        &procedure,
+        fixture_repo(),
+        Map::new(),
+        &mut reader,
+        &mut writer,
+    );
+    assert_eq!(walker.run().unwrap(), WalkOutcome::Complete);
+
+    let envelopes: Vec<Value> = std::str::from_utf8(&writer)
+        .unwrap()
+        .lines()
+        .map(|l| serde_json::from_str(l).unwrap())
+        .collect();
+    let types: Vec<&str> = envelopes
+        .iter()
+        .map(|v| v["type"].as_str().unwrap())
+        .collect();
+    // The superseded req-9 denial was ignored; the matching req-1
+    // confirmation resolved the gate and the walk completed.
+    assert_eq!(types, vec!["gate-confirm", "progress", "complete"]);
+    assert!(
+        envelopes[1]["message"]
+            .as_str()
+            .unwrap()
+            .contains("confirmed"),
+        "gate resolved from the matching response: {envelopes:?}"
+    );
+}
+
+/// Stdin EOF while suspended awaiting a response stays an operational
+/// error (the one non-ignorable inbound condition).
+#[test]
+fn stdin_eof_while_awaiting_response_is_an_operational_error() {
+    let procedure = Procedure {
+        command: "eof".into(),
+        steps: vec![Step::Extension {
+            number: StepNumber(vec![1]),
+            identifier: "assessSpecQuality".into(),
+            prose: String::new(),
+            location: loc(),
+        }],
+    };
+    // Only noise, then EOF — never a valid response.
+    let mut reader = Cursor::new("not json\n".to_string());
+    let mut writer: Vec<u8> = Vec::new();
+    let mut walker = Walker::new(
+        &procedure,
+        fixture_repo(),
+        Map::new(),
+        &mut reader,
+        &mut writer,
+    );
+    let err = walker.run().unwrap_err();
+    assert_eq!(err.kind(), std::io::ErrorKind::UnexpectedEof);
+}
+
+/// Waiver-processing-order, exec-path binding: when `fired` is not seeded,
+/// the walker binds the findings accumulated by the `performReview` passes
+/// to `process-waivers`' `fired` argument, so a waiver whose rule still
+/// fires classifies as applied — not mass-expired against an empty set.
+#[test]
+fn process_waivers_binds_fired_from_accumulated_pass_findings() {
+    let tmp = tempfile::tempdir().unwrap();
+    let spec_dir = tmp.path().join("specs/001-x");
+    std::fs::create_dir_all(&spec_dir).unwrap();
+    std::fs::write(
+        spec_dir.join("spec.md"),
+        "---\nstatus: in-progress\ndependencies: []\nreview:\n  waivers:\n    \
+         - rule: SEC-BE-001\n      file: src/a.rs\n      \
+         reason: \"Internal-only path behind mTLS; rule targets public endpoints\"\n      \
+         waived-at: 2026-07-07T00:00:00Z\n      waived-by: test@example.com\n---\n\n# X\n",
+    )
+    .unwrap();
+    std::fs::create_dir_all(tmp.path().join("src")).unwrap();
+    std::fs::write(tmp.path().join("src/a.rs"), "fn a() {}\n").unwrap();
+
+    // Corrected review order: the pass produces the findings, then
+    // process-waivers classifies against them, then write-review renders.
+    let procedure = Procedure {
+        command: "review".into(),
+        steps: vec![
+            Step::Extension {
+                number: StepNumber(vec![1]),
+                identifier: "performReview".into(),
+                prose: String::new(),
+                location: loc(),
+            },
+            Step::Primitive {
+                number: StepNumber(vec![2]),
+                name: "process-waivers".into(),
+                prose: String::new(),
+                location: loc(),
+            },
+            Step::Primitive {
+                number: StepNumber(vec![3]),
+                name: "write-review".into(),
+                prose: String::new(),
+                location: loc(),
+            },
+        ],
+    };
+
+    // `fired` is deliberately NOT seeded — it must come from the pass's
+    // accumulated `findings` for this test to prove the binding.
+    let mut context = Map::new();
+    context.insert("feature".into(), Value::String("001-x".into()));
+    context.insert(
+        "reviewed-at".into(),
+        Value::String("2026-07-07T00:00:00Z".into()),
+    );
+    context.insert("reviewed-against".into(), Value::String("headsha0".into()));
+    context.insert("diff-base".into(), Value::String("base0000".into()));
+
+    let responses = "{\"type\":\"llm-response\",\"request-id\":\"req-1\",\"response\":{\"findings\":[{\"rule\":\"SEC-BE-001\",\"severity\":\"must\",\"file\":\"src/a.rs\",\"line-range\":\"1\",\"confidence\":\"high\"}]}}\n";
+    let mut reader = Cursor::new(responses.to_string());
+    let mut writer: Vec<u8> = Vec::new();
+    let mut walker = Walker::new(
+        &procedure,
+        tmp.path().to_path_buf(),
+        context,
+        &mut reader,
+        &mut writer,
+    );
+    assert_eq!(walker.run().unwrap(), WalkOutcome::Complete);
+
+    let review = std::fs::read_to_string(spec_dir.join("review.md")).unwrap();
+    // The waiver applied (rule still fires per the pass findings), so the
+    // MUST is excluded from the blocking count ...
+    assert!(
+        review.contains("must-violations: 0"),
+        "waiver classified as applied against the pass findings:\n{review}"
+    );
+    // ... and rendered with the waiver reason — proof it was applied, not
+    // expired against an empty `fired` set.
+    assert!(
+        review.contains("Internal-only path behind mTLS"),
+        "applied waiver reason reached write-review:\n{review}"
+    );
+    let spec_after = std::fs::read_to_string(spec_dir.join("spec.md")).unwrap();
+    assert!(
+        spec_after.contains("blocking: false"),
+        "the waived finding does not block:\n{spec_after}"
+    );
+    assert!(
+        spec_after.contains("SEC-BE-001"),
+        "the still-valid waiver was not pruned from the spec:\n{spec_after}"
+    );
+}
+
 /// Regression for the review-exec-wiring waiver gap: `process-waivers` emits
 /// `applied`/`expired`, and `write-review` reads them via serde alias, so an
 /// applied waiver threads through the walker context (which merges primitive

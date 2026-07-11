@@ -256,13 +256,20 @@ pub enum ValidationError {
         source: serde_json::Error,
     },
     /// A `writeCode` edit targeted a path outside the request's
-    /// `write-boundary`.
-    #[error("out-of-boundary-edit: path `{path}` is not within {boundary:?}")]
+    /// `write-boundary`, or used a form that is rejected before pattern
+    /// matching (absolute, or containing `.` / `..` / empty segments) per
+    /// the write-boundary-path-normalization scenario.
+    #[error("out-of-boundary-edit: path `{path}` {reason}")]
     OutOfBoundary {
         /// Offending edit path.
         path: String,
         /// Boundary patterns the path was checked against.
         boundary: Vec<String>,
+        /// Why the path was rejected: `is not within {boundary:?}` for a
+        /// clean path matching no pattern, or a description naming the
+        /// traversal segment / absolute prefix that disqualified the path
+        /// before matching.
+        reason: String,
     },
 }
 
@@ -302,6 +309,13 @@ pub fn validate_response(identifier: &str, response: &Value) -> Result<(), Valid
 /// matches any descendant; an entry ending in `/*` matches direct
 /// children; any other entry is an exact-path match.
 ///
+/// Before any pattern is consulted, each edit path is screened lexically
+/// per the write-boundary-path-normalization scenario: absolute paths and
+/// paths containing `.` / `..` / empty segments are rejected outright,
+/// because raw prefix matching would let `runtime/../framework/x` satisfy
+/// `runtime/**`. Boundary patterns themselves are trusted (they come from
+/// `derive-boundary`); only response paths are suspect.
+///
 /// # Errors
 ///
 /// See above.
@@ -310,14 +324,54 @@ pub fn validate_write_code_boundary(
     boundary: &[String],
 ) -> Result<(), ValidationError> {
     for edit in &response.edits {
+        if let Some(reason) = boundary_rejection_reason(&edit.path) {
+            return Err(ValidationError::OutOfBoundary {
+                path: edit.path.clone(),
+                boundary: boundary.to_vec(),
+                reason,
+            });
+        }
         if !path_in_boundary(&edit.path, boundary) {
             return Err(ValidationError::OutOfBoundary {
                 path: edit.path.clone(),
                 boundary: boundary.to_vec(),
+                reason: format!("is not within {boundary:?}"),
             });
         }
     }
     Ok(())
+}
+
+/// Lexical pre-check applied to each edit path before pattern matching.
+/// Returns a human-readable reason — naming the offending segment or
+/// prefix — when the path is absolute (POSIX `/`, backslash-leading, or a
+/// Windows drive prefix) or contains a `.` / `..` / empty segment; `None`
+/// when the path is a clean repo-relative path safe to match. Paths are
+/// rejected rather than normalized silently — the LLM is asked for clean
+/// repo-relative paths.
+fn boundary_rejection_reason(path: &str) -> Option<String> {
+    if path.starts_with('/') || path.starts_with('\\') {
+        return Some("is absolute — provide clean repo-relative paths".into());
+    }
+    let mut chars = path.chars();
+    if let (Some(drive), Some(':')) = (chars.next(), chars.next())
+        && drive.is_ascii_alphabetic()
+    {
+        return Some(format!(
+            "starts with drive prefix `{drive}:` — provide clean repo-relative paths"
+        ));
+    }
+    for segment in path.split('/') {
+        if segment == "." || segment == ".." {
+            return Some(format!(
+                "contains traversal segment `{segment}` — provide clean repo-relative paths"
+            ));
+        }
+        if segment.is_empty() {
+            return Some("contains an empty segment — provide clean repo-relative paths".into());
+        }
+    }
+    None
 }
 
 fn path_in_boundary(path: &str, boundary: &[String]) -> bool {
@@ -538,12 +592,92 @@ mod tests {
             "specs/022-deterministic-runtime/**".into(),
         ];
         let err = validate_write_code_boundary(&response, &boundary).unwrap_err();
+        // The pre-normalization message shape is preserved for clean paths
+        // that simply match no pattern.
+        assert!(err.to_string().contains("is not within"));
         match err {
             ValidationError::OutOfBoundary { path, .. } => {
                 assert_eq!(path, "framework/constitution.md");
             }
             other => panic!("expected OutOfBoundary, got {other:?}"),
         }
+    }
+
+    /// One-edit `writeCode` response targeting `path`, for the boundary
+    /// path-screening tests below.
+    fn single_edit_response(path: &str) -> WriteCodeResponse {
+        WriteCodeResponse {
+            edits: vec![WriteCodeEdit {
+                path: path.into(),
+                action: WriteCodeAction::Edit,
+                content: Some("x".into()),
+                patch: None,
+            }],
+            summary: "edit".into(),
+        }
+    }
+
+    #[test]
+    fn write_code_boundary_rejects_dot_dot_traversal_inside_prefix() {
+        // `runtime/../framework/x` starts with `runtime/`, so raw prefix
+        // matching would accept it against `runtime/**` — the exact bypass
+        // the write-boundary-path-normalization scenario closes.
+        use super::{ValidationError, validate_write_code_boundary};
+        let boundary = vec!["runtime/**".to_string()];
+        let err = validate_write_code_boundary(
+            &single_edit_response("runtime/../framework/x"),
+            &boundary,
+        )
+        .unwrap_err();
+        assert!(err.to_string().contains("traversal segment `..`"));
+        match err {
+            ValidationError::OutOfBoundary { path, .. } => {
+                assert_eq!(path, "runtime/../framework/x");
+            }
+            other => panic!("expected OutOfBoundary, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn write_code_boundary_rejects_redundant_dot_segment() {
+        // Lexically in-boundary but not clean — rejected rather than
+        // normalized silently.
+        use super::{ValidationError, validate_write_code_boundary};
+        let boundary = vec!["runtime/**".to_string()];
+        let err = validate_write_code_boundary(&single_edit_response("./runtime/x"), &boundary)
+            .unwrap_err();
+        assert!(err.to_string().contains("traversal segment `.`"));
+        assert!(matches!(err, ValidationError::OutOfBoundary { .. }));
+    }
+
+    #[test]
+    fn write_code_boundary_rejects_absolute_path() {
+        use super::{ValidationError, validate_write_code_boundary};
+        let boundary = vec!["runtime/**".to_string(), "**".to_string()];
+        let err = validate_write_code_boundary(&single_edit_response("/etc/passwd"), &boundary)
+            .unwrap_err();
+        assert!(err.to_string().contains("is absolute"));
+        assert!(matches!(err, ValidationError::OutOfBoundary { .. }));
+    }
+
+    #[test]
+    fn write_code_boundary_rejects_windows_drive_and_empty_segments() {
+        use super::validate_write_code_boundary;
+        let boundary = vec!["runtime/**".to_string()];
+        let drive = validate_write_code_boundary(&single_edit_response("C:/runtime/x"), &boundary)
+            .unwrap_err();
+        assert!(drive.to_string().contains("drive prefix `C:`"));
+        let empty = validate_write_code_boundary(&single_edit_response("runtime//x"), &boundary)
+            .unwrap_err();
+        assert!(empty.to_string().contains("empty segment"));
+    }
+
+    #[test]
+    fn write_code_boundary_still_accepts_clean_in_boundary_path() {
+        use super::validate_write_code_boundary;
+        let boundary = vec!["runtime/**".to_string()];
+        validate_write_code_boundary(&single_edit_response("runtime/src/foo.rs"), &boundary)
+            .unwrap();
     }
 
     #[test]

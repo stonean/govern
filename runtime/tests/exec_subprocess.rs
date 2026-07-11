@@ -425,6 +425,64 @@ fn exec_resolves_command_via_opencode_singular_command_dir() {
 }
 
 #[test]
+fn exec_emits_terminal_error_envelope_on_unparseable_command_file() {
+    ensure_binary_built();
+    // A typo'd primitive (`read-spek`) in an otherwise new-format file is a
+    // ParseError::Invalid. Per the protocol contract (spec 022 scenario
+    // host-protocol-conformance), the exec surface must emit a terminal
+    // `error` envelope on stdout — carrying the runtime version and a
+    // version-mismatch note — before exiting non-zero in the 1-127 clean
+    // operational band, never a message-less stderr-only failure.
+    let tmp = tempfile::tempdir().unwrap();
+    write_procedure_repo(
+        tmp.path(),
+        "broken",
+        "# /gov:broken\n\n## Instructions\n\n1. Invoke `read-spek` on the target.\n2. Invoke `read-tasks` to load tasks.\n",
+    );
+
+    let output = Command::new(runtime_binary())
+        .arg("exec")
+        .arg("broken")
+        .current_dir(tmp.path())
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .expect("spawn runtime");
+
+    assert!(!output.status.success(), "expected nonzero exit");
+    let code = output.status.code().expect("exit code");
+    assert!(
+        (1..=127).contains(&code),
+        "exit stays in the clean-operational-error band, got {code}"
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let last_line = stdout
+        .lines()
+        .rfind(|l| !l.trim().is_empty())
+        .expect("a terminal envelope on stdout");
+    let envelope: Value =
+        serde_json::from_str(last_line).expect("terminal line is a JSON envelope");
+    assert_eq!(envelope["type"], "error");
+    assert_eq!(envelope["code"], "parse-error");
+    assert_eq!(
+        envelope["runtime-version"],
+        env!("CARGO_PKG_VERSION"),
+        "error envelope carries the runtime version"
+    );
+    let message = envelope["message"].as_str().unwrap();
+    assert!(
+        message.contains("version mismatch"),
+        "message notes the framework/runtime version-mismatch possibility: {message}"
+    );
+    assert!(
+        message.contains("read-spek"),
+        "message describes the parse failure: {message}"
+    );
+}
+
+#[test]
 fn exec_returns_nonzero_when_command_file_missing() {
     ensure_binary_built();
     let tmp = tempfile::tempdir().unwrap();
