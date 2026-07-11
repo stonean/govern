@@ -14,9 +14,9 @@ use gvrn::schema::primitives::{
     CreateScenarioArgs, DashboardArgs, DeriveBoundaryArgs, DiscoverRuleFilesArgs,
     EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs,
     MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs,
-    MergePermissionsArgs, MigrateSessionFileArgs, ProcessWaiversArgs, ReadSpecArgs, ReadTasksArgs,
-    ResolveAnchorArgs, RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs,
-    ValidateFrontmatterArgs, WriteReviewArgs, WriteSessionArgs,
+    MergePermissionsArgs, MigrateSessionFileArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs,
+    ReadTasksArgs, ResolveAnchorArgs, RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs,
+    TraverseDepsArgs, ValidateFrontmatterArgs, WriteReviewArgs, WriteSessionArgs,
 };
 
 #[derive(Parser, Debug)]
@@ -113,6 +113,8 @@ enum Command {
     CreateScenario(CreateScenarioArgs),
     /// Append a numbered task block to a feature's tasks.md (atomic rewrite).
     AppendTask(AppendTaskArgs),
+    /// Reduce a feature's tasks.md — drop spent task sections or reset to template state.
+    PruneTasks(PruneTasksArgs),
     /// Emit a `gate-confirm` envelope on stdout and block for a response.
     GateConfirm(GateConfirmArgs),
     /// Single-call pipeline-state surface for `/{project}:status`.
@@ -412,6 +414,7 @@ fn main() -> ExitCode {
             emit_result(primitives::create_scenario::run(&args, &repo))
         }
         Command::AppendTask(args) => emit_result(primitives::append_task::run(&args, &repo)),
+        Command::PruneTasks(args) => emit_result(primitives::prune_tasks::run(&args, &repo)),
         Command::Dashboard(args) => emit_result(primitives::dashboard::run(&args, &repo)),
         Command::WriteSession(args) => emit_result(primitives::write_session::run(&args, &repo)),
         Command::GateConfirm(args) => {

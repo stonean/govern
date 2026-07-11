@@ -59,6 +59,7 @@ pub const PRIMITIVE_NAMES: &[&str] = &[
     "migrate-session-file",
     "create-scenario",
     "append-task",
+    "prune-tasks",
     "dashboard",
     "write-session",
 ];

@@ -35,12 +35,12 @@ use crate::schema::primitives::{
     GateConfirmArgs, LintMarkdownArgs, LintMarkdownResult, MarkCriterionArgs, MarkTaskArgs,
     MergeClaudeMdArgs, MergeClaudeMdResult, MergeManagedBlockArgs, MergeManagedBlockResult,
     MergePermissionsArgs, MergePermissionsResult, MigrateSessionFileArgs, MigrateSessionFileResult,
-    ProcessWaiversArgs, ProcessWaiversResult, ReadSpecArgs, ReadSpecResult, ReadTasksArgs,
-    ReadTasksResult, ResolveAnchorArgs, ResolveAnchorResult, ResolveReferencesArgs,
-    ResolveReferencesResult, RunGeneratorArgs, RunGeneratorResult, SetStatusArgs, SetStatusResult,
-    SubstituteTemplatesArgs, SubstituteTemplatesResult, TraverseDepsArgs, TraverseDepsResult,
-    ValidateFrontmatterArgs, ValidateFrontmatterResult, WriteReviewArgs, WriteReviewResult,
-    WriteSessionArgs, WriteSessionResult,
+    ProcessWaiversArgs, ProcessWaiversResult, PruneTasksArgs, PruneTasksResult, ReadSpecArgs,
+    ReadSpecResult, ReadTasksArgs, ReadTasksResult, ResolveAnchorArgs, ResolveAnchorResult,
+    ResolveReferencesArgs, ResolveReferencesResult, RunGeneratorArgs, RunGeneratorResult,
+    SetStatusArgs, SetStatusResult, SubstituteTemplatesArgs, SubstituteTemplatesResult,
+    TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs, ValidateFrontmatterResult,
+    WriteReviewArgs, WriteReviewResult, WriteSessionArgs, WriteSessionResult,
 };
 
 /// Canonical MCP tool names exposed by the server, in manifest order.
@@ -74,6 +74,7 @@ pub const TOOL_NAMES: &[&str] = &[
     "migrate-session-file",
     "create-scenario",
     "append-task",
+    "prune-tasks",
     "dashboard",
     "write-session",
     "resolve-references",
@@ -545,6 +546,19 @@ impl GovRuntimeServer {
         params: Parameters<AppendTaskArgs>,
     ) -> Result<Json<AppendTaskResult>, String> {
         primitives::append_task::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "prune-tasks",
+        description = "Reduce a feature's tasks.md — drop spent task sections (keep-pending) or reset to template state."
+    )]
+    async fn prune_tasks(
+        &self,
+        params: Parameters<PruneTasksArgs>,
+    ) -> Result<Json<PruneTasksResult>, String> {
+        primitives::prune_tasks::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
     }

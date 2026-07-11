@@ -25,10 +25,10 @@ test before the command (Phase B) wires to it.
 
 ### 3. Wire the primitive through CLI, MCP, interpreter, parser
 
-- [ ] `runtime/src/main.rs`: import the args, add `PruneTasks(PruneTasksArgs)` to `Command`, add the dispatch arm.
-- [ ] `runtime/src/mcp/server.rs`: add `"prune-tasks"` to `TOOL_NAMES` and a `#[tool(name = "prune-tasks", …)]` method.
-- [ ] `runtime/src/interpreter/mod.rs`: add `"prune-tasks" => call!(PruneTasksArgs, prune_tasks)`.
-- [ ] `runtime/src/parser/mod.rs`: add `"prune-tasks"` to `PRIMITIVE_NAMES`.
+- [x] `runtime/src/main.rs`: import the args, add `PruneTasks(PruneTasksArgs)` to `Command`, add the dispatch arm.
+- [x] `runtime/src/mcp/server.rs`: add `"prune-tasks"` to `TOOL_NAMES` and a `#[tool(name = "prune-tasks", …)]` method.
+- [x] `runtime/src/interpreter/mod.rs`: add `"prune-tasks" => call!(PruneTasksArgs, prune_tasks)`.
+- [x] `runtime/src/parser/mod.rs`: add `"prune-tasks"` to `PRIMITIVE_NAMES`.
 - **Done when**: the CLI subcommand, the MCP tool, and a `gvrn exec` procedure step all resolve the primitive.
 
 ### 4. Canonical manifest, generated config, release metadata

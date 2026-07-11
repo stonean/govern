@@ -38,9 +38,9 @@ use crate::schema::primitives::{
     CreateScenarioArgs, DashboardArgs, DeriveBoundaryArgs, DiscoverRuleFilesArgs,
     EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs,
     MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs,
-    MergePermissionsArgs, MigrateSessionFileArgs, ProcessWaiversArgs, ReadSpecArgs, ReadTasksArgs,
-    ResolveAnchorArgs, RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs,
-    ValidateFrontmatterArgs, WriteReviewArgs, WriteSessionArgs,
+    MergePermissionsArgs, MigrateSessionFileArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs,
+    ReadTasksArgs, ResolveAnchorArgs, RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs,
+    TraverseDepsArgs, ValidateFrontmatterArgs, WriteReviewArgs, WriteSessionArgs,
 };
 use crate::schema::procedure::{Procedure, Step, StepNumber};
 use crate::schema::protocol::{ErrorLocation, ProtocolMessage};
@@ -568,6 +568,7 @@ fn dispatch_primitive(
         "migrate-session-file" => call!(MigrateSessionFileArgs, migrate_session_file),
         "create-scenario" => call!(CreateScenarioArgs, create_scenario),
         "append-task" => call!(AppendTaskArgs, append_task),
+        "prune-tasks" => call!(PruneTasksArgs, prune_tasks),
         "dashboard" => call!(DashboardArgs, dashboard),
         "write-session" => call!(WriteSessionArgs, write_session),
         "gate-confirm" => {
