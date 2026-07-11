@@ -32,6 +32,14 @@ Because prune destructively rewrites a working artifact, it confirms with the us
 
 The command's scope is `tasks.md` only. It does not edit the plan, the spec, scenarios, or status. It is a maintenance/hygiene command over one artifact, not a pipeline state transition.
 
+### Framework consistency — tasks.md is ephemeral tracking
+
+Prune formalizes that `tasks.md` is disposable, so the framework must treat it consistently as ephemeral tracking rather than durable information. Three alignments make that true end to end:
+
+- The constitution **canonically classifies** `tasks.md` as an ephemeral work-tracking artifact — a view of what is left to do — distinct from the durable spec, scenarios, and rules (with `plan.md` and `data-model.md` as design records). Prune and this spec cite that classification directly, not by analogy to the chore durability test.
+- The shared `tasks.md` parsers **ignore HTML-comment content** (`<!-- … -->`), so a reset (template-state) file is genuinely empty to the runtime primitives just as it is to a markdown reader — `read-tasks` reports zero tasks and `append-task` numbers from 1. Without this, the reset target's commented example headings parse as phantom tasks and split the two-paths guarantee.
+- `/{project}:analyze` **does not treat the scenario→task linkage as a durable index**. A `done` spec whose implemented scenario tasks have been pruned is not a drift finding: the durable record of an implemented scenario is the scenario file, the code, and git history — not a retained checkbox.
+
 ## Acceptance Criteria
 
 <!-- Greenfield-leaning feature, but several genuine design decisions (reset-vs-prune
@@ -50,6 +58,9 @@ The command's scope is `tasks.md` only. It does not edit the plan, the spec, sce
 - [x] Running prune when no task section is spent makes no write and reports that there is nothing to prune.
 - [x] Prune stops without writing when there is no session target (directs to `/{project}:target`) or the target has no `tasks.md` (directs to `/{project}:plan`).
 - [x] The reduction is produced and written by the deterministic runtime prune primitive, with the file body never round-tripped through agent context; the markdown-only fallback reaches identical bytes.
+- [ ] The constitution canonically classifies `tasks.md` as an ephemeral work-tracking artifact, distinct from the durable spec / scenarios / rules — stated directly, not only by analogy to the chore durability test.
+- [ ] The shared `tasks.md` parsers ignore content inside HTML comments (`<!-- … -->`): a reset (template-state) `tasks.md` parses to zero tasks via `read-tasks` and yields task number 1 from `append-task`, matching what a markdown reader sees.
+- [ ] `/{project}:analyze` does not report a scenario-consistency inconsistency when a `done` spec's scenario-linked tasks have been pruned; the scenario→task linkage is not required to persist after the scenario is implemented.
 
 ## Edge Cases
 

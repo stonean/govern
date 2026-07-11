@@ -70,3 +70,25 @@ test before the command (Phase B) wires to it.
 
 - [x] Run `scripts/audit/run-all.sh` (check-zero + all families) and resolve any findings.
 - **Done when**: the audit reports zero findings and the CI-equivalent checks pass.
+
+## Phase C — Framework consistency (tasks.md is ephemeral tracking)
+
+Surfaced by the pre-`done` durability review: `tasks.md` must be treated as disposable tracking end to end, not durable information.
+
+### 11. Make the shared `tasks.md` parsers ignore HTML comments
+
+- [ ] In `runtime/src/primitives/mod.rs`, teach the shared line-walkers to skip content inside `<!-- … -->` HTML comments (single- and multi-line) exactly as they skip fenced blocks: `iter_task_numbers_at_levels`, `iter_phase_ranges`, and `section_lines` (so `detect_tasks_structure` follows).
+- [ ] Apply the same comment-skipping in `read_tasks.rs`, `mark_task.rs`, `check_stuck.rs`, and `prune_tasks.rs::segment` so every tasks parser agrees.
+- [ ] Add a regression test proving a reset (template-state) `tasks.md` parses to zero tasks and `append-task` returns number 1.
+- **Done when**: `gvrn read-tasks` on a `--reset` file returns 0 tasks; `cargo test` / clippy / fmt clean.
+
+### 12. Codify `tasks.md` as an ephemeral tracking artifact in the constitution
+
+- [ ] Add a canonical statement (in `framework/constitution.md`, §tasks-phase or §text-first-artifacts) classifying `tasks.md` as an ephemeral work-tracking artifact — a view of what is left to do, safe to prune — distinct from the durable spec / scenarios / rules, with `plan.md` / `data-model.md` as design records.
+- [ ] Update `framework/commands/prune.md` and this spec to cite that classification directly rather than by analogy to §bug-handling; reconcile the AGENTS.md artifact grouping so `tasks` is not read as a durable source of truth.
+- **Done when**: the constitution names tasks.md's durability class explicitly; `resolve-anchor` and the framework audit are clean.
+
+### 13. Relax `/{project}:analyze` scenario-consistency for pruned tasks
+
+- [ ] Update `framework/commands/analyze.md` so the scenario-consistency check does not require a scenario's implementing task to persist in `tasks.md` after the scenario is implemented (a `done` spec with pruned scenario tasks is not a drift finding); regenerate the materialized command.
+- **Done when**: analyze reports no false scenario-consistency finding for a `done` spec whose scenario tasks were pruned; the framework audit is clean.
