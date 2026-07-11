@@ -140,6 +140,8 @@ Break the plan into discrete, ordered work items. Each task is small enough to i
 - Tasks are ordered to respect dependencies
 - A task can be completed in a single working session
 
+`tasks.md` is an **ephemeral work-tracking artifact** — a view of what is left to do, derived from the plan. It is not a durable source of truth: a task's value is spent the moment its checkbox is checked, because the durable record of what was built lives in the spec, its scenarios, the rules, and git history — never in a checked-off box. This is the same durability test [§bug-handling](#bug-handling) applies to chores, stated here for `tasks.md` directly. Completed task sections may therefore be pruned — or the file reset to its template state — with `/{project}:prune` without loss, and no consumer of `tasks.md` may treat its content as a durable index (including `/{project}:analyze`'s scenario-consistency check, which does not require an implemented scenario's task to persist). This stands in contrast to the durable artifacts: `spec.md`, scenarios, and rules carry the requirements and decisions that must stay accurate as the project evolves, with `plan.md` and `data-model.md` as the design record — none of which `/{project}:prune` touches.
+
 <!-- §readiness-check -->
 
 ### Readiness Check

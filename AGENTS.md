@@ -26,7 +26,7 @@ When adding files under `framework/`, place them by purpose, not by extension.
 
 `govern` is a text-first framework. The implementation is intentionally narrow:
 
-- **Markdown** — every primary artifact (constitution, specs, plans, tasks, scenarios, rules, slash command sources, templates). Source of truth per [§text-first-artifacts](framework/constitution.md#text-first-artifacts).
+- **Markdown** — every primary artifact (constitution, specs, plans, tasks, scenarios, rules, slash command sources, templates) is plain markdown; markdown is the source-of-truth *format* per [§text-first-artifacts](framework/constitution.md#text-first-artifacts). Format is not durability: `spec.md`, scenarios, and rules are durable sources of truth (with `plan.md` / `data-model.md` as design records), while `tasks.md` is ephemeral work-tracking — see [§tasks-phase](framework/constitution.md#tasks-phase).
 - **Bash scripts** under `scripts/` — generators (`gen-*.sh`), the pre-commit hook installer (`install-hooks.sh`), and lints (`lint-*.sh`). All deterministic; no application logic.
 - **GitHub Actions YAML** under `.github/workflows/` — CI configuration only.
 - **Node.js / `npx`** — invoked at lint time for `markdownlint-cli2` only; not a build dependency, no `package.json` or `node_modules`.

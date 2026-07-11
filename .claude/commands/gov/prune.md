@@ -16,7 +16,7 @@ A feature's `tasks.md` accumulates completed work across the whole life of the f
 - The only file written is the session target's `tasks.md`. Do NOT edit the plan, the spec, scenarios, `data-model.md`, or the frontmatter `status` — single-artifact scope is a hard boundary.
 - Recovery is git history: prune writes no backup file and no gitignored sidecar.
 - Prune never changes pipeline status and never advances or reverts the lifecycle.
-- Reference: §pipeline-boundaries ("don't backtrack silently"), §text-first-artifacts, §runtime-boundary, plus [041 — Task Pruning](../../specs/041-task-pruning/spec.md) for the reduction semantics and [data-model](../../specs/041-task-pruning/data-model.md) for the segmentation and classification.
+- Reference: §tasks-phase (`tasks.md` is an ephemeral work-tracking artifact, safe to prune — not a durable source of truth), §pipeline-boundaries ("don't backtrack silently"), §text-first-artifacts, §runtime-boundary, plus [041 — Task Pruning](../../specs/041-task-pruning/spec.md) for the reduction semantics and [data-model](../../specs/041-task-pruning/data-model.md) for the segmentation and classification.
 
 ## Instructions
 

@@ -84,8 +84,8 @@ Surfaced by the pre-`done` durability review: `tasks.md` must be treated as disp
 
 ### 12. Codify `tasks.md` as an ephemeral tracking artifact in the constitution
 
-- [ ] Add a canonical statement (in `framework/constitution.md`, §tasks-phase or §text-first-artifacts) classifying `tasks.md` as an ephemeral work-tracking artifact — a view of what is left to do, safe to prune — distinct from the durable spec / scenarios / rules, with `plan.md` / `data-model.md` as design records.
-- [ ] Update `framework/commands/prune.md` and this spec to cite that classification directly rather than by analogy to §bug-handling; reconcile the AGENTS.md artifact grouping so `tasks` is not read as a durable source of truth.
+- [x] Add a canonical statement (in `framework/constitution.md`, §tasks-phase or §text-first-artifacts) classifying `tasks.md` as an ephemeral work-tracking artifact — a view of what is left to do, safe to prune — distinct from the durable spec / scenarios / rules, with `plan.md` / `data-model.md` as design records.
+- [x] Update `framework/commands/prune.md` and this spec to cite that classification directly rather than by analogy to §bug-handling; reconcile the AGENTS.md artifact grouping so `tasks` is not read as a durable source of truth.
 - **Done when**: the constitution names tasks.md's durability class explicitly; `resolve-anchor` and the framework audit are clean.
 
 ### 13. Relax `/{project}:analyze` scenario-consistency for pruned tasks
