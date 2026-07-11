@@ -56,7 +56,7 @@ _None._
 ### security (defense-in-depth) — `feature` arg is not run through `validate_no_traversal`
 
 - **File**: `runtime/src/primitives/prune_tasks.rs:110-118`
-- **Finding** (confidence ~40): `run` builds `repo.join(&root).join(&args.feature)` and gates on `is_dir()` without calling `validate_no_traversal(&args.feature)`. This is identical to every sibling feature-name primitive (`read-tasks`, `mark-task`, `set-status`, `check-stuck`, `derive-boundary`), where `feature` is a host-resolved directory slug, not free caller input; the traversal guard is reserved for caller-supplied *path* arguments (`feature-path`, `slug`) in `append-task`/`create-scenario`. Flagging prune-tasks alone would be inconsistent with the established, previously-reviewed convention. Recorded as a low-confidence, codebase-wide defense-in-depth observation, not a 041 regression.
+- **Finding** (confidence ~40): `run` builds `repo.join(&root).join(&args.feature)` and gates on `is_dir()` without calling `validate_no_traversal(&args.feature)`. This is identical to every sibling feature-name primitive (`read-tasks`, `mark-task`, `set-status`, `check-stuck`, `derive-boundary`), where `feature` is a host-resolved directory slug, not free caller input; the traversal guard is reserved for caller-supplied _path_ arguments (`feature-path`, `slug`) in `append-task`/`create-scenario`. Flagging prune-tasks alone would be inconsistent with the established, previously-reviewed convention. Recorded as a low-confidence, codebase-wide defense-in-depth observation, not a 041 regression.
 
 ## Waived findings
 
