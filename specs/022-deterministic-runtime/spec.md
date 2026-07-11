@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [021-runtime-boundary]
 review:
   last-run: 2026-07-11T02:26:43Z
