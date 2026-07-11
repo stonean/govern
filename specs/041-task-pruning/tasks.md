@@ -77,9 +77,9 @@ Surfaced by the pre-`done` durability review: `tasks.md` must be treated as disp
 
 ### 11. Make the shared `tasks.md` parsers ignore HTML comments
 
-- [ ] In `runtime/src/primitives/mod.rs`, teach the shared line-walkers to skip content inside `<!-- … -->` HTML comments (single- and multi-line) exactly as they skip fenced blocks: `iter_task_numbers_at_levels`, `iter_phase_ranges`, and `section_lines` (so `detect_tasks_structure` follows).
-- [ ] Apply the same comment-skipping in `read_tasks.rs`, `mark_task.rs`, `check_stuck.rs`, and `prune_tasks.rs::segment` so every tasks parser agrees.
-- [ ] Add a regression test proving a reset (template-state) `tasks.md` parses to zero tasks and `append-task` returns number 1.
+- [x] In `runtime/src/primitives/mod.rs`, teach the shared line-walkers to skip content inside `<!-- … -->` HTML comments (single- and multi-line) exactly as they skip fenced blocks: `iter_task_numbers_at_levels`, `iter_phase_ranges`, and `section_lines` (so `detect_tasks_structure` follows).
+- [x] Apply the same comment-skipping in `read_tasks.rs`, `mark_task.rs`, `check_stuck.rs`, and `prune_tasks.rs::segment` so every tasks parser agrees.
+- [x] Add a regression test proving a reset (template-state) `tasks.md` parses to zero tasks and `append-task` returns number 1.
 - **Done when**: `gvrn read-tasks` on a `--reset` file returns 0 tasks; `cargo test` / clippy / fmt clean.
 
 ### 12. Codify `tasks.md` as an ephemeral tracking artifact in the constitution

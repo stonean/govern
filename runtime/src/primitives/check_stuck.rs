@@ -5,7 +5,7 @@ use std::path::Path;
 
 use git2::{Repository, Sort};
 
-use crate::primitives::{PrimitiveError, Result};
+use crate::primitives::{PrimitiveError, Result, SkipScanner};
 use crate::schema::paths;
 use crate::schema::primitives::{CheckStuckArgs, CheckStuckResult};
 
@@ -101,22 +101,18 @@ fn read_blob_from_tree(
 }
 
 /// Return the 0-based line index of the first `- [ ]` group in `content`,
-/// or `None` when no incomplete subtask exists. Fenced code blocks are
-/// skipped so example `- [ ]` lines inside `` ``` `` blocks do not match.
+/// or `None` when no incomplete subtask exists. Fenced code blocks and HTML
+/// comments are skipped so example `- [ ]` lines inside `` ``` `` blocks or
+/// `<!-- … -->` guidance comments do not match.
 fn first_incomplete_subtask_index(content: &str) -> Option<usize> {
-    let mut in_fence = false;
+    let mut skip = SkipScanner::default();
     for (idx, line) in content.lines().enumerate() {
-        let trimmed = line.trim_start();
-        if trimmed.starts_with("```") {
-            in_fence = !in_fence;
-            continue;
-        }
-        if in_fence {
+        if skip.skip(line) {
             continue;
         }
         // Match `- [ ]` exactly (space inside the brackets, not [x]/[X]).
         // Allow leading whitespace before the `-` for nested list items.
-        if trimmed.starts_with("- [ ]") {
+        if line.trim_start().starts_with("- [ ]") {
             return Some(idx);
         }
     }

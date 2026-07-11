@@ -15,8 +15,8 @@
 use std::path::Path;
 
 use crate::primitives::{
-    PrimitiveError, Result, TasksStructure, detect_tasks_structure, parse_atx_heading, read_text,
-    rel_path, write_atomic,
+    PrimitiveError, Result, SkipScanner, TasksStructure, detect_tasks_structure, parse_atx_heading,
+    read_text, rel_path, write_atomic,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{CheckboxToggleResult, MarkTaskArgs};
@@ -55,15 +55,15 @@ pub fn run(args: &MarkTaskArgs, repo: &Path) -> Result<CheckboxToggleResult> {
     };
 
     let lines: Vec<&str> = content.split_inclusive('\n').collect();
-    let task_range = locate_task_range(&lines, &args.task_number, task_level).ok_or_else(|| {
-        PrimitiveError::TaskNotFound {
+    let skip_mask = compute_skip_mask(&lines);
+    let task_range = locate_task_range(&lines, &skip_mask, &args.task_number, task_level)
+        .ok_or_else(|| PrimitiveError::TaskNotFound {
             root: root.clone(),
             feature: args.feature.clone(),
             task_number: args.task_number.clone(),
-        }
-    })?;
+        })?;
 
-    let checkbox_lines = collect_checkbox_line_indices(&lines, task_range);
+    let checkbox_lines = collect_checkbox_line_indices(&lines, &skip_mask, task_range);
     let (line_idx, marker_idx) = *checkbox_lines.get(args.subtask_index).ok_or_else(|| {
         PrimitiveError::SubtaskOutOfRange {
             feature: args.feature.clone(),
@@ -92,13 +92,25 @@ pub fn run(args: &MarkTaskArgs, repo: &Path) -> Result<CheckboxToggleResult> {
 /// that constitute the task body (heading inclusive; the next heading
 /// at the task level or shallower is exclusive). Returns `None` when
 /// no matching heading is found.
+/// Compute the per-line fence/HTML-comment skip mask for the whole file, so
+/// heading and checkbox scans ignore content inside fenced blocks or
+/// `<!-- … -->` guidance comments — the same set `read-tasks` ignores.
+fn compute_skip_mask(lines: &[&str]) -> Vec<bool> {
+    let mut skip = SkipScanner::default();
+    lines.iter().map(|line| skip.skip(line)).collect()
+}
+
 fn locate_task_range(
     lines: &[&str],
+    skip_mask: &[bool],
     task_number: &str,
     task_level: u8,
 ) -> Option<std::ops::Range<usize>> {
     let mut start: Option<usize> = None;
     for (idx, line) in lines.iter().enumerate() {
+        if skip_mask[idx] {
+            continue;
+        }
         let Some((level, heading)) = parse_atx_heading(line) else {
             continue;
         };
@@ -136,10 +148,14 @@ fn heading_task_number(heading: &str) -> Option<String> {
 
 fn collect_checkbox_line_indices(
     lines: &[&str],
+    skip_mask: &[bool],
     range: std::ops::Range<usize>,
 ) -> Vec<(usize, usize)> {
     let mut out = Vec::new();
     for idx in range {
+        if skip_mask[idx] {
+            continue;
+        }
         if let Some((_bracket, marker_idx)) = find_checkbox_line(lines[idx]) {
             out.push((idx, marker_idx));
         }

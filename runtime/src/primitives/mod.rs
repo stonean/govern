@@ -533,9 +533,60 @@ pub(crate) fn validate_slug(slug: &str) -> Result<()> {
     Ok(())
 }
 
+/// Per-line skip state shared by the `tasks.md` / spec structural walkers.
+/// Content inside a fenced code block (` ``` `) or an HTML comment
+/// (`<!-- … -->`) is not markdown structure — it must not yield headings,
+/// task numbers, phase containers, or checkboxes. Feed every line of a
+/// document in order; [`skip`](SkipScanner::skip) reports the lines to ignore.
+///
+/// This exists because `tasks.md`'s own template guidance comment embeds
+/// example `## N.` task headings; without comment-awareness the tasks
+/// parsers mis-read a reset (template-state) file as containing phantom
+/// tasks, splitting the runtime/markdown two-paths guarantee.
+#[derive(Default)]
+pub(crate) struct SkipScanner {
+    in_fence: bool,
+    in_comment: bool,
+}
+
+impl SkipScanner {
+    /// Advance over `line` (document order) and report whether its content
+    /// must be skipped. Fence and multi-line-comment delimiter lines are
+    /// themselves skipped, matching the pre-existing fenced-block handling.
+    /// A comment that opens and closes on the same line is inline — its
+    /// surrounding content is real markdown and the line is not skipped.
+    pub(crate) fn skip(&mut self, line: &str) -> bool {
+        if self.in_fence {
+            if line.trim_start().starts_with("```") {
+                self.in_fence = false;
+            }
+            return true;
+        }
+        if self.in_comment {
+            if line.contains("-->") {
+                self.in_comment = false;
+            }
+            return true;
+        }
+        if line.trim_start().starts_with("```") {
+            self.in_fence = true;
+            return true;
+        }
+        if let Some(open) = line.find("<!--") {
+            if line[open + 4..].contains("-->") {
+                return false;
+            }
+            self.in_comment = true;
+            return true;
+        }
+        false
+    }
+}
+
 /// Walk `content` line by line, yielding the numeric prefix of every ATX
 /// heading at any of the given `levels` whose text begins with `N.`. Skips
-/// headings inside fenced code blocks. Used by `tasks.md` primitives to
+/// headings inside fenced code blocks and HTML comments. Used by `tasks.md`
+/// primitives to
 /// compute the next task number in both flat (`## N.`) and phased
 /// (`### N.` under `## Phase X`) structures — passing `&[2, 3]` produces
 /// the union across both shapes.
@@ -543,14 +594,9 @@ pub(crate) fn iter_task_numbers_at_levels<'a>(
     content: &'a str,
     levels: &'a [u8],
 ) -> impl Iterator<Item = u32> + 'a {
-    let mut in_fence = false;
+    let mut skip = SkipScanner::default();
     content.lines().filter_map(move |line| {
-        let trimmed = line.trim_start();
-        if trimmed.starts_with("```") {
-            in_fence = !in_fence;
-            return None;
-        }
-        if in_fence {
+        if skip.skip(line) {
             return None;
         }
         let (level, text) = parse_atx_heading(line)?;
@@ -625,15 +671,10 @@ pub(crate) struct PhaseRange {
 /// on [`detect_tasks_structure`] before consuming this iterator.
 pub(crate) fn iter_phase_ranges(content: &str) -> Vec<PhaseRange> {
     let mut phases: Vec<PhaseRange> = Vec::new();
-    let mut in_fence = false;
+    let mut skip = SkipScanner::default();
     let lines: Vec<&str> = content.lines().collect();
     for (idx, line) in lines.iter().enumerate() {
-        let trimmed = line.trim_start();
-        if trimmed.starts_with("```") {
-            in_fence = !in_fence;
-            continue;
-        }
-        if in_fence {
+        if skip.skip(line) {
             continue;
         }
         if let Some((2, heading)) = parse_atx_heading(line) {
@@ -1015,5 +1056,33 @@ mod tests {
         ] {
             assert!(!is_feature_slug(bad), "expected rejection for {bad:?}");
         }
+    }
+
+    #[test]
+    fn task_walkers_ignore_html_comment_headings() {
+        // The tasks.md template guidance comment embeds `## 1.` example
+        // headings; they must not be counted as tasks or flip structure
+        // detection.
+        let content = "# T\n\nIntro.\n\n<!-- Example:\n## 1. Not a task\n\n- [ ] not a subtask\n### 2. Also not\n-->\n\n## 1. Real task\n\n- [ ] real\n";
+        let nums: Vec<u32> = iter_task_numbers_at_levels(content, &[2, 3]).collect();
+        assert_eq!(
+            nums,
+            vec![1],
+            "only the real `## 1.` outside the comment counts"
+        );
+        assert_eq!(detect_tasks_structure(content), TasksStructure::Flat);
+
+        // A pure-comment example (no real tasks) yields nothing.
+        let only_comment = "# T\n\n<!-- \n## 1. X\n### 2. Y\n-->\n";
+        assert!(
+            iter_task_numbers_at_levels(only_comment, &[2, 3])
+                .next()
+                .is_none()
+        );
+
+        // An inline self-closing comment on a heading line does not hide it.
+        let inline = "## 3. Real <!-- note -->\n\n- [ ] x\n";
+        let inline_nums: Vec<u32> = iter_task_numbers_at_levels(inline, &[2, 3]).collect();
+        assert_eq!(inline_nums, vec![3]);
     }
 }

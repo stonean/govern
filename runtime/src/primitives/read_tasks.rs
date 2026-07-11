@@ -18,8 +18,8 @@
 use std::path::Path;
 
 use crate::primitives::{
-    PrimitiveError, Result, TasksStructure, detect_tasks_structure, parse_atx_heading, read_text,
-    rel_path,
+    PrimitiveError, Result, SkipScanner, TasksStructure, detect_tasks_structure, parse_atx_heading,
+    read_text, rel_path,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{ReadTasksArgs, ReadTasksResult, Subtask, Task};
@@ -56,15 +56,10 @@ pub fn run(args: &ReadTasksArgs, repo: &Path) -> Result<ReadTasksResult> {
     // ignored (they're flat-task remnants in a mixed file; the phased
     // task-level is 3, so they don't open a new task here).
     let mut current_phase: Option<String> = None;
-    let mut in_fence = false;
+    let mut skip = SkipScanner::default();
 
     for line in content.lines() {
-        let trimmed = line.trim_start();
-        if trimmed.starts_with("```") {
-            in_fence = !in_fence;
-            continue;
-        }
-        if in_fence {
+        if skip.skip(line) {
             continue;
         }
         if let Some((level, heading)) = parse_atx_heading(line) {

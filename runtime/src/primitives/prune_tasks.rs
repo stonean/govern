@@ -22,8 +22,8 @@ use std::collections::HashSet;
 use std::path::Path;
 
 use crate::primitives::{
-    PrimitiveError, Result, TasksStructure, checkbox, detect_tasks_structure, parse_atx_heading,
-    read_text, rel_path, split_frontmatter, write_atomic,
+    PrimitiveError, Result, SkipScanner, TasksStructure, checkbox, detect_tasks_structure,
+    parse_atx_heading, read_text, rel_path, split_frontmatter, write_atomic,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{
@@ -204,18 +204,12 @@ fn segment(content: &str) -> Vec<Block> {
     let mut cur = Block::new(Kind::Structure, "");
     // The initial block starts empty (no first line); clear the placeholder.
     cur.lines.clear();
-    let mut in_fence = false;
+    let mut skip = SkipScanner::default();
     let mut current_phase_name: Option<String> = None;
     let mut current_phase_idx: Option<usize> = None;
 
     for line in content.lines() {
-        let trimmed = line.trim_start();
-        if trimmed.starts_with("```") {
-            in_fence = !in_fence;
-            cur.lines.push(line.to_string());
-            continue;
-        }
-        if in_fence {
+        if skip.skip(line) {
             cur.lines.push(line.to_string());
             continue;
         }
@@ -591,6 +585,48 @@ mod tests {
             body.trim_end(),
             CANONICAL_EMPTY_TASKS_BODY.trim_end(),
             "CANONICAL_EMPTY_TASKS_BODY drifted from framework/templates/spec/tasks.md"
+        );
+    }
+
+    #[test]
+    fn reset_output_parses_as_zero_tasks() {
+        use crate::primitives::{append_task, read_tasks};
+        use crate::schema::primitives::{AppendTaskArgs, ReadTasksArgs};
+
+        let (_tmp, repo) = write_repo(FLAT, Some("done"));
+        run(&args(true, false, true), &repo).unwrap();
+
+        // The reset file's guidance comment embeds `## 1/2/3` example
+        // headings; the HTML-comment-aware parsers must see zero real tasks.
+        let tasks = read_tasks::run(
+            &ReadTasksArgs {
+                feature: "041-task-pruning".into(),
+            },
+            &repo,
+        )
+        .unwrap();
+        assert!(
+            tasks.tasks.is_empty(),
+            "reset file must parse to zero tasks, got {}",
+            tasks.tasks.len()
+        );
+
+        // append-task must number from 1, not from the commented examples.
+        let appended = append_task::run(
+            &AppendTaskArgs {
+                feature_path: "specs/041-task-pruning".into(),
+                title: "First real task".into(),
+                done_when: "it lands".into(),
+                body: None,
+                slug: Some("x".into()),
+                parent_heading: None,
+            },
+            &repo,
+        )
+        .unwrap();
+        assert_eq!(
+            appended.task_number, 1,
+            "append-task on a reset file must number from 1"
         );
     }
 }
