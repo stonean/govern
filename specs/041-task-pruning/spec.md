@@ -2,11 +2,11 @@
 status: in-progress
 dependencies: [022-deterministic-runtime]
 review:
-  last-run: null
-  reviewed-against: null
+  last-run: 2026-07-11T12:12:24Z
+  reviewed-against: c0bc8697bdef33bbb2024585fa75bd4299889fca
   must-violations: 0
-  should-violations: 0
-  low-confidence: 0
+  should-violations: 1
+  low-confidence: 2
   blocking: false
 ---
 
