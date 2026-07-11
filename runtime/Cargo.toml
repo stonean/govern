@@ -11,6 +11,7 @@ exclude = [
   "tests/**",
   "bacon.toml",
   "legacy-prose-commands.txt",
+  "rust-toolchain.toml",
 ]
 
 [[bin]]

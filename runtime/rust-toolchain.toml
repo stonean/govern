@@ -1,0 +1,10 @@
+# Pin the Rust toolchain so local builds and CI use the same compiler and
+# clippy. A floating `stable` let a clippy bump (1.97's `question_mark` lint)
+# red-CI unexpectedly; pinning makes toolchain upgrades a deliberate, reviewed
+# change. rustup honors this file for every `cargo` command run under runtime/.
+#
+# To upgrade: bump `channel` here AND the `dtolnay/rust-toolchain@<version>`
+# refs in .github/workflows/runtime.yml and runtime-release.yml (kept in sync).
+[toolchain]
+channel = "1.97.0"
+components = ["clippy", "rustfmt"]

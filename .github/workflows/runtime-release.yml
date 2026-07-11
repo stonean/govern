@@ -60,7 +60,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
+      # Pinned — keep in sync with runtime/rust-toolchain.toml.
+      - uses: dtolnay/rust-toolchain@1.97.0
         with:
           targets: ${{ matrix.target }}
 
@@ -125,7 +126,8 @@ jobs:
         working-directory: runtime
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      # Pinned — keep in sync with runtime/rust-toolchain.toml.
+      - uses: dtolnay/rust-toolchain@1.97.0
       - name: cargo publish
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
