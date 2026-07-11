@@ -436,3 +436,12 @@ Follow-on to task 45: `/gov:review` works on the MCP/host path but not yet under
 - [x] **46c — re-bless affected exec goldens.** Re-bless the exec goldens changed by the result-threading (implement / status / target / analyze / plan / specify / govern) and confirm — by reviewing each diff — that every change is an added context field, never a semantic change. Done when `cargo test --release` is green and the golden diffs are verified.
 
 - **Done when**: 46a–46c are checked; `runtime exec review` drives the nine-step procedure end-to-end with the scope and rule set threaded into each `performReview` request; `cargo test --release` is green and every re-blessed golden diff is a verified added-context-field change (no semantic drift).
+
+## 47. Implement scenario: [review-scope-plan-affected-table-format](scenarios/review-scope-plan-affected-table-format.md)
+
+Follow-on to task 45c: `compute-review-scope`'s `read_plan_affected` parses `## Affected Files` as a bullet list, but the canonical plan format — the writeSpecBody template and every real `specs/*/plan.md` — is a Markdown table, so `plan_affected` is silently empty for real plans and the review scope drops the plan-affected half (recorded as a low-confidence `QUAL-STUB-001` finding in the 022 review; surfaced during 46b).
+
+- [ ] 47a — Promote `payload::parse_affected_files` (the table parser) to a shared `pub(crate)` helper and call it from `compute_review_scope::read_plan_affected`, replacing the bullet parser so both readers agree on the canonical table format. Add a table-format case to `compute_review_scope::tests` (mirroring `plan_affected_wins_when_it_is_the_larger_set` but with a `| File | Action | Purpose |` table). Done when `cargo test compute_review_scope` is green and `plan_affected` is non-empty for a table-format plan.
+- [ ] 47b — Switch the `review-basic` exec fixture's `plan.md` (and the `plan_affected_wins` test fixture) from the bullet list to the canonical table, dropping the interim bullet-form note; confirm the `review-basic` parity golden is unchanged (scope still `src/reviewed.rs`). Done when `cargo test --release` is green and the review golden needs no re-bless.
+
+- **Done when**: 47a–47b are checked; `read_plan_affected` parses the canonical table format via the shared `parse_affected_files`, real table-format plans yield a non-empty `plan_affected`, and `cargo test --release` is green.
