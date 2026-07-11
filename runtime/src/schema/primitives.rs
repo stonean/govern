@@ -1405,6 +1405,144 @@ pub struct AppendTaskResult {
     pub created: bool,
 }
 
+// -- prune-tasks -------------------------------------------------------------
+
+/// Args for `prune-tasks`. Reduces the target feature's `tasks.md` by
+/// dropping spent (fully-checked) task sections, or resetting the file to
+/// its template initial state. See
+/// `specs/041-task-pruning/data-model.md`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct PruneTasksArgs {
+    /// Feature directory name under `specs/`.
+    #[arg(long)]
+    pub feature: String,
+    /// Full reset to the template's initial state, rather than the default
+    /// keep-pending prune.
+    #[serde(default)]
+    #[arg(long)]
+    pub reset: bool,
+    /// Override the `--reset` status gate on a non-`done` spec.
+    #[serde(default)]
+    #[arg(long)]
+    pub force: bool,
+    /// Write the reduced file. When false (the default) the primitive is a
+    /// pure preview: it computes and classifies but does not write, and the
+    /// file body never leaves the runtime.
+    #[serde(default)]
+    #[arg(long)]
+    pub apply: bool,
+}
+
+/// Which reduction the primitive performed.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum PruneMode {
+    /// Drop spent sections; keep every pending section.
+    KeepPending,
+    /// Reset to the template's initial state.
+    Reset,
+}
+
+/// Completion state of a task section.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum Classification {
+    /// >= 1 checkbox and every one is checked. Removable.
+    Spent,
+    /// >= 1 checkbox and at least one is unchecked. Preserved.
+    Pending,
+    /// Zero checkboxes. Preserved; never classified spent.
+    NoCheckbox,
+}
+
+/// Outcome of the `--reset` status gate.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum PruneGate {
+    /// Keep-pending mode — the gate does not apply.
+    NotApplicable,
+    /// Reset is permitted (status is `done`, or `force` was supplied).
+    Allowed,
+    /// Reset refused: status is not `done` and `force` was absent.
+    BlockedNeedsForce,
+}
+
+/// What prune did with a task section.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum PruneAction {
+    /// The section was dropped from the output.
+    Removed,
+    /// The section was kept verbatim.
+    Kept,
+}
+
+/// Line and byte size of a `tasks.md`, before or after pruning.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct SizeSummary {
+    /// Line count.
+    pub lines: usize,
+    /// Byte count.
+    pub bytes: usize,
+}
+
+/// One compact per-section record. Carries the section's identity,
+/// classification, and checkbox counts — never its body.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct PruneSection {
+    /// Task number (e.g., "1", "12").
+    pub number: String,
+    /// Task heading text.
+    pub heading: String,
+    /// Containing phase heading, when phased. Absent for flat structure.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub phase: Option<String>,
+    /// Completion classification.
+    pub classification: Classification,
+    /// Task-list checkboxes in the section.
+    pub checkbox_total: u32,
+    /// Of which are checked.
+    pub checkbox_checked: u32,
+    /// What prune did with the section.
+    pub action: PruneAction,
+}
+
+/// Result for `prune-tasks`. A compact summary; the file body is never
+/// included — the token-reduction contract that motivates the primitive
+/// performing its own write.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct PruneTasksResult {
+    /// The reduction performed.
+    pub mode: PruneMode,
+    /// Whether a write happened. `false` on preview, on `nothing-to-prune`,
+    /// and on a blocked reset.
+    pub applied: bool,
+    /// `--reset` status-gate outcome.
+    pub gate: PruneGate,
+    /// Spec status, read only when `reset` is set (otherwise `null`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub status: Option<String>,
+    /// Output equals input — nothing spent to prune (keep-pending), or
+    /// already template-state (reset).
+    pub nothing_to_prune: bool,
+    /// Task sections removed.
+    pub removed_count: u32,
+    /// Task sections kept.
+    pub kept_count: u32,
+    /// Size before pruning.
+    pub size_before: SizeSummary,
+    /// Size after pruning (equal to before on preview / no-op).
+    pub size_after: SizeSummary,
+    /// Per-section classification records.
+    pub sections: Vec<PruneSection>,
+    /// Repo-relative path to the tasks file.
+    pub path: String,
+}
+
 // -- migrate-session-file ----------------------------------------------------
 
 /// Args for `migrate-session-file`. Translates a pre-0.10.0 legacy
@@ -1585,13 +1723,14 @@ mod tests {
 
     use super::{
         AcceptanceCriterion, AnchorReference, CheckRuleIdsArgs, CheckRuleIdsResult, CheckStuckArgs,
-        CheckStuckResult, CheckboxToggleResult, DependencyEdge, DeriveBoundaryArgs,
+        CheckStuckResult, CheckboxToggleResult, Classification, DependencyEdge, DeriveBoundaryArgs,
         DeriveBoundaryResult, Frontmatter, FrontmatterFinding, GateConfirmArgs, GateConfirmResult,
         LintMarkdownArgs, LintMarkdownResult, MarkCriterionArgs, MarkTaskArgs, MarkdownViolation,
-        MigrateSessionFileArgs, MigrateSessionFileResult, OpenQuestion, ReadSpecArgs,
-        ReadSpecResult, ReadTasksArgs, ReadTasksResult, ResolveAnchorArgs, ResolveAnchorResult,
-        ReviewBlock, RuleCitation, RunGeneratorArgs, RunGeneratorResult, SetStatusArgs,
-        SetStatusResult, SpecSection, Subtask, Task, TraverseDepsArgs, TraverseDepsResult,
+        MigrateSessionFileArgs, MigrateSessionFileResult, OpenQuestion, PruneAction, PruneGate,
+        PruneMode, PruneSection, PruneTasksArgs, PruneTasksResult, ReadSpecArgs, ReadSpecResult,
+        ReadTasksArgs, ReadTasksResult, ResolveAnchorArgs, ResolveAnchorResult, ReviewBlock,
+        RuleCitation, RunGeneratorArgs, RunGeneratorResult, SetStatusArgs, SetStatusResult,
+        SizeSummary, SpecSection, Subtask, Task, TraverseDepsArgs, TraverseDepsResult,
         ValidateFrontmatterArgs, ValidateFrontmatterResult, WriteSessionArgs, WriteSessionResult,
     };
 
@@ -1707,6 +1846,72 @@ mod tests {
             current: true,
             path: "specs/022-deterministic-runtime/tasks.md".into(),
         };
+        assert_eq!(round_trip(&result), result);
+    }
+
+    #[test]
+    fn prune_tasks_round_trip() {
+        let args = PruneTasksArgs {
+            feature: "041-task-pruning".into(),
+            reset: false,
+            force: false,
+            apply: true,
+        };
+        let value: serde_json::Value = serde_json::to_value(&args).unwrap();
+        assert_eq!(value["feature"], "041-task-pruning");
+        assert_eq!(value["reset"], false);
+        assert_eq!(value["apply"], true);
+        assert_eq!(round_trip(&args), args);
+
+        let result = PruneTasksResult {
+            mode: PruneMode::KeepPending,
+            applied: false,
+            gate: PruneGate::NotApplicable,
+            status: None,
+            nothing_to_prune: false,
+            removed_count: 1,
+            kept_count: 1,
+            size_before: SizeSummary {
+                lines: 40,
+                bytes: 900,
+            },
+            size_after: SizeSummary {
+                lines: 20,
+                bytes: 450,
+            },
+            sections: vec![
+                PruneSection {
+                    number: "1".into(),
+                    heading: "Schema types".into(),
+                    phase: Some("Phase A".into()),
+                    classification: Classification::Spent,
+                    checkbox_total: 2,
+                    checkbox_checked: 2,
+                    action: PruneAction::Removed,
+                },
+                PruneSection {
+                    number: "2".into(),
+                    heading: "Segmentation".into(),
+                    phase: Some("Phase A".into()),
+                    classification: Classification::Pending,
+                    checkbox_total: 3,
+                    checkbox_checked: 1,
+                    action: PruneAction::Kept,
+                },
+            ],
+            path: "specs/041-task-pruning/tasks.md".into(),
+        };
+        let value: serde_json::Value = serde_json::to_value(&result).unwrap();
+        assert_eq!(value["mode"], "keep-pending");
+        assert_eq!(value["gate"], "not-applicable");
+        assert_eq!(value["nothing-to-prune"], false);
+        assert_eq!(value["removed-count"], 1);
+        assert_eq!(value["size-before"]["lines"], 40);
+        assert_eq!(value["sections"][0]["classification"], "spent");
+        assert_eq!(value["sections"][0]["action"], "removed");
+        assert_eq!(value["sections"][1]["classification"], "pending");
+        // `status: None` must serialize as absent, not null.
+        assert!(!value.as_object().unwrap().contains_key("status"));
         assert_eq!(round_trip(&result), result);
     }
 
