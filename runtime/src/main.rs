@@ -10,12 +10,13 @@ use std::io;
 use gvrn::mcp::server::GovRuntimeServer;
 use gvrn::primitives;
 use gvrn::schema::primitives::{
-    AppendTaskArgs, ApplyManifestArgs, CheckRuleIdsArgs, CheckStuckArgs, ComputeReviewScopeArgs,
-    CreateScenarioArgs, DashboardArgs, DeriveBoundaryArgs, DiscoverRuleFilesArgs,
-    EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs,
-    MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs,
-    MergePermissionsArgs, MigrateSessionFileArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs,
-    ReadTasksArgs, ResolveAnchorArgs, ResolveReferencesArgs, RunGeneratorArgs, SetStatusArgs,
+    AppendInboxArgs, AppendTaskArgs, ApplyManifestArgs, CheckArtifactsArgs, CheckRuleIdsArgs,
+    CheckStuckArgs, ComputeReviewScopeArgs, CreateFeatureArgs, CreateScenarioArgs, DashboardArgs,
+    DeriveBoundaryArgs, DiscoverRuleFilesArgs, EnforceManifestArgs, ExtractArchiveArgs,
+    FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs,
+    MergeClaudeMdArgs, MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs,
+    ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs,
+    ResolveFeatureArgs, ResolveReferencesArgs, RunGeneratorArgs, SetStatusArgs,
     SubstituteTemplatesArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteReviewArgs,
     WriteSessionArgs,
 };
@@ -68,6 +69,8 @@ enum Command {
     ValidateFrontmatter(ValidateFrontmatterArgs),
     /// Verify `§anchor` references resolve to `<!-- §anchor -->` markers.
     ResolveAnchor(ResolveAnchorArgs),
+    /// Resolve an identifier (name, number, or partial slug) to a feature directory.
+    ResolveFeature(ResolveFeatureArgs),
     /// Resolve a consumer feature's `references:` index against the `[services]` registry.
     ResolveReferences(ResolveReferencesArgs),
     /// Traverse spec dependencies and check status compatibility.
@@ -116,8 +119,14 @@ enum Command {
     MigrateSessionFile(MigrateSessionFileArgs),
     /// Write a new scenarios/{slug}.md file under a feature with frontmatter and body.
     CreateScenario(CreateScenarioArgs),
+    /// Scaffold the next {specs-root}/{NNN-slug}/ directory with a spec-template copy.
+    CreateFeature(CreateFeatureArgs),
     /// Append a numbered task block to a feature's tasks.md (atomic rewrite).
     AppendTask(AppendTaskArgs),
+    /// Append one bullet to {specs-root}/inbox.md (atomic, optional dedup-by-prefix).
+    AppendInbox(AppendInboxArgs),
+    /// Run /gov:analyze's residual deterministic artifact-check families for a feature.
+    CheckArtifacts(CheckArtifactsArgs),
     /// Reduce a feature's tasks.md — drop spent task sections or reset to template state.
     PruneTasks(PruneTasksArgs),
     /// Emit a `gate-confirm` envelope on stdout and block for a response.
@@ -412,6 +421,9 @@ fn main() -> ExitCode {
             emit_result(primitives::validate_frontmatter::run(&args, &repo))
         }
         Command::ResolveAnchor(args) => emit_result(primitives::resolve_anchor::run(&args, &repo)),
+        Command::ResolveFeature(args) => {
+            emit_result(primitives::resolve_feature::run(&args, &repo))
+        }
         Command::ResolveReferences(args) => {
             emit_result(primitives::resolve_references::run(&args, &repo))
         }
@@ -460,7 +472,12 @@ fn main() -> ExitCode {
         Command::CreateScenario(args) => {
             emit_result(primitives::create_scenario::run(&args, &repo))
         }
+        Command::CreateFeature(args) => emit_result(primitives::create_feature::run(&args, &repo)),
         Command::AppendTask(args) => emit_result(primitives::append_task::run(&args, &repo)),
+        Command::AppendInbox(args) => emit_result(primitives::append_inbox::run(&args, &repo)),
+        Command::CheckArtifacts(args) => {
+            emit_result(primitives::check_artifacts::run(&args, &repo))
+        }
         Command::PruneTasks(args) => emit_result(primitives::prune_tasks::run(&args, &repo)),
         Command::Dashboard(args) => emit_result(primitives::dashboard::run(&args, &repo)),
         Command::WriteSession(args) => emit_result(primitives::write_session::run(&args, &repo)),

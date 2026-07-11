@@ -75,6 +75,10 @@ pub const PRIMITIVE_NAMES: &[&str] = &[
     "dashboard",
     "write-session",
     "resolve-references",
+    "resolve-feature",
+    "create-feature",
+    "append-inbox",
+    "check-artifacts",
 ];
 
 /// Parse errors raised by [`parse`] and [`check`].

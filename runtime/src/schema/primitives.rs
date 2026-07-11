@@ -1591,6 +1591,18 @@ pub struct MigrateSessionFileResult {
 /// host/project variability). The `scenario` and `scenario-path` fields
 /// are paired — both must be supplied together or both omitted; omitting
 /// both clears any previously set scenario.
+///
+/// Three write shapes, in precedence order:
+///
+/// 1. **Clear write** (`clear: true`) — removes the target block
+///    (feature / path / scenario / scenario-path / set-at) while
+///    preserving `cli-config-dir`. Mutually exclusive with every target
+///    field; `cli-config-dir` may still be supplied and overrides the
+///    preserved value.
+/// 2. **Target write** (`feature` + `path`) — sets the target and a
+///    fresh `set-at`, preserving `cli-config-dir`.
+/// 3. **Host-config write** (only `cli-config-dir`) — sets the agent
+///    identity, preserving the existing target.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct WriteSessionArgs {
@@ -1634,6 +1646,16 @@ pub struct WriteSessionArgs {
     )]
     #[arg(long = "cli-config-dir")]
     pub cli_config_dir: Option<String>,
+    /// Clear mode: remove the target block (feature / path / scenario /
+    /// scenario-path / set-at) while preserving the per-contributor
+    /// `cli-config-dir`. Mutually exclusive with a target write —
+    /// supplying `clear` together with any of `feature`, `path`,
+    /// `scenario`, or `scenario-path` is rejected. A `cli-config-dir`
+    /// supplied alongside `clear` still applies (the supplied value
+    /// overrides the preserved one).
+    #[serde(default)]
+    #[arg(long)]
+    pub clear: bool,
 }
 
 /// Result for `write-session`.
@@ -1714,6 +1736,208 @@ pub struct ResolveReferencesResult {
     /// Resolution records in the consumer spec's `references:` order.
     pub references: Vec<ResolutionRecord>,
     /// Repo-relative path to the consumer spec file.
+    pub path: String,
+}
+
+// -- resolve-feature ----------------------------------------------------------
+
+/// Args for `resolve-feature`. Scans the configured spec root and resolves
+/// a user-supplied identifier to a feature directory — the deterministic
+/// core of `/gov:target`'s specs-dir scan.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct ResolveFeatureArgs {
+    /// Identifier to resolve: an exact feature directory name
+    /// (`022-deterministic-runtime`), a feature number (`22` or `022` —
+    /// both match the zero-padded `022-` prefix), or a partial slug
+    /// substring (`deterministic`, matched case-insensitively).
+    #[arg(long)]
+    pub identifier: String,
+    /// Optional scenario slug. When supplied and the feature resolves, the
+    /// result's `scenario` block reports the scenario file's existence and
+    /// its `section` frontmatter.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[arg(long)]
+    pub scenario: Option<String>,
+}
+
+/// Closed outcome enum for `resolve-feature`. Ambiguity and no-match are
+/// **domain outcomes** (the host mediates the follow-up prompt), never
+/// operational errors — per the scaffolding-primitives scenario's edge
+/// cases ("choosing stays with the user through the host").
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum ResolveFeatureOutcome {
+    /// Exactly one feature matched the identifier.
+    Resolved,
+    /// A partial identifier matched more than one feature; `candidates`
+    /// carries the sorted matches for the host's disambiguation prompt.
+    Ambiguous,
+    /// No feature matched the identifier.
+    NotFound,
+}
+
+/// Scenario detail attached to a `resolve-feature` result when the args
+/// named a scenario slug and the feature resolved.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct ResolvedScenario {
+    /// Scenario slug echoed from the args.
+    pub slug: String,
+    /// Repo-relative path of the scenario file (reported whether or not
+    /// the file exists, so the host can offer to create it).
+    pub path: String,
+    /// Whether the scenario file exists on disk.
+    pub exists: bool,
+    /// Scenario frontmatter `section` field (falling back to the legacy
+    /// pre-017 `spec-ref` field). Empty when the file is absent,
+    /// unreadable, or carries neither — mirroring `dashboard`'s
+    /// scenario-detail degradation.
+    pub section: String,
+}
+
+/// Result for `resolve-feature`.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct ResolveFeatureResult {
+    /// How the identifier resolved.
+    pub outcome: ResolveFeatureOutcome,
+    /// Resolved feature directory name; present only on `resolved`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub feature: Option<String>,
+    /// Repo-relative feature directory path; present only on `resolved`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub path: Option<String>,
+    /// Spec frontmatter `status`; present on `resolved` when the feature's
+    /// `spec.md` is readable (best-effort — a malformed spec degrades to
+    /// an absent status rather than failing the resolution).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub status: Option<String>,
+    /// Sorted candidate directory names; populated on `ambiguous`, empty
+    /// on the other outcomes.
+    #[serde(default)]
+    pub candidates: Vec<String>,
+    /// Scenario detail; present when the args named a scenario slug and
+    /// the outcome is `resolved`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scenario: Option<ResolvedScenario>,
+}
+
+// -- create-feature -----------------------------------------------------------
+
+/// Args for `create-feature`. Computes the next feature number, derives
+/// the kebab-case slug from `title`, creates `{specs-root}/{NNN-slug}/`,
+/// and copies the spec template into it — the deterministic scaffold step
+/// of `/gov:specify`.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct CreateFeatureArgs {
+    /// Feature title. The directory slug is derived from it: lowercased,
+    /// every run of non-alphanumeric characters collapsed to a single
+    /// hyphen, leading/trailing hyphens trimmed.
+    #[arg(long)]
+    pub title: String,
+}
+
+/// Result for `create-feature`.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct CreateFeatureResult {
+    /// Whether the feature directory was created. `false` is the refusal
+    /// domain outcome: the derived directory already existed and nothing
+    /// was written (no overwrite path).
+    pub created: bool,
+    /// Feature directory name (`{NNN}-{slug}`).
+    pub feature: String,
+    /// Repo-relative feature directory path.
+    pub path: String,
+    /// Repo-relative path of the spec template copied into the new
+    /// directory; absent on the refusal outcome.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub template: Option<String>,
+}
+
+// -- append-inbox --------------------------------------------------------------
+
+/// Args for `append-inbox`. Appends one `- {text}` bullet to
+/// `{specs-root}/inbox.md`, creating the file when missing. The optional
+/// `dedup-prefix` makes the append idempotent for auto-capture callers
+/// (the bootstrap audit's dedup-by-prefix contract).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct AppendInboxArgs {
+    /// Single-line bullet text, appended as `- {text}`. Embedded newlines
+    /// are rejected (structure injection into inbox.md).
+    #[arg(long)]
+    pub text: String,
+    /// Optional dedup guard: when an existing inbox bullet's text starts
+    /// with this prefix, nothing is written and the result reports
+    /// `deduped: true`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[arg(long)]
+    pub dedup_prefix: Option<String>,
+}
+
+/// Result for `append-inbox`.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct AppendInboxResult {
+    /// Repo-relative path of the inbox file.
+    pub path: String,
+    /// Whether the inbox file was created by this invocation.
+    pub created: bool,
+    /// `true` when `dedup-prefix` matched an existing bullet and no write
+    /// happened.
+    pub deduped: bool,
+}
+
+// -- check-artifacts -----------------------------------------------------------
+
+/// Args for `check-artifacts`. Runs the residual deterministic check
+/// families from `/gov:analyze`'s markdown-only reference against one
+/// feature (`--all` stays with the caller looping).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct CheckArtifactsArgs {
+    /// Feature directory name under the configured spec root.
+    #[arg(long)]
+    pub feature: String,
+}
+
+/// One deterministic artifact finding. Family names and severity tiers
+/// mirror `framework/commands/analyze.md`'s markdown-only reference —
+/// the primitive mechanizes the documented policy, it introduces none.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct ArtifactFinding {
+    /// Check family: `artifact-completeness`, `task-consistency`,
+    /// `scenario-consistency`, or `review-state-drift`.
+    pub family: String,
+    /// Severity tier per the reference's assignments: `blocking`
+    /// (artifact completeness, task consistency, review state drift) or
+    /// `advisory` (scenario consistency).
+    pub severity: String,
+    /// Human-readable description of the finding.
+    pub message: String,
+    /// Repo-relative path of the artifact the finding anchors to.
+    pub path: String,
+}
+
+/// Result for `check-artifacts`.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct CheckArtifactsResult {
+    /// Feature directory name echoed from the args.
+    pub feature: String,
+    /// Spec frontmatter `status` the tier classification ran against.
+    pub status: String,
+    /// Findings across the four families, in family order
+    /// (completeness → task consistency → scenario consistency →
+    /// review drift).
+    pub findings: Vec<ArtifactFinding>,
+    /// `true` when no family produced a finding.
+    pub clean: bool,
+    /// Repo-relative path to the spec file.
     pub path: String,
 }
 
@@ -2474,6 +2698,7 @@ mod tests {
                 "specs/022-deterministic-runtime/scenarios/write-session-primitive.md".into(),
             ),
             cli_config_dir: None,
+            clear: false,
         };
         let value: serde_json::Value = serde_json::to_value(&args).unwrap();
         // CLI/MCP args remain kebab-case to match every other primitive.
@@ -2494,6 +2719,7 @@ mod tests {
             scenario: None,
             scenario_path: None,
             cli_config_dir: Some(".opencode".into()),
+            clear: false,
         };
         let vh: serde_json::Value = serde_json::to_value(&args_host).unwrap();
         let objh = vh.as_object().unwrap();
@@ -2508,6 +2734,7 @@ mod tests {
             scenario: None,
             scenario_path: None,
             cli_config_dir: None,
+            clear: false,
         };
         let v: serde_json::Value = serde_json::to_value(&args_no_scenario).unwrap();
         let obj = v.as_object().unwrap();
@@ -2515,10 +2742,188 @@ mod tests {
         assert!(!obj.contains_key("scenario-path"));
         assert_eq!(round_trip(&args_no_scenario), args_no_scenario);
 
+        // Clear write: only `clear` set; `clear` serializes as a plain
+        // boolean and an absent `clear` key deserializes to `false`
+        // (backward compatibility for pre-clear callers).
+        let args_clear = WriteSessionArgs {
+            feature: None,
+            path: None,
+            scenario: None,
+            scenario_path: None,
+            cli_config_dir: None,
+            clear: true,
+        };
+        let vc: serde_json::Value = serde_json::to_value(&args_clear).unwrap();
+        assert_eq!(vc["clear"], true);
+        assert_eq!(round_trip(&args_clear), args_clear);
+        let legacy: WriteSessionArgs = serde_json::from_str("{}").unwrap();
+        assert!(!legacy.clear, "absent `clear` defaults to false");
+
         let result = WriteSessionResult {
             path: ".govern.session.toml".into(),
             created: true,
         };
+        assert_eq!(round_trip(&result), result);
+    }
+
+    #[test]
+    fn resolve_feature_round_trip() {
+        use super::{
+            ResolveFeatureArgs, ResolveFeatureOutcome, ResolveFeatureResult, ResolvedScenario,
+        };
+        let args = ResolveFeatureArgs {
+            identifier: "22".into(),
+            scenario: Some("scaffolding-primitives".into()),
+        };
+        let value: serde_json::Value = serde_json::to_value(&args).unwrap();
+        assert_eq!(value["identifier"], "22");
+        assert_eq!(value["scenario"], "scaffolding-primitives");
+        assert_eq!(round_trip(&args), args);
+
+        // Absent scenario omits the field.
+        let bare = ResolveFeatureArgs {
+            identifier: "runtime".into(),
+            scenario: None,
+        };
+        let v: serde_json::Value = serde_json::to_value(&bare).unwrap();
+        assert!(!v.as_object().unwrap().contains_key("scenario"));
+
+        let resolved = ResolveFeatureResult {
+            outcome: ResolveFeatureOutcome::Resolved,
+            feature: Some("022-deterministic-runtime".into()),
+            path: Some("specs/022-deterministic-runtime".into()),
+            status: Some("in-progress".into()),
+            candidates: vec![],
+            scenario: Some(ResolvedScenario {
+                slug: "scaffolding-primitives".into(),
+                path: "specs/022-deterministic-runtime/scenarios/scaffolding-primitives.md".into(),
+                exists: true,
+                section: "Follow-on scenarios".into(),
+            }),
+        };
+        let rv: serde_json::Value = serde_json::to_value(&resolved).unwrap();
+        assert_eq!(rv["outcome"], "resolved");
+        assert_eq!(rv["scenario"]["exists"], true);
+        assert_eq!(rv["scenario"]["section"], "Follow-on scenarios");
+        assert_eq!(round_trip(&resolved), resolved);
+
+        // Ambiguous carries the sorted candidate list; the resolved-only
+        // fields serialize as absent, not null.
+        let ambiguous = ResolveFeatureResult {
+            outcome: ResolveFeatureOutcome::Ambiguous,
+            feature: None,
+            path: None,
+            status: None,
+            candidates: vec!["001-a-runtime".into(), "002-b-runtime".into()],
+            scenario: None,
+        };
+        let av: serde_json::Value = serde_json::to_value(&ambiguous).unwrap();
+        assert_eq!(av["outcome"], "ambiguous");
+        assert_eq!(av["candidates"][0], "001-a-runtime");
+        let obj = av.as_object().unwrap();
+        assert!(!obj.contains_key("feature"));
+        assert!(!obj.contains_key("status"));
+        assert_eq!(round_trip(&ambiguous), ambiguous);
+
+        let not_found = ResolveFeatureResult {
+            outcome: ResolveFeatureOutcome::NotFound,
+            feature: None,
+            path: None,
+            status: None,
+            candidates: vec![],
+            scenario: None,
+        };
+        let nv: serde_json::Value = serde_json::to_value(&not_found).unwrap();
+        assert_eq!(nv["outcome"], "not-found");
+        assert_eq!(round_trip(&not_found), not_found);
+    }
+
+    #[test]
+    fn create_feature_round_trip() {
+        use super::{CreateFeatureArgs, CreateFeatureResult};
+        let args = CreateFeatureArgs {
+            title: "Deterministic Runtime!".into(),
+        };
+        let value: serde_json::Value = serde_json::to_value(&args).unwrap();
+        assert_eq!(value["title"], "Deterministic Runtime!");
+        assert_eq!(round_trip(&args), args);
+
+        let result = CreateFeatureResult {
+            created: true,
+            feature: "043-deterministic-runtime".into(),
+            path: "specs/043-deterministic-runtime".into(),
+            template: Some("framework/templates/spec/spec.md".into()),
+        };
+        let rv: serde_json::Value = serde_json::to_value(&result).unwrap();
+        assert_eq!(rv["created"], true);
+        assert_eq!(rv["template"], "framework/templates/spec/spec.md");
+        assert_eq!(round_trip(&result), result);
+
+        // Refusal outcome: template absent from the JSON, not null.
+        let refused = CreateFeatureResult {
+            created: false,
+            feature: "043-deterministic-runtime".into(),
+            path: "specs/043-deterministic-runtime".into(),
+            template: None,
+        };
+        let fv: serde_json::Value = serde_json::to_value(&refused).unwrap();
+        assert!(!fv.as_object().unwrap().contains_key("template"));
+        assert_eq!(round_trip(&refused), refused);
+    }
+
+    #[test]
+    fn append_inbox_round_trip() {
+        use super::{AppendInboxArgs, AppendInboxResult};
+        let args = AppendInboxArgs {
+            text: "security: token logged in plaintext — src/auth.rs (captured during 022)".into(),
+            dedup_prefix: Some("security: token logged".into()),
+        };
+        let value: serde_json::Value = serde_json::to_value(&args).unwrap();
+        assert_eq!(value["dedup-prefix"], "security: token logged");
+        assert_eq!(round_trip(&args), args);
+
+        // Absent dedup-prefix omits the field.
+        let bare = AppendInboxArgs {
+            text: "x".into(),
+            dedup_prefix: None,
+        };
+        let v: serde_json::Value = serde_json::to_value(&bare).unwrap();
+        assert!(!v.as_object().unwrap().contains_key("dedup-prefix"));
+
+        let result = AppendInboxResult {
+            path: "specs/inbox.md".into(),
+            created: false,
+            deduped: true,
+        };
+        let rv: serde_json::Value = serde_json::to_value(&result).unwrap();
+        assert_eq!(rv["deduped"], true);
+        assert_eq!(round_trip(&result), result);
+    }
+
+    #[test]
+    fn check_artifacts_round_trip() {
+        use super::{ArtifactFinding, CheckArtifactsArgs, CheckArtifactsResult};
+        let args = CheckArtifactsArgs {
+            feature: "022-deterministic-runtime".into(),
+        };
+        assert_eq!(round_trip(&args), args);
+
+        let result = CheckArtifactsResult {
+            feature: "022-deterministic-runtime".into(),
+            status: "planned".into(),
+            findings: vec![ArtifactFinding {
+                family: "artifact-completeness".into(),
+                severity: "blocking".into(),
+                message: "plan.md is required at status 'planned' but does not exist".into(),
+                path: "specs/022-deterministic-runtime/plan.md".into(),
+            }],
+            clean: false,
+            path: "specs/022-deterministic-runtime/spec.md".into(),
+        };
+        let rv: serde_json::Value = serde_json::to_value(&result).unwrap();
+        assert_eq!(rv["findings"][0]["family"], "artifact-completeness");
+        assert_eq!(rv["findings"][0]["severity"], "blocking");
+        assert_eq!(rv["clean"], false);
         assert_eq!(round_trip(&result), result);
     }
 }

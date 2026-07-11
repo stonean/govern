@@ -51,3 +51,7 @@ append-task
 prune-tasks
 dashboard
 write-session
+resolve-feature
+create-feature
+append-inbox
+check-artifacts

@@ -48,10 +48,11 @@ pub(crate) const SESSION_FILE: &str = ".govern.session.toml";
 /// # Errors
 ///
 /// Returns [`PrimitiveError::MissingArgument`] when `scenario` and
-/// `scenario-path` are not supplied together, [`PrimitiveError::InvalidPath`]
-/// when any caller-supplied path contains a parent-directory component or
-/// is absolute, or [`PrimitiveError::Io`] for filesystem failures during
-/// the write.
+/// `scenario-path` are not supplied together,
+/// [`PrimitiveError::InvalidArgument`] when `clear` is combined with a
+/// target field, [`PrimitiveError::InvalidPath`] when any caller-supplied
+/// path contains a parent-directory component or is absolute, or
+/// [`PrimitiveError::Io`] for filesystem failures during the write.
 pub fn run(args: &WriteSessionArgs, repo: &Path) -> Result<WriteSessionResult> {
     run_with_now(args, repo, SystemTime::now())
 }
@@ -64,11 +65,91 @@ pub(crate) fn run_with_now(
     repo: &Path,
     now: SystemTime,
 ) -> Result<WriteSessionResult> {
+    validate_args(args)?;
+
+    let session_path = repo.join(SESSION_FILE);
+    let created = !session_path.exists();
+    let existing = read_existing_session(&session_path);
+
+    // Merge semantics, in precedence order. A *clear write* (`clear`)
+    // removes the whole target block (feature/path/scenario/set-at) while
+    // preserving the per-contributor `cli-config-dir` (a supplied value
+    // overrides the preserved one). A *target write* (feature supplied)
+    // sets the target fields from args — including clearing `scenario`
+    // when it's absent — and stamps a fresh `set-at`, preserving the
+    // per-contributor `cli-config-dir` unless overridden. A *host-config
+    // write* (no feature) sets `cli-config-dir` and preserves the
+    // existing target verbatim.
+    let record = if args.clear {
+        SessionRecord {
+            feature: None,
+            path: None,
+            scenario: None,
+            scenario_path: None,
+            set_at: None,
+            cli_config_dir: args.cli_config_dir.clone().or(existing.cli_config_dir),
+        }
+    } else if args.feature.is_some() {
+        SessionRecord {
+            feature: args.feature.clone(),
+            path: args.path.clone(),
+            scenario: args.scenario.clone(),
+            scenario_path: args.scenario_path.clone(),
+            set_at: Some(iso8601_utc(now)),
+            cli_config_dir: args.cli_config_dir.clone().or(existing.cli_config_dir),
+        }
+    } else {
+        SessionRecord {
+            feature: existing.feature,
+            path: existing.path,
+            scenario: existing.scenario,
+            scenario_path: existing.scenario_path,
+            set_at: existing.set_at,
+            cli_config_dir: args.cli_config_dir.clone(),
+        }
+    };
+    // `toml::to_string` over a struct of `Option<String>` is infallible — no
+    // non-string keys, no I/O, no exotic types — so the `expect` documents the
+    // invariant rather than handling a reachable failure mode. Same pattern as
+    // `merge_permissions::serialize_pretty`.
+    let body = toml::to_string(&record).expect("session TOML serializes infallibly");
+
+    write_atomic(&session_path, &body)?;
+
+    Ok(WriteSessionResult {
+        path: rel_path(&session_path, repo),
+        created,
+    })
+}
+
+/// Argument-shape validation for the three write shapes (clear / target /
+/// host-config). Split from [`run_with_now`] so the write path stays
+/// readable; the checks run in precedence order.
+fn validate_args(args: &WriteSessionArgs) -> Result<()> {
     if let Some(path) = &args.path {
         validate_no_traversal(path)?;
     }
     if let Some(scenario_path) = &args.scenario_path {
         validate_no_traversal(scenario_path)?;
+    }
+    // Precedence: `clear` is classified before the target / host-config
+    // shapes and is mutually exclusive with every target field — a caller
+    // cannot clear and set a target in the same write. `cli-config-dir`
+    // is NOT a target field and may accompany `clear` (the supplied value
+    // overrides the preserved one).
+    if args.clear
+        && (args.feature.is_some()
+            || args.path.is_some()
+            || args.scenario.is_some()
+            || args.scenario_path.is_some())
+    {
+        return Err(PrimitiveError::InvalidArgument {
+            primitive: "write-session".into(),
+            argument: "clear".into(),
+            reason: "mutually exclusive with a target write — omit `feature`, `path`, \
+                     `scenario`, and `scenario-path` when clearing"
+                .into(),
+        });
     }
     // `feature` and `path` are a pair — a target needs both.
     match (&args.feature, &args.path) {
@@ -113,57 +194,19 @@ pub(crate) fn run_with_now(
             reason: "`scenario` requires a target write (supply `feature` and `path`)".into(),
         });
     }
-    // Nothing to do unless this is a target write or a host-config write.
-    if args.feature.is_none() && args.cli_config_dir.is_none() {
+    // Nothing to do unless this is a clear write, a target write, or a
+    // host-config write.
+    if !args.clear && args.feature.is_none() && args.cli_config_dir.is_none() {
         return Err(PrimitiveError::MissingArgument {
             primitive: "write-session".into(),
             argument: "feature".into(),
             reason:
-                "supply `feature`+`path` (target write) or `cli-config-dir` (host-config write)"
+                "supply `feature`+`path` (target write), `cli-config-dir` (host-config write), \
+                 or `clear` (clear write)"
                     .into(),
         });
     }
-
-    let session_path = repo.join(SESSION_FILE);
-    let created = !session_path.exists();
-    let existing = read_existing_session(&session_path);
-
-    // Merge semantics. A *target write* (feature supplied) sets the target
-    // fields from args — including clearing `scenario` when it's absent — and
-    // stamps a fresh `set-at`, preserving the per-contributor `cli-config-dir`
-    // unless overridden. A *host-config write* (no feature) sets
-    // `cli-config-dir` and preserves the existing target verbatim.
-    let record = if args.feature.is_some() {
-        SessionRecord {
-            feature: args.feature.clone(),
-            path: args.path.clone(),
-            scenario: args.scenario.clone(),
-            scenario_path: args.scenario_path.clone(),
-            set_at: Some(iso8601_utc(now)),
-            cli_config_dir: args.cli_config_dir.clone().or(existing.cli_config_dir),
-        }
-    } else {
-        SessionRecord {
-            feature: existing.feature,
-            path: existing.path,
-            scenario: existing.scenario,
-            scenario_path: existing.scenario_path,
-            set_at: existing.set_at,
-            cli_config_dir: args.cli_config_dir.clone(),
-        }
-    };
-    // `toml::to_string` over a struct of `Option<String>` is infallible — no
-    // non-string keys, no I/O, no exotic types — so the `expect` documents the
-    // invariant rather than handling a reachable failure mode. Same pattern as
-    // `merge_permissions::serialize_pretty`.
-    let body = toml::to_string(&record).expect("session TOML serializes infallibly");
-
-    write_atomic(&session_path, &body)?;
-
-    Ok(WriteSessionResult {
-        path: rel_path(&session_path, repo),
-        created,
-    })
+    Ok(())
 }
 
 /// On-disk shape of the session file. Field order is the wire contract —
@@ -296,6 +339,18 @@ mod tests {
             scenario: None,
             scenario_path: None,
             cli_config_dir: None,
+            clear: false,
+        }
+    }
+
+    fn clear_args() -> WriteSessionArgs {
+        WriteSessionArgs {
+            feature: None,
+            path: None,
+            scenario: None,
+            scenario_path: None,
+            cli_config_dir: None,
+            clear: true,
         }
     }
 
@@ -426,6 +481,7 @@ mod tests {
             scenario: None,
             scenario_path: None,
             cli_config_dir: Some(".opencode".into()),
+            clear: false,
         };
         let result = run_with_now(&args, tmp.path(), fixed_now()).unwrap();
         assert!(result.created);
@@ -449,6 +505,7 @@ mod tests {
             scenario: None,
             scenario_path: None,
             cli_config_dir: Some(".augment".into()),
+            clear: false,
         };
         run_with_now(&args, tmp.path(), fixed_now()).unwrap();
         let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
@@ -467,6 +524,7 @@ mod tests {
             scenario: None,
             scenario_path: None,
             cli_config_dir: None,
+            clear: false,
         };
         let err = run_with_now(&args, tmp.path(), fixed_now()).unwrap_err();
         assert!(matches!(err, PrimitiveError::MissingArgument { .. }));
@@ -482,6 +540,7 @@ mod tests {
             scenario: None,
             scenario_path: None,
             cli_config_dir: None,
+            clear: false,
         };
         let err = run_with_now(&args, tmp.path(), fixed_now()).unwrap_err();
         match err {
@@ -508,6 +567,7 @@ mod tests {
             scenario: Some("x".into()),
             scenario_path: Some("specs/x/scenarios/y.md".into()),
             cli_config_dir: Some(".opencode".into()),
+            clear: false,
         };
         let err = run_with_now(&args, tmp.path(), fixed_now()).unwrap_err();
         match err {
@@ -538,6 +598,78 @@ mod tests {
         let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
         assert!(!body.contains("scenario"), "{body}");
         assert!(!body.contains("scenario-path"), "{body}");
+    }
+
+    #[test]
+    fn clear_removes_target_and_preserves_cli_config_dir() {
+        // target.md's `--clear`: the target block vanishes, the
+        // per-contributor `cli-config-dir` survives.
+        let tmp = tempdir().unwrap();
+        fs::write(
+            tmp.path().join(".govern.session.toml"),
+            "feature = \"001-x\"\npath = \"specs/001-x\"\nscenario = \"y\"\nscenario-path = \"specs/001-x/scenarios/y.md\"\nset-at = \"2026-01-01T00:00:00Z\"\ncli-config-dir = \".opencode\"\n",
+        )
+        .unwrap();
+
+        let result = run_with_now(&clear_args(), tmp.path(), fixed_now()).unwrap();
+        assert!(!result.created, "existing file is overwritten, not created");
+        let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
+        assert_eq!(
+            body, "cli-config-dir = \".opencode\"\n",
+            "only cli-config-dir survives a clear: {body}"
+        );
+    }
+
+    #[test]
+    fn clear_with_cli_config_dir_override_applies_supplied_value() {
+        // `cli-config-dir` is not a target field; supplied alongside
+        // `clear`, it overrides the preserved value.
+        let tmp = tempdir().unwrap();
+        fs::write(
+            tmp.path().join(".govern.session.toml"),
+            "feature = \"001-x\"\npath = \"specs/001-x\"\nset-at = \"2026-01-01T00:00:00Z\"\ncli-config-dir = \".opencode\"\n",
+        )
+        .unwrap();
+        let mut args = clear_args();
+        args.cli_config_dir = Some(".augment".into());
+        run_with_now(&args, tmp.path(), fixed_now()).unwrap();
+        let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
+        assert_eq!(body, "cli-config-dir = \".augment\"\n");
+    }
+
+    #[test]
+    fn clear_on_session_without_cli_config_dir_writes_empty_file() {
+        let tmp = tempdir().unwrap();
+        fs::write(
+            tmp.path().join(".govern.session.toml"),
+            "feature = \"001-x\"\npath = \"specs/001-x\"\nset-at = \"2026-01-01T00:00:00Z\"\n",
+        )
+        .unwrap();
+        run_with_now(&clear_args(), tmp.path(), fixed_now()).unwrap();
+        let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
+        assert_eq!(body, "", "nothing to preserve → empty session file");
+    }
+
+    #[test]
+    fn clear_rejects_target_write_arguments() {
+        // Mutual exclusion: `clear` combined with any target field is a
+        // supplied-and-rejected InvalidArgument, and nothing is written.
+        let tmp = tempdir().unwrap();
+        let mut args = base_args();
+        args.clear = true;
+        let err = run_with_now(&args, tmp.path(), fixed_now()).unwrap_err();
+        match err {
+            PrimitiveError::InvalidArgument {
+                primitive,
+                argument,
+                ..
+            } => {
+                assert_eq!(primitive, "write-session");
+                assert_eq!(argument, "clear");
+            }
+            other => panic!("expected InvalidArgument, got {other:?}"),
+        }
+        assert!(!tmp.path().join(".govern.session.toml").exists());
     }
 
     #[test]

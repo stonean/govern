@@ -282,6 +282,65 @@ async fn check_rule_ids_returns_citations() {
 }
 
 #[tokio::test]
+async fn resolve_feature_resolves_number_against_fixture() {
+    let client = start_pair(fixture_repo()).await;
+    let result = call_tool(&client, "resolve-feature", json!({"identifier": "1"})).await;
+    let obj = structured_object(&result);
+    assert_eq!(obj["outcome"], "resolved");
+    assert_eq!(obj["feature"], "001-basic");
+    assert_eq!(obj["path"], "specs/001-basic");
+    assert_eq!(obj["status"], "clarified");
+}
+
+#[tokio::test]
+async fn resolve_feature_reports_not_found_as_domain_outcome() {
+    let client = start_pair(fixture_repo()).await;
+    let result = call_tool(
+        &client,
+        "resolve-feature",
+        json!({"identifier": "no-such-slug"}),
+    )
+    .await;
+    let obj = structured_object(&result);
+    assert_eq!(obj["outcome"], "not-found");
+    assert_eq!(obj["candidates"].as_array().unwrap().len(), 0);
+}
+
+#[tokio::test]
+async fn check_artifacts_reports_clean_fixture() {
+    // 001-basic is `clarified` with a well-formed tasks.md and no
+    // scenarios — every family passes.
+    let client = start_pair(fixture_repo()).await;
+    let result = call_tool(&client, "check-artifacts", json!({"feature": "001-basic"})).await;
+    let obj = structured_object(&result);
+    assert_eq!(obj["clean"], true);
+    assert_eq!(obj["status"], "clarified");
+    assert_eq!(obj["findings"].as_array().unwrap().len(), 0);
+    assert_eq!(obj["path"], "specs/001-basic/spec.md");
+}
+
+#[tokio::test]
+async fn check_artifacts_flags_planned_spec_missing_artifacts() {
+    // 002-dependent is `planned` with no plan.md / tasks.md → two
+    // blocking artifact-completeness findings.
+    let client = start_pair(fixture_repo()).await;
+    let result = call_tool(
+        &client,
+        "check-artifacts",
+        json!({"feature": "002-dependent"}),
+    )
+    .await;
+    let obj = structured_object(&result);
+    assert_eq!(obj["clean"], false);
+    let findings = obj["findings"].as_array().unwrap();
+    assert_eq!(findings.len(), 2, "{findings:?}");
+    for finding in findings {
+        assert_eq!(finding["family"], "artifact-completeness");
+        assert_eq!(finding["severity"], "blocking");
+    }
+}
+
+#[tokio::test]
 async fn gate_confirm_returns_prompt_payload_without_blocking() {
     let client = start_pair(fixture_repo()).await;
     let result = call_tool(

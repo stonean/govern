@@ -29,17 +29,19 @@ use serde_json::Value;
 use crate::primitives;
 use crate::primitives::gate_confirm::GatePromptPayload;
 use crate::schema::primitives::{
-    AppendTaskArgs, AppendTaskResult, ApplyManifestArgs, ApplyManifestResult, CheckRuleIdsArgs,
+    AppendInboxArgs, AppendInboxResult, AppendTaskArgs, AppendTaskResult, ApplyManifestArgs,
+    ApplyManifestResult, CheckArtifactsArgs, CheckArtifactsResult, CheckRuleIdsArgs,
     CheckRuleIdsResult, CheckStuckArgs, CheckStuckResult, CheckboxToggleResult,
-    ComputeReviewScopeArgs, ComputeReviewScopeResult, CreateScenarioArgs, CreateScenarioResult,
-    DashboardArgs, DashboardResult, DeriveBoundaryArgs, DeriveBoundaryResult,
-    DiscoverRuleFilesArgs, DiscoverRuleFilesResult, EnforceManifestArgs, EnforceManifestResult,
-    ExtractArchiveArgs, ExtractArchiveResult, FetchArchiveArgs, FetchArchiveResult,
-    GateConfirmArgs, LintMarkdownArgs, LintMarkdownResult, MarkCriterionArgs, MarkTaskArgs,
-    MergeClaudeMdArgs, MergeClaudeMdResult, MergeManagedBlockArgs, MergeManagedBlockResult,
-    MergePermissionsArgs, MergePermissionsResult, MigrateSessionFileArgs, MigrateSessionFileResult,
-    ProcessWaiversArgs, ProcessWaiversResult, PruneTasksArgs, PruneTasksResult, ReadSpecArgs,
-    ReadSpecResult, ReadTasksArgs, ReadTasksResult, ResolveAnchorArgs, ResolveAnchorResult,
+    ComputeReviewScopeArgs, ComputeReviewScopeResult, CreateFeatureArgs, CreateFeatureResult,
+    CreateScenarioArgs, CreateScenarioResult, DashboardArgs, DashboardResult, DeriveBoundaryArgs,
+    DeriveBoundaryResult, DiscoverRuleFilesArgs, DiscoverRuleFilesResult, EnforceManifestArgs,
+    EnforceManifestResult, ExtractArchiveArgs, ExtractArchiveResult, FetchArchiveArgs,
+    FetchArchiveResult, GateConfirmArgs, LintMarkdownArgs, LintMarkdownResult, MarkCriterionArgs,
+    MarkTaskArgs, MergeClaudeMdArgs, MergeClaudeMdResult, MergeManagedBlockArgs,
+    MergeManagedBlockResult, MergePermissionsArgs, MergePermissionsResult, MigrateSessionFileArgs,
+    MigrateSessionFileResult, ProcessWaiversArgs, ProcessWaiversResult, PruneTasksArgs,
+    PruneTasksResult, ReadSpecArgs, ReadSpecResult, ReadTasksArgs, ReadTasksResult,
+    ResolveAnchorArgs, ResolveAnchorResult, ResolveFeatureArgs, ResolveFeatureResult,
     ResolveReferencesArgs, ResolveReferencesResult, RunGeneratorArgs, RunGeneratorResult,
     SetStatusArgs, SetStatusResult, SubstituteTemplatesArgs, SubstituteTemplatesResult,
     TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs, ValidateFrontmatterResult,
@@ -81,6 +83,10 @@ pub const TOOL_NAMES: &[&str] = &[
     "dashboard",
     "write-session",
     "resolve-references",
+    "resolve-feature",
+    "create-feature",
+    "append-inbox",
+    "check-artifacts",
 ];
 
 /// MCP server. Cloned per request by `rmcp`, so all state lives behind
@@ -622,6 +628,58 @@ impl GovRuntimeServer {
         params: Parameters<ResolveReferencesArgs>,
     ) -> Result<Json<ResolveReferencesResult>, String> {
         primitives::resolve_references::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "resolve-feature",
+        description = "Resolve an identifier (exact directory name, feature number like 7/007, or partial slug substring) to a feature directory under the configured spec root. Returns the directory name, repo-relative path, spec status, and — when a scenario slug is supplied — the scenario file's existence plus its `section` frontmatter. Ambiguity returns the sorted candidate list and no-match returns not-found, both as domain outcomes for the host to mediate."
+    )]
+    async fn resolve_feature(
+        &self,
+        params: Parameters<ResolveFeatureArgs>,
+    ) -> Result<Json<ResolveFeatureResult>, String> {
+        primitives::resolve_feature::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "create-feature",
+        description = "Scaffold the next {specs-root}/{NNN-slug}/ feature directory: compute the next feature number (max existing prefix + 1, zero-padded), derive the kebab-case slug from the title, create the directory, and copy the spec template into it (atomic, mode-preserving). Refuses with created: false when the target directory already exists."
+    )]
+    async fn create_feature(
+        &self,
+        params: Parameters<CreateFeatureArgs>,
+    ) -> Result<Json<CreateFeatureResult>, String> {
+        primitives::create_feature::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "append-inbox",
+        description = "Append one `- {text}` bullet to {specs-root}/inbox.md (atomic write), creating the file when missing. With `dedup-prefix` supplied, an existing bullet starting with the prefix suppresses the append and the result reports deduped: true."
+    )]
+    async fn append_inbox(
+        &self,
+        params: Parameters<AppendInboxArgs>,
+    ) -> Result<Json<AppendInboxResult>, String> {
+        primitives::append_inbox::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "check-artifacts",
+        description = "Run /gov:analyze's residual deterministic check families against one feature: artifact completeness per status tier (plan.md/tasks.md at planned+), task consistency (strictly-increasing numbering, Done-when presence), scenario→task mapping (honoring §tasks-phase pruning evidence), and review-state drift on done specs. Each finding carries family, severity, message, and path; severity tiers mirror the command's markdown-only reference."
+    )]
+    async fn check_artifacts(
+        &self,
+        params: Parameters<CheckArtifactsArgs>,
+    ) -> Result<Json<CheckArtifactsResult>, String> {
+        primitives::check_artifacts::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
     }

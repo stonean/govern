@@ -403,6 +403,106 @@ Result:
 
 Under the MCP surface, this is the only primitive whose semantics depend on host capability — an MCP host that cannot route a prompt to the user returns `confirmed: false` and the procedure halts at the gate.
 
+### `resolve-feature` — resolve an identifier to a feature directory
+
+Args:
+
+```json
+{ "identifier": "22", "scenario": "scaffolding-primitives" }
+```
+
+Result (resolved):
+
+```json
+{
+  "outcome": "resolved",
+  "feature": "022-deterministic-runtime",
+  "path": "specs/022-deterministic-runtime",
+  "status": "in-progress",
+  "candidates": [],
+  "scenario": {
+    "slug": "scaffolding-primitives",
+    "path": "specs/022-deterministic-runtime/scenarios/scaffolding-primitives.md",
+    "exists": true,
+    "section": "Follow-on scenarios"
+  }
+}
+```
+
+Result (ambiguous / not-found):
+
+```json
+{ "outcome": "ambiguous", "candidates": ["022-deterministic-runtime", "023-command-runtime"] }
+```
+
+Matching order: exact directory name, then feature number (`7` and `007` both match the zero-padded `007-` prefix), then case-insensitive partial slug substring. Ambiguity and no-match are domain outcomes in the result — never operational errors; disambiguation stays with the user through the host. `scenario` is present only when the args named a slug and the outcome is `resolved`; `status` is best-effort (absent when `spec.md` is unreadable). The scenario `section` field falls back to the legacy `spec-ref` frontmatter key.
+
+### `create-feature` — scaffold the next feature directory
+
+Args:
+
+```json
+{ "title": "Webhook Delivery" }
+```
+
+Result:
+
+```json
+{
+  "created": true,
+  "feature": "043-webhook-delivery",
+  "path": "specs/043-webhook-delivery",
+  "template": "specs/templates/spec.md"
+}
+```
+
+The number is `max(existing three-digit prefix) + 1`, zero-padded; the slug is the lowercased title with non-alphanumeric runs collapsed to single hyphens and trimmed. The spec template is resolved in `writeSpecBody`'s candidate order — `{specs-root}/templates/spec.md`, then `framework/templates/spec/spec.md` — and copied atomically with the source file's mode mirrored. An already-existing target directory is the `created: false` domain outcome (`template` absent, nothing written); a missing template is an operational error raised before the directory is created.
+
+### `append-inbox` — append one bullet to the inbox
+
+Args:
+
+```json
+{ "text": "security: token logged in plaintext — src/auth.rs (captured during 022)", "dedup-prefix": "security: token logged" }
+```
+
+Result:
+
+```json
+{ "path": "specs/inbox.md", "created": false, "deduped": false }
+```
+
+Appends `- {text}` atomically to `{specs-root}/inbox.md`, creating the file when missing (from `framework/templates/project/inbox.md` when that file exists on disk — the framework source repo — else a bare `# Inbox` heading). With `dedup-prefix` supplied, an existing bullet whose text starts with the prefix (checkbox bullets included) suppresses the write and the result reports `deduped: true`. Embedded newlines in `text` are rejected as an operational error (structure injection), matching `append-task`'s single-line rule.
+
+### `check-artifacts` — deterministic artifact-check families for one feature
+
+Args:
+
+```json
+{ "feature": "022-deterministic-runtime" }
+```
+
+Result:
+
+```json
+{
+  "feature": "022-deterministic-runtime",
+  "status": "planned",
+  "findings": [
+    {
+      "family": "artifact-completeness",
+      "severity": "blocking",
+      "message": "plan.md is required at status 'planned' but does not exist",
+      "path": "specs/022-deterministic-runtime/plan.md"
+    }
+  ],
+  "clean": false,
+  "path": "specs/022-deterministic-runtime/spec.md"
+}
+```
+
+Four families, mirroring `/gov:analyze`'s markdown-only reference exactly (severity tiers included — the primitive mechanizes the documented policy): `artifact-completeness` (blocking — `plan.md`/`tasks.md` required at `planned`/`in-progress`/`done`; `data-model.md` never required), `task-consistency` (blocking, when `tasks.md` exists — strictly-increasing numbering, `Done when` presence), `scenario-consistency` (advisory — every `scenarios/*.md` has a referencing task, skipped for `done` specs and satisfied by §tasks-phase pruning evidence: zero task sections or non-contiguous numbering), and `review-state-drift` (blocking — a `done` spec with `review.last-run` unset or `review.blocking: true`; a `done` spec with no `review:` block is grandfathered). `--all` iteration stays with the caller. The command-frontmatter-completeness family stays in the markdown-only reference (it reads the host's command directory, which the runtime does not own).
+
 ## Extension-point schemas (initial release)
 
 The three initial-release single-shot extension points, plus the two follow-on points (`askClarifyQuestion`, `routeInboxItem`) whose typed shapes ship ahead of their scenarios per the extension-request-hygiene scenario. Each has request and response payload schemas; the runtime validates incoming responses against these and emits `error: schema-mismatch` on failure. An extension identifier outside this closed set is an `error: unknown-extension` at request-build time — never a raw walker-context dump. In every request that carries legacy-compat context fields after its typed prefix (`writeCode`, `writeSpecBody`, `performReview`), walker-internal accumulator keys (prior `llm:*` response echoes and the accumulated `findings` array) are filtered out; primitive results threaded through the context (`scope`, `diff-base`, `selected`, `rules-dir`, `notices`, …) pass through.

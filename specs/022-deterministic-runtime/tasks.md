@@ -484,25 +484,25 @@ Follow-on to task 45c: `compute-review-scope`'s `read_plan_affected` parses `## 
 
 ## 54. Implement scenario: [primitive-robustness-hardening](scenarios/primitive-robustness-hardening.md)
 
-- [ ] Implement the behavior described in `scenarios/primitive-robustness-hardening.md`
+- [x] Implement the behavior described in `scenarios/primitive-robustness-hardening.md`
 
 - **Done when**: Path validation applied uniformly (enforce-manifest, apply-manifest entries, merge-managed-block, merge-permissions); check-stuck is branch-shape tolerant and CRLF-safe; write-review reads before writing; substitute-templates mirrors modes; create-scenario/append-task sanitize inputs; dashboard degrades on malformed scenarios; check-rule-ids scopes deprecation to the rule's section; set-status validates lifecycle membership — each with regression tests, `cargo test` green.
 
 ## 55. Implement scenario: [archive-network-hardening](scenarios/archive-network-hardening.md)
 
-- [ ] Implement the behavior described in `scenarios/archive-network-hardening.md`
+- [x] Implement the behavior described in `scenarios/archive-network-hardening.md`
 
 - **Done when**: fetch-archive's blocking HTTP is wrapped at the MCP seam, over-cap bodies error instead of truncating, checksum doc matches fail-before-write behavior; extract-archive skips zip symlinks and masks modes to 0o777 — each with tests, `cargo test` green.
 
 ## 56. Implement scenario: [parser-walker-conventions](scenarios/parser-walker-conventions.md)
 
-- [ ] Implement the behavior described in `scenarios/parser-walker-conventions.md`
+- [x] Implement the behavior described in `scenarios/parser-walker-conventions.md`
 
 - **Done when**: Parsed step numbers match document numbering across all rewritten commands (comment-split lists continue numbering); a `gate-confirm` step blocks regardless of prose phrasing and never drops a dispatch; benign kebab-case spans no longer fail parsing; prune.md parses and leaves legacy-prose-commands.txt; the parseability lint rejects Invalid for allowlisted files; goldens re-blessed with verified diffs; `cargo test` green.
 
 ## 57. Implement scenario: [extension-request-hygiene](scenarios/extension-request-hygiene.md)
 
-- [ ] Implement the behavior described in `scenarios/extension-request-hygiene.md`
+- [x] Implement the behavior described in `scenarios/extension-request-hygiene.md`
 
 - **Done when**: Walker-internal keys are filtered from every extension request; writeSpecBody populates its documented fields (or the data model is amended); read_existing_section is command-aware; askClarifyQuestion and routeInboxItem have typed builders — with tests, affected goldens re-blessed, `cargo test` green.
 

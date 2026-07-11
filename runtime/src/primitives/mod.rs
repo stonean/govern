@@ -10,11 +10,14 @@
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
+pub mod append_inbox;
 pub mod append_task;
 pub mod apply_manifest;
+pub mod check_artifacts;
 pub mod check_rule_ids;
 pub mod check_stuck;
 pub mod compute_review_scope;
+pub mod create_feature;
 pub mod create_scenario;
 pub mod dashboard;
 pub mod derive_boundary;
@@ -35,6 +38,7 @@ pub mod prune_tasks;
 pub mod read_spec;
 pub mod read_tasks;
 pub mod resolve_anchor;
+pub mod resolve_feature;
 pub mod resolve_references;
 pub mod run_generator;
 pub mod set_status;
@@ -220,6 +224,15 @@ pub enum PrimitiveError {
     ScenarioConflict {
         /// Path of the existing scenario file the primitive refused to overwrite.
         path: PathBuf,
+    },
+    /// `create-feature` found no spec template at any candidate location,
+    /// so there is nothing to copy into the new feature directory. Raised
+    /// before the directory is created, so a missing template leaves no
+    /// half-scaffolded feature behind.
+    #[error("spec template not found (tried {tried})")]
+    TemplateNotFound {
+        /// Comma-separated repo-relative candidate paths that were tried.
+        tried: String,
     },
     /// Feature path supplied to a primitive does not exist.
     #[error("feature path does not exist: {path}")]

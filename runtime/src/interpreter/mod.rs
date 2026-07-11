@@ -58,12 +58,13 @@ use crate::io::{read_envelope, write_envelope};
 use crate::primitives;
 use crate::schema::extensions::{self, ValidationError, WriteCodeResponse};
 use crate::schema::primitives::{
-    AppendTaskArgs, ApplyManifestArgs, CheckRuleIdsArgs, CheckStuckArgs, ComputeReviewScopeArgs,
-    CreateScenarioArgs, DashboardArgs, DeriveBoundaryArgs, DiscoverRuleFilesArgs,
-    EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs,
-    MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs,
-    MergePermissionsArgs, MigrateSessionFileArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs,
-    ReadTasksArgs, ResolveAnchorArgs, ResolveReferencesArgs, RunGeneratorArgs, SetStatusArgs,
+    AppendInboxArgs, AppendTaskArgs, ApplyManifestArgs, CheckArtifactsArgs, CheckRuleIdsArgs,
+    CheckStuckArgs, ComputeReviewScopeArgs, CreateFeatureArgs, CreateScenarioArgs, DashboardArgs,
+    DeriveBoundaryArgs, DiscoverRuleFilesArgs, EnforceManifestArgs, ExtractArchiveArgs,
+    FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs,
+    MergeClaudeMdArgs, MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs,
+    ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs,
+    ResolveFeatureArgs, ResolveReferencesArgs, RunGeneratorArgs, SetStatusArgs,
     SubstituteTemplatesArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteReviewArgs,
     WriteSessionArgs,
 };
@@ -596,6 +597,7 @@ fn dispatch_primitive(
         "check-stuck" => call!(CheckStuckArgs, check_stuck),
         "validate-frontmatter" => call!(ValidateFrontmatterArgs, validate_frontmatter),
         "resolve-anchor" => call!(ResolveAnchorArgs, resolve_anchor),
+        "resolve-feature" => call!(ResolveFeatureArgs, resolve_feature),
         "resolve-references" => call!(ResolveReferencesArgs, resolve_references),
         "traverse-deps" => call!(TraverseDepsArgs, traverse_deps),
         "check-rule-ids" => call!(CheckRuleIdsArgs, check_rule_ids),
@@ -611,7 +613,10 @@ fn dispatch_primitive(
         "merge-permissions" => call!(MergePermissionsArgs, merge_permissions),
         "migrate-session-file" => call!(MigrateSessionFileArgs, migrate_session_file),
         "create-scenario" => call!(CreateScenarioArgs, create_scenario),
+        "create-feature" => call!(CreateFeatureArgs, create_feature),
         "append-task" => call!(AppendTaskArgs, append_task),
+        "append-inbox" => call!(AppendInboxArgs, append_inbox),
+        "check-artifacts" => call!(CheckArtifactsArgs, check_artifacts),
         "prune-tasks" => call!(PruneTasksArgs, prune_tasks),
         "dashboard" => call!(DashboardArgs, dashboard),
         "write-session" => call!(WriteSessionArgs, write_session),

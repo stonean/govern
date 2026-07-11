@@ -115,6 +115,10 @@ Configure `.claude/settings.local.json` with the permissions needed for slash co
    - `mcp__gvrn__prune-tasks`
    - `mcp__gvrn__dashboard`
    - `mcp__gvrn__write-session`
+   - `mcp__gvrn__resolve-feature`
+   - `mcp__gvrn__create-feature`
+   - `mcp__gvrn__append-inbox`
+   - `mcp__gvrn__check-artifacts`
    <!-- generated:mcp-allow:end -->
 
 3. Canonical `permissions.deny` entries:

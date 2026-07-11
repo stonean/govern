@@ -16,8 +16,9 @@ use std::path::Path;
 
 use gvrn::primitives;
 use gvrn::schema::primitives::{
-    DashboardArgs, MarkCriterionArgs, MarkTaskArgs, ReadSpecArgs, ReadTasksArgs, SetStatusArgs,
-    TraverseDepsArgs,
+    AppendInboxArgs, CheckArtifactsArgs, CreateFeatureArgs, DashboardArgs, MarkCriterionArgs,
+    MarkTaskArgs, ReadSpecArgs, ReadTasksArgs, ResolveFeatureArgs, ResolveFeatureOutcome,
+    SetStatusArgs, TraverseDepsArgs,
 };
 
 const GOVERNANCE_TOML: &str = "[paths]\nspecs-root = \"governance\"\n";
@@ -228,4 +229,118 @@ fn error_messages_name_the_configured_root() {
         !msg.contains("specs/"),
         "no hardcoded specs/ in the message: {msg}"
     );
+}
+
+#[test]
+fn resolve_feature_scans_configured_root_and_ignores_stray_specs() {
+    let tmp = tempfile::tempdir().unwrap();
+    seed(tmp.path());
+    let result = primitives::resolve_feature::run(
+        &ResolveFeatureArgs {
+            identifier: "1".into(),
+            scenario: None,
+        },
+        tmp.path(),
+    )
+    .unwrap();
+    assert_eq!(result.outcome, ResolveFeatureOutcome::Resolved);
+    assert_eq!(result.feature.as_deref(), Some("001-demo"));
+    assert_eq!(result.path.as_deref(), Some("governance/001-demo"));
+    // Status comes from governance/, not the decoy specs/ copy (draft).
+    assert_eq!(result.status.as_deref(), Some("in-progress"));
+
+    // The stray specs/999-stray feature is invisible under the override.
+    let stray = primitives::resolve_feature::run(
+        &ResolveFeatureArgs {
+            identifier: "999".into(),
+            scenario: None,
+        },
+        tmp.path(),
+    )
+    .unwrap();
+    assert_eq!(stray.outcome, ResolveFeatureOutcome::NotFound);
+}
+
+#[test]
+fn create_feature_scaffolds_under_configured_root() {
+    let tmp = tempfile::tempdir().unwrap();
+    seed(tmp.path());
+    write(
+        &tmp.path().join("governance/templates/spec.md"),
+        "---\nstatus: draft\ndependencies: []\n---\n\n# Template\n",
+    );
+    let result = primitives::create_feature::run(
+        &CreateFeatureArgs {
+            title: "Rooted Feature".into(),
+        },
+        tmp.path(),
+    )
+    .unwrap();
+    assert!(result.created);
+    // Numbering counts governance/ features only (001-demo → 002), not
+    // the decoy specs/999-stray.
+    assert_eq!(result.feature, "002-rooted-feature");
+    assert_eq!(result.path, "governance/002-rooted-feature");
+    assert_eq!(
+        result.template.as_deref(),
+        Some("governance/templates/spec.md")
+    );
+    assert!(
+        tmp.path()
+            .join("governance/002-rooted-feature/spec.md")
+            .is_file()
+    );
+    assert!(!tmp.path().join("specs/002-rooted-feature").exists());
+}
+
+#[test]
+fn append_inbox_writes_under_configured_root() {
+    let tmp = tempfile::tempdir().unwrap();
+    seed(tmp.path());
+    let result = primitives::append_inbox::run(
+        &AppendInboxArgs {
+            text: "rooted item".into(),
+            dedup_prefix: None,
+        },
+        tmp.path(),
+    )
+    .unwrap();
+    assert_eq!(result.path, "governance/inbox.md");
+    assert!(result.created);
+    let body = fs::read_to_string(tmp.path().join("governance/inbox.md")).unwrap();
+    assert!(body.contains("- rooted item"));
+    assert!(!tmp.path().join("specs/inbox.md").exists());
+}
+
+#[test]
+fn check_artifacts_resolves_configured_root() {
+    let tmp = tempfile::tempdir().unwrap();
+    seed(tmp.path());
+    // governance/001-demo is in-progress with tasks.md but no plan.md →
+    // exactly one completeness finding, anchored under governance/. The
+    // task (no Done when) also fires — proving tasks.md was read from
+    // governance/, not the decoy specs/ tree.
+    let result = primitives::check_artifacts::run(
+        &CheckArtifactsArgs {
+            feature: "001-demo".into(),
+        },
+        tmp.path(),
+    )
+    .unwrap();
+    assert_eq!(result.status, "in-progress");
+    assert_eq!(result.path, "governance/001-demo/spec.md");
+    let plan_findings: Vec<_> = result
+        .findings
+        .iter()
+        .filter(|f| f.family == "artifact-completeness")
+        .collect();
+    assert_eq!(plan_findings.len(), 1, "{:?}", result.findings);
+    assert_eq!(plan_findings[0].path, "governance/001-demo/plan.md");
+    let task_findings: Vec<_> = result
+        .findings
+        .iter()
+        .filter(|f| f.family == "task-consistency")
+        .collect();
+    assert_eq!(task_findings.len(), 1, "{:?}", result.findings);
+    assert_eq!(task_findings[0].path, "governance/001-demo/tasks.md");
 }
