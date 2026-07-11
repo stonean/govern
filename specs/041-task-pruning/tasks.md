@@ -40,7 +40,7 @@ test before the command (Phase B) wires to it.
 
 ### 5. Green gate
 
-- [ ] `cargo test`, `cargo clippy --all-targets -- -D warnings`, and `cargo fmt --check` are all clean.
+- [x] `cargo test`, `cargo clippy --all-targets -- -D warnings`, and `cargo fmt --check` are all clean.
 - **Done when**: the runtime workspace is green.
 
 ## Phase B — `/{project}:prune` command
