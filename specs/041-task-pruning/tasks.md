@@ -63,10 +63,10 @@ test before the command (Phase B) wires to it.
 
 ### 9. Docs
 
-- [ ] Add a `/prune` row to the hand-maintained `## Commands` section of `README.md`.
+- [x] Add a `/prune` row to the hand-maintained `## Commands` section of `README.md`.
 - **Done when**: the README lists prune in the correct group.
 
 ### 10. Full audit gate
 
-- [ ] Run `scripts/audit/run-all.sh` (check-zero + all families) and resolve any findings.
+- [x] Run `scripts/audit/run-all.sh` (check-zero + all families) and resolve any findings.
 - **Done when**: the audit reports zero findings and the CI-equivalent checks pass.

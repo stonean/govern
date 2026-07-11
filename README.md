@@ -73,11 +73,12 @@ Adoption installs a full set of verb-named, session-aware commands. Use `/target
 | `/review` | Audit code against the rules; write `review.md`; block `done` on MUST violations. `--all`, `--fix`, and `--waive <rule-id> --reason "<text>"` supported |
 | `/analyze` | Audit a feature's artifacts against each other. `--all` scans every feature; `--fix` auto-corrects checkbox drift |
 
-### Refine — add to a spec
+### Refine — adjust a spec's artifacts
 
 | Command | Purpose |
 | --- | --- |
 | `/amend` | Add a question or scenario to the targeted spec. Owns the lifecycle back-edges (a new question reopens to `draft`; a new scenario reopens a `done` spec to `in-progress`) |
+| `/prune` | Reduce the target's `tasks.md` — drop spent (completed) task sections, or `--reset` to template state. Confirmed, single-artifact; recovery is git history |
 
 ### Brownfield — absorb existing reality
 
