@@ -21,13 +21,12 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use crate::primitives::{PrimitiveError, Result, read_text, split_frontmatter};
+use crate::primitives::{PrimitiveError, Result, frontmatter_status, read_text, split_frontmatter};
 use crate::schema::paths;
 use crate::schema::primitives::{
     DependencyEdge, Frontmatter, TraverseDepsArgs, TraverseDepsResult,
 };
-
-const COMPATIBLE_STATUSES: &[&str] = &["planned", "in-progress", "done"];
+use crate::schema::status::COMPATIBLE_STATUSES;
 
 /// Execute the `traverse-deps` primitive.
 ///
@@ -65,8 +64,13 @@ pub fn run(args: &TraverseDepsArgs, repo: &Path) -> Result<TraverseDepsResult> {
         let dep_dir = specs_dir.join(dep_name);
         let dep_spec = dep_dir.join("spec.md");
         let exists = dep_dir.is_dir() && dep_spec.is_file();
+        // Shared READ-only status reader; any unreadability collapses to
+        // the empty string, which is never in the compatible set.
         let status = if exists {
-            read_status(&dep_spec).unwrap_or_default()
+            read_text(&dep_spec)
+                .ok()
+                .and_then(|content| frontmatter_status(&content, &dep_spec))
+                .unwrap_or_default()
         } else {
             String::new()
         };
@@ -92,17 +96,6 @@ pub fn run(args: &TraverseDepsArgs, repo: &Path) -> Result<TraverseDepsResult> {
         compatible: overall,
         cycles,
     })
-}
-
-fn read_status(spec_path: &Path) -> Result<String> {
-    let content = read_text(spec_path)?;
-    let (fm_text, _body) = split_frontmatter(&content, spec_path)?;
-    let parsed: Frontmatter =
-        serde_norway::from_str(fm_text).map_err(|source| PrimitiveError::Yaml {
-            path: spec_path.into(),
-            source,
-        })?;
-    Ok(parsed.status)
 }
 
 /// Read a spec's frontmatter `dependencies` list, returning an empty Vec

@@ -9,7 +9,7 @@ use std::sync::OnceLock;
 
 use regex::Regex;
 
-use crate::primitives::{Result, read_text};
+use crate::primitives::{Result, read_text, resolve_path};
 use crate::schema::primitives::{AnchorReference, ResolveAnchorArgs, ResolveAnchorResult};
 
 /// Execute the `resolve-anchor` primitive.
@@ -19,11 +19,7 @@ use crate::schema::primitives::{AnchorReference, ResolveAnchorArgs, ResolveAncho
 /// Returns [`crate::primitives::PrimitiveError::Io`] when the file cannot
 /// be read.
 pub fn run(args: &ResolveAnchorArgs, repo: &Path) -> Result<ResolveAnchorResult> {
-    let path = if Path::new(&args.path).is_absolute() {
-        Path::new(&args.path).to_path_buf()
-    } else {
-        repo.join(&args.path)
-    };
+    let path = resolve_path(repo, &args.path);
     let content = read_text(&path)?;
 
     let markers = collect_markers(&content);

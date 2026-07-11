@@ -42,10 +42,12 @@
 
 use std::collections::BTreeMap;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use crate::primitives::substitute_templates::apply_substitutions;
-use crate::primitives::{PrimitiveError, Result, validate_no_traversal, write_atomic_bytes};
+use crate::primitives::{
+    PrimitiveError, Result, resolve_path, validate_no_traversal, write_atomic_bytes,
+};
 use crate::schema::primitives::{
     ApplyManifestArgs, ApplyManifestResult, ManifestEntry, ManifestEntryResult,
 };
@@ -117,15 +119,6 @@ pub fn run(args: &ApplyManifestArgs, repo: &Path) -> Result<ApplyManifestResult>
 
     result.entries = entries_out;
     Ok(result)
-}
-
-fn resolve_path(repo: &Path, p: &str) -> PathBuf {
-    let candidate = Path::new(p);
-    if candidate.is_absolute() {
-        candidate.to_path_buf()
-    } else {
-        repo.join(candidate)
-    }
 }
 
 fn normalize_dest_path(p: &str) -> String {
@@ -318,6 +311,7 @@ mod tests {
 
     use super::*;
     use std::collections::BTreeMap;
+    use std::path::PathBuf;
 
     fn subs(pairs: &[(&str, &str)]) -> BTreeMap<String, String> {
         pairs

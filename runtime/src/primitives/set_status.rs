@@ -2,12 +2,12 @@
 
 use std::path::Path;
 
-use crate::primitives::validate_frontmatter::ALLOWED_STATUSES;
 use crate::primitives::{
     PrimitiveError, Result, read_text, rel_path, split_frontmatter_with_offset, write_atomic,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{SetStatusArgs, SetStatusResult};
+use crate::schema::status::ALLOWED_STATUSES;
 
 /// Execute the `set-status` primitive.
 ///

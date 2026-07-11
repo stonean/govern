@@ -39,47 +39,11 @@ use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 
 use crate::schema::procedure::{Procedure, SourceRange, Step, StepNumber};
 
-/// Closed set of primitive names recognized by the parser. Mirrors the
-/// MCP tool list in [`crate::mcp::server::TOOL_NAMES`].
-pub const PRIMITIVE_NAMES: &[&str] = &[
-    "read-spec",
-    "read-tasks",
-    "mark-task",
-    "mark-criterion",
-    "set-status",
-    "derive-boundary",
-    "discover-rule-files",
-    "process-waivers",
-    "compute-review-scope",
-    "write-review",
-    "check-stuck",
-    "validate-frontmatter",
-    "resolve-anchor",
-    "traverse-deps",
-    "check-rule-ids",
-    "run-generator",
-    "lint-markdown",
-    "gate-confirm",
-    "fetch-archive",
-    "extract-archive",
-    "substitute-templates",
-    "merge-claude-md",
-    "apply-manifest",
-    "enforce-manifest",
-    "merge-managed-block",
-    "merge-permissions",
-    "migrate-session-file",
-    "create-scenario",
-    "append-task",
-    "prune-tasks",
-    "dashboard",
-    "write-session",
-    "resolve-references",
-    "resolve-feature",
-    "create-feature",
-    "append-inbox",
-    "check-artifacts",
-];
+/// Closed set of primitive names recognized by the parser — defined from
+/// the canonical registry (`crate::schema::registry::PRIMITIVE_REGISTRY`),
+/// so it is identical to the MCP tool list in
+/// [`crate::mcp::server::TOOL_NAMES`] by construction.
+pub const PRIMITIVE_NAMES: &[&str] = crate::schema::registry::PRIMITIVE_REGISTRY;
 
 /// Parse errors raised by [`parse`] and [`check`].
 #[derive(Clone, Debug, PartialEq, Eq)]

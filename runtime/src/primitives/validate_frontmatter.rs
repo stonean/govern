@@ -4,20 +4,15 @@
 //! parsing rather than the shell-side shape check: every issue is reported
 //! as a `FrontmatterFinding` rather than printed to stdout.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use serde_norway::Value as YamlValue;
 
-use crate::primitives::{Result, read_text, split_frontmatter};
+use crate::primitives::{Result, read_text, resolve_path, split_frontmatter};
 use crate::schema::primitives::{
     FrontmatterFinding, ValidateFrontmatterArgs, ValidateFrontmatterResult,
 };
-
-/// The constitution's lifecycle set. `pub(crate)` so `set-status` reuses
-/// the same membership list instead of growing a drifting copy (a later
-/// consolidation pass owns promoting this to a schema-level const).
-pub(crate) const ALLOWED_STATUSES: &[&str] =
-    &["draft", "clarified", "planned", "in-progress", "done"];
+use crate::schema::status::ALLOWED_STATUSES;
 
 /// Execute the `validate-frontmatter` primitive.
 ///
@@ -153,15 +148,6 @@ fn validate_review_block(review: &YamlValue, findings: &mut Vec<FrontmatterFindi
             field: "review.blocking".into(),
             message: "must be a boolean".into(),
         });
-    }
-}
-
-fn resolve_path(repo: &Path, path_arg: &str) -> PathBuf {
-    let candidate = Path::new(path_arg);
-    if candidate.is_absolute() {
-        candidate.to_path_buf()
-    } else {
-        repo.join(candidate)
     }
 }
 

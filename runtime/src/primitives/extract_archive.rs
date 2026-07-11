@@ -28,7 +28,7 @@
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 
-use crate::primitives::{PrimitiveError, Result};
+use crate::primitives::{PrimitiveError, Result, resolve_path};
 use crate::schema::primitives::{ExtractArchiveArgs, ExtractArchiveResult};
 
 /// Execute the `extract-archive` primitive.
@@ -64,15 +64,6 @@ pub fn run(args: &ExtractArchiveArgs, repo: &Path) -> Result<ExtractArchiveResul
         count,
         format,
     })
-}
-
-fn resolve_path(repo: &Path, p: &str) -> PathBuf {
-    let candidate = Path::new(p);
-    if candidate.is_absolute() {
-        candidate.to_path_buf()
-    } else {
-        repo.join(candidate)
-    }
 }
 
 // The `name` binding below is already lowercased; clippy's

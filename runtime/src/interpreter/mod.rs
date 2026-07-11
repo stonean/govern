@@ -665,6 +665,25 @@ mod tests {
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/primitives/sample-repo")
     }
 
+    /// Registry pin: `dispatch_primitive` must handle every name in the
+    /// canonical [`crate::schema::registry::PRIMITIVE_REGISTRY`]. The
+    /// dispatch match is hand-written, so a primitive added to the registry
+    /// (and thereby to `PRIMITIVE_NAMES` / `TOOL_NAMES`) without a dispatch
+    /// arm would parse in command files but fail at execution with
+    /// `unknown-primitive`. Empty args against a scratch tempdir: any
+    /// outcome is acceptable except the unknown-primitive variant.
+    #[test]
+    fn dispatch_handles_every_registry_primitive() {
+        let tmp = tempfile::tempdir().unwrap();
+        for name in crate::schema::registry::PRIMITIVE_REGISTRY {
+            let result = dispatch_primitive(name, &Map::new(), tmp.path());
+            assert!(
+                !matches!(result, Err(DispatchError::UnknownPrimitive(_))),
+                "interpreter dispatch has no arm for registry primitive `{name}`"
+            );
+        }
+    }
+
     #[test]
     fn empty_procedure_emits_complete_only() {
         let procedure = Procedure {

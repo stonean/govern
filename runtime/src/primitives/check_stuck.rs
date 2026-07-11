@@ -17,7 +17,7 @@ use std::path::Path;
 
 use git2::{Repository, Sort};
 
-use crate::primitives::{PrimitiveError, Result, SkipScanner, split_frontmatter};
+use crate::primitives::{PrimitiveError, Result, SkipScanner, frontmatter_status};
 use crate::schema::paths;
 use crate::schema::primitives::{CheckStuckArgs, CheckStuckResult};
 
@@ -196,9 +196,13 @@ fn status_of_commit(
         return Ok(cached.clone());
     }
     let commit = repo.find_commit(oid)?;
+    // Frontmatter reading reuses the shared [`frontmatter_status`] helper —
+    // CRLF-aware splitting plus real YAML parsing; the hand-rolled
+    // predecessor missed `\r\n---\r\n` close fences, so a CRLF checkout's
+    // transitions were invisible.
     let status = read_blob_from_tree(repo, &commit.tree()?, spec_rel)?
         .as_deref()
-        .and_then(|content| extract_status(content, spec_rel));
+        .and_then(|content| frontmatter_status(content, Path::new(spec_rel)));
     cache.insert(oid, status.clone());
     Ok(status)
 }
@@ -262,21 +266,6 @@ fn commit_touches(repo: &Repository, oid: git2::Oid, path_rel: &str) -> Result<b
 /// The object id at `path_rel` in `tree`, or `None` when absent.
 fn tree_entry_id(tree: &git2::Tree<'_>, path_rel: &str) -> Option<git2::Oid> {
     tree.get_path(Path::new(path_rel)).ok().map(|e| e.id())
-}
-
-/// Extract the frontmatter `status:` value from a spec blob. Frontmatter
-/// splitting reuses the shared CRLF-aware [`split_frontmatter`] helper —
-/// the hand-rolled predecessor missed `\r\n---\r\n` close fences, so a
-/// CRLF checkout's transitions were invisible.
-fn extract_status(content: &str, spec_rel: &str) -> Option<String> {
-    let (fm, _body) = split_frontmatter(content, Path::new(spec_rel)).ok()?;
-    for line in fm.lines() {
-        let trimmed = line.trim();
-        if let Some(rest) = trimmed.strip_prefix("status:") {
-            return Some(rest.trim().trim_matches('"').to_string());
-        }
-    }
-    None
 }
 
 #[cfg(test)]

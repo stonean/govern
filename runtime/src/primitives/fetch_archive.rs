@@ -45,7 +45,7 @@ use std::path::{Path, PathBuf};
 
 use sha2::{Digest, Sha256};
 
-use crate::primitives::{PrimitiveError, Result, write_atomic_bytes};
+use crate::primitives::{PrimitiveError, Result, resolve_path, write_atomic_bytes};
 use crate::schema::primitives::{FetchArchiveArgs, FetchArchiveResult};
 
 /// Execute the `fetch-archive` primitive.
@@ -61,7 +61,7 @@ use crate::schema::primitives::{FetchArchiveArgs, FetchArchiveResult};
 ///   the sidecar. Raised before the archive is written; the error's `path`
 ///   is the intended destination, which is never created.
 pub fn run(args: &FetchArchiveArgs, repo: &Path) -> Result<FetchArchiveResult> {
-    let dest = resolve_dest(repo, &args.archive);
+    let dest = resolve_path(repo, &args.archive);
 
     let body = fetch_bytes(&args.url)?;
     let computed = sha256_hex(&body);
@@ -94,15 +94,6 @@ pub fn run(args: &FetchArchiveArgs, repo: &Path) -> Result<FetchArchiveResult> {
         verified,
         bytes,
     })
-}
-
-fn resolve_dest(repo: &Path, dest: &str) -> PathBuf {
-    let candidate = Path::new(dest);
-    if candidate.is_absolute() {
-        candidate.to_path_buf()
-    } else {
-        repo.join(candidate)
-    }
 }
 
 fn fetch_bytes(url: &str) -> Result<Vec<u8>> {

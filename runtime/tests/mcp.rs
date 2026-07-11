@@ -4,8 +4,8 @@
 //! pair and connects an `rmcp` client on the other half. The test:
 //!
 //! 1. Lists tools and asserts every name in `TOOL_NAMES` is present.
-//! 2. Asserts the tool set is a superset of `framework/runtime-tools.txt`
-//!    (the canonical manifest).
+//! 2. Asserts `framework/runtime-tools.txt` (the shipped manifest) is
+//!    set-equal to `TOOL_NAMES` (the canonical primitive registry).
 //! 3. Invokes each read-only primitive against the shared fixture repo and
 //!    asserts the response is a structured JSON object.
 //! 4. Invokes the write primitives against per-test scratch copies of the
@@ -101,20 +101,23 @@ async fn lists_every_manifest_tool_and_canonical_set() {
         );
     }
 
+    // The shipped manifest must be set-EQUAL to the canonical registry
+    // (`TOOL_NAMES` is defined from `schema::registry::PRIMITIVE_REGISTRY`):
+    // a manifest entry with no tool is a phantom, and a tool missing from
+    // the manifest escapes the markdown-only pipeline's PATH assertion and
+    // the graceful-fallback lint.
     let manifest = fs::read_to_string(workspace_root().join("framework/runtime-tools.txt"))
-        .unwrap_or_default();
-    let manifest_names: Vec<String> = manifest
+        .expect("framework/runtime-tools.txt must exist (canonical manifest)");
+    let manifest_names: std::collections::BTreeSet<&str> = manifest
         .lines()
         .map(str::trim)
         .filter(|l| !l.is_empty() && !l.starts_with('#'))
-        .map(str::to_string)
         .collect();
-    for expected in &manifest_names {
-        assert!(
-            names.contains(&expected.as_str()),
-            "tool {expected} from framework/runtime-tools.txt missing (got {names:?})"
-        );
-    }
+    let registry_names: std::collections::BTreeSet<&str> = TOOL_NAMES.iter().copied().collect();
+    assert_eq!(
+        manifest_names, registry_names,
+        "framework/runtime-tools.txt diverged from the primitive registry"
+    );
 }
 
 /// `schemars` stamps OpenAPI-style numeric `format` hints (`uint32`,

@@ -48,46 +48,14 @@ use crate::schema::primitives::{
     WriteReviewArgs, WriteReviewResult, WriteSessionArgs, WriteSessionResult,
 };
 
-/// Canonical MCP tool names exposed by the server, in manifest order.
-pub const TOOL_NAMES: &[&str] = &[
-    "read-spec",
-    "read-tasks",
-    "mark-task",
-    "mark-criterion",
-    "set-status",
-    "derive-boundary",
-    "discover-rule-files",
-    "process-waivers",
-    "compute-review-scope",
-    "write-review",
-    "check-stuck",
-    "validate-frontmatter",
-    "resolve-anchor",
-    "traverse-deps",
-    "check-rule-ids",
-    "run-generator",
-    "lint-markdown",
-    "gate-confirm",
-    "fetch-archive",
-    "extract-archive",
-    "substitute-templates",
-    "merge-claude-md",
-    "apply-manifest",
-    "enforce-manifest",
-    "merge-managed-block",
-    "merge-permissions",
-    "migrate-session-file",
-    "create-scenario",
-    "append-task",
-    "prune-tasks",
-    "dashboard",
-    "write-session",
-    "resolve-references",
-    "resolve-feature",
-    "create-feature",
-    "append-inbox",
-    "check-artifacts",
-];
+/// Canonical MCP tool names exposed by the server, in manifest order —
+/// defined from the canonical registry
+/// (`crate::schema::registry::PRIMITIVE_REGISTRY`), so it is identical to
+/// the parser's [`crate::parser::PRIMITIVE_NAMES`] by construction. The
+/// `#[tool]` methods below stay hand-written (the rmcp macro needs literal
+/// method items); `runtime/tests/mcp.rs` asserts every registry name is
+/// actually served.
+pub const TOOL_NAMES: &[&str] = crate::schema::registry::PRIMITIVE_REGISTRY;
 
 /// MCP server. Cloned per request by `rmcp`, so all state lives behind
 /// `Arc` and tool dispatch is `&self`.

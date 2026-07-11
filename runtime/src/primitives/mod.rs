@@ -447,6 +447,25 @@ pub(crate) fn rel_path(path: &Path, repo: &Path) -> String {
     display.to_string_lossy().replace('\\', "/")
 }
 
+/// Read the frontmatter `status` value from a markdown document's content,
+/// collapsing every unreadability (missing/unclosed frontmatter, invalid
+/// YAML, frontmatter that doesn't parse as spec
+/// [`Frontmatter`](crate::schema::primitives::Frontmatter), missing or
+/// non-string `status`) to `None`.
+///
+/// The shared READ-only status reader: `traverse-deps` (dependency status),
+/// `resolve-references` (linked-spec status, with its own membership policy
+/// on top), and `check-stuck` (spec blobs from git history) all consume it.
+/// The write path (`set-status`) keeps its span-preserving
+/// `locate_status_field` instead — it must splice the value in place, not
+/// just read it.
+pub(crate) fn frontmatter_status(content: &str, path: &Path) -> Option<String> {
+    let (fm_text, _body) = split_frontmatter(content, path).ok()?;
+    serde_norway::from_str::<crate::schema::primitives::Frontmatter>(fm_text)
+        .ok()
+        .map(|fm| fm.status)
+}
+
 /// Atomically write `content` to `path` using `tempfile`'s create-then-rename
 /// pattern. The tempfile is created in `path`'s parent directory so the rename
 /// stays on the same filesystem (POSIX guarantee). A crash between creation
@@ -544,6 +563,42 @@ pub(crate) mod checkbox {
         out.push(if desired { 'x' } else { ' ' });
         out.push_str(&line[marker_idx + 1..]);
         (previous, out)
+    }
+
+    /// Parse a checkbox line into `(checked, text)`, where `text` is the
+    /// trimmed content after the `]`. Recognition delegates to
+    /// [`find_checkbox_line`], so the read side (`read-spec` criteria,
+    /// `read-tasks` subtasks) and the mark side (`mark-task`,
+    /// `mark-criterion`) share one grammar — the read/mark index contract
+    /// requires that a checkbox counted by a reader is addressable by the
+    /// matching marker, and vice versa.
+    pub(crate) fn parse_checkbox_line(line: &str) -> Option<(bool, String)> {
+        let (_bracket, marker_idx) = find_checkbox_line(line)?;
+        let checked = matches!(line.as_bytes()[marker_idx], b'x' | b'X');
+        let text = line[marker_idx + 2..].trim().to_string();
+        Some((checked, text))
+    }
+}
+
+/// Resolve a caller-supplied path argument against the repo root, accepting
+/// absolute paths as-is.
+///
+/// This is the accept-absolute-paths counterpart to
+/// [`validate_no_traversal`]: primitives whose path arguments are
+/// operator/machine-local (fixture specs in temp dirs, generator scripts,
+/// downloaded archives, sibling-service checkouts) resolve through this
+/// helper; primitives that must stay inside the repo root
+/// (`merge-managed-block`, `merge-permissions`, …) call
+/// [`validate_no_traversal`] first and never accept absolute input.
+/// `enforce-manifest` keeps its own stricter `resolve_contained_dir`
+/// (absolute allowed only under the repo root) because its cleanup loop is
+/// destructive.
+pub(crate) fn resolve_path(repo: &Path, path_arg: &str) -> PathBuf {
+    let candidate = Path::new(path_arg);
+    if candidate.is_absolute() {
+        candidate.to_path_buf()
+    } else {
+        repo.join(candidate)
     }
 }
 
@@ -1034,6 +1089,80 @@ mod tests {
                     PrimitiveError::InvalidPath { .. }
                 ),
                 "expected rejection for {bad:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn resolve_path_joins_relative_and_passes_absolute_through() {
+        let repo = Path::new("/repo");
+        assert_eq!(
+            resolve_path(repo, "specs/001-basic/spec.md"),
+            Path::new("/repo/specs/001-basic/spec.md")
+        );
+        assert_eq!(
+            resolve_path(repo, "/tmp/x/spec.md"),
+            Path::new("/tmp/x/spec.md")
+        );
+    }
+
+    #[test]
+    fn frontmatter_status_reads_string_status() {
+        let content = "---\nstatus: planned\ndependencies: []\n---\n\n# X\n";
+        assert_eq!(
+            frontmatter_status(content, Path::new("spec.md")).as_deref(),
+            Some("planned")
+        );
+    }
+
+    #[test]
+    fn frontmatter_status_collapses_unreadable_shapes_to_none() {
+        for content in &[
+            "# No frontmatter\n",                           // missing block
+            "---\nstatus: [unterminated\n---\n# X\n",       // invalid YAML
+            "---\ndependencies: []\n---\n# X\n",            // status missing
+            "---\nstatus: [a, b]\ndependencies: []\n---\n", // non-string status
+        ] {
+            assert_eq!(
+                frontmatter_status(content, Path::new("spec.md")),
+                None,
+                "expected None for {content:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn parse_checkbox_line_matches_mark_side_grammar() {
+        // Accepted: the exact grammar find_checkbox_line recognizes.
+        assert_eq!(
+            checkbox::parse_checkbox_line("- [ ] pending item"),
+            Some((false, "pending item".to_string()))
+        );
+        assert_eq!(
+            checkbox::parse_checkbox_line("  - [x] done item"),
+            Some((true, "done item".to_string()))
+        );
+        assert_eq!(
+            checkbox::parse_checkbox_line("- [X] done upper"),
+            Some((true, "done upper".to_string()))
+        );
+        // Bare checkbox (nothing after `]`) is a checkbox with empty text —
+        // the mark side can flip it, so the read side must count it.
+        assert_eq!(
+            checkbox::parse_checkbox_line("- [ ]"),
+            Some((false, String::new()))
+        );
+        // Rejected: divergent-grammar shapes the mark side cannot address.
+        for not_a_checkbox in &[
+            "- [-] partial",
+            "- [x]no-space",
+            "* [ ] star bullet",
+            "- foo",
+        ] {
+            assert_eq!(
+                checkbox::parse_checkbox_line(not_a_checkbox),
+                None,
+                "expected rejection for {not_a_checkbox:?}"
             );
         }
     }

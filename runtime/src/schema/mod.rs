@@ -12,10 +12,16 @@
 //!   (spec 030 cross-service references).
 //! - [`paths`] — the `[paths]` block shape from `.govern.toml`, resolving the
 //!   configurable spec-root directory name (spec 040).
+//!
+//! Two crate-internal constant registries also live here as the single
+//! source of truth for their respective closed sets: `registry` (primitive
+//! names) and `status` (spec lifecycle statuses).
 
 pub mod extensions;
 pub mod paths;
 pub mod primitives;
 pub mod procedure;
 pub mod protocol;
+pub(crate) mod registry;
 pub mod services;
+pub(crate) mod status;

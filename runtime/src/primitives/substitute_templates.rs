@@ -19,12 +19,12 @@
 
 use std::collections::BTreeMap;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use walkdir::WalkDir;
 
 use crate::primitives::apply_manifest::mirror_source_mode;
-use crate::primitives::{PrimitiveError, Result, write_atomic_bytes};
+use crate::primitives::{PrimitiveError, Result, resolve_path, write_atomic_bytes};
 use crate::schema::primitives::{SubstituteTemplatesArgs, SubstituteTemplatesResult};
 
 /// Execute the `substitute-templates` primitive.
@@ -92,15 +92,6 @@ pub fn run(args: &SubstituteTemplatesArgs, repo: &Path) -> Result<SubstituteTemp
         substitutions_applied,
         files,
     })
-}
-
-fn resolve_path(repo: &Path, p: &str) -> PathBuf {
-    let candidate = Path::new(p);
-    if candidate.is_absolute() {
-        candidate.to_path_buf()
-    } else {
-        repo.join(candidate)
-    }
 }
 
 /// Apply `{key}` → value replacements to `text`. Returns the substituted

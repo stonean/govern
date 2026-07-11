@@ -9,7 +9,7 @@ use std::sync::OnceLock;
 
 use regex::Regex;
 
-use crate::primitives::{Result, parse_atx_heading, read_text};
+use crate::primitives::{Result, parse_atx_heading, read_text, resolve_path};
 use crate::schema::primitives::{CheckRuleIdsArgs, CheckRuleIdsResult, RuleCitation};
 
 /// Execute the `check-rule-ids` primitive.
@@ -21,7 +21,7 @@ use crate::schema::primitives::{CheckRuleIdsArgs, CheckRuleIdsResult, RuleCitati
 pub fn run(args: &CheckRuleIdsArgs, repo: &Path) -> Result<CheckRuleIdsResult> {
     let mut known: HashMap<String, bool> = HashMap::new();
     for rule_file in &args.rule_files {
-        let path = resolve(repo, rule_file);
+        let path = resolve_path(repo, rule_file);
         let content = read_text(&path)?;
         for cap in heading_id_regex().captures_iter(&content) {
             let Some(whole) = cap.get(0) else { continue };
@@ -37,7 +37,7 @@ pub fn run(args: &CheckRuleIdsArgs, repo: &Path) -> Result<CheckRuleIdsResult> {
         }
     }
 
-    let path = resolve(repo, &args.path);
+    let path = resolve_path(repo, &args.path);
     let content = read_text(&path)?;
     let mut citations: Vec<RuleCitation> = Vec::new();
     let mut seen: HashSet<String> = HashSet::new();
@@ -82,15 +82,6 @@ pub fn run(args: &CheckRuleIdsArgs, repo: &Path) -> Result<CheckRuleIdsResult> {
         missing,
         deprecated,
     })
-}
-
-fn resolve(repo: &Path, path_arg: &str) -> std::path::PathBuf {
-    let candidate = Path::new(path_arg);
-    if candidate.is_absolute() {
-        candidate.to_path_buf()
-    } else {
-        repo.join(candidate)
-    }
 }
 
 /// `### BE-AUTHN-001` — matches rule-ID headings inside a rule file. The

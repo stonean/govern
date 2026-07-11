@@ -18,8 +18,8 @@
 use std::path::Path;
 
 use crate::primitives::{
-    PrimitiveError, Result, SkipScanner, TasksStructure, detect_tasks_structure, parse_atx_heading,
-    read_text, rel_path,
+    PrimitiveError, Result, SkipScanner, TasksStructure, checkbox, detect_tasks_structure,
+    parse_atx_heading, read_text, rel_path,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{ReadTasksArgs, ReadTasksResult, Subtask, Task};
@@ -110,14 +110,18 @@ pub fn run(args: &ReadTasksArgs, repo: &Path) -> Result<ReadTasksResult> {
             continue;
         };
         let trimmed = line.trim_start();
-        if let Some(rest) = trimmed.strip_prefix("- ") {
-            if let Some(done) = parse_done_when(rest) {
-                task.done_when = Some(done);
-                continue;
-            }
-            if let Some((checked, text)) = parse_subtask(rest) {
-                task.subtasks.push(Subtask { text, checked });
-            }
+        if let Some(rest) = trimmed.strip_prefix("- ")
+            && let Some(done) = parse_done_when(rest)
+        {
+            task.done_when = Some(done);
+            continue;
+        }
+        // Subtask recognition shares the mark-side checkbox grammar
+        // (`checkbox::parse_checkbox_line`) so the subtask indexes
+        // returned here stay in lockstep with `mark-task`'s addressing —
+        // the read/mark index contract.
+        if let Some((checked, text)) = checkbox::parse_checkbox_line(line) {
+            task.subtasks.push(Subtask { text, checked });
         }
     }
     if let Some(task) = current {
@@ -161,19 +165,6 @@ fn split_numbered_heading(heading: &str) -> Option<(String, String)> {
     let (number, after) = heading.split_at(end_num);
     let after = after.strip_prefix('.').unwrap_or(after);
     Some((number.to_string(), after.trim_start().to_string()))
-}
-
-fn parse_subtask(rest: &str) -> Option<(bool, String)> {
-    let bytes = rest.as_bytes();
-    if bytes.first() != Some(&b'[') {
-        return None;
-    }
-    if bytes.len() < 4 || bytes[2] != b']' {
-        return None;
-    }
-    let checked = matches!(bytes[1], b'x' | b'X');
-    let text = rest[3..].trim().to_string();
-    Some((checked, text))
 }
 
 fn parse_done_when(rest: &str) -> Option<String> {

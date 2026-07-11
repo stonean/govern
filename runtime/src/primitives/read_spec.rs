@@ -3,7 +3,7 @@
 use std::path::Path;
 
 use crate::primitives::{
-    PrimitiveError, Result, parse_atx_heading, read_text, rel_path, section_line_indices,
+    PrimitiveError, Result, checkbox, parse_atx_heading, read_text, rel_path, section_line_indices,
     section_lines, split_frontmatter,
 };
 use crate::schema::paths;
@@ -96,13 +96,14 @@ fn parse_sections(body: &str, include_body: bool) -> Vec<SpecSection> {
 /// ([`section_line_indices`]): example checkboxes inside a template
 /// guidance comment or a fenced code block are not criteria. The indexes
 /// of the returned criteria form a contract with `mark-criterion`'s
-/// addressing — both consume the same shared walker, so index N here is
-/// the checkbox index N flips.
+/// addressing — both consume the same shared walker AND the same checkbox
+/// grammar ([`checkbox::parse_checkbox_line`]), so index N here is the
+/// checkbox index N flips.
 fn parse_checkboxes(body: &str, section_heading: &str) -> Vec<AcceptanceCriterion> {
     let lines: Vec<&str> = body.lines().collect();
     let mut out = Vec::new();
     for idx in section_line_indices(&lines, section_heading) {
-        if let Some((checked, text)) = parse_checkbox_item(lines[idx]) {
+        if let Some((checked, text)) = checkbox::parse_checkbox_line(lines[idx]) {
             out.push(AcceptanceCriterion { checked, text });
         }
     }
@@ -145,18 +146,6 @@ fn push_question(out: &mut Vec<OpenQuestion>, text: &str) {
     out.push(OpenQuestion {
         text: trimmed.to_string(),
     });
-}
-
-fn parse_checkbox_item(line: &str) -> Option<(bool, String)> {
-    let trimmed = line.trim_start();
-    let rest = trimmed.strip_prefix("- [")?;
-    let bytes = rest.as_bytes();
-    if bytes.len() < 3 || bytes[1] != b']' {
-        return None;
-    }
-    let checked = matches!(bytes[0], b'x' | b'X');
-    let text = rest[2..].trim().to_string();
-    Some((checked, text))
 }
 
 #[cfg(test)]

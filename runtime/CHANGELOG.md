@@ -2,6 +2,40 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.17.0] — 2026-07-11
+
+The backlog burn-down release: every SHOULD-tier and coverage finding from the 2026-07-11 full-runtime review, implemented as nine scenarios on spec 022 (`primitive-robustness-hardening`, `archive-network-hardening`, `parser-walker-conventions`, `extension-request-hygiene`, `implement-completion-gate`, `clarify-command-acceleration`, `groom-command-acceleration`, `scaffolding-primitives`, `analyze-artifact-checks`) plus the CI/README/consolidation chores. The minor bump is driven by the four new primitives and the parser/walker convention changes below.
+
+### Added
+
+- **`resolve-feature`** — resolves a feature by exact directory name, bare or zero-padded number, or unique partial slug under the configured specs root; reports ambiguity/not-found as domain outcomes and optionally a scenario file's existence + `section`. Adopted by `/gov:target`.
+- **`create-feature`** — next-NNN computation, kebab slug derivation, directory creation, and mode-mirrored template copy (installed template wins over the framework source); refuses existing directories. Adopted by `/gov:specify`.
+- **`append-inbox`** — atomic bullet append to `specs/inbox.md` with create-from-template and optional dedup-by-prefix. Adopted by `/gov:log` and named by `/gov:implement`'s auto-capture rule.
+- **`check-artifacts`** — the residual deterministic `/gov:analyze` families: artifact completeness per status, task numbering/done-when consistency, scenario→task mapping (prune-aware per constitution §tasks-phase), and review-state drift, with severities mirroring the command reference. Adopted by `/gov:analyze` step 8.
+- **`write-session` clear mode** — removes the session target while preserving the per-contributor `cli-config-dir`; `/gov:target --clear` and `/gov:specify` now route through the primitive (the stale "no session-shaped primitive" claim is gone).
+- **`verifyCriteria` extension point** — typed request/response for `/gov:implement`'s per-criterion verification; the completion gate is now numbered parseable steps (`read-tasks` tally, `read-spec`, per-criterion `mark-criterion`, review-gate reads, `gate-confirm`, `set-status`), giving `mark-criterion` its first prose consumer.
+- **Typed `askClarifyQuestion` / `routeInboxItem` builders** — the two long-deferred extension points now have schema types, data-model entries, and typed request construction; unknown extension identifiers are an error, never a context dump.
+- `/gov:clarify`, `/gov:groom`, and `/gov:log` are rewritten to the parseable conventions and leave `legacy-prose-commands.txt` (now just `amend.md` and `help.md`); `/gov:plan` and `/gov:specify` approval gates use `gate-confirm`; raw `gen-spec-deps.sh` references route through `run-generator`.
+- The tool list grows from 33 to **37**; claude/auggie configure permission blocks regenerated.
+
+### Changed
+
+- **Parser step numbering** honors the document: ordered-list `start` seeds the counter, lists separated only by HTML comments continue the sequence, and nested bullets no longer become phantom steps — `progress.step` and gate names sent to hosts now match the literal step numbers in every command file.
+- **Gate semantics**: a step invoking `gate-confirm` blocks by virtue of the primitive, phrase or no phrase; the "ask the user to approve" prose trigger applies only to prose steps; a primitive step never silently drops its dispatch.
+- **Span heuristic**: only backticked spans in invoking position (or within edit distance 2 of a primitive name) fail parseability — ordinary kebab-case vocabulary parses; `prune.md` and `govern.md` now parse cleanly. `gvrn parse --check` distinguishes legacy-prose (rc 2) from invalid (rc 1), and the parseability lint rejects invalid even for allowlisted files.
+- **Extension-request hygiene**: walker accumulator keys (`llm:*`, `findings`) are filtered from every request payload; `writeSpecBody` populates `template-path`/`template-content`/`section`/`feature-description` with command-aware existing-section reads.
+- **MCP seam**: `fetch-archive`, `extract-archive`, `run-generator`, and `lint-markdown` run under `spawn_blocking` (no more blocking-client panic in debug builds or pinned tokio workers).
+- Path validation is uniform: `enforce-manifest` requires the target directory inside the repo, `apply-manifest` validates every manifest entry, `merge-managed-block`/`merge-permissions` require repo-relative paths.
+- `check-stuck` tolerates branchy history (parent-blob transition detection, reachability-based counting, CRLF-aware frontmatter); `write-review` computes both outputs before writing either; `substitute-templates` mirrors source file modes; `create-scenario` YAML-escapes `section`; `append-task` rejects embedded newlines; `dashboard` degrades to a detail-less target on malformed scenario frontmatter; `check-rule-ids` scopes deprecation to the rule's own section; `set-status` validates lifecycle membership; `fetch-archive` errors on over-cap bodies instead of truncating; `extract-archive` skips zip symlinks and masks modes to `0o777`.
+
+### Internal
+
+- Consolidation (behavior-preserving, goldens byte-exact): one shared `resolve_path` (nine private copies deleted), one checkbox grammar for the read and mark sides of the criterion/task index contract, a canonical lifecycle-status constant in `schema/status.rs` with the compatibility subset derived from it, one shared frontmatter-status reader, and a single `PRIMITIVE_REGISTRY` from which the parser's and MCP server's name lists are both defined — with tests pinning the interpreter dispatch and `runtime-tools.txt` to set-equality against it.
+
+### Notes
+
+- CI now tests on ubuntu/macos/windows with `--locked` everywhere and a pinned toolchain; a repo-wide `.gitattributes` pins LF. Ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary). `cargo test`, `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, and `scripts/audit/run-all.sh` are clean.
+
 ## [0.16.1] — 2026-07-11
 
 Bug-fix release for the eleven MUST-level defects surfaced by the 2026-07-11 full-runtime accuracy review, recorded as six scenarios on spec 022 (`spec-side-parser-hardening`, `host-protocol-conformance`, `write-boundary-path-normalization`, `merge-managed-block-trailing-append`, `resolve-references-cli-exec-wiring`, `waiver-processing-order`).

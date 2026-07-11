@@ -15,21 +15,20 @@
 //! time. Schema is canonical in
 //! `specs/030-cross-service-references/data-model.md`.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use serde::Deserialize;
-use serde_norway::Value as YamlValue;
 
-use crate::primitives::{PrimitiveError, Result, read_text, rel_path, split_frontmatter};
+use crate::primitives::{
+    PrimitiveError, Result, frontmatter_status, read_text, rel_path, resolve_path,
+    split_frontmatter,
+};
 use crate::schema::paths;
 use crate::schema::primitives::{
     ReferenceOutcome, ResolutionRecord, ResolveReferencesArgs, ResolveReferencesResult,
 };
 use crate::schema::services::Services;
-
-/// Lifecycle statuses a linked spec may carry. Mirrors the set
-/// `validate-frontmatter` enforces and constitution §text-first-artifacts.
-const ALLOWED_STATUSES: &[&str] = &["draft", "clarified", "planned", "in-progress", "done"];
+use crate::schema::status::ALLOWED_STATUSES;
 
 /// The subset of the consumer spec's frontmatter this primitive reads: the
 /// derived `references:` index. Other fields are ignored.
@@ -118,9 +117,12 @@ fn classify(
         return (ReferenceOutcome::Unregistered, None);
     };
 
-    // Resolve the local checkout. A missing/unusable path can prove nothing,
-    // so it is `not-checked-out`, never `broken`.
-    let checkout = resolve_checkout(repo, &service.path);
+    // Resolve the local checkout (relative to the repo root, or absolute).
+    // `..` is permitted — a sibling checkout is the normal case
+    // (`path = "../api"`), and this is machine-local config, not an
+    // LLM-supplied path. A missing/unusable path can prove nothing, so it
+    // is `not-checked-out`, never `broken`.
+    let checkout = resolve_path(repo, &service.path);
     if !checkout.is_dir() {
         return (ReferenceOutcome::NotCheckedOut, None);
     }
@@ -139,36 +141,17 @@ fn classify(
     }
 }
 
-/// Resolve a service's `path` (relative to the repo root or absolute) to a
-/// concrete checkout directory. `..` is permitted — a sibling checkout is the
-/// normal case (`path = "../api"`), and this is machine-local config, not an
-/// LLM-supplied path.
-fn resolve_checkout(repo: &Path, path: &str) -> PathBuf {
-    let p = Path::new(path);
-    if p.is_absolute() {
-        p.to_path_buf()
-    } else {
-        repo.join(p)
-    }
-}
-
 /// Read a reachable target spec's `status`, returning `Some(status)` only when
-/// the frontmatter parses and the value is in the allowed set. Any
-/// unreadability (no frontmatter, malformed YAML, missing/non-string/out-of-set
-/// `status`) collapses to `None` → `status-unreadable`.
+/// the frontmatter parses (shared [`frontmatter_status`] reader) and the value
+/// is in the allowed set. Any unreadability (no frontmatter, malformed YAML,
+/// missing/non-string/out-of-set `status`) collapses to `None` →
+/// `status-unreadable`.
 fn read_target_status(target: &Path) -> Option<String> {
     let content = std::fs::read_to_string(target).ok()?;
-    let (fm_text, _body) = split_frontmatter(&content, target).ok()?;
-    let parsed: YamlValue = serde_norway::from_str(fm_text).ok()?;
-    let YamlValue::Mapping(map) = parsed else {
-        return None;
-    };
-    let status = map.get("status")?.as_str()?;
-    if ALLOWED_STATUSES.contains(&status) {
-        Some(status.to_string())
-    } else {
-        None
-    }
+    let status = frontmatter_status(&content, target)?;
+    ALLOWED_STATUSES
+        .contains(&status.as_str())
+        .then_some(status)
 }
 
 #[cfg(test)]

@@ -5,10 +5,10 @@
 //! procedure continues), while a failure to spawn `bash` at all is an
 //! operational error that halts the procedure.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 
-use crate::primitives::{PrimitiveError, Result};
+use crate::primitives::{PrimitiveError, Result, resolve_path};
 use crate::schema::primitives::{RunGeneratorArgs, RunGeneratorResult};
 
 /// Execute the `run-generator` primitive.
@@ -47,15 +47,6 @@ pub fn run(args: &RunGeneratorArgs, repo: &Path) -> Result<RunGeneratorResult> {
         stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
         exit_code,
     })
-}
-
-fn resolve_path(repo: &Path, script_arg: &str) -> PathBuf {
-    let candidate = Path::new(script_arg);
-    if candidate.is_absolute() {
-        candidate.to_path_buf()
-    } else {
-        repo.join(candidate)
-    }
 }
 
 #[cfg(all(test, unix))]
