@@ -615,7 +615,16 @@ pub(crate) fn validate_no_traversal(path: &str) -> Result<()> {
         });
     }
     let p = Path::new(path);
-    if p.is_absolute() {
+    // `has_root()` in addition to `is_absolute()`: on Windows a `/`- or
+    // `\`-rooted path without a drive letter is not "absolute", yet it
+    // still escapes the repo (it resolves against the drive root). The
+    // prefix check additionally rejects drive-relative forms (`C:foo`)
+    // and UNC prefixes, which carry no root but name another location.
+    let has_prefix = p
+        .components()
+        .next()
+        .is_some_and(|c| matches!(c, std::path::Component::Prefix(_)));
+    if p.is_absolute() || p.has_root() || has_prefix {
         return Err(PrimitiveError::InvalidPath {
             path: path.into(),
             reason: "absolute path not permitted".into(),
