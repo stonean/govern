@@ -99,6 +99,7 @@ pipeline_table="$(build_pipeline_table \
 
 refine_table="$(build_two_col_table \
   '/{project}:amend' "$CMD_DIR/amend.md" \
+  '/{project}:prune' "$CMD_DIR/prune.md" \
 )"
 
 brownfield_table="$(build_two_col_table \

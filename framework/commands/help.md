@@ -53,6 +53,7 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 | Command | Description |
 | --- | --- |
 | `/{project}:amend` | Add a question or a scenario to the targeted spec (classifier-driven). |
+| `/{project}:prune` | Prune a feature's tasks.md — drop spent task sections, or reset to template state. |
 
 <!-- generated:commands-refine:end -->
 

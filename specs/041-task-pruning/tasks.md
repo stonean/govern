@@ -47,18 +47,18 @@ test before the command (Phase B) wires to it.
 
 ### 6. Author the command source
 
-- [ ] Create `framework/commands/prune.md` with `description:` frontmatter and `{project}:` / `{cli-config-dir}/` placeholders. Instructions: resolve the session target; call `prune-tasks` preview; render the compact summary; route confirmation through `gate-confirm`; call `prune-tasks` apply; surface `blocked-needs-force`, `tasks-file-missing` (→ `/{project}:plan`), and no-target (→ `/{project}:target`). Annotate each step with a primitive name, an `<!-- llm:* -->` marker, or `<!-- audit:ignore-promotion -->`, and reference §runtime-host-integration once.
+- [x] Create `framework/commands/prune.md` with `description:` frontmatter and `{project}:` / `{cli-config-dir}/` placeholders. Instructions: resolve the session target; call `prune-tasks` preview; render the compact summary; route confirmation through `gate-confirm`; call `prune-tasks` apply; surface `blocked-needs-force`, `tasks-file-missing` (→ `/{project}:plan`), and no-target (→ `/{project}:target`). Annotate each step with a primitive name, an `<!-- llm:* -->` marker, or `<!-- audit:ignore-promotion -->`, and reference §runtime-host-integration once.
 - **Done when**: the command documents both the runtime and markdown-only paths and states the single-artifact (`tasks.md`-only) scope.
 
 ### 7. Parseability
 
-- [ ] Run `gvrn parse --check framework/commands/prune.md`. If it parses cleanly, leave it; otherwise add `framework/commands/prune.md` to `runtime/legacy-prose-commands.txt`.
+- [x] Run `gvrn parse --check framework/commands/prune.md`. If it parses cleanly, leave it; otherwise add `framework/commands/prune.md` to `runtime/legacy-prose-commands.txt`.
 - **Done when**: `scripts/lint-procedure-parseability.sh` passes for `prune.md`.
 
 ### 8. Register and regenerate
 
-- [ ] Add the `'/{project}:prune' "$CMD_DIR/prune.md"` row to the appropriate group in `scripts/gen-help-tables.sh` (add a new `generated:commands-<group>` marker pair in `help.md` and a splice-loop entry only if prune warrants its own group).
-- [ ] Run the generators (or the pre-commit hook) to regenerate `framework/commands/help.md` and materialize `.claude/commands/gov/prune.md`; commit both.
+- [x] Add the `'/{project}:prune' "$CMD_DIR/prune.md"` row to the appropriate group in `scripts/gen-help-tables.sh` (add a new `generated:commands-<group>` marker pair in `help.md` and a splice-loop entry only if prune warrants its own group).
+- [x] Run the generators (or the pre-commit hook) to regenerate `framework/commands/help.md` and materialize `.claude/commands/gov/prune.md`; commit both.
 - **Done when**: `gen-help-tables.sh --dry-run` and `gen-claude-commands.sh --check` report in-sync.
 
 ### 9. Docs
