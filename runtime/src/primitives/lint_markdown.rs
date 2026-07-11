@@ -23,7 +23,10 @@ use crate::schema::primitives::{LintMarkdownArgs, LintMarkdownResult, MarkdownVi
 /// markdownlint-cli2 exit code is not an error — it's recorded in the
 /// result alongside the parsed violations.
 pub fn run(args: &LintMarkdownArgs, repo: &Path) -> Result<LintMarkdownResult> {
-    let mut cmd = Command::new("npx");
+    // Windows ships npx as a `.cmd` shim, which `Command::new("npx")`
+    // cannot resolve (CreateProcess needs the explicit extension).
+    let npx = if cfg!(windows) { "npx.cmd" } else { "npx" };
+    let mut cmd = Command::new(npx);
     cmd.arg("markdownlint-cli2");
     if args.fix {
         cmd.arg("--fix");
