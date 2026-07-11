@@ -2,6 +2,18 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.16.0] — 2026-07-10
+
+Adds the `prune-tasks` primitive backing the new `/gov:prune` command (spec 041).
+
+### Added
+
+- **`prune-tasks`** — reduces a feature's `tasks.md`. The default keep-pending prune drops every *spent* (≥ 1 checkbox, all checked) task section and any phase container left with no surviving task section, preserving the preamble and every pending / no-checkbox section verbatim; `--reset` rewrites the file to the template's initial state (the existing `# …` heading plus the canonical empty-tasks body). Reset is gated on spec status — permitted only when the spec is `done`, unless `--force` is supplied. A two-mode `apply` flag keeps the file body out of the caller's context: `apply: false` returns a compact summary (per-section classification, removed/kept counts, size before/after) and writes nothing; `apply: true` writes atomically. New MCP tool `prune-tasks`; new CLI subcommand `gvrn prune-tasks`; the tool list grows from 32 to 33.
+
+### Notes
+
+- Ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary). `cargo test`, `cargo fmt --check`, and `cargo clippy --all-targets -- -D warnings` are clean.
+
 ## [0.15.0] — 2026-07-06
 
 The **review-runtime-acceleration** series (spec 022 scenario `review-runtime-acceleration`): the deterministic bookkeeping around `/gov:review`'s five semantic passes moves into primitives, and the passes themselves become a new `performReview` extension point. The bump to `0.15.0` is driven by the breaking `create-scenario` arg-shape change below.

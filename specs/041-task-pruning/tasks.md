@@ -33,9 +33,9 @@ test before the command (Phase B) wires to it.
 
 ### 4. Canonical manifest, generated config, release metadata
 
-- [ ] Add `prune-tasks` to `framework/runtime-tools.txt`.
-- [ ] Run `scripts/gen-configure-mcp.sh` and `scripts/gen-claude-commands.sh`; commit the regenerated configure allow-blocks.
-- [ ] Add a `runtime/CHANGELOG.md` `### Added` entry (new tool; list grows N→N+1) and bump `runtime/Cargo.toml` to the next minor version.
+- [x] Add `prune-tasks` to `framework/runtime-tools.txt`.
+- [x] Run `scripts/gen-configure-mcp.sh` and `scripts/gen-claude-commands.sh`; commit the regenerated configure allow-blocks.
+- [x] Add a `runtime/CHANGELOG.md` `### Added` entry (new tool; list grows N→N+1) and bump `runtime/Cargo.toml` to the next minor version.
 - **Done when**: the `runtime/tests/mcp.rs` parity test passes (`TOOL_NAMES` ↔ `runtime-tools.txt` ↔ served) and the generators report no drift.
 
 ### 5. Green gate
