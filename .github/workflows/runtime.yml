@@ -29,14 +29,14 @@ jobs:
       run:
         working-directory: runtime
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Pinned — keep in sync with runtime/rust-toolchain.toml.
       - uses: dtolnay/rust-toolchain@1.97.0
         with:
           components: clippy, rustfmt
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry

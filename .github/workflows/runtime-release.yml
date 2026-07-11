@@ -23,7 +23,7 @@ jobs:
     name: Framework self-audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Run /audit
         run: bash scripts/audit/run-all.sh
 
@@ -58,7 +58,7 @@ jobs:
             cross: false
             ext: ".exe"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Pinned — keep in sync with runtime/rust-toolchain.toml.
       # `components` must match the toolchain file: any cargo command run
@@ -109,7 +109,7 @@ jobs:
 
       - name: Upload Unix artifacts to release
         if: matrix.os != 'windows-latest'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             runtime/target/${{ matrix.target }}/release/gvrn-${{ matrix.target }}.tar.gz
@@ -117,7 +117,7 @@ jobs:
 
       - name: Upload Windows artifacts to release
         if: matrix.os == 'windows-latest'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             runtime/target/${{ matrix.target }}/release/gvrn-${{ matrix.target }}.zip
@@ -131,7 +131,7 @@ jobs:
       run:
         working-directory: runtime
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Pinned — keep in sync with runtime/rust-toolchain.toml.
       # `components` must match the toolchain file (see build job above).
       - uses: dtolnay/rust-toolchain@1.97.0
