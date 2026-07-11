@@ -138,11 +138,9 @@ fn json_to_toml_value(value: JsonValue) -> Option<toml::Value> {
         JsonValue::Number(n) => {
             if let Some(i) = n.as_i64() {
                 toml::Value::Integer(i)
-            } else if let Some(f) = n.as_f64() {
-                toml::Value::Float(f)
             } else {
-                // Unrepresentable number (e.g., u64 > i64::MAX) — drop.
-                return None;
+                let f = n.as_f64()?;
+                toml::Value::Float(f)
             }
         }
         JsonValue::String(s) => toml::Value::String(s),

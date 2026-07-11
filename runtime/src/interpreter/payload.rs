@@ -564,9 +564,9 @@ pub fn extract_anchor_body(content: &str, anchor: &str) -> Option<String> {
     let marker = format!("<!-- §{anchor} -->");
     let start = content.find(&marker)?;
     // Skip past the marker line itself (find end of that line).
-    let after_marker_line = match content[start..].find('\n') {
-        Some(rel) => start + rel + 1,
-        None => return None,
+    let after_marker_line = {
+        let rel = content[start..].find('\n')?;
+        start + rel + 1
     };
     let rest = &content[after_marker_line..];
     // Find the next anchor marker (any name) and cut there.
