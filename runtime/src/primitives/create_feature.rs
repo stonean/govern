@@ -20,7 +20,10 @@
 use std::path::Path;
 
 use crate::primitives::apply_manifest::mirror_source_mode;
-use crate::primitives::{PrimitiveError, Result, is_feature_slug, write_atomic_bytes};
+use crate::primitives::{
+    PrimitiveError, Result, feature_number, list_feature_dirs, template_candidates,
+    write_atomic_bytes,
+};
 use crate::schema::paths;
 use crate::schema::primitives::{CreateFeatureArgs, CreateFeatureResult};
 
@@ -113,15 +116,9 @@ fn derive_slug(title: &str) -> String {
 /// missing or holds no feature directories. Numbers past 999 render
 /// four-digit (the `{:03}` pad only guarantees a minimum width).
 fn next_feature_number(specs_dir: &Path) -> u32 {
-    let Ok(entries) = std::fs::read_dir(specs_dir) else {
-        return 1;
-    };
-    entries
-        .filter_map(std::result::Result::ok)
-        .filter(|e| e.path().is_dir())
-        .filter_map(|e| e.file_name().into_string().ok())
-        .filter(|name| is_feature_slug(name))
-        .filter_map(|name| name.get(..3).and_then(|p| p.parse::<u32>().ok()))
+    list_feature_dirs(specs_dir)
+        .iter()
+        .filter_map(|name| feature_number(name))
         .max()
         .unwrap_or(0)
         + 1
@@ -133,10 +130,7 @@ fn next_feature_number(specs_dir: &Path) -> u32 {
 /// layout). Returns `(repo-relative path, absolute path)` of the first
 /// candidate on disk.
 fn resolve_template(repo: &Path, root: &str) -> Result<(String, std::path::PathBuf)> {
-    let candidates = [
-        format!("{root}/templates/spec.md"),
-        "framework/templates/spec/spec.md".to_string(),
-    ];
+    let candidates = template_candidates(root, "spec.md");
     for rel in &candidates {
         let abs = repo.join(rel);
         if abs.is_file() {

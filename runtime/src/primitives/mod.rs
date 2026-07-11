@@ -240,8 +240,10 @@ pub enum PrimitiveError {
         /// Caller-supplied feature path that did not resolve to a directory.
         path: PathBuf,
     },
-    /// Slug component supplied by a caller failed validation (path separator,
-    /// dot-prefix, or empty value).
+    /// Slug supplied by a caller failed the slug-grammar allowlist
+    /// (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, BE-INPUT-002) — empty, or holding a
+    /// character outside lowercase-alphanumeric-plus-single-hyphen (path
+    /// separators, dots, whitespace, control characters, uppercase).
     #[error("invalid slug '{slug}': {reason}")]
     InvalidSlug {
         /// Slug that was rejected.
@@ -641,9 +643,15 @@ pub(crate) fn validate_no_traversal(path: &str) -> Result<()> {
     Ok(())
 }
 
-/// Reject slugs that contain path separators, leading dots, or are empty.
-/// Used by primitives that embed a caller-supplied slug into a destination
-/// filename (e.g., `create-scenario` writes `scenarios/{slug}.md`).
+/// Validate a caller-supplied slug against the framework slug grammar
+/// `^[a-z0-9]+(?:-[a-z0-9]+)*$`: one or more lowercase-alphanumeric
+/// segments joined by single hyphens — exactly the alphabet
+/// `create_feature::derive_slug` emits. This is an allowlist
+/// (BE-INPUT-002): every slug reaches a written filename
+/// (`scenarios/{slug}.md`) and a rendered heading, so anything outside the
+/// grammar — uppercase, `_`, `.`, path separators, whitespace, newlines,
+/// or other control characters — is rejected before it can inject a path
+/// segment or forge markdown structure.
 pub(crate) fn validate_slug(slug: &str) -> Result<()> {
     if slug.is_empty() {
         return Err(PrimitiveError::InvalidSlug {
@@ -651,17 +659,22 @@ pub(crate) fn validate_slug(slug: &str) -> Result<()> {
             reason: "slug is empty".into(),
         });
     }
-    if slug.contains('/') || slug.contains('\\') {
-        return Err(PrimitiveError::InvalidSlug {
-            slug: slug.into(),
-            reason: "slug must not contain path separators".into(),
-        });
-    }
-    if slug.starts_with('.') {
-        return Err(PrimitiveError::InvalidSlug {
-            slug: slug.into(),
-            reason: "slug must not start with '.'".into(),
-        });
+    // Allowlist, segment by segment: each `-`-delimited segment must be
+    // non-empty (rejecting a leading/trailing hyphen and a `--` run) and
+    // hold only lowercase ASCII letters and digits.
+    for segment in slug.split('-') {
+        if segment.is_empty()
+            || !segment
+                .bytes()
+                .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit())
+        {
+            return Err(PrimitiveError::InvalidSlug {
+                slug: slug.into(),
+                reason: "slug must match ^[a-z0-9]+(?:-[a-z0-9]+)*$ \
+                         (lowercase letters, digits, single hyphens)"
+                    .into(),
+            });
+        }
     }
     Ok(())
 }
@@ -954,6 +967,100 @@ pub(crate) fn is_feature_slug(name: &str) -> bool {
         && bytes[3] == b'-'
 }
 
+/// Parse a feature directory's three-digit `NNN-` prefix into its numeric
+/// value. `None` when the first three bytes aren't a parseable number
+/// (callers typically pre-filter with [`is_feature_slug`], so this is
+/// belt-and-suspenders). Shared by `resolve-feature` (numeric-identifier
+/// match) and `create-feature` (next-number computation).
+pub(crate) fn feature_number(name: &str) -> Option<u32> {
+    name.get(..3)?.parse::<u32>().ok()
+}
+
+/// List feature directories (`NNN-slug`) under the spec root, sorted by
+/// name. Best-effort: a missing or unreadable spec root yields an empty
+/// list — a repo without a spec root has no features by definition, and
+/// the primitives that consume this (`resolve-feature`, `create-feature`,
+/// `dashboard`, and `interpreter::payload`'s inbox router) all report the
+/// empty case as "no features" rather than an operational error.
+pub(crate) fn list_feature_dirs(specs_dir: &Path) -> Vec<String> {
+    let Ok(entries) = std::fs::read_dir(specs_dir) else {
+        return Vec::new();
+    };
+    let mut features: Vec<String> = entries
+        .filter_map(std::result::Result::ok)
+        .filter(|e| e.path().is_dir())
+        .filter_map(|e| e.file_name().into_string().ok())
+        .filter(|name| is_feature_slug(name))
+        .collect();
+    features.sort();
+    features
+}
+
+/// List the scenario markdown files directly under `scenarios_dir`, sorted
+/// by filename. Matches the `.md` extension CASE-INSENSITIVELY so `FOO.MD`
+/// and `foo.md` are both scenarios — the two consuming surfaces
+/// (`dashboard` counts, `check-artifacts` derives slugs) must agree on the
+/// same set. Subdirectories and non-markdown files are excluded; an absent
+/// or unreadable directory yields an empty list.
+pub(crate) fn list_scenario_files(scenarios_dir: &Path) -> Vec<String> {
+    let Ok(entries) = std::fs::read_dir(scenarios_dir) else {
+        return Vec::new();
+    };
+    let mut files: Vec<String> = entries
+        .filter_map(std::result::Result::ok)
+        .filter(|e| e.path().is_file())
+        .filter_map(|e| e.file_name().into_string().ok())
+        .filter(|name| {
+            Path::new(name)
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
+        })
+        .collect();
+    files.sort();
+    files
+}
+
+/// Scenario frontmatter shape: `section` is the post-017 field; `spec-ref`
+/// is the pre-017 legacy field still present on older scenarios. The single
+/// shared definition for `resolve-feature`'s scenario detail and
+/// `dashboard`'s session-target detail, so both surfaces fold
+/// `section.or(spec-ref)` identically.
+#[derive(serde::Deserialize)]
+pub(crate) struct ScenarioFrontmatter {
+    /// Post-017 section label the scenario belongs to.
+    #[serde(default)]
+    pub(crate) section: Option<String>,
+    /// Pre-017 legacy field, read only as a fallback for `section`.
+    #[serde(default, rename = "spec-ref")]
+    pub(crate) spec_ref: Option<String>,
+}
+
+/// Best-effort read of a scenario file's `section` (or legacy `spec-ref`)
+/// frontmatter field. `None` when the file is unreadable, has no
+/// frontmatter, or the frontmatter fails to parse — every consumer degrades
+/// an unreadable scenario to a detail-less entry rather than an error.
+pub(crate) fn read_scenario_section(path: &Path) -> Option<String> {
+    let content = read_text(path).ok()?;
+    let (fm_text, _body) = split_frontmatter(&content, path).ok()?;
+    let fm = serde_norway::from_str::<ScenarioFrontmatter>(fm_text).ok()?;
+    fm.section.or(fm.spec_ref)
+}
+
+/// The two candidate locations for a spec-pipeline template file, in
+/// resolution order: the installed adopter layout
+/// `{specs-root}/templates/{file}` (what `/gov:init` scaffolds and the
+/// command prose names) first, then the framework source layout
+/// `framework/templates/spec/{file}` (the govern repo itself). Shared by
+/// `create-feature`'s template copy and the `writeSpecBody` request builder
+/// (`interpreter::payload::load_template`); each caller keeps its own
+/// missing-template policy.
+pub(crate) fn template_candidates(specs_root: &str, file: &str) -> [String; 2] {
+    [
+        format!("{specs_root}/templates/{file}"),
+        format!("framework/templates/spec/{file}"),
+    ]
+}
+
 /// Parse the `## Affected Files` markdown table in a plan body and return
 /// the first-column path entries in document order. Tolerates rows with
 /// backtick-wrapped paths and skips the header separator row. Shared by the
@@ -1059,6 +1166,85 @@ mod tests {
                 "expected rejection for {bad:?}"
             );
         }
+    }
+
+    #[test]
+    fn validate_slug_rejects_newlines_and_control_chars() {
+        // The denylist that BE-INPUT-002 replaced admitted these into a
+        // written filename and a rendered heading; the allowlist rejects
+        // every character outside `[a-z0-9-]`.
+        for bad in &["a\nb", "a\rb", "a\tb", "a b", "a\u{7f}b", "a\0b"] {
+            assert!(
+                matches!(
+                    validate_slug(bad).unwrap_err(),
+                    PrimitiveError::InvalidSlug { .. }
+                ),
+                "expected rejection for {bad:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn validate_slug_rejects_non_grammar_shapes() {
+        // Uppercase, underscores, dots, and leading/trailing/repeated
+        // hyphens all fall outside ^[a-z0-9]+(?:-[a-z0-9]+)*$.
+        for bad in &["Upper", "a_b", "-lead", "trail-", "a--b", "a.b", "café"] {
+            assert!(
+                matches!(
+                    validate_slug(bad).unwrap_err(),
+                    PrimitiveError::InvalidSlug { .. }
+                ),
+                "expected rejection for {bad:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn validate_slug_accepts_grammar_conformant_slugs() {
+        for good in &["a", "022", "retry-on-timeout", "spec-042-foo", "x1-y2-z3"] {
+            validate_slug(good).unwrap();
+        }
+    }
+
+    #[test]
+    fn feature_number_parses_nnn_prefix() {
+        assert_eq!(feature_number("022-deterministic-runtime"), Some(22));
+        assert_eq!(feature_number("007-webhooks"), Some(7));
+        assert_eq!(feature_number("abc-nope"), None);
+        assert_eq!(feature_number("22"), None); // too short for a 3-byte slice
+    }
+
+    #[test]
+    fn template_candidates_orders_adopter_layout_first() {
+        assert_eq!(
+            template_candidates("specs", "spec.md"),
+            [
+                "specs/templates/spec.md".to_string(),
+                "framework/templates/spec/spec.md".to_string(),
+            ]
+        );
+        // Honors a configured spec root in the first candidate only.
+        assert_eq!(
+            template_candidates("governance", "plan.md")[0],
+            "governance/templates/plan.md"
+        );
+    }
+
+    #[test]
+    fn list_scenario_files_matches_md_case_insensitively() {
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path().join("scenarios");
+        std::fs::create_dir_all(&dir).unwrap();
+        for name in ["alpha.md", "BETA.MD", "notes.txt", "README"] {
+            std::fs::write(dir.join(name), "x").unwrap();
+        }
+        std::fs::create_dir_all(dir.join("nested.md")).unwrap(); // a dir, excluded
+        assert_eq!(
+            list_scenario_files(&dir),
+            vec!["BETA.MD".to_string(), "alpha.md".to_string()]
+        );
+        // Absent directory degrades to empty.
+        assert!(list_scenario_files(&tmp.path().join("missing")).is_empty());
     }
 
     #[test]

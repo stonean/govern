@@ -21,7 +21,7 @@
 
 use std::path::Path;
 
-use crate::primitives::{PrimitiveError, Result, rel_path, write_atomic};
+use crate::primitives::{PrimitiveError, Result, checkbox, rel_path, write_atomic};
 use crate::schema::paths;
 use crate::schema::primitives::{AppendInboxArgs, AppendInboxResult};
 
@@ -122,17 +122,18 @@ fn creation_base(repo: &Path) -> String {
         .unwrap_or_else(|_| FALLBACK_HEADING.to_string())
 }
 
-/// Extract a line's bullet text: strip the `- ` list marker and an
-/// optional checkbox (`[ ]` / `[x]` / `[X]`). `None` for non-bullet lines.
-fn bullet_text(line: &str) -> Option<&str> {
+/// Extract a line's bullet text: the trimmed content after the `- `
+/// marker. A task-list checkbox (`[ ]` / `[x]` / `[X]`) is recognized via
+/// the shared [`checkbox::parse_checkbox_line`] grammar so dedup matches
+/// the read/mark side exactly — this closes the `- [x]no-space` divergence
+/// the hand-rolled strip admitted. Only the plain `- text` fallback stays
+/// local. `None` for non-bullet lines.
+fn bullet_text(line: &str) -> Option<String> {
+    if let Some((_checked, text)) = checkbox::parse_checkbox_line(line) {
+        return Some(text);
+    }
     let rest = line.trim_start().strip_prefix("- ")?;
-    let rest = rest.trim_start();
-    let rest = rest
-        .strip_prefix("[ ]")
-        .or_else(|| rest.strip_prefix("[x]"))
-        .or_else(|| rest.strip_prefix("[X]"))
-        .unwrap_or(rest);
-    Some(rest.trim_start())
+    Some(rest.trim().to_string())
 }
 
 /// `true` when any bullet line's text starts with `prefix`.
@@ -278,6 +279,27 @@ mod tests {
         let result = run(&args("new item", Some("new item")), tmp.path()).unwrap();
         assert!(!result.deduped);
         assert!(read_inbox(tmp.path()).contains("- new item\n"));
+    }
+
+    #[test]
+    fn dedup_uses_shared_checkbox_grammar_for_no_space_variant() {
+        // `- [x]no-space` is NOT a valid checkbox in the shared grammar, so
+        // its bullet text is the literal `[x]…` — a dedup prefix targeting
+        // the checkbox *content* must not match it. This closes the
+        // divergence where the old hand-rolled strip accepted the malformed
+        // form while the read/mark side rejected it.
+        let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join("specs")).unwrap();
+        fs::write(
+            tmp.path().join("specs/inbox.md"),
+            "# Inbox\n\n- [x]SEC-1: malformed checkbox item\n",
+        )
+        .unwrap();
+        let result = run(&args("SEC-1: real capture", Some("SEC-1:")), tmp.path()).unwrap();
+        assert!(
+            !result.deduped,
+            "malformed checkbox must not dedup by checkbox-content prefix"
+        );
     }
 
     #[test]

@@ -41,16 +41,13 @@
 use std::path::Path;
 
 use crate::primitives::{
-    PrimitiveError, Result, read_tasks, read_text, rel_path, split_frontmatter,
+    PrimitiveError, Result, list_scenario_files, read_tasks, read_text, rel_path, split_frontmatter,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{
     ArtifactFinding, CheckArtifactsArgs, CheckArtifactsResult, Frontmatter, ReadTasksArgs, Task,
 };
-
-/// Statuses at which `plan.md` and `tasks.md` are required ("planned or
-/// later" in the reference's tier language).
-const PLANNED_OR_LATER: [&str; 3] = ["planned", "in-progress", "done"];
+use crate::schema::status::COMPATIBLE_STATUSES;
 
 /// Execute the `check-artifacts` primitive against the given repo root.
 ///
@@ -130,7 +127,9 @@ fn check_completeness(
     feature: &str,
     status: &str,
 ) {
-    if !PLANNED_OR_LATER.contains(&status) {
+    // "planned or later" is the same lifecycle tail `schema::status`
+    // derives as `COMPATIBLE_STATUSES` (planned / in-progress / done).
+    if !COMPATIBLE_STATUSES.contains(&status) {
         return;
     }
     for file in ["plan.md", "tasks.md"] {
@@ -235,16 +234,18 @@ fn check_scenario_consistency(
 
 /// List scenario slugs (`*.md` basenames without extension) under the
 /// feature's `scenarios/` directory, sorted. Empty when the directory is
-/// absent.
+/// absent. Enumerates via the shared [`list_scenario_files`] so the `.md`
+/// match is CASE-INSENSITIVE — the same set `dashboard` counts, closing
+/// the `FOO.MD`-counted-by-one-surface-only divergence.
 fn scenario_slugs(feature_dir: &Path) -> Vec<String> {
-    let Ok(entries) = std::fs::read_dir(feature_dir.join("scenarios")) else {
-        return Vec::new();
-    };
-    let mut slugs: Vec<String> = entries
-        .filter_map(std::result::Result::ok)
-        .filter(|e| e.path().is_file())
-        .filter_map(|e| e.file_name().into_string().ok())
-        .filter_map(|name| name.strip_suffix(".md").map(str::to_string))
+    let mut slugs: Vec<String> = list_scenario_files(&feature_dir.join("scenarios"))
+        .iter()
+        .filter_map(|name| {
+            Path::new(name)
+                .file_stem()
+                .and_then(|stem| stem.to_str())
+                .map(str::to_string)
+        })
         .collect();
     slugs.sort();
     slugs

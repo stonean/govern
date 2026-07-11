@@ -8,8 +8,9 @@
 //! `primitives::<name>::run` functions; the server holds an `Arc<PathBuf>`
 //! to the repo root that every primitive operates on. Blocking-heavy
 //! primitives (network downloads, subprocess shell-outs, whole-archive
-//! decompression) are dispatched through [`dispatch_blocking`] so they run
-//! on tokio's blocking pool instead of pinning an async worker thread.
+//! decompression, and full-history git revwalks) are dispatched through
+//! [`dispatch_blocking`] so they run on tokio's blocking pool instead of
+//! pinning an async worker thread.
 //!
 //! `gate-confirm` is special-cased: the MCP surface returns the prompt
 //! payload (gate + prompt + fresh request-id) without blocking. The LLM
@@ -142,7 +143,10 @@ fn strip_numeric_formats(value: &mut Value) {
 /// worker thread for the whole download in release. `run-generator` and
 /// `lint-markdown` shell out via `std::process::Command`, and
 /// `extract-archive` decompresses entire archives — the same
-/// worker-pinning hazard, so they take the same seam. The CLI surfaces
+/// worker-pinning hazard, so they take the same seam. The git-walk tools
+/// (`check-stuck`, `compute-review-scope`, `derive-boundary`) run a
+/// full-history `libgit2` revwalk that is likewise CPU-bound and unbounded
+/// in a large adopter repo, so they route here too. The CLI surfaces
 /// (`main.rs` subcommands and the subprocess interpreter) call the
 /// primitives directly with no tokio runtime and are unaffected.
 async fn dispatch_blocking<T, F>(work: F) -> Result<Json<T>, String>
@@ -246,9 +250,8 @@ impl GovRuntimeServer {
         &self,
         params: Parameters<DeriveBoundaryArgs>,
     ) -> Result<Json<DeriveBoundaryResult>, String> {
-        primitives::derive_boundary::run(&params.0, self.repo())
-            .map(Json)
-            .map_err(|e| e.to_string())
+        let repo = Arc::clone(&self.repo);
+        dispatch_blocking(move || primitives::derive_boundary::run(&params.0, repo.as_path())).await
     }
 
     #[tool(
@@ -259,9 +262,8 @@ impl GovRuntimeServer {
         &self,
         params: Parameters<CheckStuckArgs>,
     ) -> Result<Json<CheckStuckResult>, String> {
-        primitives::check_stuck::run(&params.0, self.repo())
-            .map(Json)
-            .map_err(|e| e.to_string())
+        let repo = Arc::clone(&self.repo);
+        dispatch_blocking(move || primitives::check_stuck::run(&params.0, repo.as_path())).await
     }
 
     #[tool(
@@ -517,9 +519,9 @@ impl GovRuntimeServer {
         &self,
         params: Parameters<ComputeReviewScopeArgs>,
     ) -> Result<Json<ComputeReviewScopeResult>, String> {
-        primitives::compute_review_scope::run(&params.0, self.repo())
-            .map(Json)
-            .map_err(|e| e.to_string())
+        let repo = Arc::clone(&self.repo);
+        dispatch_blocking(move || primitives::compute_review_scope::run(&params.0, repo.as_path()))
+            .await
     }
 
     #[tool(

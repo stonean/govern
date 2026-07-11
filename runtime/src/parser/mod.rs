@@ -32,6 +32,14 @@
 //! edit distance 2 of a known primitive name. Ordinary kebab-case
 //! vocabulary (`no-checkbox`, `keep-pending`, `cli-config-dir`) parses as
 //! prose.
+//!
+//! A numbered step also raises [`ParseError::Invalid`] when it names two
+//! or more *distinct* primitives: a step dispatches exactly one primitive
+//! (the last recognized span binds), so the earlier names would be
+//! silently dropped on the exec path. Each numbered step must invoke at
+//! most one primitive; split a step that needs two. An extension step is
+//! exempt — it dispatches no primitive, so backticked primitive names in
+//! its prose are references, not a conflict.
 
 #![allow(clippy::module_name_repetitions)]
 
@@ -133,6 +141,10 @@ struct Walker {
     steps: Vec<Step>,
     found_any: bool,
     suspicious_spans: Vec<(String, SourceRange)>,
+    /// Steps whose body names two or more distinct primitives. A step
+    /// dispatches exactly one primitive, so a second name would be
+    /// silently dropped on the exec path — reject the parse instead.
+    conflicting_steps: Vec<(StepNumber, Vec<String>, SourceRange)>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -153,7 +165,10 @@ struct StepBuilder {
     number: StepNumber,
     range: SourceRange,
     prose: String,
-    primitive_name: Option<String>,
+    /// Every recognized primitive span seen in the step, in document
+    /// order. The last one binds; two or more *distinct* names is a
+    /// conflict (rejected in [`Walker::finalize_step`]).
+    primitive_names: Vec<String>,
     extension_id: Option<String>,
 }
 
@@ -177,6 +192,7 @@ impl Walker {
             steps: Vec::new(),
             found_any: false,
             suspicious_spans: Vec::new(),
+            conflicting_steps: Vec::new(),
         }
     }
 
@@ -202,6 +218,25 @@ impl Walker {
             return Err(ParseError::Invalid {
                 message: format!(
                     "code span `{span}` looks like a primitive name but is not in the known set"
+                ),
+                location: Some(*range),
+            });
+        }
+        // A single step naming two or more distinct primitives is ambiguous:
+        // only the last binds, so the earlier ones are silently dropped on the
+        // exec path. Reject it — split the step into one primitive per step.
+        if let Some((number, names, range)) = self.conflicting_steps.first() {
+            let named = names
+                .iter()
+                .map(|name| format!("`{name}`"))
+                .collect::<Vec<_>>()
+                .join(", ");
+            return Err(ParseError::Invalid {
+                message: format!(
+                    "step {} names {} primitives ({named}) but a step dispatches exactly \
+                     one — split it into one primitive per step",
+                    format_step_number(number),
+                    names.len(),
                 ),
                 location: Some(*range),
             });
@@ -265,7 +300,7 @@ impl Walker {
                 let source_range = self.byte_range_to_source_range(&range);
                 if let Some(step) = self.current_step.as_mut() {
                     if PRIMITIVE_NAMES.contains(&code.as_ref()) {
-                        step.primitive_name = Some(code.as_ref().into());
+                        step.primitive_names.push(code.as_ref().into());
                     } else if span_is_suspicious(code.as_ref(), &step.prose) {
                         self.suspicious_spans
                             .push((code.as_ref().into(), source_range));
@@ -374,7 +409,7 @@ impl Walker {
             number,
             range,
             prose,
-            primitive_name,
+            primitive_names,
             mut extension_id,
         } = builder;
         let prose = prose.trim().to_string();
@@ -385,6 +420,9 @@ impl Walker {
             extension_id = find_inline_extension_marker(&prose);
         }
         let step = if let Some(id) = extension_id {
+            // Extension wins over any primitive spans: an extension step
+            // dispatches no primitive, so backticked primitive names in its
+            // prose are references, never a two-primitive conflict.
             self.found_any = true;
             Step::Extension {
                 number,
@@ -392,8 +430,22 @@ impl Walker {
                 prose,
                 location: range,
             }
-        } else if let Some(name) = primitive_name {
+        } else if let Some(name) = primitive_names.last().cloned() {
             self.found_any = true;
+            // A primitive step dispatches exactly one primitive (the last
+            // recognized span binds). Two or more *distinct* names means an
+            // earlier primitive would be silently dropped on the exec path —
+            // record the conflict so the parse fails instead.
+            let mut distinct: Vec<String> = Vec::new();
+            for candidate in &primitive_names {
+                if !distinct.contains(candidate) {
+                    distinct.push(candidate.clone());
+                }
+            }
+            if distinct.len() > 1 {
+                self.conflicting_steps
+                    .push((number.clone(), distinct, range));
+            }
             Step::Primitive {
                 number,
                 name,
@@ -554,10 +606,21 @@ impl StepBuilder {
             number,
             range,
             prose: String::new(),
-            primitive_name: None,
+            primitive_names: Vec::new(),
             extension_id: None,
         }
     }
+}
+
+/// Render a [`StepNumber`] path for diagnostics: `[1]` → `"1"`,
+/// `[1, 2]` → `"1.2"`.
+fn format_step_number(number: &StepNumber) -> String {
+    number
+        .0
+        .iter()
+        .map(u32::to_string)
+        .collect::<Vec<_>>()
+        .join(".")
 }
 
 #[cfg(test)]
@@ -631,6 +694,57 @@ mod tests {
                 );
             }
             ParseError::LegacyProse => panic!("expected Invalid, got LegacyProse"),
+        }
+    }
+
+    #[test]
+    fn two_distinct_primitives_in_one_step_is_invalid() {
+        // A single step naming two primitives silently drops the earlier one
+        // on the exec path (last-span-wins). Reject the parse so the
+        // ambiguity fails CI instead of dispatching the wrong primitive.
+        let source = "# Cmd\n\n## Instructions\n\n\
+            1. Invoke `create-scenario`, then invoke `append-task` for the scenario.\n";
+        let err = parse_str(source).unwrap_err();
+        match err {
+            ParseError::Invalid { message, .. } => {
+                assert!(
+                    message.contains("create-scenario") && message.contains("append-task"),
+                    "message names both conflicting primitives: {message}"
+                );
+                assert!(
+                    message.contains("step 1"),
+                    "message names the offending step: {message}"
+                );
+            }
+            ParseError::LegacyProse => panic!("expected Invalid, got LegacyProse"),
+        }
+    }
+
+    #[test]
+    fn same_primitive_named_twice_in_one_step_is_not_a_conflict() {
+        // Referencing the same primitive twice in one step is not a
+        // conflict — it still binds that one primitive.
+        let source = "# Cmd\n\n## Instructions\n\n\
+            1. Invoke `set-status`; the `set-status` primitive guards the from value.\n";
+        let procedure = parse_str(source).unwrap();
+        assert_eq!(procedure.steps.len(), 1);
+        match &procedure.steps[0] {
+            Step::Primitive { name, .. } => assert_eq!(name, "set-status"),
+            other => panic!("expected primitive, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn extension_step_with_two_primitive_spans_is_not_a_conflict() {
+        // An extension step dispatches no primitive, so backticked primitive
+        // names in its prose are references, not a two-primitive conflict.
+        let source = "# Cmd\n\n## Instructions\n\n\
+            1. <!-- llm:writeCode --> Uses `read-spec` and `read-tasks` results.\n\
+            2. Invoke `mark-task` to finish.\n";
+        let procedure = parse_str(source).unwrap();
+        match &procedure.steps[0] {
+            Step::Extension { identifier, .. } => assert_eq!(identifier, "writeCode"),
+            other => panic!("expected extension, got {other:?}"),
         }
     }
 

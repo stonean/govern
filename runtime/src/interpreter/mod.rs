@@ -194,7 +194,7 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
         )?;
         match dispatch_primitive(name, &self.context, &self.repo) {
             Ok(result) => {
-                self.merge_primitive_result(result);
+                self.merge_primitive_result(name, result);
                 Ok(None)
             }
             Err(err) => {
@@ -230,19 +230,37 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
     /// - Each top-level key of the result is inserted into the context,
     ///   **except** a session-seeded key (one present at construction, such
     ///   as `write-boundary` or `feature`), which is load-bearing and is
-    ///   never overwritten by a primitive result.
+    ///   never overwritten by a primitive result. The one targeted
+    ///   exception: a `create-feature` result with `created: true` overrides
+    ///   the seeded `feature`/`path` so `/gov:specify` retargets the session
+    ///   to the just-created feature (see the body).
     /// - Among keys first introduced by primitives, last-write-wins.
     ///
     /// Results merge at the top level rather than under a per-primitive
     /// namespace because the payload builders and primitive arg binders read
     /// prior results by their bare key (`scope`, `selected`, `rules-dir`,
     /// `diff-base`); namespacing would hide them.
-    fn merge_primitive_result(&mut self, result: Value) {
+    fn merge_primitive_result(&mut self, name: &str, result: Value) {
         let Value::Object(map) = result else {
             return;
         };
+        // Targeted merge exception (mirrors the `process-waivers`→`fired`
+        // special case in `dispatch_primitive`): a successful `create-feature`
+        // result carries the freshly created feature's slug and directory. On
+        // `/gov:specify` against a repo whose session already targets a
+        // feature, `feature` and `path` are session-seeded keys the general
+        // policy protects — but retargeting the session to the just-created
+        // feature is the entire point of the command, so the later
+        // `write-session` step must bind the NEW target rather than the stale
+        // seed. A `created: true` create-feature result therefore overrides
+        // exactly `feature` and `path`; no other primitive and no other key
+        // escapes the seeded-key guard.
+        let retargets_session =
+            name == "create-feature" && map.get("created") == Some(&Value::Bool(true));
         for (key, value) in map {
-            if self.seeded_keys.contains(&key) {
+            let seeded = self.seeded_keys.contains(&key);
+            let overridable_target = retargets_session && (key == "feature" || key == "path");
+            if seeded && !overridable_target {
                 continue;
             }
             self.context.insert(key, value);
@@ -575,6 +593,24 @@ fn dispatch_primitive(
     {
         bindings.insert("fired".into(), findings);
     }
+    // Exec-path binding for `mark-criterion`: `/gov:implement`'s completion
+    // gate seeds `criterion-index`/`checked: true`, but the checkbox flip
+    // must honor the `verifyCriteria` verdict the host returned first — only
+    // a criterion the LLM affirmatively confirmed `met: true` may be checked
+    // (data-model §verifyCriteria). When a `llm:verifyCriteria` response is in
+    // context, rebind `checked` to that verdict for the seeded index: a
+    // `met: false` or absent verdict rebinds `checked` to `false`, so the
+    // dispatch is a no-op (an already-unchecked criterion stays unchecked) and
+    // an unconfirmed criterion is never marked. With no verifyCriteria response
+    // present the seeded `checked` stands, so direct MCP/CLI calls and other
+    // commands are unaffected.
+    if name == "mark-criterion"
+        && let Some(met) = bindings
+            .get("llm:verifyCriteria")
+            .map(|verify| criterion_verified_met(verify, bindings.get("criterion-index")))
+    {
+        bindings.insert("checked".into(), Value::Bool(met));
+    }
     let value = Value::Object(bindings);
     macro_rules! call {
         ($args:ty, $module:ident) => {{
@@ -636,6 +672,25 @@ fn dispatch_primitive(
         }
         other => Err(DispatchError::UnknownPrimitive(other.into())),
     }
+}
+
+/// Whether a `verifyCriteria` response affirmatively confirms the criterion
+/// at `criterion_index` as `met: true`. A missing/non-numeric index, a
+/// missing `results` array, an absent verdict for the index, or an explicit
+/// `met: false` all yield `false` — the completion gate flips only criteria
+/// the response confirms (data-model §verifyCriteria).
+fn criterion_verified_met(verify: &Value, criterion_index: Option<&Value>) -> bool {
+    let Some(index) = criterion_index.and_then(Value::as_u64) else {
+        return false;
+    };
+    let Some(results) = verify.get("results").and_then(Value::as_array) else {
+        return false;
+    };
+    results
+        .iter()
+        .find(|entry| entry.get("index").and_then(Value::as_u64) == Some(index))
+        .and_then(|entry| entry.get("met").and_then(Value::as_bool))
+        .unwrap_or(false)
 }
 
 #[cfg(test)]
@@ -1114,5 +1169,180 @@ mod tests {
         let lines: Vec<&str> = std::str::from_utf8(&writer).unwrap().lines().collect();
         assert_eq!(lines.len(), 1);
         assert!(lines[0].contains("\"complete\""));
+    }
+
+    // --- FIX 1: create-feature retargets the seeded session target ----------
+
+    fn seeded_target_walker<'a, R: BufRead, W: Write>(
+        procedure: &'a Procedure,
+        reader: &'a mut R,
+        writer: &'a mut W,
+    ) -> Walker<'a, R, W> {
+        let mut context = Map::new();
+        context.insert("feature".into(), Value::String("006-specify".into()));
+        context.insert("path".into(), Value::String("specs/006-specify".into()));
+        Walker::new(procedure, fixture_repo(), context, reader, writer)
+    }
+
+    #[test]
+    fn create_feature_success_overrides_seeded_feature_and_path() {
+        let procedure = Procedure {
+            command: "specify".into(),
+            steps: vec![],
+        };
+        let mut reader = Cursor::new(String::new());
+        let mut writer: Vec<u8> = Vec::new();
+        let mut walker = seeded_target_walker(&procedure, &mut reader, &mut writer);
+        walker.merge_primitive_result(
+            "create-feature",
+            serde_json::json!({
+                "created": true,
+                "feature": "007-webhook-delivery",
+                "path": "specs/007-webhook-delivery",
+                "template": "specs/templates/spec.md",
+            }),
+        );
+        // The just-created feature retargets the session so the later
+        // write-session binds the NEW target, not the stale seed.
+        assert_eq!(walker.context["feature"], "007-webhook-delivery");
+        assert_eq!(walker.context["path"], "specs/007-webhook-delivery");
+        assert_eq!(walker.context["created"], Value::Bool(true));
+    }
+
+    #[test]
+    fn create_feature_refusal_leaves_seeded_target_intact() {
+        // A `created: false` refusal (directory collision) must NOT override
+        // the seeded target — nothing was scaffolded to retarget to.
+        let procedure = Procedure {
+            command: "specify".into(),
+            steps: vec![],
+        };
+        let mut reader = Cursor::new(String::new());
+        let mut writer: Vec<u8> = Vec::new();
+        let mut walker = seeded_target_walker(&procedure, &mut reader, &mut writer);
+        walker.merge_primitive_result(
+            "create-feature",
+            serde_json::json!({
+                "created": false,
+                "feature": "006-specify",
+                "path": "specs/006-specify",
+            }),
+        );
+        assert_eq!(walker.context["feature"], "006-specify");
+        assert_eq!(walker.context["path"], "specs/006-specify");
+    }
+
+    #[test]
+    fn other_primitive_result_never_overrides_seeded_target() {
+        // The override is keyed on the create-feature name alone: a
+        // resolve-feature result echoing `feature`/`path` must obey the
+        // general seeded-key guard.
+        let procedure = Procedure {
+            command: "analyze".into(),
+            steps: vec![],
+        };
+        let mut reader = Cursor::new(String::new());
+        let mut writer: Vec<u8> = Vec::new();
+        let mut walker = seeded_target_walker(&procedure, &mut reader, &mut writer);
+        walker.merge_primitive_result(
+            "resolve-feature",
+            serde_json::json!({
+                "outcome": "resolved",
+                "feature": "999-other",
+                "path": "specs/999-other",
+            }),
+        );
+        assert_eq!(walker.context["feature"], "006-specify");
+        assert_eq!(walker.context["path"], "specs/006-specify");
+        // A non-seeded key from the same result still merges.
+        assert_eq!(walker.context["outcome"], "resolved");
+    }
+
+    // --- FIX 2: verifyCriteria verdict gates the mark-criterion flip --------
+
+    #[test]
+    fn criterion_verified_met_reads_verdict_for_seeded_index() {
+        let verify = serde_json::json!({
+            "results": [
+                { "index": 0, "met": true },
+                { "index": 1, "met": false },
+            ]
+        });
+        let idx = |n: u64| Value::from(n);
+        assert!(criterion_verified_met(&verify, Some(&idx(0))));
+        assert!(!criterion_verified_met(&verify, Some(&idx(1))));
+        // Absent verdict for the index → not met.
+        assert!(!criterion_verified_met(&verify, Some(&idx(2))));
+        // Missing index argument → not met.
+        assert!(!criterion_verified_met(&verify, None));
+        // No `results` array → not met.
+        assert!(!criterion_verified_met(
+            &serde_json::json!({}),
+            Some(&idx(0))
+        ));
+    }
+
+    fn spec_repo_with_one_unchecked_criterion() -> tempfile::TempDir {
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path().join("specs/feat");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("spec.md"),
+            "---\nstatus: in-progress\ndependencies: []\n---\n\n# feat\n\n## Acceptance Criteria\n\n- [ ] Only criterion.\n",
+        )
+        .unwrap();
+        tmp
+    }
+
+    fn mark_criterion_context(verify: Option<Value>) -> Map<String, Value> {
+        let mut context = Map::new();
+        context.insert("feature".into(), Value::String("feat".into()));
+        context.insert("criterion-index".into(), Value::from(0u64));
+        context.insert("checked".into(), Value::Bool(true));
+        if let Some(verify) = verify {
+            context.insert("llm:verifyCriteria".into(), verify);
+        }
+        context
+    }
+
+    #[test]
+    fn mark_criterion_skips_flip_when_verdict_not_met() {
+        let tmp = spec_repo_with_one_unchecked_criterion();
+        let context = mark_criterion_context(Some(serde_json::json!({
+            "results": [ { "index": 0, "met": false } ]
+        })));
+        let result = dispatch_primitive("mark-criterion", &context, tmp.path()).unwrap();
+        assert_eq!(
+            result["current"],
+            Value::Bool(false),
+            "an unconfirmed criterion is left unchecked despite the seeded checked:true"
+        );
+        let on_disk = std::fs::read_to_string(tmp.path().join("specs/feat/spec.md")).unwrap();
+        assert!(
+            on_disk.contains("- [ ] Only criterion."),
+            "checkbox stays unchecked: {on_disk}"
+        );
+    }
+
+    #[test]
+    fn mark_criterion_flips_when_verdict_met() {
+        let tmp = spec_repo_with_one_unchecked_criterion();
+        let context = mark_criterion_context(Some(serde_json::json!({
+            "results": [ { "index": 0, "met": true } ]
+        })));
+        let result = dispatch_primitive("mark-criterion", &context, tmp.path()).unwrap();
+        assert_eq!(result["current"], Value::Bool(true));
+        let on_disk = std::fs::read_to_string(tmp.path().join("specs/feat/spec.md")).unwrap();
+        assert!(on_disk.contains("- [x] Only criterion."), "{on_disk}");
+    }
+
+    #[test]
+    fn mark_criterion_without_verify_response_honors_seeded_checked() {
+        // No verifyCriteria response present → the seeded `checked` stands,
+        // so direct MCP/CLI callers and other commands are unaffected.
+        let tmp = spec_repo_with_one_unchecked_criterion();
+        let context = mark_criterion_context(None);
+        let result = dispatch_primitive("mark-criterion", &context, tmp.path()).unwrap();
+        assert_eq!(result["current"], Value::Bool(true));
     }
 }

@@ -129,6 +129,9 @@ fn govern_basic_post_run_filesystem_state_matches_expectations() {
         .arg("exec")
         .arg("install")
         .current_dir(staged.path())
+        // See run_parity_case: allow the loopback mock-HTTP host past the
+        // fetch-archive SSRF screen for this bootstrap subprocess only.
+        .env("GVRN_FETCH_ALLOW_INSECURE_HOSTS", "127.0.0.1")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -631,6 +634,11 @@ fn run_parity_case(command: &str, fixture: &str) {
         .arg("exec")
         .arg(command)
         .current_dir(staged.path())
+        // The govern-basic bootstrap fetches from the loopback mock-HTTP
+        // server, which fetch-archive's SSRF screen denies by default;
+        // allow the mock host explicitly for this subprocess (empty
+        // elsewhere, so the secure default holds).
+        .env("GVRN_FETCH_ALLOW_INSECURE_HOSTS", "127.0.0.1")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())

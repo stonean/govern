@@ -147,9 +147,14 @@ fn first_incomplete_subtask_index(content: &str) -> Option<usize> {
 /// transition lives in that parent's history and is found there.
 ///
 /// With `TOPOLOGICAL | REVERSE` sorting parents are always visited
-/// before children, so "most recent" is the last transition seen; the
-/// per-commit status cache is likewise guaranteed to hold every parent
-/// by the time its child asks.
+/// before children, so "most recent" is the last transition seen.
+///
+/// The status-parse memoization is keyed by the spec's tree-entry **blob
+/// OID**, not the commit OID: the `spec.md` blob is byte-identical across
+/// nearly every commit (status changes only at transitions), so a
+/// blob-keyed cache collapses the parse to one per distinct spec version
+/// rather than one per commit — turning tens of thousands of redundant
+/// frontmatter parses on a big-history repo into a handful.
 ///
 /// Shared with `compute-review-scope`, which uses the same commit as its
 /// default `diff-base`.
@@ -159,17 +164,17 @@ pub(crate) fn find_in_progress_commit(repo: &Repository, spec_rel: &str) -> Resu
     walk.set_sorting(Sort::TOPOLOGICAL | Sort::REVERSE)?;
 
     let mut newest_in_progress: Option<String> = None;
-    let mut status_cache: HashMap<git2::Oid, Option<String>> = HashMap::new();
+    let mut status_by_blob: HashMap<git2::Oid, Option<String>> = HashMap::new();
     for oid in walk {
         let oid = oid?;
-        let status = status_of_commit(repo, &mut status_cache, oid, spec_rel)?;
+        let status = status_of_commit(repo, &mut status_by_blob, oid, spec_rel)?;
         if status.as_deref() != Some("in-progress") {
             continue;
         }
         let commit = repo.find_commit(oid)?;
         let mut parent_in_progress = false;
         for parent in commit.parent_ids() {
-            if status_of_commit(repo, &mut status_cache, parent, spec_rel)?.as_deref()
+            if status_of_commit(repo, &mut status_by_blob, parent, spec_rel)?.as_deref()
                 == Some("in-progress")
             {
                 parent_in_progress = true;
@@ -183,27 +188,36 @@ pub(crate) fn find_in_progress_commit(repo: &Repository, spec_rel: &str) -> Resu
     Ok(newest_in_progress)
 }
 
-/// Read (with memoization) the spec's `status:` value at a commit. The
-/// cache is warm for every parent lookup because the caller walks in
-/// reverse-topological order, but a miss still computes correctly.
+/// Read (with memoization) the spec's `status:` value at a commit.
+///
+/// `cache` is keyed by the spec's tree-entry **blob OID** rather than the
+/// commit OID: identical spec content shares a blob, so this collapses the
+/// parse to one per distinct spec version across the whole walk (see
+/// [`find_in_progress_commit`]). A commit whose tree has no `spec.md`
+/// (blob absent) has no status and is not cached — that case is cheap and
+/// carries no reusable parse.
 fn status_of_commit(
     repo: &Repository,
     cache: &mut HashMap<git2::Oid, Option<String>>,
     oid: git2::Oid,
     spec_rel: &str,
 ) -> Result<Option<String>> {
-    if let Some(cached) = cache.get(&oid) {
+    let commit = repo.find_commit(oid)?;
+    let Some(blob_id) = tree_entry_id(&commit.tree()?, spec_rel) else {
+        return Ok(None);
+    };
+    if let Some(cached) = cache.get(&blob_id) {
         return Ok(cached.clone());
     }
-    let commit = repo.find_commit(oid)?;
     // Frontmatter reading reuses the shared [`frontmatter_status`] helper —
     // CRLF-aware splitting plus real YAML parsing; the hand-rolled
     // predecessor missed `\r\n---\r\n` close fences, so a CRLF checkout's
     // transitions were invisible.
-    let status = read_blob_from_tree(repo, &commit.tree()?, spec_rel)?
-        .as_deref()
+    let blob = repo.find_blob(blob_id)?;
+    let status = std::str::from_utf8(blob.content())
+        .ok()
         .and_then(|content| frontmatter_status(content, Path::new(spec_rel)));
-    cache.insert(oid, status.clone());
+    cache.insert(blob_id, status.clone());
     Ok(status)
 }
 

@@ -25,18 +25,13 @@
 use std::path::Path;
 
 use crate::primitives::{
-    PrimitiveError, Result, is_feature_slug, read_text, split_frontmatter, validate_slug,
+    PrimitiveError, Result, feature_number, frontmatter_status, list_feature_dirs,
+    read_scenario_section, read_text, validate_slug,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{
     ResolveFeatureArgs, ResolveFeatureOutcome, ResolveFeatureResult, ResolvedScenario,
 };
-
-/// Frontmatter shape used only to read `status` (best-effort).
-#[derive(serde::Deserialize)]
-struct StatusOnly {
-    status: Option<String>,
-}
 
 /// Execute the `resolve-feature` primitive against the given repo root.
 ///
@@ -61,7 +56,7 @@ pub fn run(args: &ResolveFeatureArgs, repo: &Path) -> Result<ResolveFeatureResul
     }
 
     let root = paths::Paths::load(repo).specs_root;
-    let features = list_features(&repo.join(&root));
+    let features = list_feature_dirs(&repo.join(&root));
 
     match match_identifier(&features, identifier) {
         Match::One(feature) => Ok(resolved(repo, &root, &feature, args.scenario.as_deref())),
@@ -134,31 +129,6 @@ fn classify(mut matches: Vec<String>) -> Match {
     }
 }
 
-/// Parse a feature directory's three-digit `NNN-` prefix. `None` for
-/// names that don't match the convention (callers pre-filter with
-/// [`is_feature_slug`], so this is belt-and-suspenders).
-fn feature_number(name: &str) -> Option<u32> {
-    name.get(..3)?.parse::<u32>().ok()
-}
-
-/// List feature directories (`NNN-slug`) under the spec root, sorted by
-/// name. A missing or unreadable spec root yields an empty list — the
-/// caller reports `not-found` rather than an operational error, since a
-/// repo without a spec root has no features by definition.
-fn list_features(specs_dir: &Path) -> Vec<String> {
-    let Ok(entries) = std::fs::read_dir(specs_dir) else {
-        return Vec::new();
-    };
-    let mut features: Vec<String> = entries
-        .filter_map(std::result::Result::ok)
-        .filter(|e| e.path().is_dir())
-        .filter_map(|e| e.file_name().into_string().ok())
-        .filter(|name| is_feature_slug(name))
-        .collect();
-    features.sort();
-    features
-}
-
 /// Build the `resolved` result: repo-relative path, best-effort status,
 /// and the optional scenario detail.
 fn resolved(
@@ -187,29 +157,18 @@ fn resolved(
 fn read_status(feature_dir: &Path) -> Option<String> {
     let spec_path = feature_dir.join("spec.md");
     let content = read_text(&spec_path).ok()?;
-    let (fm_text, _body) = split_frontmatter(&content, &spec_path).ok()?;
-    serde_norway::from_str::<StatusOnly>(fm_text).ok()?.status
-}
-
-/// Scenario frontmatter shape — `section` is the post-017 field;
-/// `spec-ref` is the pre-017 legacy field. Mirrors
-/// `crate::primitives::dashboard`'s reader so the two surfaces agree.
-#[derive(serde::Deserialize)]
-struct ScenarioFrontmatter {
-    #[serde(default)]
-    section: Option<String>,
-    #[serde(default, rename = "spec-ref")]
-    spec_ref: Option<String>,
+    frontmatter_status(&content, &spec_path)
 }
 
 /// Build the scenario detail for a resolved feature: existence plus the
 /// `section` frontmatter (best-effort empty on absent/unreadable files,
-/// matching `dashboard`'s scenario-detail degradation).
+/// matching `dashboard`'s scenario-detail degradation) via the shared
+/// [`read_scenario_section`] reader.
 fn scenario_detail(feature_dir: &Path, root: &str, feature: &str, slug: &str) -> ResolvedScenario {
     let scenario_path = feature_dir.join("scenarios").join(format!("{slug}.md"));
     let exists = scenario_path.is_file();
     let section = if exists {
-        read_section(&scenario_path).unwrap_or_default()
+        read_scenario_section(&scenario_path).unwrap_or_default()
     } else {
         String::new()
     };
@@ -219,15 +178,6 @@ fn scenario_detail(feature_dir: &Path, root: &str, feature: &str, slug: &str) ->
         exists,
         section,
     }
-}
-
-/// Best-effort read of a scenario's `section` (or legacy `spec-ref`)
-/// frontmatter field.
-fn read_section(path: &Path) -> Option<String> {
-    let content = read_text(path).ok()?;
-    let (fm_text, _body) = split_frontmatter(&content, path).ok()?;
-    let fm = serde_norway::from_str::<ScenarioFrontmatter>(fm_text).ok()?;
-    fm.section.or(fm.spec_ref)
 }
 
 #[cfg(test)]

@@ -24,8 +24,18 @@
 //! entries and zip entries whose Unix mode carries `S_IFLNK` are both
 //! ignored with no error (a future revision may surface them as a
 //! finding).
+//!
+//! Extraction is bounded against decompression bombs: the cumulative
+//! decompressed size is capped at [`MAX_EXTRACT_BYTES`] and the entry
+//! count at [`MAX_EXTRACT_ENTRIES`]. A gzip/deflate stream expands up to
+//! ~1000×, so `fetch-archive`'s compressed-body cap does not bound what
+//! lands on disk; without these caps a ~256 MiB bomb could write hundreds
+//! of GB. An archive that would breach either cap is rejected with an
+//! operational error naming the cap — mirroring `fetch-archive`'s
+//! detect-don't-truncate contract — rather than silently truncated.
 
 use std::fs;
+use std::io::Read;
 use std::path::{Component, Path, PathBuf};
 
 use crate::primitives::{PrimitiveError, Result, resolve_path};
@@ -94,7 +104,29 @@ fn detect_format(archive: &Path, override_format: Option<&str>) -> Result<String
     }
 }
 
+/// Cap on cumulative decompressed bytes written across all entries of a
+/// single archive (2 GiB). Gzip/deflate can expand ~1000×, so the
+/// compressed-body cap in `fetch-archive` (`MAX_FETCH_BYTES`, ~256 MiB)
+/// does not bound what lands on disk; this ceiling is the disk-exhaustion
+/// (decompression-bomb) defense. Framework tarballs decompress to well
+/// under 50 MiB, so this leaves ample headroom for legitimate use.
+const MAX_EXTRACT_BYTES: u64 = 2 * 1024 * 1024 * 1024;
+
+/// Cap on the number of entries in a single archive (100k). Bounds the
+/// many-tiny-files variant of the bomb (inode / directory-entry
+/// exhaustion) that a byte cap alone does not catch.
+const MAX_EXTRACT_ENTRIES: usize = 100_000;
+
 fn extract_tar_gz(archive: &Path, dest: &Path) -> Result<Vec<String>> {
+    extract_tar_gz_capped(archive, dest, MAX_EXTRACT_BYTES, MAX_EXTRACT_ENTRIES)
+}
+
+fn extract_tar_gz_capped(
+    archive: &Path,
+    dest: &Path,
+    byte_cap: u64,
+    entry_cap: usize,
+) -> Result<Vec<String>> {
     let file = fs::File::open(archive).map_err(|source| PrimitiveError::Io {
         path: archive.into(),
         source,
@@ -102,12 +134,18 @@ fn extract_tar_gz(archive: &Path, dest: &Path) -> Result<Vec<String>> {
     let decoder = flate2::read::GzDecoder::new(file);
     let mut tar = tar::Archive::new(decoder);
     let mut files: Vec<String> = Vec::new();
+    let mut total_bytes: u64 = 0;
+    let mut entry_count: usize = 0;
 
     let entries = tar.entries().map_err(|source| PrimitiveError::Io {
         path: archive.into(),
         source,
     })?;
     for entry in entries {
+        entry_count += 1;
+        if entry_count > entry_cap {
+            return Err(too_many_entries(archive, entry_cap));
+        }
         let mut entry = entry.map_err(|source| PrimitiveError::Io {
             path: archive.into(),
             source,
@@ -141,10 +179,7 @@ fn extract_tar_gz(archive: &Path, dest: &Path) -> Result<Vec<String>> {
             path: safe.clone(),
             source,
         })?;
-        std::io::copy(&mut entry, &mut out).map_err(|source| PrimitiveError::Io {
-            path: safe.clone(),
-            source,
-        })?;
+        total_bytes = copy_entry_capped(&mut entry, &mut out, &safe, total_bytes, byte_cap)?;
         let mode = entry.header().mode().ok();
         drop(out);
         apply_unix_mode(&safe, mode)?;
@@ -154,12 +189,25 @@ fn extract_tar_gz(archive: &Path, dest: &Path) -> Result<Vec<String>> {
 }
 
 fn extract_zip(archive: &Path, dest: &Path) -> Result<Vec<String>> {
+    extract_zip_capped(archive, dest, MAX_EXTRACT_BYTES, MAX_EXTRACT_ENTRIES)
+}
+
+fn extract_zip_capped(
+    archive: &Path,
+    dest: &Path,
+    byte_cap: u64,
+    entry_cap: usize,
+) -> Result<Vec<String>> {
     let file = fs::File::open(archive).map_err(|source| PrimitiveError::Io {
         path: archive.into(),
         source,
     })?;
     let mut zip = zip::ZipArchive::new(file).map_err(zip_to_io(archive))?;
+    if zip.len() > entry_cap {
+        return Err(too_many_entries(archive, entry_cap));
+    }
     let mut files: Vec<String> = Vec::new();
+    let mut total_bytes: u64 = 0;
     for i in 0..zip.len() {
         let mut entry = zip.by_index(i).map_err(zip_to_io(archive))?;
         let raw_path = entry
@@ -196,16 +244,57 @@ fn extract_zip(archive: &Path, dest: &Path) -> Result<Vec<String>> {
             path: safe.clone(),
             source,
         })?;
-        std::io::copy(&mut entry, &mut out).map_err(|source| PrimitiveError::Io {
-            path: safe.clone(),
-            source,
-        })?;
+        total_bytes = copy_entry_capped(&mut entry, &mut out, &safe, total_bytes, byte_cap)?;
         let mode = entry.unix_mode();
         drop(out);
         apply_unix_mode(&safe, mode)?;
         files.push(raw_path.to_string_lossy().replace('\\', "/"));
     }
     Ok(files)
+}
+
+/// Copy one archive entry into `out`, charging its decompressed size
+/// against the running cumulative `total`. Mirrors
+/// `fetch-archive::read_capped`'s detect-don't-truncate contract: reads
+/// at most `remaining + 1` bytes (where `remaining = byte_cap - total`),
+/// so an entry that would push the cumulative total past `byte_cap` is
+/// *detected* and rejected with an error naming the cap, rather than
+/// silently truncated into a corrupt-looking extraction. Returns the new
+/// running total on success.
+fn copy_entry_capped(
+    entry: impl Read,
+    out: &mut fs::File,
+    dest_path: &Path,
+    total: u64,
+    byte_cap: u64,
+) -> Result<u64> {
+    let remaining = byte_cap.saturating_sub(total);
+    let mut limited = entry.take(remaining.saturating_add(1));
+    let written = std::io::copy(&mut limited, out).map_err(|source| PrimitiveError::Io {
+        path: dest_path.into(),
+        source,
+    })?;
+    let new_total = total.saturating_add(written);
+    if new_total > byte_cap {
+        return Err(PrimitiveError::Io {
+            path: dest_path.into(),
+            source: std::io::Error::other(format!(
+                "archive expands past the extract cap of {byte_cap} bytes; extraction aborted"
+            )),
+        });
+    }
+    Ok(new_total)
+}
+
+/// Operational error for an archive whose entry count breaches
+/// `entry_cap` — named so the caller can see which cap fired.
+fn too_many_entries(archive: &Path, entry_cap: usize) -> PrimitiveError {
+    PrimitiveError::Io {
+        path: archive.into(),
+        source: std::io::Error::other(format!(
+            "archive holds more than the extract cap of {entry_cap} entries; extraction aborted"
+        )),
+    }
 }
 
 /// Unix file-type mask (`S_IFMT`): the high bits of a mode word that
@@ -578,5 +667,81 @@ mod tests {
         .unwrap();
         assert_eq!(result.format, "tar-gz");
         assert_eq!(result.count, 1);
+    }
+
+    #[test]
+    fn extract_tar_gz_capped_extracts_normal_archive_within_caps() {
+        // A normal small archive still extracts under the production caps.
+        let tmp = tempfile::tempdir().unwrap();
+        let archive = tmp.path().join("ok.tar.gz");
+        make_tar_gz(&archive, &[("a.txt", b"alpha"), ("dir/b.txt", b"beta")]);
+        let dest = tmp.path().join("out");
+        let files =
+            extract_tar_gz_capped(&archive, &dest, MAX_EXTRACT_BYTES, MAX_EXTRACT_ENTRIES).unwrap();
+        assert_eq!(files.len(), 2);
+        assert_eq!(fs::read(dest.join("a.txt")).unwrap(), b"alpha");
+        assert_eq!(fs::read(dest.join("dir/b.txt")).unwrap(), b"beta");
+    }
+
+    #[test]
+    fn extract_tar_gz_capped_rejects_entries_exceeding_byte_cap() {
+        // A single 10-byte entry blows a 4-byte cumulative cap; the error
+        // names the cap and the entry is not silently truncated.
+        let tmp = tempfile::tempdir().unwrap();
+        let archive = tmp.path().join("bomb.tar.gz");
+        make_tar_gz(&archive, &[("big.txt", b"0123456789")]);
+        let dest = tmp.path().join("out");
+        let err = extract_tar_gz_capped(&archive, &dest, 4, 100).unwrap_err();
+        let msg = err.to_string();
+        assert!(msg.contains("extract cap of 4 bytes"), "got: {msg}");
+    }
+
+    #[test]
+    fn extract_zip_capped_rejects_entries_exceeding_byte_cap() {
+        let tmp = tempfile::tempdir().unwrap();
+        let archive = tmp.path().join("bomb.zip");
+        make_zip(&archive, &[("big.txt", b"0123456789")]);
+        let dest = tmp.path().join("out");
+        let err = extract_zip_capped(&archive, &dest, 4, 100).unwrap_err();
+        let msg = err.to_string();
+        assert!(msg.contains("extract cap of 4 bytes"), "got: {msg}");
+    }
+
+    #[test]
+    fn extract_tar_gz_capped_bounds_cumulative_bytes_across_entries() {
+        // Neither entry alone exceeds the 5-byte cap, but 3 + 3 does — the
+        // running total is charged across entries, not per-entry.
+        let tmp = tempfile::tempdir().unwrap();
+        let archive = tmp.path().join("multi.tar.gz");
+        make_tar_gz(&archive, &[("a.txt", b"aaa"), ("b.txt", b"bbb")]);
+        let dest = tmp.path().join("out");
+        let err = extract_tar_gz_capped(&archive, &dest, 5, 100).unwrap_err();
+        assert!(err.to_string().contains("extract cap of 5 bytes"));
+    }
+
+    #[test]
+    fn extract_tar_gz_capped_rejects_too_many_entries() {
+        let tmp = tempfile::tempdir().unwrap();
+        let archive = tmp.path().join("many.tar.gz");
+        make_tar_gz(
+            &archive,
+            &[("a.txt", b"a"), ("b.txt", b"b"), ("c.txt", b"c")],
+        );
+        let dest = tmp.path().join("out");
+        let err = extract_tar_gz_capped(&archive, &dest, MAX_EXTRACT_BYTES, 2).unwrap_err();
+        assert!(err.to_string().contains("extract cap of 2 entries"));
+    }
+
+    #[test]
+    fn extract_zip_capped_rejects_too_many_entries() {
+        let tmp = tempfile::tempdir().unwrap();
+        let archive = tmp.path().join("many.zip");
+        make_zip(
+            &archive,
+            &[("a.txt", b"a"), ("b.txt", b"b"), ("c.txt", b"c")],
+        );
+        let dest = tmp.path().join("out");
+        let err = extract_zip_capped(&archive, &dest, MAX_EXTRACT_BYTES, 2).unwrap_err();
+        assert!(err.to_string().contains("extract cap of 2 entries"));
     }
 }

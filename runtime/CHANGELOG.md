@@ -2,6 +2,36 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.18.0] — 2026-07-11
+
+Remediation of the nine MUST and twenty-one SHOULD findings from the 0.17.0 `/gov:review` (see `specs/022-deterministic-runtime/review.md`).
+
+### Security
+
+- **writeCode boundary (BE-INPUT-004)** — the edit-path segment screen now splits on both `/` and `\`, closing a Windows-only traversal escape (`runtime/a\..\..\x` no longer satisfies `runtime/**`).
+- **Archive extraction (BE-INPUT-006)** — `extract-archive` now bounds cumulative decompressed bytes (`MAX_EXTRACT_BYTES` = 2 GiB) and entry count (`MAX_EXTRACT_ENTRIES` = 100000), erroring with the cap named before writing past it, closing a decompression-bomb DoS through the unverified bootstrap path.
+- **Outbound fetch (BE-INPUT-007)** — `fetch-archive` enforces an https-only scheme allowlist and denies hosts resolving to loopback / link-local / RFC-1918 / unique-local / cloud-metadata ranges (SSRF). An opt-in `GVRN_FETCH_ALLOW_INSECURE_HOSTS` allowlist (empty by default) exempts named hosts for internal mirrors and local testing.
+- **Slug validation (BE-INPUT-001/002)** — `validate_slug` is now an allowlist (`^[a-z0-9]+(?:-[a-z0-9]+)*$`), rejecting newlines and control characters that previously reached written filenames and headings; `append-task` validates its `slug` before interpolating it into `tasks.md`.
+
+### Fixed
+
+- **Command exec-path correctness** — `/gov:clarify` step 2 no longer collapses `read-spec` and the recovery-branch `set-status` into one step (the parser bound only the last), `/gov:clarify`'s draft→clarified flip is gated by a dedicated `gate-confirm` step, and `/gov:groom`'s scenario route no longer drops `create-scenario`. Root cause fixed structurally: the parser now raises `ParseError::Invalid` when one numbered step names two distinct primitives, so this class fails CI instead of silently dropping a dispatch.
+- **`gvrn exec specify`** binds the newly-created feature into the session write (a `create-feature` `created: true` result overrides the stale session-seeded `feature`/`path`), instead of rewriting the session to the old target.
+- **`verifyCriteria`** verdicts now gate `mark-criterion` on the exec path — a criterion the response does not affirm `met: true` is left unchecked.
+- **`read-spec`** folds wrapped acceptance-criterion continuation lines into the criterion text (no more mid-sentence truncation reaching `verifyCriteria`), preserving the checkbox-index contract.
+
+### Performance
+
+- `check-stuck` memoizes status parses by the spec's blob OID (one parse per distinct spec version, not per commit); the git-walk MCP tools (`check-stuck`, `compute-review-scope`, `derive-boundary`) run under `spawn_blocking`; `is-gitignored` opens the repo once per plan-file loop; `first-rule-with-verification` is a single pass.
+
+### Internal
+
+- Consolidation (behavior-preserving): shared `list_feature_dirs`, `feature_number`, `read_scenario_section`, `list_scenario_files`, `template_candidates`, and `frontmatter_status` helpers replace ~nine hand-rolled copies across the new primitives and payload builders; `UNBLOCKING_STATUSES`/`PLANNED_OR_LATER` derive from `schema::status`; `append-inbox` and `check-artifacts` reuse the shared checkbox grammar and case-insensitive scenario walk (closing two latent divergences); the seven extension-request builders share `typed_with_legacy_context`/`typed_only`. Command-prose restatements now point at the markdown-only reference rather than duplicating it.
+
+### Notes
+
+- `cargo test` (760), `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `scripts/audit/run-all.sh`, and the ubuntu/macos/windows CI matrix are clean. Ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary).
+
 ## [0.17.0] — 2026-07-11
 
 The backlog burn-down release: every SHOULD-tier and coverage finding from the 2026-07-11 full-runtime review, implemented as nine scenarios on spec 022 (`primitive-robustness-hardening`, `archive-network-hardening`, `parser-walker-conventions`, `extension-request-hygiene`, `implement-completion-gate`, `clarify-command-acceleration`, `groom-command-acceleration`, `scaffolding-primitives`, `analyze-artifact-checks`) plus the CI/README/consolidation chores. The minor bump is driven by the four new primitives and the parser/walker convention changes below.

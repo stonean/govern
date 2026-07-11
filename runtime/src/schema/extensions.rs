@@ -518,6 +518,14 @@ pub fn validate_write_code_boundary(
 /// when the path is a clean repo-relative path safe to match. Paths are
 /// rejected rather than normalized silently — the LLM is asked for clean
 /// repo-relative paths.
+///
+/// The segment screen splits on **both** `/` and `\`: the release ships
+/// the `x86_64-pc-windows-msvc` target, where `\` is a path separator, so
+/// `runtime/a\..\..\x` would otherwise slip a `..` traversal past a `/`-only
+/// split (its lone backslash-laden segment is not literally `..`) and
+/// escape a `runtime/**` boundary. Treating `\` as a separator here keeps
+/// the screen in step with the leading-`\` and `C:` Windows forms already
+/// rejected above.
 fn boundary_rejection_reason(path: &str) -> Option<String> {
     if path.starts_with('/') || path.starts_with('\\') {
         return Some("is absolute — provide clean repo-relative paths".into());
@@ -530,7 +538,7 @@ fn boundary_rejection_reason(path: &str) -> Option<String> {
             "starts with drive prefix `{drive}:` — provide clean repo-relative paths"
         ));
     }
-    for segment in path.split('/') {
+    for segment in path.split(['/', '\\']) {
         if segment == "." || segment == ".." {
             return Some(format!(
                 "contains traversal segment `{segment}` — provide clean repo-relative paths"
@@ -841,6 +849,28 @@ mod tests {
         let empty = validate_write_code_boundary(&single_edit_response("runtime//x"), &boundary)
             .unwrap_err();
         assert!(empty.to_string().contains("empty segment"));
+    }
+
+    #[test]
+    fn write_code_boundary_rejects_backslash_traversal_segments() {
+        // `runtime/a\..\..\x` starts with `runtime/` and its only
+        // `/`-delimited tail segment (`a\..\..\x`) is not literally `..`,
+        // so a `/`-only split would wave it through against `runtime/**` —
+        // then `\` resolves as a separator on the Windows release target
+        // and the `..` components escape the boundary. Splitting on both
+        // separators catches the traversal.
+        use super::{ValidationError, validate_write_code_boundary};
+        let boundary = vec!["runtime/**".to_string()];
+        let err =
+            validate_write_code_boundary(&single_edit_response("runtime/a\\..\\..\\x"), &boundary)
+                .unwrap_err();
+        assert!(err.to_string().contains("traversal segment `..`"));
+        match err {
+            ValidationError::OutOfBoundary { path, .. } => {
+                assert_eq!(path, "runtime/a\\..\\..\\x");
+            }
+            other => panic!("expected OutOfBoundary, got {other:?}"),
+        }
     }
 
     #[test]

@@ -99,12 +99,35 @@ fn parse_sections(body: &str, include_body: bool) -> Vec<SpecSection> {
 /// addressing — both consume the same shared walker AND the same checkbox
 /// grammar ([`checkbox::parse_checkbox_line`]), so index N here is the
 /// checkbox index N flips.
+///
+/// A wrapped acceptance criterion spans multiple source lines: an indented
+/// non-checkbox continuation line folds into the preceding criterion's
+/// text (mirroring [`parse_open_questions`]) rather than being dropped
+/// mid-sentence. The index derivation stays keyed to checkbox lines only —
+/// a continuation line never pushes a new entry — so the read/mark index
+/// contract is preserved.
 fn parse_checkboxes(body: &str, section_heading: &str) -> Vec<AcceptanceCriterion> {
     let lines: Vec<&str> = body.lines().collect();
-    let mut out = Vec::new();
+    let mut out: Vec<AcceptanceCriterion> = Vec::new();
     for idx in section_line_indices(&lines, section_heading) {
-        if let Some((checked, text)) = checkbox::parse_checkbox_line(lines[idx]) {
+        let line = lines[idx];
+        if let Some((checked, text)) = checkbox::parse_checkbox_line(line) {
             out.push(AcceptanceCriterion { checked, text });
+            continue;
+        }
+        // Fold an indented, non-checkbox continuation line into the last
+        // criterion. Indentation is the wrap signal (markdown continuation
+        // lines are indented under their list item); a non-indented,
+        // non-checkbox line is not a continuation and is ignored.
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if line.starts_with([' ', '\t'])
+            && let Some(current) = out.last_mut()
+        {
+            current.text.push(' ');
+            current.text.push_str(trimmed);
         }
     }
     out
@@ -298,6 +321,49 @@ mod tests {
             .map(|c| c.text.as_str())
             .collect();
         assert_eq!(texts, vec!["Real criterion.", "Second real criterion."]);
+        assert!(!result.acceptance_criteria[0].checked);
+        assert!(result.acceptance_criteria[1].checked);
+    }
+
+    #[test]
+    fn folds_wrapped_continuation_into_criterion_text() {
+        // A multi-line acceptance criterion must reach verifyCriteria whole,
+        // not truncated mid-sentence. The index contract is preserved: the
+        // wrapped criterion is still one entry at its checkbox index.
+        let tmp = tempfile::tempdir().unwrap();
+        let feature_dir = tmp.path().join("specs/042-fresh");
+        std::fs::create_dir_all(&feature_dir).unwrap();
+        let spec = "---\nstatus: draft\ndependencies: []\n---\n\n# T\n\n\
+                    ## Acceptance Criteria\n\n\
+                    - [ ] A criterion that wraps across\n  two source lines.\n\
+                    - [x] A single-line criterion.\n";
+        std::fs::write(feature_dir.join("spec.md"), spec).unwrap();
+
+        let result = run(
+            &ReadSpecArgs {
+                feature: "042-fresh".into(),
+                include_body: false,
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        let texts: Vec<&str> = result
+            .acceptance_criteria
+            .iter()
+            .map(|c| c.text.as_str())
+            .collect();
+        assert_eq!(
+            texts,
+            vec![
+                "A criterion that wraps across two source lines.",
+                "A single-line criterion.",
+            ]
+        );
+        assert_eq!(
+            result.acceptance_criteria.len(),
+            2,
+            "wrap must not add an entry"
+        );
         assert!(!result.acceptance_criteria[0].checked);
         assert!(result.acceptance_criteria[1].checked);
     }

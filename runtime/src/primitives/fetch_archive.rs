@@ -36,11 +36,22 @@
 //! surface. Network failures map to [`PrimitiveError::Http`] (transport)
 //! or [`PrimitiveError::HttpStatus`] (non-2xx).
 //!
+//! Outbound requests are guarded against SSRF before a connection is
+//! opened ([`validate_fetch_url`]): the scheme is allowlisted to `https`
+//! (which also satisfies the transport-encryption rule), and the host is
+//! resolved with `std::net` so every candidate address can be screened —
+//! any URL resolving to a loopback, link-local (including the
+//! `169.254.169.254` cloud-metadata endpoint), RFC-1918 private,
+//! unique-local, or unspecified address is rejected. IPv4-mapped IPv6
+//! addresses are unwrapped so a `::ffff:127.0.0.1` literal cannot smuggle
+//! an internal target past the v4 screen.
+//!
 //! The sidecar format matches `shasum -a 256` output: one or more lines
 //! shaped `<hex>  <filename>`. Only the first hex digest is consulted;
 //! filename column is informational.
 
 use std::io::Read;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, ToSocketAddrs};
 use std::path::{Path, PathBuf};
 
 use sha2::{Digest, Sha256};
@@ -54,8 +65,10 @@ use crate::schema::primitives::{FetchArchiveArgs, FetchArchiveResult};
 ///
 /// - [`PrimitiveError::Http`] / [`PrimitiveError::HttpStatus`] on network failure.
 /// - [`PrimitiveError::Io`] on local filesystem failures writing the archive,
-///   or when the response body exceeds the `MAX_FETCH_BYTES` fetch cap
-///   (the error message names the cap; the archive is not written).
+///   when the response body exceeds the `MAX_FETCH_BYTES` fetch cap (the
+///   error message names the cap; the archive is not written), or when the
+///   URL is refused by the SSRF/transport guard ([`validate_fetch_url`] —
+///   non-`https` scheme or a host resolving to an internal address).
 /// - [`PrimitiveError::MalformedSidecar`] when the sidecar's first hex token isn't a valid 64-char sha256.
 /// - [`PrimitiveError::ChecksumMismatch`] when the computed sha differs from
 ///   the sidecar. Raised before the archive is written; the error's `path`
@@ -97,6 +110,7 @@ pub fn run(args: &FetchArchiveArgs, repo: &Path) -> Result<FetchArchiveResult> {
 }
 
 fn fetch_bytes(url: &str) -> Result<Vec<u8>> {
+    validate_fetch_url(url)?;
     let response = reqwest::blocking::get(url).map_err(|source| PrimitiveError::Http {
         url: url.into(),
         source,
@@ -109,6 +123,144 @@ fn fetch_bytes(url: &str) -> Result<Vec<u8>> {
         });
     }
     read_capped(response, MAX_FETCH_BYTES, url)
+}
+
+/// SSRF/transport guard applied to every outbound fetch before a socket is
+/// opened. Enforces (a) an `https`-only scheme allowlist — rejecting
+/// `http`, `file`, `ftp`, and everything else — and (b) an internal-range
+/// denial: the host is resolved via `std::net` and *every* candidate
+/// address is screened, so the URL is refused if any resolved address is
+/// loopback, link-local, RFC-1918 private, IPv6 unique-local, or
+/// unspecified (covering the `169.254.169.254` cloud-metadata endpoint,
+/// which is link-local). A rejection is an operational error naming the
+/// reason; no request is made.
+fn validate_fetch_url(url: &str) -> Result<()> {
+    let parsed = reqwest::Url::parse(url)
+        .map_err(|err| fetch_refused(url, &format!("is not a valid URL: {err}")))?;
+    // Explicit opt-in escape hatch for internal mirrors and local testing.
+    // The SSRF rule (BE-INPUT-007) denies internal ranges *by default*; a
+    // host named in `GVRN_FETCH_ALLOW_INSECURE_HOSTS` (comma-separated) is
+    // exempted from both the https-only and internal-address screens. Empty
+    // by default, so the secure posture holds unless an operator opts in.
+    // Only a URL that actually carries a host can be allowlisted; hostless
+    // URLs (e.g. `file://`) fall through to the scheme rejection below.
+    if let Some(host) = parsed.host_str()
+        && host_is_insecure_allowed(host)
+    {
+        return Ok(());
+    }
+    if parsed.scheme() != "https" {
+        return Err(fetch_refused(
+            url,
+            &format!(
+                "scheme `{}` is not permitted; only https is allowed",
+                parsed.scheme()
+            ),
+        ));
+    }
+    let host = parsed
+        .host_str()
+        .ok_or_else(|| fetch_refused(url, "has no host to resolve"))?;
+    // `url` returns IPv6 hosts in bracketed form (`[::1]`); `ToSocketAddrs`
+    // parses the bare literal, so strip a matched `[` … `]` pair.
+    let host = host
+        .strip_prefix('[')
+        .and_then(|inner| inner.strip_suffix(']'))
+        .unwrap_or(host);
+    let port = parsed.port_or_known_default().unwrap_or(443);
+    let resolved = (host, port)
+        .to_socket_addrs()
+        .map_err(|err| fetch_refused(url, &format!("host `{host}` did not resolve: {err}")))?;
+    let mut saw_address = false;
+    for addr in resolved {
+        saw_address = true;
+        if is_internal_ip(addr.ip()) {
+            return Err(fetch_refused(
+                url,
+                &format!(
+                    "resolves to internal address {} (loopback / link-local / private / metadata ranges are denied)",
+                    addr.ip()
+                ),
+            ));
+        }
+    }
+    if !saw_address {
+        return Err(fetch_refused(
+            url,
+            &format!("host `{host}` resolved to no addresses"),
+        ));
+    }
+    Ok(())
+}
+
+/// Name of the environment variable holding the comma-separated
+/// insecure-host allowlist consulted by [`validate_fetch_url`].
+const FETCH_ALLOW_INSECURE_HOSTS_ENV: &str = "GVRN_FETCH_ALLOW_INSECURE_HOSTS";
+
+/// Whether `host` is exempted from the SSRF/scheme screens via the
+/// `GVRN_FETCH_ALLOW_INSECURE_HOSTS` allowlist. Matching is exact against
+/// each comma-separated, whitespace-trimmed entry. An unset or empty
+/// variable exempts nothing (the secure default).
+fn host_is_insecure_allowed(host: &str) -> bool {
+    std::env::var(FETCH_ALLOW_INSECURE_HOSTS_ENV)
+        .ok()
+        .is_some_and(|list| list.split(',').map(str::trim).any(|entry| entry == host))
+}
+
+/// Build the operational error for a refused fetch URL. Reuses
+/// [`PrimitiveError::Io`] (as [`read_capped`] does for its cap breach) so
+/// no new error variant is needed; the `path` carries the offending URL.
+fn fetch_refused(url: &str, reason: &str) -> PrimitiveError {
+    PrimitiveError::Io {
+        path: PathBuf::from(url),
+        source: std::io::Error::other(format!("refusing to fetch `{url}`: {reason}")),
+    }
+}
+
+/// Classify a resolved address as internal (must-not-be-fetched) per the
+/// SSRF denial ranges. Delegates to per-family helpers; IPv4-mapped IPv6
+/// addresses are unwrapped to their v4 form first so they cannot bypass
+/// the v4 screen.
+fn is_internal_ip(ip: IpAddr) -> bool {
+    match ip {
+        IpAddr::V4(v4) => is_internal_v4(v4),
+        IpAddr::V6(v6) => is_internal_v6(v6),
+    }
+}
+
+/// Internal-range test for IPv4: loopback `127.0.0.0/8`, link-local
+/// `169.254.0.0/16` (which contains the `169.254.169.254` metadata
+/// endpoint), RFC-1918 private (`10/8`, `172.16/12`, `192.168/16`),
+/// broadcast, and the unspecified `0.0.0.0`.
+fn is_internal_v4(ip: Ipv4Addr) -> bool {
+    ip.is_loopback()
+        || ip.is_private()
+        || ip.is_link_local()
+        || ip.is_broadcast()
+        || ip.is_unspecified()
+}
+
+/// Internal-range test for IPv6: loopback `::1`, unspecified `::`,
+/// unique-local `fc00::/7`, and link-local `fe80::/10`. `is_unique_local`
+/// and `is_unicast_link_local` are unstable on the pinned toolchain, so
+/// the two ranges are matched by prefix directly. IPv4-mapped addresses
+/// are folded back to the v4 screen.
+fn is_internal_v6(ip: Ipv6Addr) -> bool {
+    if let Some(v4) = ip.to_ipv4_mapped() {
+        return is_internal_v4(v4);
+    }
+    ip.is_loopback() || ip.is_unspecified() || is_unique_local_v6(ip) || is_link_local_v6(ip)
+}
+
+/// `fc00::/7` — the top 7 bits are `1111110`, i.e. the first byte is
+/// `0xfc` or `0xfd`.
+fn is_unique_local_v6(ip: Ipv6Addr) -> bool {
+    (ip.octets()[0] & 0xfe) == 0xfc
+}
+
+/// `fe80::/10` — the top 10 bits are `1111111010`.
+fn is_link_local_v6(ip: Ipv6Addr) -> bool {
+    (ip.segments()[0] & 0xffc0) == 0xfe80
 }
 
 /// Read at most `cap` bytes from `reader`, erroring when the stream holds
@@ -202,8 +354,16 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
 
     use std::io::Cursor;
+    use std::net::IpAddr;
 
-    use super::{is_sha256_hex, parse_sidecar_hex, read_capped, sha256_hex};
+    use super::{
+        host_is_insecure_allowed, is_internal_ip, is_sha256_hex, parse_sidecar_hex, read_capped,
+        sha256_hex, validate_fetch_url,
+    };
+
+    fn ip(s: &str) -> IpAddr {
+        s.parse().unwrap()
+    }
 
     #[test]
     fn sha256_hex_matches_known_vector() {
@@ -288,5 +448,93 @@ mod tests {
         assert!(!is_sha256_hex(
             "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015agz"
         ));
+    }
+
+    // -- SSRF / scheme guard (all offline: IP literals resolve without DNS,
+    //    and scheme rejection short-circuits before any resolution) --------
+
+    #[test]
+    fn validate_fetch_url_rejects_non_https_scheme() {
+        // `http://` (and any non-https scheme) is refused before a socket
+        // is opened. Uses an IP literal so no DNS is attempted even if the
+        // scheme check were somehow skipped.
+        let err = validate_fetch_url("http://10.0.0.1/main.tar.gz").unwrap_err();
+        let msg = err.to_string();
+        assert!(msg.contains("only https is allowed"), "got: {msg}");
+
+        let file = validate_fetch_url("file:///etc/passwd").unwrap_err();
+        assert!(file.to_string().contains("only https is allowed"));
+    }
+
+    #[test]
+    fn insecure_host_allowlist_is_empty_by_default() {
+        // With the env var unset (the ambient state for the test process),
+        // nothing is exempted — the secure default holds. The allow path is
+        // exercised end-to-end by the govern-basic parity subprocess, which
+        // sets GVRN_FETCH_ALLOW_INSECURE_HOSTS on its own process env (no
+        // in-process env mutation here, which would race sibling tests).
+        assert!(!host_is_insecure_allowed("127.0.0.1"));
+        assert!(!host_is_insecure_allowed("example.com"));
+    }
+
+    #[test]
+    fn validate_fetch_url_rejects_https_to_loopback() {
+        // An https URL whose host is a loopback literal resolves offline to
+        // 127.0.0.1 and is denied as an internal target.
+        let err = validate_fetch_url("https://127.0.0.1/main.tar.gz").unwrap_err();
+        let msg = err.to_string();
+        assert!(msg.contains("internal address"), "got: {msg}");
+
+        assert!(
+            validate_fetch_url("https://[::1]/x")
+                .unwrap_err()
+                .to_string()
+                .contains("internal address")
+        );
+        // The cloud-metadata endpoint (link-local) is refused.
+        assert!(
+            validate_fetch_url("https://169.254.169.254/latest/meta-data/")
+                .unwrap_err()
+                .to_string()
+                .contains("internal address")
+        );
+    }
+
+    #[test]
+    fn validate_fetch_url_rejects_malformed_url() {
+        let err = validate_fetch_url("not a url").unwrap_err();
+        assert!(err.to_string().contains("not a valid URL"));
+    }
+
+    #[test]
+    fn is_internal_ip_flags_each_denied_range() {
+        // IPv4: loopback, RFC-1918 (all three blocks), link-local +
+        // metadata, unspecified.
+        assert!(is_internal_ip(ip("127.0.0.1")));
+        assert!(is_internal_ip(ip("10.1.2.3")));
+        assert!(is_internal_ip(ip("172.16.0.1")));
+        assert!(is_internal_ip(ip("172.31.255.255")));
+        assert!(is_internal_ip(ip("192.168.1.1")));
+        assert!(is_internal_ip(ip("169.254.0.1")));
+        assert!(is_internal_ip(ip("169.254.169.254")));
+        assert!(is_internal_ip(ip("0.0.0.0")));
+        // IPv6: loopback, unspecified, unique-local fc00::/7, link-local
+        // fe80::/10, and an IPv4-mapped loopback.
+        assert!(is_internal_ip(ip("::1")));
+        assert!(is_internal_ip(ip("::")));
+        assert!(is_internal_ip(ip("fc00::1")));
+        assert!(is_internal_ip(ip("fd12:3456::1")));
+        assert!(is_internal_ip(ip("fe80::1")));
+        assert!(is_internal_ip(ip("::ffff:127.0.0.1")));
+    }
+
+    #[test]
+    fn is_internal_ip_allows_public_addresses() {
+        // A public v4, a public v6 (Cloudflare DNS), and a boundary just
+        // outside 172.16/12 stay allowed.
+        assert!(!is_internal_ip(ip("8.8.8.8")));
+        assert!(!is_internal_ip(ip("172.32.0.1")));
+        assert!(!is_internal_ip(ip("172.15.255.255")));
+        assert!(!is_internal_ip(ip("2606:4700:4700::1111")));
     }
 }

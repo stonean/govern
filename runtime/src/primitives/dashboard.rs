@@ -18,18 +18,15 @@ use serde::Deserialize;
 
 use crate::primitives::write_session::SESSION_FILE;
 use crate::primitives::{
-    PrimitiveError, Result, is_feature_slug, read_text, section_lines, split_frontmatter,
+    PrimitiveError, Result, ScenarioFrontmatter, list_feature_dirs, list_scenario_files, read_text,
+    section_lines, split_frontmatter,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{
     DashboardArgs, DashboardConfig, DashboardResult, DashboardScenarioDetail,
     DashboardSessionTarget, DashboardSpec, Frontmatter,
 };
-
-/// Statuses that satisfy a dependency. A dep at `draft` blocks downstream
-/// consumers; anything `clarified` and above is acceptable. Mirrors the
-/// blocked-by rule the markdown encoded before the primitive existed.
-const UNBLOCKING_STATUSES: &[&str] = &["clarified", "planned", "in-progress", "done"];
+use crate::schema::status::UNBLOCKING_STATUSES;
 
 /// Execute the `dashboard` primitive.
 ///
@@ -57,42 +54,16 @@ pub fn run(_args: &DashboardArgs, repo: &Path) -> Result<DashboardResult> {
 }
 
 /// Walk `specs/` and build the per-spec entry list. Non-`NNN-feature`
-/// directories are skipped; missing `spec.md` halts with a structured
-/// error. After the first pass, walks the list a second time to fill in
-/// each spec's `blocked-by` (needs every spec's status to be known).
+/// directories are skipped (via the shared [`list_feature_dirs`]); a
+/// present-but-missing `spec.md` still halts with a structured error from
+/// [`load_one_spec`]. After the first pass, walks the list a second time
+/// to fill in each spec's `blocked-by` (needs every spec's status known).
 fn load_specs(repo: &Path) -> Result<Vec<DashboardSpec>> {
     let layout = paths::Paths::load(repo);
     let specs_dir = repo.join(&layout.specs_root);
     let mut entries: Vec<DashboardSpec> = Vec::new();
-    if !specs_dir.is_dir() {
-        return Ok(entries);
-    }
-    let mut dir_names: Vec<String> = Vec::new();
-    let read_dir = std::fs::read_dir(&specs_dir).map_err(|source| PrimitiveError::Io {
-        path: specs_dir.clone(),
-        source,
-    })?;
-    for entry in read_dir {
-        let entry = entry.map_err(|source| PrimitiveError::Io {
-            path: specs_dir.clone(),
-            source,
-        })?;
-        let file_type = entry.file_type().map_err(|source| PrimitiveError::Io {
-            path: entry.path(),
-            source,
-        })?;
-        if !file_type.is_dir() {
-            continue;
-        }
-        let name = entry.file_name().to_string_lossy().into_owned();
-        if !is_feature_slug(&name) {
-            continue;
-        }
-        dir_names.push(name);
-    }
-    dir_names.sort();
 
-    for slug in dir_names {
+    for slug in list_feature_dirs(&specs_dir) {
         entries.push(load_one_spec(&specs_dir, &layout.specs_root, &slug)?);
     }
 
@@ -148,30 +119,12 @@ fn load_one_spec(specs_dir: &Path, root: &str, slug: &str) -> Result<DashboardSp
     })
 }
 
-/// Count `*.md` files directly under `scenarios_dir`. Subdirectories and
-/// non-markdown files are excluded. Returns 0 when the directory is
-/// absent or unreadable.
+/// Count `*.md` files directly under `scenarios_dir` via the shared
+/// case-insensitive [`list_scenario_files`] — the same set `check-artifacts`
+/// derives scenario slugs from. Returns 0 when the directory is absent or
+/// unreadable.
 fn count_scenario_files(scenarios_dir: &Path) -> u32 {
-    let Ok(read_dir) = std::fs::read_dir(scenarios_dir) else {
-        return 0;
-    };
-    let mut count: u32 = 0;
-    for entry in read_dir.flatten() {
-        let Ok(file_type) = entry.file_type() else {
-            continue;
-        };
-        if !file_type.is_file() {
-            continue;
-        }
-        if entry
-            .path()
-            .extension()
-            .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
-        {
-            count += 1;
-        }
-    }
-    count
+    u32::try_from(list_scenario_files(scenarios_dir).len()).unwrap_or(u32::MAX)
 }
 
 /// Count unresolved entries in a spec body's `## Open Questions` section.
@@ -335,16 +288,6 @@ fn load_scenario_detail(repo: &Path, rel_path: &str) -> Result<Option<DashboardS
         context_summary,
         open_question_count,
     }))
-}
-
-/// Scenario frontmatter shape — `section` is the post-017 field; `spec-ref`
-/// is the pre-017 legacy field still encountered on older scenarios.
-#[derive(Deserialize)]
-struct ScenarioFrontmatter {
-    #[serde(default)]
-    section: Option<String>,
-    #[serde(default, rename = "spec-ref")]
-    spec_ref: Option<String>,
 }
 
 /// First non-blank, non-HTML-comment line of the scenario body's

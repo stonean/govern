@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 use crate::primitives::{
     PhaseRange, PrimitiveError, Result, TasksStructure, detect_tasks_structure, iter_phase_ranges,
     iter_task_numbers_at_levels, parse_atx_heading, read_text, rel_path, split_frontmatter,
-    validate_no_traversal, write_atomic,
+    validate_no_traversal, validate_slug, write_atomic,
 };
 use crate::schema::primitives::{AppendTaskArgs, AppendTaskResult};
 
@@ -37,6 +37,16 @@ pub fn run(args: &AppendTaskArgs, repo: &Path) -> Result<AppendTaskResult> {
         for (idx, item) in items.iter().enumerate() {
             validate_single_line(&format!("body[{idx}]"), item)?;
         }
+    }
+    // BE-INPUT-001: the `slug` argument is interpolated verbatim into the
+    // default-body `scenarios/{slug}.md` line, but the other text arguments
+    // above were the only ones screened. Validate it against the slug-grammar
+    // allowlist (BE-INPUT-002) — mirroring `create-scenario` — so a slug like
+    // `x\n## 99. Phantom` cannot smuggle a path segment or a phantom task
+    // heading into tasks.md. Runs before the feature-dir check so the refusal
+    // never touches disk.
+    if let Some(slug) = &args.slug {
+        validate_slug(slug)?;
     }
     // Q1 resolution: when body is omitted, slug is required. Refuse cleanly
     // rather than silently doubling the slug from the title (the bug the
@@ -552,6 +562,32 @@ mod tests {
             matches!(&err, PrimitiveError::InvalidArgument { primitive, argument, .. }
                 if primitive == "append-task" && argument == "title"),
             "expected InvalidArgument for title, got {err:?}"
+        );
+        assert_eq!(
+            fs::read_to_string(&tasks_path).unwrap(),
+            original,
+            "tasks.md must be untouched"
+        );
+    }
+
+    #[test]
+    fn rejects_slug_injection_before_write() {
+        // BE-INPUT-001: a slug smuggling `\n## 99. …` would append a
+        // phantom task heading through the default-body line. The slug
+        // allowlist must refuse it before any write.
+        let tmp = tempdir().unwrap();
+        make_feature_with_spec(tmp.path(), "specs/042-foo", "042 — Foo");
+        let tasks_path = tmp.path().join("specs/042-foo/tasks.md");
+        fs::write(&tasks_path, "# Tasks\n\n## 1. First\n").unwrap();
+        let original = fs::read_to_string(&tasks_path).unwrap();
+
+        let mut a = args("specs/042-foo", "Innocent", "done.");
+        a.body = None;
+        a.slug = Some("x\n## 99. Phantom\n- [ ] injected".into());
+        let err = run(&a, tmp.path()).unwrap_err();
+        assert!(
+            matches!(&err, PrimitiveError::InvalidSlug { .. }),
+            "expected InvalidSlug, got {err:?}"
         );
         assert_eq!(
             fs::read_to_string(&tasks_path).unwrap(),

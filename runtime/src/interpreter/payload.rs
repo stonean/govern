@@ -31,6 +31,7 @@ use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
 use regex::Regex;
+use serde::Serialize;
 use serde_json::{Map, Value};
 
 use crate::host::Host;
@@ -41,7 +42,7 @@ use crate::schema::extensions::{
     RouteInboxSpec, VerifyCriteriaRequest, VerifyCriterion, WriteCodeRequest, WriteCodeTask,
     WriteSpecBodyRequest,
 };
-use crate::schema::primitives::{Frontmatter, ReadTasksArgs};
+use crate::schema::primitives::ReadTasksArgs;
 
 /// Errors that abort payload construction. The interpreter surfaces these
 /// as structured `error` envelopes (e.g.,
@@ -187,6 +188,31 @@ fn merge_legacy_context(object: &mut Map<String, Value>, context: &Map<String, V
     }
 }
 
+/// Serialize a typed request and append the filtered legacy-compat context
+/// fields after it ([`merge_legacy_context`]). The typed fields lead in
+/// declaration order (the cache anchor); walker-internal accumulator keys
+/// are dropped and keys the typed prefix already emitted win. Shared epilogue
+/// for the builders that carry a legacy tail (`writeCode`, `writeSpecBody`,
+/// `performReview`).
+fn typed_with_legacy_context<T: Serialize>(typed: &T, context: &Map<String, Value>) -> Value {
+    let typed_value = serde_json::to_value(typed).unwrap_or(Value::Null);
+    let mut object = match typed_value {
+        Value::Object(map) => map,
+        _ => Map::new(),
+    };
+    merge_legacy_context(&mut object, context);
+    Value::Object(object)
+}
+
+/// Serialize a typed request as the entire payload, with no legacy context
+/// tail. Shared epilogue for the builders the data model documents as
+/// bare-typed (`assessSpecQuality`, `askClarifyQuestion`, `routeInboxItem`,
+/// `verifyCriteria`) — the previous raw walker-context dump is exactly the
+/// behavior those builders replace.
+fn typed_only<T: Serialize>(typed: &T) -> Value {
+    serde_json::to_value(typed).unwrap_or(Value::Null)
+}
+
 /// Build the `performReview` request for one pass. Loads the in-scope files
 /// (`scope`, from `compute-review-scope`) and the pass's rule files
 /// (`selected` basenames under `rules-dir`, from `discover-rule-files`) off
@@ -208,18 +234,12 @@ fn build_perform_review_request(context: &Map<String, Value>, repo: &Path) -> Va
         rule_files,
         pass,
     };
-    let typed_value = serde_json::to_value(&typed).unwrap_or(Value::Null);
-    let mut object = match typed_value {
-        Value::Object(map) => map,
-        _ => Map::new(),
-    };
     // Filtered merge: pass N must not see passes 1..N-1's accumulated
     // `findings` or raw `llm:performReview` echoes, but keeps the
     // primitive results it legitimately needs (`scope`/`diff-base` from
     // compute-review-scope, `selected`/`rules-dir`/`notices` from
     // discover-rule-files).
-    merge_legacy_context(&mut object, context);
-    Value::Object(object)
+    typed_with_legacy_context(&typed, context)
 }
 
 /// Classification of a repo-relative path against the canonicalized repo root
@@ -341,13 +361,7 @@ fn build_write_code_request(
     // then legacy context fields that hosts may already parse (filtered:
     // no `llm:*` echoes or accumulated `findings` — the whole-session dump
     // eroded the cache anchor). Keys present in both prefer the typed value.
-    let typed_value = serde_json::to_value(&typed).unwrap_or(Value::Null);
-    let mut object = match typed_value {
-        Value::Object(map) => map,
-        _ => Map::new(),
-    };
-    merge_legacy_context(&mut object, context);
-    Ok(Value::Object(object))
+    Ok(typed_with_legacy_context(&typed, context))
 }
 
 /// Build the `writeSpecBody` request. All documented typed fields are
@@ -395,13 +409,7 @@ fn build_write_spec_body_request(
         feature_description,
         existing_content,
     };
-    let typed_value = serde_json::to_value(&typed).unwrap_or(Value::Null);
-    let mut object = match typed_value {
-        Value::Object(map) => map,
-        _ => Map::new(),
-    };
-    merge_legacy_context(&mut object, context);
-    Value::Object(object)
+    typed_with_legacy_context(&typed, context)
 }
 
 /// Resolve the template file the running command fills. `/gov:plan` fills
@@ -420,11 +428,7 @@ fn load_template(command_name: &str, repo: &Path) -> (String, String) {
         _ => return (String::new(), String::new()),
     };
     let specs_root = crate::schema::paths::Paths::load(repo).specs_root;
-    let candidates = [
-        format!("{specs_root}/templates/{file}"),
-        format!("framework/templates/spec/{file}"),
-    ];
-    for rel in candidates {
+    for rel in crate::primitives::template_candidates(&specs_root, file) {
         if let Some(content) = read_repo_file(repo, &rel) {
             return (rel, content);
         }
@@ -452,7 +456,7 @@ fn build_ask_clarify_question_request(context: &Map<String, Value>, repo: &Path)
         spec_content,
         question,
     };
-    serde_json::to_value(&typed).unwrap_or(Value::Null)
+    typed_only(&typed)
 }
 
 /// Resolve the repo-relative path of the spec file the walker targets.
@@ -554,7 +558,7 @@ fn build_route_inbox_item_request(context: &Map<String, Value>, repo: &Path) -> 
         routes: INBOX_ROUTES.iter().map(ToString::to_string).collect(),
         available_specs: load_available_specs(repo),
     };
-    serde_json::to_value(&typed).unwrap_or(Value::Null)
+    typed_only(&typed)
 }
 
 /// Scan the configured spec root for `NNN-slug` feature directories and
@@ -564,17 +568,7 @@ fn build_route_inbox_item_request(context: &Map<String, Value>, repo: &Path) -> 
 /// router). Sorted by slug for deterministic payloads.
 fn load_available_specs(repo: &Path) -> Vec<RouteInboxSpec> {
     let specs_dir = crate::schema::paths::specs_dir(repo);
-    let Ok(read_dir) = std::fs::read_dir(&specs_dir) else {
-        return Vec::new();
-    };
-    let mut slugs: Vec<String> = read_dir
-        .filter_map(std::result::Result::ok)
-        .filter(|entry| entry.path().is_dir())
-        .filter_map(|entry| entry.file_name().into_string().ok())
-        .filter(|name| crate::primitives::is_feature_slug(name))
-        .collect();
-    slugs.sort();
-    slugs
+    crate::primitives::list_feature_dirs(&specs_dir)
         .into_iter()
         .map(|slug| {
             let status = read_spec_status(&specs_dir.join(&slug).join("spec.md"));
@@ -592,12 +586,7 @@ fn read_spec_status(spec_path: &Path) -> String {
     let Ok(content) = std::fs::read_to_string(spec_path) else {
         return String::new();
     };
-    let Ok((fm_text, _body)) = crate::primitives::split_frontmatter(&content, spec_path) else {
-        return String::new();
-    };
-    serde_norway::from_str::<Frontmatter>(fm_text)
-        .map(|fm| fm.status)
-        .unwrap_or_default()
+    crate::primitives::frontmatter_status(&content, spec_path).unwrap_or_default()
 }
 
 /// Build the `verifyCriteria` request for `/gov:implement`'s completion
@@ -640,7 +629,7 @@ fn build_verify_criteria_request(context: &Map<String, Value>, repo: &Path) -> V
         spec_content,
         criteria,
     };
-    serde_json::to_value(&typed).unwrap_or(Value::Null)
+    typed_only(&typed)
 }
 
 /// Build the `assessSpecQuality` request for one per-rule Verification
@@ -679,7 +668,7 @@ fn build_assess_spec_quality_request(
         spec_content,
         rule,
     };
-    serde_json::to_value(&typed).unwrap_or(Value::Null)
+    typed_only(&typed)
 }
 
 /// Read a repo-relative file with the BE-INPUT-004 containment check.
@@ -805,14 +794,65 @@ fn extract_rule_verification(content: &str, rule_id: &str) -> Option<String> {
 }
 
 /// First rule in a rule file (in heading order) whose Verification phrase
-/// resolves, as an `(id, verification)` pair.
+/// resolves, as an `(id, verification)` pair. A single pass over `content`:
+/// tracks the current `### <id>` rule section and, within it, the same
+/// Verification-paragraph state machine as [`extract_rule_verification`]
+/// (seek `**Verification:**`, then accumulate wrapped lines until a blank
+/// line, the next `**Field:**`, or the next heading of any level). Returns
+/// the first rule whose accumulated phrase is non-empty. Replaces the prior
+/// per-heading rescan of the whole file, which was quadratic in the rule
+/// count.
 fn first_rule_with_verification(content: &str) -> Option<(String, String)> {
+    let mut current_id: Option<&str> = None;
+    let mut collecting: Option<Vec<&str>> = None;
+    // Once a rule's first Verification paragraph ends, `extract_rule_verification`
+    // stops looking within that rule (it breaks); this guard mirrors that.
+    let mut rule_done = false;
     for line in content.lines() {
-        if let Some(id) = line.trim().strip_prefix("### ") {
-            let id = id.trim();
-            if let Some(verification) = extract_rule_verification(content, id) {
-                return Some((id.to_string(), verification));
+        let trimmed = line.trim();
+        if trimmed.starts_with('#') {
+            // A heading of any level closes the current rule section:
+            // finalize any Verification paragraph collected so far.
+            if let Some(id) = current_id
+                && let Some(parts) = collecting.take()
+            {
+                let phrase = parts.join(" ").trim().to_string();
+                if !phrase.is_empty() {
+                    return Some((id.to_string(), phrase));
+                }
             }
+            // Open a new rule section only for an exact `### <id>` heading.
+            current_id = trimmed.strip_prefix("### ").map(str::trim);
+            collecting = None;
+            rule_done = false;
+            continue;
+        }
+        let Some(id) = current_id else {
+            continue;
+        };
+        if let Some(mut acc) = collecting.take() {
+            // The paragraph ends at a blank line or the next `**Field:**`.
+            if trimmed.is_empty() || trimmed.starts_with("**") {
+                let phrase = acc.join(" ").trim().to_string();
+                if !phrase.is_empty() {
+                    return Some((id.to_string(), phrase));
+                }
+                rule_done = true;
+            } else {
+                acc.push(trimmed);
+                collecting = Some(acc);
+            }
+        } else if !rule_done && let Some(rest) = trimmed.strip_prefix("**Verification:**") {
+            collecting = Some(vec![rest.trim()]);
+        }
+    }
+    // EOF closes the final rule's in-progress paragraph.
+    if let Some(id) = current_id
+        && let Some(parts) = collecting
+    {
+        let phrase = parts.join(" ").trim().to_string();
+        if !phrase.is_empty() {
+            return Some((id.to_string(), phrase));
         }
     }
     None
@@ -898,6 +938,12 @@ fn load_plan_relevant_files(
         return Ok(Vec::new());
     };
     let paths = crate::primitives::parse_affected_files(&plan_content);
+    // Discover the git repo once, above the loop (BE-QUERY-001): the prior
+    // per-path `Repository::discover` re-walked the filesystem for every
+    // Affected Files entry. A directory that is not a git repo (discover
+    // fails) yields no repository, and every path is treated as not-ignored
+    // — the same degradation the per-path form gave.
+    let git_repo = git2::Repository::discover(&canon_repo).ok();
     let mut out = Vec::new();
     for rel in paths {
         if let Some(pattern) = secret_pattern(&rel) {
@@ -906,7 +952,9 @@ fn load_plan_relevant_files(
                 pattern: pattern.into(),
             });
         }
-        if is_gitignored(&canon_repo, &rel) {
+        if let Some(repository) = git_repo.as_ref()
+            && is_gitignored(repository, &rel)
+        {
             return Err(PayloadError::SecretExfiltration {
                 path: rel,
                 pattern: ".gitignore".into(),
@@ -1041,11 +1089,11 @@ pub fn extract_anchor_body(content: &str, anchor: &str) -> Option<String> {
 ///
 /// - `plan` (`/gov:plan`) → `specs/{feature}/plan.md`
 /// - `specify` (`/gov:specify`) → `specs/{feature}/spec.md`
-/// - any other command → the historical plan.md-then-spec.md fallback
-///   order (no other command invokes `writeSpecBody` today).
 ///
-/// Returns `None` when the file does not exist or the section is absent or
-/// empty. Whitespace-only bodies count as empty.
+/// Any other command yields `None`: only `/gov:plan` and `/gov:specify`
+/// carry the `writeSpecBody` marker. Returns `None` too when the file does
+/// not exist or the section is absent or empty. Whitespace-only bodies count
+/// as empty.
 fn read_existing_section(
     section: &str,
     feature: Option<&str>,
@@ -1060,7 +1108,7 @@ fn read_existing_section(
     let filenames: &[&str] = match command_name {
         "plan" => &["plan.md"],
         "specify" => &["spec.md"],
-        _ => &["plan.md", "spec.md"],
+        _ => return None,
     };
     for filename in filenames {
         let candidate = feature_dir.join(filename);
@@ -1166,15 +1214,13 @@ fn secret_pattern(path: &str) -> Option<&'static str> {
     None
 }
 
-/// Ask libgit2 whether `path` is gitignored from `repo`'s perspective.
-/// Returns `false` when the directory isn't a git repo or libgit2 errors
-/// — the secret-pattern check above is the floor; gitignore is an opt-in
-/// second layer.
-fn is_gitignored(repo: &Path, path: &str) -> bool {
-    use git2::Repository;
-    let Ok(repository) = Repository::discover(repo) else {
-        return false;
-    };
+/// Ask libgit2 whether `path` is gitignored from `repository`'s perspective.
+/// Returns `false` when libgit2 errors — the secret-pattern check above is
+/// the floor; gitignore is an opt-in second layer. The caller hoists
+/// `Repository::discover` above the Affected Files loop (BE-QUERY-001) and
+/// only calls this when discovery succeeded, so a directory that is not a
+/// git repo skips the query entirely and every path stays not-ignored.
+fn is_gitignored(repository: &git2::Repository, path: &str) -> bool {
     repository
         .status_should_ignore(Path::new(path))
         .unwrap_or(false)
