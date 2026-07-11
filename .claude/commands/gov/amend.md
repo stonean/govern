@@ -40,7 +40,7 @@ Read `.govern.session.toml`. If the session includes a `scenario` and `scenario-
 
 1. Read `.govern.session.toml` to get the session target's feature and optional scenario.
 2. Read the target artifact (scenario file if targeted, otherwise `spec.md`).
-3. **Recompute dependencies (safety net).** If the target is a spec, run `scripts/gen-spec-deps.sh --dry-run` against it. If it reports a diff, run it for real to sync `dependencies:` from body inline links. The pre-commit hook normally keeps this in sync; this step catches uncommitted body edits. (Skip on scenario targets — scenarios have no `dependencies` field.)
+3. **Recompute dependencies (safety net).** If the target is a spec, route the dependency dry run through the runtime's run-generator primitive; when it reports drift, run the generator for real to sync `dependencies:` from body inline links. If unavailable (no gvrn runtime registered), run `scripts/gen-spec-deps.sh --dry-run` against the spec with host tools and apply the same rule on a diff. The pre-commit hook normally keeps this in sync; this step catches uncommitted body edits. (Skip on scenario targets — scenarios have no `dependencies` field.)
 4. If the target is a spec, read its frontmatter `status` field now — the value is needed for the gate, the impact display, the classifier's status tiebreaker, and the post-record mutation.
 5. Display the feature name, scenario name (if targeted), status, and a brief summary of what the artifact covers.
 

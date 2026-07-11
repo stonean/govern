@@ -19,38 +19,79 @@ Use the session target from `.govern.session.toml`. If `$ARGUMENTS` is provided,
 
 ## Target File Detection
 
-Read `.govern.session.toml`. If the session includes a `scenario` and `scenario-path`, operate on the scenario file (see **Scenario-targeted clarify** below). Otherwise, operate on the feature spec (see **Feature-targeted clarify** below).
+Read `.govern.session.toml`. If the session includes a `scenario` and `scenario-path`, operate on the scenario file (the scenario-targeted branch of the Instructions below; detailed walk under **Scenario-targeted clarify** in the Markdown-only reference). Otherwise, operate on the feature spec.
 
-## Feature-targeted clarify
+## Gate
 
-### Spec File Detection
-
-Read `spec.md`. If it does not exist, stop and report: "Spec does not exist. Run `/{project}:specify` first."
-
-### Gate
-
-Read the spec's frontmatter `status` field and count entries in the `## Open Questions` section (entries are top-level list items or `**Bold-prefix**`-style headings; treat the section as having zero entries when it is missing, empty, or contains only a placeholder line such as `*None — all resolved.*`). Branch on the pair `(status, open-question count)`:
+On a feature-targeted run, read the spec's frontmatter `status` field and count entries in the `## Open Questions` section (entries are top-level list items or `**Bold-prefix**`-style headings; treat the section as having zero entries when it is missing, empty, or contains only a placeholder line such as `*None — all resolved.*`). Branch on the pair `(status, open-question count)`:
 
 | Status | Open questions? | Behavior |
 | --- | --- | --- |
 | `draft` | yes | Walk questions, then verify acceptance criteria, then advance to `clarified` (existing hot path) |
 | `draft` | no | Verify acceptance criteria, then advance to `clarified` (existing hot path) |
 | `clarified` / `planned` / `in-progress` | no | Stop with: "Spec is already `{status}`. Run `/{project}:plan` to create the technical plan." for `clarified`, or "Run `/{project}:implement` to continue implementation." for `planned` / `in-progress`. |
-| `clarified` / `planned` / `in-progress` | yes | Run the **Recovery path** below. |
+| `clarified` / `planned` / `in-progress` | yes | Run the **Recovery path** (see the Markdown-only reference below). |
 | `done` | (any) | Stop with: "Spec is `done`. Run `/{project}:amend` to capture this as a scenario instead." Exit without mutation. |
 
 The "already `{status}`" branch and the `done` branch never modify any file.
 
-### Scope Boundaries
+## Scope Boundaries
+
+Feature-targeted:
 
 - Read only the target feature's spec file (frontmatter and body) and dependency spec frontmatter. For the Recovery path, also list (without reading) `plan.md`, `tasks.md`, `data-model.md`, and `specs/{feature}/scenarios/`. Do NOT read plan files, tasks, source code, test files, scenarios, or unrelated specs' bodies.
 - Scenario-level open questions are not surfaced — spec-level and scenario-level questions are independent concerns.
 - Do NOT begin planning or implementation work. This command resolves questions and verifies acceptance criteria only.
 - Reference: §spec-requirements, §spec-lifecycle, §pipeline-boundaries, §text-first-artifacts (constitution loaded by `/{project}:target` — do not re-read).
 
-### Hot path: `draft` spec
+Scenario-targeted:
 
-Perform the clarify gate defined in `constitution.md` (§spec-requirements, §spec-lifecycle):
+- Read the targeted scenario file (frontmatter and body). May read the parent spec's frontmatter `status` field to decide which next-step suggestion to display. Do NOT read the parent spec's open questions or body, plan files, tasks, source code, test files, or unrelated specs.
+- Do NOT begin planning or implementation work. This command resolves scenario-level questions only.
+- Reference: §scenarios, §text-first-artifacts (constitution loaded by `/{project}:target` — do not re-read).
+
+## Instructions
+
+> **For agent runtimes**: the Invoke steps below call the MCP tools of the optional gvrn runtime; the host-integration contract — bare↔prefixed tool names, lazy ToolSearch schema fetch, the no-shell-utilities rule, and the two-paths guarantee — lives once in the constitution, §runtime-host-integration. With no gvrn MCP server registered, walk the same prose using the host file-reading tools (Read, Edit, Write) per the Markdown-only reference below.
+
+Steps 1–9 are the feature-targeted walk; a scenario-targeted session runs steps 1, 5, and 10. The detailed walk — the question-resolution sub-procedure, the recovery prompt wording, and the scenario-targeted variant — lives under the Markdown-only reference below.
+
+<!-- audit:ignore-promotion -->
+1. Resolve the target from `.govern.session.toml`; `$ARGUMENTS` overrides the session target. If no session target is set and no arguments are provided, stop and tell the user to run `/{project}:target` first. When the session includes a `scenario` and `scenario-path`, this is a **scenario-targeted** run: read the scenario file, run the question loop (step 5) against it, then wrap up at step 10 — steps 2–4 and 6–9 are feature-spec work and do not apply.
+
+2. Invoke `read-spec` against the target feature (with `include-body`) and branch on the pair `(status, open-question count)` per the Gate table above — the result's frontmatter carries the status and its open-questions list carries the count (the Gate's entry-counting rule; placeholder lines are not entries):
+   - Missing feature or `spec.md`: stop and report: "Spec does not exist. Run `/{project}:specify` first."
+   - `draft` with open questions: continue the full walk (steps 3–9).
+   - `draft` with zero open questions: short-circuit — skip the question loop (step 5 runs no extension round trip) and continue at step 6 toward the status-advance gate.
+   - `clarified` / `planned` / `in-progress` with zero open questions: stop with the "already `{status}`" message from the Gate table. No file is modified.
+   - `clarified` / `planned` / `in-progress` with one or more open questions: run the **recovery branch** — display the inconsistency and prompt the user per the Recovery path reference below; on confirmation invoke `set-status` (from the current status, to `draft`) and continue the full walk (steps 3–9); on decline, exit without modifying any file.
+   - `done` (any question count): stop with: "Spec is `done`. Run `/{project}:amend` to capture this as a scenario instead." Exit without mutation.
+
+3. **Recompute dependencies (safety net).** Invoke `run-generator` against the spec-dependency generator script (the Markdown-only reference names it) for the dry-run check: when the result reports drift, sync the `dependencies:` frontmatter from the body's inline links (run the generator for real — a host action on both paths) before evaluating dependency readiness. The pre-commit hook normally keeps this in sync; this step catches uncommitted body edits made between commits.
+
+4. Invoke `traverse-deps` against the feature to check dependency readiness: every entry in the spec's frontmatter `dependencies` list must exist and carry status `clarified` or later. Flag blockers — the validation gate (step 8) does not pass while a dependency is not ready.
+
+5. <!-- llm:askClarifyQuestion --> Resolve open questions **one at a time** — one extension round trip per open question, in sequence: the host displays the question with its full context and a proposed answer with rationale (or asks the user to decide), waits for the user to review, discuss, refine, or approve, and returns the user's resolution; the LLM then applies the resolution to the spec body, moving the question from `## Open Questions` to `## Resolved Questions` with its answer before the next round trip. Do NOT present multiple questions at once; do NOT batch resolutions. If the user wants to skip a question, move to the next and revisit skipped questions at the end; if resolving one question invalidates or changes another, note the impact when presenting the affected question. Process only items in `## Open Questions` — items already in `## Resolved Questions` are never re-walked. Spec-body edits applying each answer remain LLM work on both paths — no primitive writes prose.
+
+<!-- audit:ignore-promotion -->
+6. **Enumerate edge cases and confirm error scenarios** — for each behavior, identify what happens with empty inputs, missing data, duplicates, boundary values, and concurrent access; verify every failure mode has a defined behavior (HTTP status, error code, message) and flag gaps. Update the spec body with the resolved questions and any new edge cases or acceptance criteria.
+
+<!-- audit:ignore-promotion -->
+7. **Verify acceptance criteria and cross-spec impact** — check each criterion is concrete, testable, and unambiguous; rewrite vague ones; flag missing criteria. Then list every sibling spec referenced by inline markdown link in the body (the union the dependency scan already computed) and ask: "Do any of these referenced specs need an update because of decisions made here?" If yes, the §cross-spec-impact rule applies — the change goes in the affected spec as a new acceptance criterion or scenario, with a back-link to this spec. This check is informational; it does not block the transition.
+
+8. Run the **validation gate** before proposing the status transition — every check must pass: all open questions are resolved (none remain in the Open Questions section — if questions remain that need user input, list them and keep `status` at `draft`); acceptance criteria are concrete and testable with no empty placeholders; dependencies are at `clarified` or later (step 4); and invoke `lint-markdown` against the modified spec file, requiring a clean result. If any check fails, report the specific failures and do not propose the transition — the user fixes the issues and re-runs the command.
+
+9. Present a summary of changes and ask the user to approve the transition to `clarified`. Do not update the status until the user confirms. On confirmation, invoke `set-status` with `from: draft`, `to: clarified` against the feature, then display the next step: "Run `/{project}:plan` to create the technical plan."
+
+10. **Scenario-targeted wrap-up** (scenario-targeted runs only): after the question loop, enumerate edge cases specific to the scenario's behavior (empty inputs, missing data, boundary values, concurrent access) and add them to the scenario's `## Edge Cases` section; confirm the scenario's Behavior section is unambiguous and complete; if questions remain that need user input, list them. The scenario has no status field — resolution is complete when all open questions are removed from the Open Questions section. Invoke `lint-markdown` against the modified scenario file. Read the parent spec's frontmatter `status` field, display "Scenario clarification complete.", and suggest `/{project}:implement` if the parent spec is `planned` or `in-progress` (both states are accepted by `/{project}:implement`'s gate); for other parent-spec states (`draft`, `clarified`, `done`), display the completion message without a next-step suggestion — the parent spec's own pipeline state determines what comes next.
+
+## Markdown-only reference
+
+With no gvrn runtime registered, the host walks the same contract with its own file tools (Read, Edit, Write) — no shell-pipeline substitution (§runtime-host-integration). The Gate table above governs both paths.
+
+### Feature-targeted clarify (hot path: `draft` spec)
+
+Read `spec.md`. If it does not exist, stop and report: "Spec does not exist. Run `/{project}:specify` first." Then perform the clarify gate defined in `constitution.md` (§spec-requirements, §spec-lifecycle):
 
 0. **Recompute dependencies (safety net).** Run `scripts/gen-spec-deps.sh --dry-run` against the target spec. If it reports a diff, run it for real to sync `dependencies:` from body inline links before evaluating dependency readiness. The pre-commit hook normally keeps this in sync; this step catches uncommitted body edits made between commits.
 
@@ -67,7 +108,6 @@ Perform the clarify gate defined in `constitution.md` (§spec-requirements, §sp
 3. **Confirm error scenarios** — verify every failure mode has a defined behavior (HTTP status, error code, message). Flag gaps.
 4. **Verify acceptance criteria** — check each is concrete, testable, and unambiguous. Rewrite vague ones. Flag missing criteria.
 5. **Check dependency readiness** — for each entry in this spec's frontmatter `dependencies` list, read that spec's frontmatter `status` field. Confirm each dependency is at `clarified` or later. Flag blockers.
-
 6. **Cross-spec impact check** — list every sibling spec referenced by inline markdown link in the body (the union the dependency scan already computed). Ask: "Do any of these referenced specs need an update because of decisions made here?" If yes, the §cross-spec-impact rule applies — the change goes in the affected spec as a new acceptance criterion or scenario, with a back-link to this spec. This step is informational; it does not block the transition.
 
 After the review:
@@ -97,20 +137,12 @@ Before mutating anything, surface the inconsistency to the user:
    - The list of files in `specs/{feature}/scenarios/` if that directory exists.
 2. **Prompt the user:**
    > Spec is `{status}` but has {N} unresolved open questions in the body — this state usually arises from a manual frontmatter edit. Revert status to `draft` and walk the questions?
-3. **Confirm** — update the frontmatter `status` field to `draft`, then run the **Hot path: `draft` spec** procedure above (including the dependency-readiness check; the post-revert walk runs the same checks as a normal `draft` clarify). On successful resolution, the spec advances back to `clarified`. Downstream artifacts (`plan.md`, `tasks.md`, `data-model.md`, scenario files) are not deleted or rewritten by this command.
+3. **Confirm** — update the frontmatter `status` field to `draft` (the `set-status` primitive on the runtime path; a direct frontmatter edit otherwise), then run the **Hot path: `draft` spec** procedure above (including the dependency-readiness check; the post-revert walk runs the same checks as a normal `draft` clarify). On successful resolution, the spec advances back to `clarified`. Downstream artifacts (`plan.md`, `tasks.md`, `data-model.md`, scenario files) are not deleted or rewritten by this command.
 4. **Decline** — exit without modifying any file. The spec retains its inconsistent state and open questions remain in `## Open Questions`. The next `/{project}:clarify` invocation offers the same prompt — the system surfaces the inconsistency on every clarify attempt rather than silently advancing.
 
 `## Resolved Questions` is never re-walked even on the recovery path; only items in `## Open Questions` are processed.
 
-## Scenario-targeted clarify
-
-### Scope Boundaries
-
-- Read the targeted scenario file (frontmatter and body). May read the parent spec's frontmatter `status` field to decide which next-step suggestion to display. Do NOT read the parent spec's open questions or body, plan files, tasks, source code, test files, or unrelated specs.
-- Do NOT begin planning or implementation work. This command resolves scenario-level questions only.
-- Reference: §scenarios, §text-first-artifacts (constitution loaded by `/{project}:target` — do not re-read).
-
-### Instructions
+### Scenario-targeted clarify
 
 1. **Resolve open questions one at a time** — process each open question in the scenario's `## Open Questions` section individually in sequence:
    1. Display the question with its full context.

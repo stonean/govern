@@ -933,6 +933,10 @@ mod tests {
             "review",
             "audit",
             "link",
+            "prune",
+            "clarify",
+            "groom",
+            "log",
         ] {
             let path = commands_dir.join(format!("{command}.md"));
             let source = std::fs::read_to_string(&path)

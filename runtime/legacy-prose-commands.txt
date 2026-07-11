@@ -15,7 +15,4 @@
 # parsing as a real procedure, that's a win and the entry can be removed.
 
 framework/commands/amend.md
-framework/commands/clarify.md
-framework/commands/groom.md
 framework/commands/help.md
-framework/commands/log.md

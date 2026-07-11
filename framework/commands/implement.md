@@ -47,13 +47,13 @@ Default is unset — without the flag, the user confirms each task as today.
 - Do NOT read or modify files belonging to other features' spec directories.
 - Do NOT read source code speculatively — only read files relevant to the current task.
 - Reference: §implement-phase, §pipeline-boundaries, §text-first-artifacts, §brownfield-inbox (Automatic issue capture), plus the rule-file directory's `configuration-cross.md` (`specs/rules/configuration-cross.md` in adopter projects; `framework/rules/configuration-cross.md` in govern's own repo) for constants and env-vars (constitution loaded by `/{project}:target` — do not re-read).
-- Appending an incidentally-discovered issue to `specs/inbox.md` (per §brownfield-inbox Automatic issue capture) is a govern-artifact write, in the same category as the `mark-task` write to `tasks.md` — it is **not** subject to the runtime write boundary and does not trigger an out-of-boundary halt.
+- Appending an incidentally-discovered issue to `specs/inbox.md` (per §brownfield-inbox Automatic issue capture) is a govern-artifact write, in the same category as the `mark-task` write to `tasks.md` — it is **not** subject to the runtime write boundary and does not trigger an out-of-boundary halt. The deterministic path for the append is the `append-inbox` primitive; if unavailable, append the bullet with the host's file tools per the markdown-only path (Walk through tasks, step 5).
 
 ## Instructions
 
 > **For agent runtimes**: the Invoke steps below call the MCP tools of the optional gvrn runtime; the host-integration contract — bare↔prefixed tool names, lazy ToolSearch schema fetch, the no-shell-utilities rule, and the two-paths guarantee — lives once in the constitution, §runtime-host-integration. With no gvrn MCP server registered, walk the same prose using the host file-reading tools (Read, Edit, Write).
 
-1. Invoke `read-tasks` against the targeted feature to load the ordered task list and the per-task "done when" conditions. The walker also seeds the session target's feature, scenario fields, and writeCode arguments (task-number, subtask-index, checked, write-boundary, threshold) from the runtime context.
+1. Invoke `read-tasks` against the targeted feature to load the ordered task list and the per-task "done when" conditions. The walker also seeds the session target's feature, scenario fields, the writeCode arguments (task-number, subtask-index, checked, write-boundary, threshold), and the completion gate's criterion address (criterion-index) from the runtime context.
 
 2. Invoke `derive-boundary` against the feature to compute the runtime write boundary from `git diff` against the spec dir's first commit; the result emits as a progress envelope and the host stores the boundary in context for the writeCode validator below.
 
@@ -66,7 +66,26 @@ Default is unset — without the flag, the user confirms each task as today.
 6. Invoke `mark-task` to flip the first incomplete subtask's checkbox from unchecked to checked in `tasks.md` (atomic write via tempfile + rename). The primitive returns the previous and current states; a previous value of `true` surfaces as a no-op result.
 
 <!-- audit:ignore-promotion -->
-7. Render the completion summary (host responsibility): list the task processed, surface the cross-spec impact diff (any changes outside `specs/{feature}/`), surface any issues captured to `specs/inbox.md` during this run (per §brownfield-inbox Automatic issue capture — list each captured item and suggest `/{project}:groom` to route them), remind the user to commit, and prompt for the next pipeline gate. The in-progress → done transition is its own invocation — re-run `/{project}:implement` after every task has been marked complete and review is clean.
+7. Render the per-task completion summary (host responsibility): list the task processed, surface the cross-spec impact diff (any changes outside `specs/{feature}/`), surface any issues captured to `specs/inbox.md` during this run (per §brownfield-inbox Automatic issue capture — list each captured item and suggest `/{project}:groom` to route them), remind the user to commit, and prompt for the next pipeline gate. The in-progress → done transition is its own invocation — re-run `/{project}:implement` after every task has been marked complete and review is clean; that run walks the completion-gate steps below.
+
+8. Invoke `read-tasks` against the feature to tally completion across the ordered task list — every task checkbox and nested subtask checkbox, including scenario-linked tasks. When any checkbox remains unchecked, halt with the incomplete-tasks report: name the specific unchecked tasks and do not proceed to criteria verification — the user finishes them (re-running the per-task walk) and re-runs the command.
+
+9. Invoke `read-spec` against the feature to load the acceptance criteria (text and checkbox state, in body order) and the frontmatter `review:` block the review gate below reads.
+
+10. <!-- llm:verifyCriteria --> Verify each acceptance criterion against the implementation. The host receives the spec path and content plus the criteria list (index, text, checked) from the read-spec result and returns one met / not-met verdict per criterion, each with an optional note. Verification stays semantic — the LLM judges every criterion individually against the code; never batch-judge.
+
+11. Invoke `mark-criterion` for each criterion the verification confirmed met — one call per passing criterion, flipping its checkbox to `- [x]` in the spec at the time of verification (the primitive addresses criteria by 0-based index, in the same body order the read-spec result lists them). A criterion that failed verification stays unchecked and its failure is reported — never batch-mark. When any criterion remains unchecked after this step, report the specific failures and do not propose the transition; the user resolves them and re-runs the command.
+
+<!-- audit:ignore-promotion -->
+12. Cross-spec impact check (host responsibility): run `git diff --stat <first-commit>..HEAD -- specs/`, filtered to paths outside `specs/{feature}/`. If any sibling spec dir shows changes, surface the list to the user and ask whether the changes were intentional cross-spec updates per §cross-spec-impact. Informational; does not block. No primitive owns this filter yet — it degrades to host judgment on both the runtime and markdown-only paths.
+
+<!-- audit:ignore-promotion -->
+13. Pre-done review gate. First confirm all `.md` files in the feature directory pass `npx markdownlint-cli2`; on failure, report the specific violations and do not propose the transition. Then read the `review:` block from the spec frontmatter loaded in step 9. If `review.last-run` is missing, null, or the review block is absent, halt with: `blocked: spec has not been reviewed — run /{project}:review before completing`. If `review.blocking: true`, halt with: `blocked: spec has {must-violations} MUST violation(s) — see specs/NNN-feature/review.md` followed by guidance to either resolve the violations and re-run `/{project}:review`, or run `/{project}:review --waive <rule-id> --reason "..."` for each waivable finding. Otherwise, proceed.
+
+<!-- audit:ignore-promotion -->
+14. If all checks pass, present a summary — including any issues captured to `specs/inbox.md` during this feature's implementation (per §brownfield-inbox Automatic issue capture), each listed with a pointer to run `/{project}:groom` to route them — and ask the user to approve the transition to done. Do not update the status until the user confirms; on denial, the walker exits cleanly without writing.
+
+15. On confirmation, invoke `set-status` to flip the spec frontmatter's status from in-progress to done. The primitive guards against a stale "from" value so concurrent edits surface as an operational error rather than a silent overwrite.
 
 ## Markdown-only reference
 
@@ -89,7 +108,7 @@ If the spec's status is already in-progress, run `git log --oneline -- specs/{fe
 
 - **At setup:** read only the spec, plan, tasks, and scenario file (if targeted). Do NOT read `system.md`, `events.md`, `errors.md`, or source code yet.
 - **Per task:** read only the source files relevant to that task from the plan's affected files list.
-- **At completion:** re-read acceptance criteria from the spec to verify. Do NOT re-read the full plan or tasks.
+- **At completion:** tally the `tasks.md` checkboxes (primitive: `read-tasks`) and re-read the acceptance criteria from the spec (primitive: `read-spec`) to verify. Do NOT re-read the full plan.
 
 ### Walk through tasks (per task, in order)
 
@@ -97,7 +116,7 @@ If the spec's status is already in-progress, run `git log --oneline -- specs/{fe
 2. Read the relevant technical decisions from the plan.
 3. Read only the existing code files relevant to this task from the plan's affected files.
 4. Implement the task: write code, tests, and migrations as needed. Follow conventions in `AGENTS.md` and `specs/system.md`; respect the contracts defined in the spec. If a write would land outside the runtime boundary, notify the user, explain why, and wait for confirmation before proceeding. Once accepted, the file is part of the boundary for the rest of the session.
-5. **Capture incidental issues.** If implementing this task surfaces an issue outside the task's scope — a security weakness, a memory or resource leak, a violated convention, a latent bug in adjacent code — append it to `specs/inbox.md` automatically, without prompting, and keep working (per §brownfield-inbox Automatic issue capture). Do not derail to fix out-of-scope findings; an issue *inside* this task's scope is fixed as part of the task, not logged. The append follows the inbox auto-capture form (see `specs/inbox.md`).
+5. **Capture incidental issues.** If implementing this task surfaces an issue outside the task's scope — a security weakness, a memory or resource leak, a violated convention, a latent bug in adjacent code — append it to `specs/inbox.md` automatically, without prompting, and keep working (per §brownfield-inbox Automatic issue capture). The deterministic path is the `append-inbox` primitive (its dedup guard keeps a re-run from double-logging the same finding); without the runtime, append the bullet with the host's file tools. Do not derail to fix out-of-scope findings; an issue *inside* this task's scope is fixed as part of the task, not logged. The append follows the inbox auto-capture form (see `specs/inbox.md`).
 6. Verify the "done when" condition is met.
 7. Mark the task as complete in `tasks.md` — update each checkbox to `- [x]`, including nested sub-item checkboxes, before proceeding.
 8. Prompt the user to commit and push changes. With `--auto` set, skip the prompt: commit on your own, do not push.
@@ -105,14 +124,12 @@ If the spec's status is already in-progress, run `git log --oneline -- specs/{fe
 
 ### Completion gate (after all tasks)
 
-1. **Cross-spec impact check.** Run `git diff --stat <first-commit>..HEAD -- specs/`, filtered to paths outside `specs/{feature}/`. If any sibling spec dir shows changes, surface the list to the user and ask whether the changes were intentional cross-spec updates per §cross-spec-impact. Informational; does not block.
-2. Walk through each acceptance criterion from the spec and verify it is met. Mark each passing criterion `- [x]` in the spec file at the time of verification. If a criterion fails, leave it unchecked and report the failure. Do not batch-mark — verify each individually.
-3. Run the validation gate before proposing the status transition:
-   - All tasks in `tasks.md` are marked complete.
-   - All acceptance criteria in the spec are marked complete.
-   - All scenario-linked tasks are complete.
-   - All `.md` files in the feature directory pass `npx markdownlint-cli2`.
-4. If any validation check fails, report the specific failures and do not propose the transition. The user fixes the issues and re-runs the command.
-5. **Pre-done review gate.** Read the target spec's frontmatter `review:` block before asking for the done transition. If `review.last-run` is missing, null, or the review block is absent, halt with: `blocked: spec has not been reviewed — run /{project}:review before completing`. If `review.blocking: true`, halt with: `blocked: spec has {must-violations} MUST violation(s) — see specs/NNN-feature/review.md` followed by guidance to either resolve the violations and re-run `/{project}:review`, or run `/{project}:review --waive <rule-id> --reason "..."` for each waivable finding. Otherwise, proceed.
+Same order as Instructions steps 8–15, with the same primitives named as fallbacks.
+
+1. **Task tally.** Re-read `specs/{feature}/tasks.md` and tally every checkbox (primitive: `read-tasks`) — top-level tasks, nested sub-items, and scenario-linked tasks. If any remains unchecked, report the specific incomplete tasks and stop — the gate ends here, before criteria verification. The user finishes them and re-runs the command.
+2. **Load acceptance criteria.** Re-read the spec's Acceptance Criteria checkboxes and the frontmatter `review:` block (primitive: `read-spec`).
+3. **Verify each criterion.** Walk through each acceptance criterion from the spec and verify it is met against the implementation — semantic judgment, one criterion at a time (the verifyCriteria extension seam on the runtime path). Mark each passing criterion `- [x]` in the spec file at the time of verification (primitive: `mark-criterion`, one call per passing criterion, addressed by 0-based body-order index). If a criterion fails, leave it unchecked and report the failure. Do not batch-mark — verify each individually. If any criterion remains unchecked, report the specific failures and do not propose the transition; the user fixes the issues and re-runs the command.
+4. **Cross-spec impact check.** Run `git diff --stat <first-commit>..HEAD -- specs/`, filtered to paths outside `specs/{feature}/`. If any sibling spec dir shows changes, surface the list to the user and ask whether the changes were intentional cross-spec updates per §cross-spec-impact. Informational; does not block. (Prose on both paths — no primitive owns this filter yet.)
+5. **Pre-done review gate.** First confirm all `.md` files in the feature directory pass `npx markdownlint-cli2`; on failure, report the specific violations and do not propose the transition. Then read the target spec's frontmatter `review:` block before asking for the done transition. If `review.last-run` is missing, null, or the review block is absent, halt with: `blocked: spec has not been reviewed — run /{project}:review before completing`. If `review.blocking: true`, halt with: `blocked: spec has {must-violations} MUST violation(s) — see specs/NNN-feature/review.md` followed by guidance to either resolve the violations and re-run `/{project}:review`, or run `/{project}:review --waive <rule-id> --reason "..."` for each waivable finding. Otherwise, proceed.
 6. If all checks pass, present a summary — including any issues captured to `specs/inbox.md` during this feature's implementation (per §brownfield-inbox Automatic issue capture), each listed with a pointer to run `/{project}:groom` to route them — and ask the user to approve the transition to done. Do not update the status until the user confirms.
-7. On confirmation, update the spec's frontmatter status from in-progress to done.
+7. On confirmation, update the spec's frontmatter status from in-progress to done (primitive: `set-status`, guarding against a stale "from" value).

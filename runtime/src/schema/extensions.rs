@@ -3,11 +3,13 @@
 //! Mirrors the request/response shapes in
 //! `specs/022-deterministic-runtime/data-model.md`: the three
 //! initial-release points (`assessSpecQuality`, `writeCode`,
-//! `writeSpecBody`), `performReview`, and the two follow-on points
-//! (`askClarifyQuestion`, `routeInboxItem`) whose typed shapes ship ahead
-//! of their scenarios per the extension-request-hygiene scenario. The
-//! runtime emits these as the `request` field of `llm-request` envelopes
-//! and validates incoming `llm-response` payloads against them.
+//! `writeSpecBody`), `performReview`, and the follow-on points —
+//! `askClarifyQuestion` and `routeInboxItem`, whose typed shapes ship
+//! ahead of their scenarios per the extension-request-hygiene scenario,
+//! plus `verifyCriteria`, the implement-completion-gate scenario's
+//! criterion-verification seam. The runtime emits these as the `request`
+//! field of `llm-request` envelopes and validates incoming `llm-response`
+//! payloads against them.
 
 #![allow(clippy::module_name_repetitions)]
 
@@ -344,6 +346,62 @@ pub struct RouteInboxItemResponse {
     pub reason: Option<String>,
 }
 
+// -- verifyCriteria ------------------------------------------------------------
+
+/// One acceptance criterion presented for verification. Mirrors the
+/// `read-spec` criteria listing; `index` is the 0-based body-order
+/// position `mark-criterion` addresses.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct VerifyCriterion {
+    /// 0-based criterion index, ordered as in the spec body.
+    pub index: u32,
+    /// Criterion text, verbatim from the Acceptance Criteria checkbox.
+    pub text: String,
+    /// Checkbox state at request time.
+    pub checked: bool,
+}
+
+/// Request payload for `verifyCriteria` (implement-completion-gate
+/// scenario): `/gov:implement`'s completion gate sends one request
+/// carrying every acceptance criterion; the LLM judges each criterion
+/// against the implementation — the verification stays semantic.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct VerifyCriteriaRequest {
+    /// Repo-relative path to the spec under verification.
+    pub spec_path: String,
+    /// Full spec contents.
+    pub spec_content: String,
+    /// Acceptance criteria to verify, in body order.
+    pub criteria: Vec<VerifyCriterion>,
+}
+
+/// One per-criterion verdict in a `verifyCriteria` response.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct VerifyCriterionResult {
+    /// Criterion index echoed from the request.
+    pub index: u32,
+    /// Whether the criterion is met by the implementation.
+    pub met: bool,
+    /// Optional prose surfaced in the completion report (a failing
+    /// criterion's note explains the failure).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
+}
+
+/// Response payload for `verifyCriteria` — one verdict per criterion.
+/// Each `met: true` verdict drives one `mark-criterion` call; a
+/// `met: false` verdict leaves its checkbox unchecked and is reported,
+/// never batch-marked.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct VerifyCriteriaResponse {
+    /// Per-criterion verdicts.
+    pub results: Vec<VerifyCriterionResult>,
+}
+
 // -- validation --------------------------------------------------------------
 
 /// Validation errors raised by [`validate_response`] and
@@ -389,7 +447,7 @@ pub enum ValidationError {
 ///
 /// Returns [`ValidationError::UnknownExtension`] when `identifier` is not
 /// `assessSpecQuality`, `writeCode`, `writeSpecBody`, `performReview`,
-/// `askClarifyQuestion`, or `routeInboxItem`; otherwise
+/// `askClarifyQuestion`, `routeInboxItem`, or `verifyCriteria`; otherwise
 /// [`ValidationError::Schema`] when deserialization fails.
 pub fn validate_response(identifier: &str, response: &Value) -> Result<(), ValidationError> {
     macro_rules! check {
@@ -409,6 +467,7 @@ pub fn validate_response(identifier: &str, response: &Value) -> Result<(), Valid
         "performReview" => check!(PerformReviewResponse),
         "askClarifyQuestion" => check!(AskClarifyQuestionResponse),
         "routeInboxItem" => check!(RouteInboxItemResponse),
+        "verifyCriteria" => check!(VerifyCriteriaResponse),
         other => Err(ValidationError::UnknownExtension(other.into())),
     }
 }
@@ -515,7 +574,8 @@ mod tests {
         AssessSpecQualityRequest, AssessSpecQualityResponse, AssessSpecQualityRule,
         ClarifyQuestion, FindingLocation, InboxRoute, PerformReviewRequest, PerformReviewResponse,
         PlanRelevantFile, ReviewRuleFile, ReviewScopeFile, RouteInboxItemRequest,
-        RouteInboxItemResponse, RouteInboxSpec, WriteCodeAction, WriteCodeEdit, WriteCodeRequest,
+        RouteInboxItemResponse, RouteInboxSpec, VerifyCriteriaRequest, VerifyCriteriaResponse,
+        VerifyCriterion, VerifyCriterionResult, WriteCodeAction, WriteCodeEdit, WriteCodeRequest,
         WriteCodeResponse, WriteCodeTask, WriteSpecBodyRequest, WriteSpecBodyResponse,
     };
     use crate::schema::primitives::ReviewFinding;
@@ -1052,6 +1112,94 @@ mod tests {
         let r_value: serde_json::Value = serde_json::to_value(&response).unwrap();
         assert_eq!(r_value["route"], "scenario");
         assert_eq!(round_trip(&response), response);
+    }
+
+    #[test]
+    fn verify_criteria_round_trip() {
+        let request = VerifyCriteriaRequest {
+            spec_path: "specs/022-deterministic-runtime/spec.md".into(),
+            spec_content: "# spec".into(),
+            criteria: vec![
+                VerifyCriterion {
+                    index: 0,
+                    text: "The walker completes.".into(),
+                    checked: false,
+                },
+                VerifyCriterion {
+                    index: 1,
+                    text: "Out-of-boundary edits are rejected.".into(),
+                    checked: true,
+                },
+            ],
+        };
+        let value: serde_json::Value = serde_json::to_value(&request).unwrap();
+        // Typed field order: spec-path, spec-content, criteria.
+        let keys: Vec<&str> = value
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect();
+        assert_eq!(keys, vec!["spec-path", "spec-content", "criteria"]);
+        assert_eq!(value["criteria"][0]["index"], 0);
+        assert_eq!(value["criteria"][1]["checked"], true);
+        assert_eq!(round_trip(&request), request);
+
+        let response = VerifyCriteriaResponse {
+            results: vec![
+                VerifyCriterionResult {
+                    index: 0,
+                    met: true,
+                    note: None,
+                },
+                VerifyCriterionResult {
+                    index: 1,
+                    met: false,
+                    note: Some("boundary rejection has no covering test yet".into()),
+                },
+            ],
+        };
+        let r_value: serde_json::Value = serde_json::to_value(&response).unwrap();
+        // `note` is omitted, not null, when absent.
+        assert!(
+            !r_value["results"][0]
+                .as_object()
+                .unwrap()
+                .contains_key("note")
+        );
+        assert_eq!(r_value["results"][1]["met"], false);
+        assert_eq!(round_trip(&response), response);
+    }
+
+    #[test]
+    fn validate_response_accepts_minimal_verify_criteria_payload() {
+        use super::validate_response;
+        validate_response(
+            "verifyCriteria",
+            &serde_json::json!({ "results": [ { "index": 0, "met": true } ] }),
+        )
+        .unwrap();
+        // An empty verdict list is well-formed (a template-state spec has
+        // zero criteria).
+        validate_response("verifyCriteria", &serde_json::json!({ "results": [] })).unwrap();
+    }
+
+    #[test]
+    fn validate_response_rejects_malformed_verify_criteria() {
+        use super::{ValidationError, validate_response};
+        // A verdict missing the required `met` field is a schema mismatch.
+        let err = validate_response(
+            "verifyCriteria",
+            &serde_json::json!({ "results": [ { "index": 0 } ] }),
+        )
+        .unwrap_err();
+        match err {
+            ValidationError::Schema { identifier, source } => {
+                assert_eq!(identifier, "verifyCriteria");
+                assert!(source.to_string().contains("met"));
+            }
+            other => panic!("expected Schema, got {other:?}"),
+        }
     }
 
     #[test]

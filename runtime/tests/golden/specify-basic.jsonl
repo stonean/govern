@@ -1,6 +1,8 @@
-{"type":"llm-request","extension-point":"writeSpecBody","request-id":"req-1","request":{"template-path":"","template-content":"","section":"","feature-description":"","feature":"006-specify","path":"specs/006-specify","paths":["specs/006-specify/spec.md"],"set-at":"2026-05-11T00:00:00Z"}}
+{"type":"progress","message":"dispatching primitive `create-feature`","step":"1","primitive":"create-feature"}
+{"type":"llm-request","extension-point":"writeSpecBody","request-id":"req-1","request":{"template-path":"specs/templates/spec.md","template-content":"---\nstatus: draft\ndependencies: []\n---\n\n# {NNN} — {Feature Name}\n\n{Brief description of what this feature does and why it exists.}\n\n## Motivation\n\n## Acceptance Criteria\n\n## Open Questions\n","section":"","feature-description":"","feature":"006-specify","path":"specs/006-specify","paths":["specs/006-specify/spec.md"],"set-at":"2026-05-11T00:00:00Z","title":"Webhook Delivery","created":true,"template":"specs/templates/spec.md"}}
 {"type":"progress","message":"received llm-response for `writeSpecBody`","step":"2"}
 {"type":"progress","message":"dispatching primitive `lint-markdown`","step":"3","primitive":"lint-markdown"}
-{"type":"gate-confirm","gate":"step-4","request-id":"req-2","prompt":"Ask the user to approve creating the new feature and setting it as the session target before any session-file write. On confirmation, the host writes the session JSON to point at the new feature; on denial, the walker exits cleanly without writing the session."}
+{"type":"gate-confirm","gate":"step-4","request-id":"req-2","prompt":"Invoke `gate-confirm` with a prompt asking the user to approve creating the new feature and setting it as the session target before any session-file write. On confirmation, continue to the session write below; on denial, the walker exits cleanly without writing the session."}
 {"type":"progress","message":"gate `step-4` confirmed","step":"4"}
+{"type":"progress","message":"dispatching primitive `write-session`","step":"5","primitive":"write-session"}
 {"type":"complete","result":{},"runtime-version":"{{runtime-version}}"}

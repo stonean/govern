@@ -2,3 +2,7 @@ feature = "006-specify"
 path = "specs/006-specify"
 paths = ["specs/006-specify/spec.md"]
 set-at = "2026-05-11T00:00:00Z"
+# Seeds the create-feature dispatch (specify step 1): the next number
+# after the pre-seeded 006-specify is 007, so the staged walk scaffolds
+# specs/007-webhook-delivery/ from specs/templates/spec.md.
+title = "Webhook Delivery"

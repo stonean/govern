@@ -1,3 +1,9 @@
 feature = "002-target"
 path = "specs/002-target"
 set-at = "2026-05-11T00:00:00Z"
+# Seeds the resolve-feature dispatches (target steps 3 and 7): the
+# identifier resolves to the same 002-target feature the session names.
+identifier = "002-target"
+# Seeds the run-generator dispatch (target step 5): a no-op generator
+# standing in for scripts/gen-spec-deps.sh, exiting 0 (no drift).
+script = "scripts/gen-noop.sh"

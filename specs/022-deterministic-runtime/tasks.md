@@ -508,30 +508,30 @@ Follow-on to task 45c: `compute-review-scope`'s `read_plan_affected` parses `## 
 
 ## 58. Implement scenario: [implement-completion-gate](scenarios/implement-completion-gate.md)
 
-- [ ] Implement the behavior described in `scenarios/implement-completion-gate.md`
+- [x] Implement the behavior described in `scenarios/implement-completion-gate.md`
 
 - **Done when**: implement.md's completion gate is numbered parseable steps invoking read-tasks, read-spec, mark-criterion, and set-status with the review-gate reads and halt messages; mark-criterion has its first prose consumer; the markdown-only reference matches; parseability and lint-tool-coverage pass; implement golden re-blessed; `cargo test` green.
 
 ## 59. Implement scenario: [clarify-command-acceleration](scenarios/clarify-command-acceleration.md)
 
-- [ ] Implement the behavior described in `scenarios/clarify-command-acceleration.md`
+- [x] Implement the behavior described in `scenarios/clarify-command-acceleration.md`
 
 - **Done when**: clarify.md parses cleanly under the conventions naming read-spec, traverse-deps, run-generator, lint-markdown, set-status and the askClarifyQuestion marker; the file leaves legacy-prose-commands.txt; markdown-only reference preserved; parseability + lint-tool-coverage pass; `cargo test` green.
 
 ## 60. Implement scenario: [groom-command-acceleration](scenarios/groom-command-acceleration.md)
 
-- [ ] Implement the behavior described in `scenarios/groom-command-acceleration.md`
+- [x] Implement the behavior described in `scenarios/groom-command-acceleration.md`
 
 - **Done when**: groom.md parses cleanly, routes each item via the routeInboxItem marker, and invokes create-scenario/append-task/set-status/write-session instead of re-specifying the writes long-hand; the file leaves legacy-prose-commands.txt; parseability + lint-tool-coverage pass; `cargo test` green.
 
 ## 61. Implement scenario: [scaffolding-primitives](scenarios/scaffolding-primitives.md)
 
-- [ ] Implement the behavior described in `scenarios/scaffolding-primitives.md`
+- [x] Implement the behavior described in `scenarios/scaffolding-primitives.md`
 
 - **Done when**: write-session has a clear mode; resolve-feature, create-feature, and append-inbox exist with full six-site wiring, runtime-tools.txt entries, data-model entries, and regenerated configure permission blocks; target.md/specify.md/log.md invoke them (stale no-primitive claim deleted); plan.md/specify.md gates use gate-confirm; raw gen-spec-deps.sh references route through run-generator; all lints and `cargo test` green.
 
 ## 62. Implement scenario: [analyze-artifact-checks](scenarios/analyze-artifact-checks.md)
 
-- [ ] Implement the behavior described in `scenarios/analyze-artifact-checks.md`
+- [x] Implement the behavior described in `scenarios/analyze-artifact-checks.md`
 
 - **Done when**: check-artifacts exists (full wiring + runtime-tools.txt + data-model + configure regen) reporting artifact-completeness, task-consistency, scenario→task-mapping (prune-aware per §tasks-phase), and review-state-drift findings with the reference's severity tiers; analyze.md invokes it in a numbered step; analyze golden re-blessed; `cargo test` green.

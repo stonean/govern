@@ -51,8 +51,7 @@ Read the spec's `status` field from the YAML frontmatter at the top of the file.
 
 5. <!-- llm:writeSpecBody --> Fill the Trade-offs section of the plan. The host enumerates the considered-and-rejected alternatives plus known limitations. Otherwise, fall back to the markdown-only path.
 
-<!-- audit:ignore-promotion -->
-6. Ask the user to approve the transition from clarified to planned after presenting a summary of the plan body and the task breakdown. On confirmation, continue to step 7; on denial, the walker exits cleanly without modifying the spec.
+6. Invoke `gate-confirm` with a prompt that presents a summary of the plan body and the task breakdown and asks the user to approve the transition from clarified to planned. On confirmation, continue to step 7; on denial, the walker exits cleanly without modifying the spec.
 
 7. Invoke `set-status` to flip the spec frontmatter's status from clarified to planned; the primitive guards against a stale "from" value so concurrent edits surface as an operational error rather than a silent overwrite.
 
@@ -64,7 +63,7 @@ The full plan-creation procedure (existing-artifact protection, cross-spec conte
 
 ### Recompute dependencies (safety net)
 
-Run `scripts/gen-spec-deps.sh --dry-run` against the target spec. If it reports a diff, run it for real to sync `dependencies:` from body inline links before evaluating cross-spec context. The pre-commit hook normally keeps this in sync; this step catches uncommitted body edits.
+Run `scripts/gen-spec-deps.sh --dry-run` against the target spec (primitive: `run-generator`). If it reports a diff, run it for real to sync `dependencies:` from body inline links before evaluating cross-spec context. The pre-commit hook normally keeps this in sync; this step catches uncommitted body edits.
 
 ### Detect existing artifacts
 

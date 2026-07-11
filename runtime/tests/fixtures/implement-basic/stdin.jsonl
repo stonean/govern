@@ -1,1 +1,3 @@
 {"type":"llm-response","request-id":"req-1","response":{"edits":[{"path":"runtime/src/foo.rs","action":"create","content":"pub fn noop() {}\n"}],"summary":"create runtime/src/foo.rs stub"}}
+{"type":"llm-response","request-id":"req-2","response":{"results":[{"index":0,"met":true},{"index":1,"met":true}]}}
+{"type":"gate-response","request-id":"req-3","confirmed":false}

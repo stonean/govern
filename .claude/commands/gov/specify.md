@@ -34,15 +34,15 @@ If the constitution has not been loaded in this session (e.g., `/gov:target` has
 
 > **For agent runtimes**: the Invoke steps below call the MCP tools of the optional gvrn runtime; the host-integration contract — bare↔prefixed tool names, lazy ToolSearch schema fetch, the no-shell-utilities rule, and the two-paths guarantee — lives once in the constitution, §runtime-host-integration. With no gvrn MCP server registered, walk the same prose using the host file-reading tools (Read, Edit, Write).
 
-<!-- audit:ignore-promotion -->
-1. The walker context carries the feature description and the resolved NNN-slug. The host pre-computes these from `$ARGUMENTS` before invoking the runtime; the runtime steps below assume the new feature's directory already exists with an empty `spec.md` copied from the template.
+1. Invoke `create-feature` with the feature description from `$ARGUMENTS` as the title (the description is required — if empty, ask the user what feature to specify). The primitive computes the next feature number from the existing NNN-prefixed directories under the configured specs root, derives the kebab-case slug, creates `specs/{NNN-slug}/`, and copies the spec template into it atomically (mode-preserving). An already-existing target directory is the `created: false` domain outcome — report the collision and stop rather than overwrite. Otherwise, fall back to the markdown-only path below.
 
 2. <!-- llm:writeSpecBody --> Fill the new spec body following §spec-requirements: a Motivation section, Acceptance Criteria with concrete and testable checkboxes (sparse acceptance criteria are valid for brownfield use — leave the section with a comment noting criteria will emerge from real work), Open Questions, and any inline links to other specs that scripts/gen-spec-deps.sh will derive the frontmatter dependencies from. The host returns the markdown body for the new file; the walker forwards the response through the context.
 
 3. Invoke `lint-markdown` against the new spec file to surface any markdown violations the LLM may have introduced. Otherwise, fall back to the markdown-only path.
 
-<!-- audit:ignore-promotion -->
-4. Ask the user to approve creating the new feature and setting it as the session target before any session-file write. On confirmation, the host writes the session JSON to point at the new feature; on denial, the walker exits cleanly without writing the session.
+4. Invoke `gate-confirm` with a prompt asking the user to approve creating the new feature and setting it as the session target before any session-file write. On confirmation, continue to the session write below; on denial, the walker exits cleanly without writing the session.
+
+5. Invoke `write-session` with the new feature slug and its repo-relative spec directory — under the configured `[paths] specs-root` (default `specs`; spec 040) — as the feature and path arguments. This is a target write: the primitive stamps a fresh set-at while preserving any cli-config-dir already in the file (the per-contributor agent identity written by `/govern`), at `.govern.session.toml`, through tempfile + rename atomic-write semantics. On the markdown-only path, the host writes the file by hand per the markdown-only reference's Write the session target section — the cli-config-dir preservation rule there applies verbatim.
 
 ## Markdown-only reference
 
@@ -61,6 +61,8 @@ The full new-feature-creation procedure (directory creation, template copy, fron
 1. Create `specs/{NNN-feature-name}/`.
 2. Copy `specs/templates/spec.md` into the directory as `spec.md`.
 
+Both sections above are what the `create-feature` primitive automates on the runtime path (number scan, slug derivation, directory creation, atomic template copy); walk them by hand only when no runtime is available.
+
 ### Fill the spec body
 
 Fill in the spec following `constitution.md` rules (§spec-requirements, §text-first-artifacts):
@@ -78,7 +80,7 @@ Run `npx markdownlint-cli2` on the new file (primitive: `lint-markdown`).
 
 ### Write the session target
 
-Write `.govern.session.toml` to set this feature as the session target (host responsibility; the runtime exposes no session-shaped primitive for this step). First read any existing `.govern.session.toml` to capture its cli-config-dir (the per-contributor agent identity written by /govern) and carry it forward, so creating a new feature never drops the agent identity. Use tempfile + rename atomic-write semantics analogous to the runtime's spec write primitives.
+Write `.govern.session.toml` to set this feature as the session target (primitive: `write-session`, gated by `gate-confirm` above). First read any existing `.govern.session.toml` to capture its cli-config-dir (the per-contributor agent identity written by /govern) and carry it forward, so creating a new feature never drops the agent identity. Use tempfile + rename atomic-write semantics analogous to the runtime's spec write primitives.
 
 ### Display the next step
 

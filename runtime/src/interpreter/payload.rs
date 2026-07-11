@@ -4,7 +4,7 @@
 //! `write-boundary`) that LLM extension points need into the typed
 //! [`WriteCodeRequest`] / [`WriteSpecBodyRequest`] /
 //! [`AssessSpecQualityRequest`] / [`AskClarifyQuestionRequest`] /
-//! [`RouteInboxItemRequest`] shapes defined in
+//! [`RouteInboxItemRequest`] / [`VerifyCriteriaRequest`] shapes defined in
 //! [`crate::schema::extensions`]. The interpreter calls
 //! [`build_extension_request`] just before emitting an `llm-request` envelope;
 //! the result replaces the previous "dump the walker context as the request"
@@ -23,6 +23,7 @@
 //! [`AssessSpecQualityRequest`]: crate::schema::extensions::AssessSpecQualityRequest
 //! [`AskClarifyQuestionRequest`]: crate::schema::extensions::AskClarifyQuestionRequest
 //! [`RouteInboxItemRequest`]: crate::schema::extensions::RouteInboxItemRequest
+//! [`VerifyCriteriaRequest`]: crate::schema::extensions::VerifyCriteriaRequest
 
 #![allow(clippy::expect_used)]
 
@@ -37,7 +38,8 @@ use crate::primitives::read_tasks;
 use crate::schema::extensions::{
     AskClarifyQuestionRequest, AssessSpecQualityRequest, AssessSpecQualityRule, ClarifyQuestion,
     PerformReviewRequest, PlanRelevantFile, ReviewRuleFile, ReviewScopeFile, RouteInboxItemRequest,
-    RouteInboxSpec, WriteCodeRequest, WriteCodeTask, WriteSpecBodyRequest,
+    RouteInboxSpec, VerifyCriteriaRequest, VerifyCriterion, WriteCodeRequest, WriteCodeTask,
+    WriteSpecBodyRequest,
 };
 use crate::schema::primitives::{Frontmatter, ReadTasksArgs};
 
@@ -123,6 +125,10 @@ impl PayloadError {
 /// - `routeInboxItem` — builds [`RouteInboxItemRequest`] from the
 ///   `item-text` context key, the fixed route vocabulary, and a scan of
 ///   the spec root for available features. Typed shape only.
+/// - `verifyCriteria` — builds [`VerifyCriteriaRequest`] from the spec
+///   resolved via `path`/`feature` and the completion gate's merged
+///   `acceptance-criteria` result (see
+///   [`build_verify_criteria_request`]). Typed shape only.
 /// - any other identifier — [`PayloadError::UnknownExtension`]; the raw
 ///   context dump fallback was removed by the extension-request-hygiene
 ///   scenario.
@@ -152,6 +158,7 @@ pub fn build_extension_request(
         "assessSpecQuality" => Ok(build_assess_spec_quality_request(context, repo, step_prose)),
         "askClarifyQuestion" => Ok(build_ask_clarify_question_request(context, repo)),
         "routeInboxItem" => Ok(build_route_inbox_item_request(context, repo)),
+        "verifyCriteria" => Ok(build_verify_criteria_request(context, repo)),
         other => Err(PayloadError::UnknownExtension {
             identifier: other.to_string(),
         }),
@@ -591,6 +598,49 @@ fn read_spec_status(spec_path: &Path) -> String {
     serde_norway::from_str::<Frontmatter>(fm_text)
         .map(|fm| fm.status)
         .unwrap_or_default()
+}
+
+/// Build the `verifyCriteria` request for `/gov:implement`'s completion
+/// gate. Typed shape only, mirroring `askClarifyQuestion` — no legacy
+/// context dump:
+///
+/// - `spec-path` / `spec-content` — the spec under verification,
+///   resolved by [`resolve_spec_path`] and read repo-confined
+///   (BE-INPUT-004); content empty when missing.
+/// - `criteria` — the merged `acceptance-criteria` result of the
+///   completion gate's `read-spec` step, indexed in body order (the same
+///   0-based addressing `mark-criterion` consumes). Empty when the
+///   context carries no criteria — the typed shape is always present.
+fn build_verify_criteria_request(context: &Map<String, Value>, repo: &Path) -> Value {
+    let spec_path = resolve_spec_path(context, repo);
+    let spec_content = read_repo_file(repo, &spec_path).unwrap_or_default();
+    let criteria = context
+        .get("acceptance-criteria")
+        .and_then(Value::as_array)
+        .map(|arr| {
+            arr.iter()
+                .enumerate()
+                .map(|(index, criterion)| VerifyCriterion {
+                    index: u32::try_from(index).unwrap_or(u32::MAX),
+                    text: criterion
+                        .get("text")
+                        .and_then(Value::as_str)
+                        .unwrap_or_default()
+                        .to_string(),
+                    checked: criterion
+                        .get("checked")
+                        .and_then(Value::as_bool)
+                        .unwrap_or(false),
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    let typed = VerifyCriteriaRequest {
+        spec_path,
+        spec_content,
+        criteria,
+    };
+    serde_json::to_value(&typed).unwrap_or(Value::Null)
 }
 
 /// Build the `assessSpecQuality` request for one per-rule Verification
@@ -2051,6 +2101,83 @@ mod tests {
                 { "feature": "002-beta", "status": "draft" }
             ])
         );
+    }
+
+    #[test]
+    fn build_verify_criteria_request_emits_typed_shape() {
+        let tmp = tempdir().unwrap();
+        let feature_dir = tmp.path().join("specs/004-implement");
+        fs::create_dir_all(&feature_dir).unwrap();
+        fs::write(feature_dir.join("spec.md"), "# Spec body\n").unwrap();
+        let mut ctx = Map::new();
+        ctx.insert("feature".into(), Value::String("004-implement".into()));
+        // Session-style directory path (not the spec file).
+        ctx.insert("path".into(), Value::String("specs/004-implement".into()));
+        // Merged read-spec result from the completion gate's read step.
+        ctx.insert(
+            "acceptance-criteria".into(),
+            serde_json::json!([
+                { "checked": false, "text": "The walker completes." },
+                { "checked": true, "text": "Boundary edits are rejected." }
+            ]),
+        );
+        // A dump key that must NOT leak into the typed payload.
+        ctx.insert("stdout".into(), Value::String("noise".into()));
+
+        let value = build_verify_criteria_request(&ctx, tmp.path());
+        let keys: Vec<&str> = value
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect();
+        assert_eq!(keys, vec!["spec-path", "spec-content", "criteria"]);
+        assert_eq!(value["spec-path"], "specs/004-implement/spec.md");
+        assert_eq!(value["spec-content"], "# Spec body\n");
+        // Indexes follow body order — the same 0-based addressing
+        // mark-criterion consumes.
+        assert_eq!(
+            value["criteria"],
+            serde_json::json!([
+                { "index": 0, "text": "The walker completes.", "checked": false },
+                { "index": 1, "text": "Boundary edits are rejected.", "checked": true }
+            ])
+        );
+    }
+
+    #[test]
+    fn build_verify_criteria_request_is_typed_even_when_context_is_bare() {
+        // Missing spec file and no criteria: the typed shape still leads
+        // with empty fields rather than reverting to a dump.
+        let tmp = tempdir().unwrap();
+        let value = build_verify_criteria_request(&Map::new(), tmp.path());
+        let keys: Vec<&str> = value
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect();
+        assert_eq!(keys, vec!["spec-path", "spec-content", "criteria"]);
+        assert_eq!(value["spec-path"], "");
+        assert_eq!(value["spec-content"], "");
+        assert!(value["criteria"].as_array().unwrap().is_empty());
+    }
+
+    #[test]
+    fn build_extension_request_routes_verify_criteria_to_typed_builder() {
+        let tmp = tempdir().unwrap();
+        let mut ctx = Map::new();
+        ctx.insert(
+            "acceptance-criteria".into(),
+            serde_json::json!([{ "checked": false, "text": "c" }]),
+        );
+        ctx.insert("stdout".into(), Value::String("noise".into()));
+        let value =
+            build_extension_request("verifyCriteria", &ctx, tmp.path(), "implement", "").unwrap();
+        let obj = value.as_object().unwrap();
+        assert!(obj.contains_key("criteria"));
+        // The raw context dump does not reach the host.
+        assert!(!obj.contains_key("stdout"));
     }
 
     #[test]

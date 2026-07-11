@@ -505,7 +505,7 @@ Four families, mirroring `/gov:analyze`'s markdown-only reference exactly (sever
 
 ## Extension-point schemas (initial release)
 
-The three initial-release single-shot extension points, plus the two follow-on points (`askClarifyQuestion`, `routeInboxItem`) whose typed shapes ship ahead of their scenarios per the extension-request-hygiene scenario. Each has request and response payload schemas; the runtime validates incoming responses against these and emits `error: schema-mismatch` on failure. An extension identifier outside this closed set is an `error: unknown-extension` at request-build time — never a raw walker-context dump. In every request that carries legacy-compat context fields after its typed prefix (`writeCode`, `writeSpecBody`, `performReview`), walker-internal accumulator keys (prior `llm:*` response echoes and the accumulated `findings` array) are filtered out; primitive results threaded through the context (`scope`, `diff-base`, `selected`, `rules-dir`, `notices`, …) pass through.
+The three initial-release single-shot extension points, plus the follow-on points: `askClarifyQuestion` and `routeInboxItem`, whose typed shapes ship ahead of their scenarios per the extension-request-hygiene scenario, and `verifyCriteria`, which ships with the implement-completion-gate scenario as `/gov:implement`'s criterion-verification seam. Each has request and response payload schemas; the runtime validates incoming responses against these and emits `error: schema-mismatch` on failure. An extension identifier outside this closed set is an `error: unknown-extension` at request-build time — never a raw walker-context dump. In every request that carries legacy-compat context fields after its typed prefix (`writeCode`, `writeSpecBody`, `performReview`), walker-internal accumulator keys (prior `llm:*` response echoes and the accumulated `findings` array) are filtered out; primitive results threaded through the context (`scope`, `diff-base`, `selected`, `rules-dir`, `notices`, …) pass through.
 
 ### `assessSpecQuality`
 
@@ -679,6 +679,38 @@ Response payload:
 ```
 
 `route` is one of the request's `routes` vocabulary (closed set — anything else is a schema mismatch); `feature` is present when the route targets an existing spec; `reason` is optional prose the host may surface in the per-item confirmation prompt.
+
+### `verifyCriteria` (follow-on)
+
+Introduced by the [implement-completion-gate](scenarios/implement-completion-gate.md) scenario: `/gov:implement`'s completion gate sends one request carrying every acceptance criterion, and the LLM judges each criterion against the implementation — the verification stays semantic while the surrounding tallies and checkbox flips stay mechanical. Each `met: true` verdict drives one `mark-criterion` call; a `met: false` verdict leaves its checkbox unchecked and is reported, never batch-marked.
+
+Request payload:
+
+```json
+{
+  "spec-path": "specs/022-deterministic-runtime/spec.md",
+  "spec-content": "...full spec text...",
+  "criteria": [
+    { "index": 0, "text": "`runtime exec implement` walks the procedure to completion.", "checked": false },
+    { "index": 1, "text": "Out-of-boundary edits are rejected.", "checked": false }
+  ]
+}
+```
+
+`criteria` mirrors `read-spec`'s merged `acceptance-criteria` result in body order; `index` is the 0-based position `mark-criterion` addresses (the two share the same comment/fence-aware section walker, so index N here is the checkbox `mark-criterion` flips at N).
+
+Response payload:
+
+```json
+{
+  "results": [
+    { "index": 0, "met": true },
+    { "index": 1, "met": false, "note": "boundary rejection has no covering test yet" }
+  ]
+}
+```
+
+`results` carries one verdict per criterion. `note` is optional prose surfaced in the completion report — a failing criterion's note explains the failure; a missing verdict for a criterion is treated as not met (the gate only flips criteria the response affirmatively confirms).
 
 ## Versioning of these schemas
 

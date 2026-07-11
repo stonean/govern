@@ -1,3 +1,6 @@
+{"type":"progress","message":"dispatching primitive `resolve-feature`","step":"3","primitive":"resolve-feature"}
+{"type":"progress","message":"dispatching primitive `run-generator`","step":"5","primitive":"run-generator"}
 {"type":"progress","message":"dispatching primitive `read-spec`","step":"6","primitive":"read-spec"}
+{"type":"progress","message":"dispatching primitive `resolve-feature`","step":"7","primitive":"resolve-feature"}
 {"type":"progress","message":"dispatching primitive `write-session`","step":"8","primitive":"write-session"}
 {"type":"complete","result":{},"runtime-version":"{{runtime-version}}"}

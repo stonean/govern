@@ -23,12 +23,21 @@ This command does not require a session target — items in the inbox span the w
 
 ## Instructions
 
-### Capture the item
+> **For agent runtimes**: the Invoke steps below call the MCP tools of the optional gvrn runtime; the host-integration contract — bare↔prefixed tool names, lazy ToolSearch schema fetch, the no-shell-utilities rule, and the two-paths guarantee — lives once in the constitution, §runtime-host-integration. With no gvrn MCP server registered, walk the same prose using the host file-reading tools (Read, Edit, Write) per the Markdown-only reference below.
 
-1. If `$ARGUMENTS` is provided, treat it as the item text. Otherwise, ask the user: "What do you want to log?"
-2. Optionally ask follow-up questions if the item is so terse it would be unrecoverable later (e.g., "broken" with no context). One short clarification is enough — do not interrogate.
+<!-- audit:ignore-promotion -->
+1. Capture the item. If `$ARGUMENTS` is provided, treat it as the item text. Otherwise, ask the user: "What do you want to log?" Optionally ask follow-up questions if the item is so terse it would be unrecoverable later (e.g., "broken" with no context) — one short clarification is enough; do not interrogate.
 
-### Append to inbox.md
+2. Invoke `append-inbox` with the item text to append `- {item text}` as a new bullet to `specs/inbox.md`. The create-if-missing semantics live in the primitive: when the file does not exist, it is created before the append (from the project inbox template when one is on disk, else with a minimal `# Inbox` heading). The item is a single line — recording stays fast and uninterpreted.
+
+3. Invoke `lint-markdown` against the modified `specs/inbox.md`.
+
+<!-- audit:ignore-promotion -->
+4. Report: the line that was added; the new total item count in the inbox; and the suggested next step: "Run `/gov:groom` when you're ready to walk the inbox and route items to their proper homes." **Stop here.** Do not start grooming or implementation. The user invokes `/gov:groom` explicitly.
+
+## Markdown-only reference
+
+With no gvrn runtime registered, the host performs the same append with its own file tools (Read, Edit, Write) — no shell-pipeline substitution (§runtime-host-integration):
 
 1. If `specs/inbox.md` does not exist, create it with a minimal heading (`# Inbox`) followed by a blank line.
 2. Append the item to the inbox list as a new bullet:
@@ -39,11 +48,4 @@ This command does not require a session target — items in the inbox span the w
 
 3. Run `npx markdownlint-cli2` on the modified file.
 
-### Report
-
-Display:
-
-- The line that was added.
-- The new total item count in the inbox.
-- Suggested next step: "Run `/gov:groom` when you're ready to walk the inbox and route items to their proper homes."
-- **Stop here.** Do not start grooming or implementation. The user invokes `/gov:groom` explicitly.
+Either path ends with the same report: the line that was added, the new total item count in the inbox, and the `/gov:groom` pointer — and stops there.
