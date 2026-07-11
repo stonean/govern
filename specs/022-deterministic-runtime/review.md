@@ -1,10 +1,10 @@
 ---
 spec: 022-deterministic-runtime
-reviewed-at: 2026-07-11T22:05:00Z
-reviewed-against: cdb0348
+reviewed-at: 2026-07-11T23:10:00Z
+reviewed-against: 49300d6
 diff-base: 5f25ebe
-must-violations: 9
-should-violations: 21
+must-violations: 0
+should-violations: 0
 low-confidence: 2
 captured-issues: 1
 skipped-passes: []
@@ -14,17 +14,24 @@ skipped-passes: []
 
 ## Summary
 
-Blocking. The backlog burn-down (diff `5f25ebe..cdb0348`, ~110 files) is
-audited against the eight backend/cross rule files. **9 MUST violations**
-across two clusters: five input-validation gaps in the runtime (slug and
-boundary validation, archive decompression bound, outbound-fetch
-allowlisting) and four exec-path correctness bugs in the wave-3 command
-rewrites, all caused by the parser's last-primitive-span-wins rule silently
-dropping a primitive when one numbered step names two. 21 SHOULD (mostly
-consolidation the wave-4 refactor missed, plus efficiency hoists and
-command-prose restatement) and 2 low-confidence findings are advisory. One
-issue was captured to the inbox during the work window. The spec cannot
-advance to `done` until the MUST violations are resolved or waived.
+Not blocking. This is the re-review after remediation commit `49300d6`
+(gvrn 0.18.0). The prior run against `cdb0348` found 9 MUST and 21 SHOULD
+violations; an independent verification pass confirms all 30 are genuinely
+resolved (no stubs, no regressions) and the full suite passes (760 tests).
+The nine MUSTs — five runtime input-validation gaps (slug allowlist,
+writeCode backslash boundary, archive decompression bound, fetch SSRF) and
+four command exec-path bugs (fixed structurally: the parser now hard-errors
+when one step names two primitives) — are closed, along with the 21 SHOULD
+consolidation/efficiency/simplicity items. Two low-confidence items from the
+first run remain advisory, and one issue is captured for `/gov:groom`. The
+resolved-findings detail from the blocking run is preserved below for the
+audit trail. The spec is clear to advance to `done`.
+
+## Resolution status
+
+All findings from the `cdb0348` run are **RESOLVED** as of `49300d6`,
+independently verified 2026-07-11. The full pre-remediation finding detail
+follows unchanged as the audit record of what was fixed.
 
 ## MUST violations (blocking)
 

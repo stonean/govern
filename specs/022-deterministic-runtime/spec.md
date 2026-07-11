@@ -2,12 +2,12 @@
 status: in-progress
 dependencies: [021-runtime-boundary]
 review:
-  last-run: 2026-07-11T22:05:00Z
-  reviewed-against: cdb0348
-  must-violations: 9
-  should-violations: 21
+  last-run: 2026-07-11T23:10:00Z
+  reviewed-against: 49300d6
+  must-violations: 0
+  should-violations: 0
   low-confidence: 2
-  blocking: true
+  blocking: false
 ---
 
 # 022 — Deterministic Runtime

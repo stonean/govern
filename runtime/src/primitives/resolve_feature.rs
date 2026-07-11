@@ -38,8 +38,9 @@ use crate::schema::primitives::{
 /// # Errors
 ///
 /// Returns [`PrimitiveError::InvalidArgument`] when `identifier` is empty
-/// or whitespace-only, or [`PrimitiveError::InvalidSlug`] when the
-/// optional `scenario` slug carries path separators or a dot prefix.
+/// or whitespace-only, or [`PrimitiveError::InvalidSlug`] when the optional
+/// `scenario` slug does not match the kebab-case grammar enforced by
+/// [`crate::primitives::validate_slug`].
 /// Ambiguity and no-match are domain outcomes, not errors; a missing or
 /// unreadable spec root simply yields `not-found`.
 pub fn run(args: &ResolveFeatureArgs, repo: &Path) -> Result<ResolveFeatureResult> {
