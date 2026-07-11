@@ -1,0 +1,9 @@
+# Normalize every text file to LF in the index and on checkout.
+#
+# The runtime's golden/parity tests (runtime/tests/golden/*.jsonl,
+# runtime/tests/parity/) byte-compare captured streams against tracked
+# files, and the markdown fixtures under runtime/tests/fixtures/ feed
+# byte-sensitive frontmatter parsing. A CRLF checkout (Windows runners
+# default to core.autocrlf=true) would break those comparisons, so LF is
+# pinned repo-wide rather than per-path.
+* text=auto eol=lf

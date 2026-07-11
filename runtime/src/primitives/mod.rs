@@ -257,6 +257,31 @@ pub enum PrimitiveError {
         /// this context.
         reason: String,
     },
+    /// A supplied argument value failed validation (e.g., embedded
+    /// newlines in a single-line field). Distinct from
+    /// [`PrimitiveError::MissingArgument`] — the value was supplied but
+    /// rejected.
+    #[error("{primitive}: invalid '{argument}': {reason}")]
+    InvalidArgument {
+        /// Primitive name (e.g., `append-task`).
+        primitive: String,
+        /// Argument name carrying the rejected value.
+        argument: String,
+        /// One-line reason describing the rejection.
+        reason: String,
+    },
+    /// `set-status` was invoked with a `from` or `to` value outside the
+    /// constitution's lifecycle set. Transition-edge legality stays with
+    /// procedures; the primitive guards set membership only.
+    #[error("set-status: '{argument}' value '{value}' is not one of {allowed}")]
+    InvalidStatus {
+        /// Argument name (`from` or `to`) carrying the invalid value.
+        argument: String,
+        /// The rejected status value.
+        value: String,
+        /// Pipe-joined allowed lifecycle set.
+        allowed: String,
+    },
     /// `append-task` was called with a `parent-heading` argument that does
     /// not match any `## …` phase container in the target `tasks.md`.
     #[error(

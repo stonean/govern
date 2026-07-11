@@ -9,16 +9,19 @@
 //! before any file is written.
 //!
 //! On Unix, file permissions are preserved from the archive's entry
-//! metadata (`tar` header mode bits; zip `unix_mode`). This matters for
-//! the bootstrap path: scripts under `scripts/` need to land with their
-//! executable bit set so the adopter's pre-commit hook can run them.
-//! Windows ignores the mode bits (NTFS doesn't have a direct analog
-//! and `fs::set_permissions` only toggles the read-only attribute on
+//! metadata (`tar` header mode bits; zip `unix_mode`), masked to the
+//! `rwxrwxrwx` permission bits — setuid/setgid/sticky bits from an
+//! untrusted archive are never applied. This matters for the bootstrap
+//! path: scripts under `scripts/` need to land with their executable
+//! bit set so the adopter's pre-commit hook can run them. Windows
+//! ignores the mode bits (NTFS doesn't have a direct analog and
+//! `fs::set_permissions` only toggles the read-only attribute on
 //! that platform).
 //!
 //! The result lists every regular file extracted (relative to `dest`)
 //! in archive order. Directory entries are created implicitly and not
-//! counted. Symlinks inside the archive are not extracted — they are
+//! counted. Symlinks inside the archive are not extracted — tar link
+//! entries and zip entries whose Unix mode carries `S_IFLNK` are both
 //! ignored with no error (a future revision may surface them as a
 //! finding).
 
@@ -174,6 +177,17 @@ fn extract_zip(archive: &Path, dest: &Path) -> Result<Vec<String>> {
                 entry: entry.name().to_string(),
             })?;
         let safe = safe_join(dest, &raw_path)?;
+        // Zip has no first-class symlink entry type — a symlink is a
+        // regular-looking entry whose Unix mode carries `S_IFLNK` and
+        // whose content is the link-target path. Materializing that as a
+        // regular file is wrong, so skip it — matching the tar path's
+        // treatment of its link entries and the module doc.
+        if entry
+            .unix_mode()
+            .is_some_and(|mode| mode & S_IFMT == S_IFLNK)
+        {
+            continue;
+        }
         if entry.is_dir() {
             fs::create_dir_all(&safe).map_err(|source| PrimitiveError::Io {
                 path: safe.clone(),
@@ -203,15 +217,26 @@ fn extract_zip(archive: &Path, dest: &Path) -> Result<Vec<String>> {
     Ok(files)
 }
 
+/// Unix file-type mask (`S_IFMT`): the high bits of a mode word that
+/// carry the entry's type marker rather than its permissions.
+const S_IFMT: u32 = 0o170_000;
+
+/// Unix symlink type marker (`S_IFLNK`); an entry whose mode satisfies
+/// `mode & S_IFMT == S_IFLNK` is a symbolic link.
+const S_IFLNK: u32 = 0o120_000;
+
 /// Apply Unix permission bits to `path`. No-op on non-Unix platforms.
-/// Mask the mode to the standard 12 bits (sticky + setuid/setgid +
-/// `rwxrwxrwx`) so archives that encode the regular-file type marker
-/// in their high bits don't propagate that into the on-disk mode.
+/// Mask the mode to the `rwxrwxrwx` permission bits (0o777): the mask
+/// drops both the file-type marker some archives encode in the high
+/// bits and — deliberately — setuid/setgid/sticky (0o7000), which an
+/// untrusted downloaded archive must never be allowed to apply.
+/// Executable bits within 0o777 are preserved (the bootstrap
+/// `scripts/` exec-bit behavior `apply-manifest` depends on).
 #[cfg(unix)]
 fn apply_unix_mode(path: &Path, mode: Option<u32>) -> Result<()> {
     use std::os::unix::fs::PermissionsExt;
     if let Some(bits) = mode {
-        let masked = bits & 0o7777;
+        let masked = bits & 0o777;
         if masked != 0 {
             fs::set_permissions(path, fs::Permissions::from_mode(masked)).map_err(|source| {
                 PrimitiveError::Io {
@@ -449,6 +474,99 @@ mod tests {
             .mode()
             & 0o7777;
         assert_eq!(mode, 0o755, "extracted file lost its executable bit");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn zip_symlink_entry_is_skipped_not_materialized() {
+        let tmp = tempfile::tempdir().unwrap();
+        let archive = tmp.path().join("links.zip");
+        let file = fs::File::create(&archive).unwrap();
+        let mut writer = zip::ZipWriter::new(file);
+        let options: zip::write::SimpleFileOptions = zip::write::SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated);
+        writer.start_file("a.txt", options).unwrap();
+        writer.write_all(b"alpha").unwrap();
+        // `add_symlink` stores an entry whose Unix mode carries S_IFLNK
+        // and whose content is the link-target path.
+        writer.add_symlink("link.txt", "a.txt", options).unwrap();
+        writer.finish().unwrap();
+
+        let dest = tmp.path().join("out");
+        let result = run(
+            &ExtractArchiveArgs {
+                archive: archive.to_string_lossy().into_owned(),
+                dest: dest.to_string_lossy().into_owned(),
+                format: None,
+            },
+            tmp.path(),
+        )
+        .unwrap();
+
+        assert_eq!(result.files, vec!["a.txt".to_string()]);
+        assert_eq!(result.count, 1);
+        assert_eq!(fs::read(dest.join("a.txt")).unwrap(), b"alpha");
+        // Neither a regular file containing the target path nor an
+        // actual symlink may exist at the entry's path.
+        assert!(
+            fs::symlink_metadata(dest.join("link.txt")).is_err(),
+            "symlink entry must not be materialized"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn apply_unix_mode_strips_setuid_setgid_sticky() {
+        use std::os::unix::fs::PermissionsExt;
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("suid.sh");
+        fs::write(&path, b"#!/usr/bin/env bash\n").unwrap();
+
+        apply_unix_mode(&path, Some(0o4755)).unwrap();
+
+        let mode = fs::metadata(&path).unwrap().permissions().mode() & 0o7777;
+        assert_eq!(mode, 0o755, "setuid bit must be dropped, exec bits kept");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn tar_gz_setuid_mode_is_not_applied_on_extract() {
+        use std::os::unix::fs::PermissionsExt;
+        let tmp = tempfile::tempdir().unwrap();
+        let archive = tmp.path().join("suid.tar.gz");
+        let file = fs::File::create(&archive).unwrap();
+        let encoder = flate2::write::GzEncoder::new(file, flate2::Compression::default());
+        let mut builder = tar::Builder::new(encoder);
+        let body = b"#!/usr/bin/env bash\necho hi\n";
+        let mut header = tar::Header::new_gnu();
+        header.set_size(body.len() as u64);
+        header.set_mode(0o6755); // setuid + setgid + rwxr-xr-x
+        header.set_cksum();
+        builder
+            .append_data(&mut header, "bin/tool", &body[..])
+            .unwrap();
+        builder.into_inner().unwrap().finish().unwrap();
+
+        let dest = tmp.path().join("out");
+        run(
+            &ExtractArchiveArgs {
+                archive: archive.to_string_lossy().into_owned(),
+                dest: dest.to_string_lossy().into_owned(),
+                format: None,
+            },
+            tmp.path(),
+        )
+        .unwrap();
+
+        let mode = fs::metadata(dest.join("bin/tool"))
+            .unwrap()
+            .permissions()
+            .mode()
+            & 0o7777;
+        assert_eq!(
+            mode, 0o755,
+            "setuid/setgid from the archive header must never be applied"
+        );
     }
 
     #[test]

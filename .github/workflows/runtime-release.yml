@@ -79,11 +79,11 @@ jobs:
 
       - name: Build (native)
         if: ${{ !matrix.cross }}
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release --locked --target ${{ matrix.target }}
 
       - name: Build (cross-compiled via cargo-zigbuild)
         if: matrix.cross
-        run: cargo zigbuild --release --target ${{ matrix.target }}
+        run: cargo zigbuild --release --locked --target ${{ matrix.target }}
 
       - name: Smoke test --version
         if: matrix.os != 'ubuntu-latest' || !matrix.cross
@@ -140,4 +140,4 @@ jobs:
       - name: cargo publish
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-        run: cargo publish
+        run: cargo publish --locked

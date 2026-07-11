@@ -10,9 +10,29 @@
 //!   for the merge policy.
 //! - Emits an `llm-request` envelope and reads a matching
 //!   `llm-response` from stdin (`Step::Extension`).
-//! - Detects a gate trigger in the prose ("Ask the user to approve") and
-//!   emits a `gate-confirm`, reading a `gate-response` back.
+//! - Blocks on a confirmation gate: emits a `gate-confirm` envelope and
+//!   reads a `gate-response` back. A denied gate is a clean `complete`
+//!   (per §partial-failure-semantics), never an error.
 //! - Otherwise no-op (`Step::Prose`).
+//!
+//! # Gate convention
+//!
+//! Two step shapes gate, and step type decides which rule applies:
+//!
+//! - A `Step::Primitive` whose name is `gate-confirm` IS a blocking gate
+//!   by virtue of the primitive — phrase or no phrase (prune.md step 4's
+//!   shape). The walker emits the `gate-confirm` envelope itself and
+//!   awaits the `gate-response`; it does not dispatch through
+//!   [`dispatch_primitive`].
+//! - A `Step::Prose` whose text contains the phrase "ask the user to
+//!   approve" (case-insensitive, [`GATE_TRIGGER`]) is a fallback gate for
+//!   procedures that gate without the primitive (plan.md / specify.md's
+//!   shape).
+//!
+//! Dispatch wins over the phrase: a non-gate `Step::Primitive` or a
+//! `Step::Extension` whose prose happens to contain the phrase dispatches
+//! normally — a step is never silently converted into a gate that drops
+//! its primitive or extension dispatch.
 //!
 //! At the end of the procedure the walker emits `complete`. Operational
 //! errors halt the walk and emit an `error` envelope before returning.
@@ -124,23 +144,23 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
     }
 
     fn handle_step(&mut self, step: &Step) -> std::io::Result<Option<WalkOutcome>> {
-        // Gate trigger pre-empts primitive/extension dispatch — any step
-        // whose prose contains the gate trigger emits a gate-confirm
-        // regardless of step type. The interpreter treats a denied gate
-        // as a clean `complete` per the partial-failure resolution.
-        let prose = step_prose(step);
-        if prose.to_lowercase().contains(GATE_TRIGGER) {
-            let number = step_number(step);
-            let outcome = self.handle_gate(&number, prose)?;
-            return Ok(outcome);
-        }
+        // Gate convention (see the module docs): a `gate-confirm` primitive
+        // step blocks by virtue of the primitive; the prose phrase trigger
+        // is a fallback for steps with no dispatch. Primitive/extension
+        // dispatch wins over the phrase, so a dispatching step is never
+        // silently converted into a gate.
         match step {
             Step::Primitive {
                 number,
                 name,
-                prose: _,
+                prose,
                 location,
-            } => self.handle_primitive(number, name, *location),
+            } => {
+                if name == "gate-confirm" {
+                    return self.handle_gate(number, prose);
+                }
+                self.handle_primitive(number, name, *location)
+            }
             Step::Extension {
                 number,
                 identifier,
@@ -150,7 +170,12 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
                 let outcome = self.handle_extension(number, identifier, prose)?;
                 Ok(outcome)
             }
-            Step::Prose { .. } => Ok(None),
+            Step::Prose { number, text, .. } => {
+                if text.to_lowercase().contains(GATE_TRIGGER) {
+                    return self.handle_gate(number, text);
+                }
+                Ok(None)
+            }
         }
     }
 
@@ -509,21 +534,6 @@ fn envelope_kind(message: &ProtocolMessage) -> &'static str {
     }
 }
 
-fn step_prose(step: &Step) -> &str {
-    match step {
-        Step::Primitive { prose, .. } | Step::Extension { prose, .. } => prose,
-        Step::Prose { text, .. } => text,
-    }
-}
-
-fn step_number(step: &Step) -> StepNumber {
-    match step {
-        Step::Primitive { number, .. }
-        | Step::Extension { number, .. }
-        | Step::Prose { number, .. } => number.clone(),
-    }
-}
-
 fn format_step_number(number: &StepNumber) -> String {
     number
         .0
@@ -606,12 +616,11 @@ fn dispatch_primitive(
         "dashboard" => call!(DashboardArgs, dashboard),
         "write-session" => call!(WriteSessionArgs, write_session),
         "gate-confirm" => {
-            // The interpreter-level gate handler emits gate-confirm via
-            // its own path (see handle_gate). When a primitive named
-            // `gate-confirm` appears directly in a procedure, surface
-            // the prompt payload as a domain result rather than
-            // blocking — the interpreter routes via the prose-trigger
-            // mechanism.
+            // Unreachable from the walker: `handle_step` intercepts a
+            // `gate-confirm` primitive step and blocks via `handle_gate`
+            // (the step IS the gate). This arm remains so a direct
+            // dispatch by name still yields the prompt payload as a
+            // domain result instead of an unknown-primitive error.
             let args: GateConfirmArgs =
                 serde_json::from_value(value).map_err(DispatchError::BadArgs)?;
             let payload = primitives::gate_confirm::prompt_payload(

@@ -35,25 +35,27 @@ use std::path::Path;
 
 use serde_json::{Map, Value, json};
 
-use crate::primitives::{PrimitiveError, Result, read_text, write_atomic};
+use crate::primitives::{PrimitiveError, Result, read_text, validate_no_traversal, write_atomic};
 use crate::schema::primitives::{MergePermissionsArgs, MergePermissionsResult};
 
 /// Execute the `merge-permissions` primitive.
 ///
 /// # Errors
 ///
+/// - [`PrimitiveError::InvalidPath`] when `path` is absolute, empty, or
+///   contains a parent-directory component — the BE-INPUT-004
+///   defense-in-depth check every path-taking primitive applies before
+///   filesystem operations. `path` is repo-relative (the
+///   bootstrap-substituted `{cli-config-dir}/settings.local.json`); no
+///   caller needs an out-of-repo destination.
 /// - [`PrimitiveError::Io`] on local filesystem failures.
 /// - [`PrimitiveError::Json`] when an existing file fails JSON parse.
 /// - [`PrimitiveError::JsonSchema`] when `permissions.allow` /
 ///   `permissions.deny` exists but is not an array (e.g., null,
 ///   object, string).
 pub fn run(args: &MergePermissionsArgs, repo: &Path) -> Result<MergePermissionsResult> {
-    let candidate = Path::new(&args.path);
-    let target_path = if candidate.is_absolute() {
-        candidate.to_path_buf()
-    } else {
-        repo.join(candidate)
-    };
+    validate_no_traversal(&args.path)?;
+    let target_path = repo.join(&args.path);
 
     let existing = match target_path.try_exists() {
         Ok(true) => Some(read_text(&target_path)?),
@@ -509,6 +511,26 @@ mod tests {
         let parsed: Value = serde_json::from_str(&body).unwrap();
         assert_eq!(parsed["permissions"]["allow"][0], "Edit");
         assert_eq!(parsed["permissions"]["deny"][0], "Existing");
+    }
+
+    #[test]
+    fn absolute_path_is_rejected_before_any_write() {
+        let tmp = tempfile::tempdir().unwrap();
+        let outside = tempfile::tempdir().unwrap();
+        let target = outside.path().join("settings.json");
+        let err = run(&args(&target.to_string_lossy(), &["Edit"], &[]), tmp.path()).unwrap_err();
+        assert!(
+            matches!(err, PrimitiveError::InvalidPath { .. }),
+            "expected InvalidPath, got {err:?}"
+        );
+        assert!(!target.exists(), "nothing may be written outside the repo");
+    }
+
+    #[test]
+    fn traversal_path_is_rejected_before_any_write() {
+        let tmp = tempfile::tempdir().unwrap();
+        let err = run(&args("../settings.json", &["Edit"], &[]), tmp.path()).unwrap_err();
+        assert!(matches!(err, PrimitiveError::InvalidPath { .. }));
     }
 
     #[test]

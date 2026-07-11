@@ -48,8 +48,10 @@ enum Command {
     Parse {
         /// Path to the markdown file. Required unless `--emit-schema` is set.
         file: Option<PathBuf>,
-        /// Exit non-zero if the file is unparseable and not on the legacy
-        /// allowlist.
+        /// Check parseability without printing the AST. Exit 0 when the
+        /// file parses as a Procedure, 2 when it is legacy prose (no
+        /// parseable Instructions section — allowlist-gated in CI), and
+        /// 1 when it is Invalid (malformed structure — never allowed).
         #[arg(long, conflicts_with = "emit_schema")]
         check: bool,
         /// Print the JSON Schema for the protocol envelope and exit. Debug
@@ -197,16 +199,14 @@ fn run_parse(path: &std::path::Path, check_only: bool) -> ExitCode {
             }
         }
         Err(parser::ParseError::LegacyProse) => {
-            if check_only {
-                eprintln!("{}: legacy prose (allowed)", path.display());
-                ExitCode::SUCCESS
-            } else {
-                eprintln!(
-                    "{}: legacy prose — no parseable Instructions section",
-                    path.display()
-                );
-                ExitCode::from(2)
-            }
+            // Exit 2 distinguishes legacy prose from Invalid (exit 1) so
+            // scripts/lint-procedure-parseability.sh can gate legacy on
+            // the allowlist while rejecting Invalid unconditionally.
+            eprintln!(
+                "{}: legacy prose — no parseable Instructions section",
+                path.display()
+            );
+            ExitCode::from(2)
         }
         Err(err) => {
             eprintln!("{}: {err}", path.display());

@@ -647,3 +647,219 @@ fn applied_waiver_threads_from_process_waivers_into_write_review() {
         "a waived finding does not block:\n{spec_after}"
     );
 }
+
+/// Gate convention, primitive shape: a `gate-confirm` primitive step IS a
+/// blocking gate by virtue of the primitive — no "ask the user to
+/// approve" phrase required (prune.md step 4's shape). Denial is a clean
+/// `complete` with `confirmed: false`, and later steps never run.
+#[test]
+fn gate_confirm_primitive_step_blocks_without_the_phrase() {
+    let procedure = Procedure {
+        command: "test".into(),
+        steps: vec![
+            Step::Primitive {
+                number: StepNumber(vec![1]),
+                name: "gate-confirm".into(),
+                prose: "Invoke `gate-confirm` with a prompt naming the destructive write.".into(),
+                location: loc(),
+            },
+            Step::Primitive {
+                number: StepNumber(vec![2]),
+                name: "read-spec".into(),
+                prose: String::new(),
+                location: loc(),
+            },
+        ],
+    };
+    let response = "{\"type\":\"gate-response\",\"request-id\":\"req-1\",\"confirmed\":false}\n";
+    let mut reader = Cursor::new(response.to_string());
+    let mut writer: Vec<u8> = Vec::new();
+    let mut context = Map::new();
+    context.insert("feature".into(), Value::String("001-basic".into()));
+    let mut walker = Walker::new(
+        &procedure,
+        fixture_repo(),
+        context,
+        &mut reader,
+        &mut writer,
+    );
+    assert_eq!(walker.run().unwrap(), WalkOutcome::Complete);
+    let envelopes: Vec<Value> = std::str::from_utf8(&writer)
+        .unwrap()
+        .lines()
+        .map(|l| serde_json::from_str(l).unwrap())
+        .collect();
+    let types: Vec<&str> = envelopes
+        .iter()
+        .map(|v| v["type"].as_str().unwrap())
+        .collect();
+    // gate-confirm, progress(denied), complete(confirmed: false) — the
+    // step-2 read-spec dispatch never happens.
+    assert_eq!(types, vec!["gate-confirm", "progress", "complete"]);
+    assert_eq!(envelopes[0]["gate"], "step-1");
+    assert_eq!(envelopes[2]["result"]["confirmed"], false);
+}
+
+/// Gate convention, prose shape: the phrase trigger remains the fallback
+/// for a prose step with no primitive.
+#[test]
+fn prose_step_with_gate_phrase_blocks() {
+    let procedure = Procedure {
+        command: "test".into(),
+        steps: vec![Step::Prose {
+            number: StepNumber(vec![6]),
+            text: "Ask the user to approve the transition from clarified to planned.".into(),
+            location: loc(),
+        }],
+    };
+    let response = "{\"type\":\"gate-response\",\"request-id\":\"req-1\",\"confirmed\":true}\n";
+    let mut reader = Cursor::new(response.to_string());
+    let mut writer: Vec<u8> = Vec::new();
+    let mut walker = Walker::new(
+        &procedure,
+        fixture_repo(),
+        Map::new(),
+        &mut reader,
+        &mut writer,
+    );
+    assert_eq!(walker.run().unwrap(), WalkOutcome::Complete);
+    let envelopes: Vec<Value> = std::str::from_utf8(&writer)
+        .unwrap()
+        .lines()
+        .map(|l| serde_json::from_str(l).unwrap())
+        .collect();
+    let types: Vec<&str> = envelopes
+        .iter()
+        .map(|v| v["type"].as_str().unwrap())
+        .collect();
+    assert_eq!(types, vec!["gate-confirm", "progress", "complete"]);
+    // The gate name reflects the step's real document number.
+    assert_eq!(envelopes[0]["gate"], "step-6");
+}
+
+/// Gate convention, dispatch-wins rule: a non-gate primitive step whose
+/// prose happens to contain the phrase still dispatches its primitive —
+/// it is never silently converted into a gate that drops the dispatch.
+#[test]
+fn primitive_step_with_gate_phrase_keeps_its_dispatch() {
+    let procedure = Procedure {
+        command: "test".into(),
+        steps: vec![Step::Primitive {
+            number: StepNumber(vec![1]),
+            name: "read-spec".into(),
+            prose: "Invoke `read-spec`, then ask the user to approve the summary.".into(),
+            location: loc(),
+        }],
+    };
+    let mut reader = Cursor::new(String::new());
+    let mut writer: Vec<u8> = Vec::new();
+    let mut context = Map::new();
+    context.insert("feature".into(), Value::String("001-basic".into()));
+    let mut walker = Walker::new(
+        &procedure,
+        fixture_repo(),
+        context,
+        &mut reader,
+        &mut writer,
+    );
+    assert_eq!(walker.run().unwrap(), WalkOutcome::Complete);
+    let envelopes: Vec<Value> = std::str::from_utf8(&writer)
+        .unwrap()
+        .lines()
+        .map(|l| serde_json::from_str(l).unwrap())
+        .collect();
+    let types: Vec<&str> = envelopes
+        .iter()
+        .map(|v| v["type"].as_str().unwrap())
+        .collect();
+    // progress(read-spec dispatch), complete — no gate-confirm envelope.
+    assert_eq!(types, vec!["progress", "complete"]);
+    assert_eq!(envelopes[0]["primitive"], "read-spec");
+}
+
+/// End-to-end coverage for prune.md's confirmation gate on the exec path:
+/// the shipped command file parses with document step numbers 1..6, step 4
+/// is a `gate-confirm` primitive (no phrase), and walking the procedure
+/// blocks there — a denied gate leaves tasks.md untouched.
+#[test]
+fn prune_command_gate_blocks_on_the_exec_path() {
+    let source = std::fs::read_to_string(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .expect("runtime/.. exists")
+            .join("framework/commands/prune.md"),
+    )
+    .unwrap();
+    let procedure = gvrn::parser::parse(&source, "prune").expect("prune.md parses");
+
+    // Step numbers follow the document (1..6) and step 4 is the gate.
+    let numbers: Vec<Vec<u32>> = procedure
+        .steps
+        .iter()
+        .map(|s| match s {
+            Step::Primitive { number, .. }
+            | Step::Extension { number, .. }
+            | Step::Prose { number, .. } => number.0.clone(),
+        })
+        .collect();
+    assert_eq!(
+        numbers,
+        vec![vec![1], vec![2], vec![3], vec![4], vec![5], vec![6]]
+    );
+    match &procedure.steps[3] {
+        Step::Primitive { name, .. } => assert_eq!(name, "gate-confirm"),
+        other => panic!("prune.md step 4 must be the gate-confirm primitive, got {other:?}"),
+    }
+
+    // Walk against a throwaway repo: preview (step 2) reads tasks.md, the
+    // gate (step 4) blocks, and denial stops before the apply (step 5).
+    let tmp = tempfile::tempdir().unwrap();
+    let feature_dir = tmp.path().join("specs/001-basic");
+    std::fs::create_dir_all(&feature_dir).unwrap();
+    std::fs::write(
+        feature_dir.join("spec.md"),
+        "---\nstatus: in-progress\ndependencies: []\n---\n\n# 001\n",
+    )
+    .unwrap();
+    let tasks_body =
+        "# 001\n\n## 1. Spent\n\n- [x] Done subtask.\n\n## 2. Pending\n\n- [ ] Open subtask.\n";
+    std::fs::write(feature_dir.join("tasks.md"), tasks_body).unwrap();
+
+    let mut context = Map::new();
+    context.insert("feature".into(), Value::String("001-basic".into()));
+    let response = "{\"type\":\"gate-response\",\"request-id\":\"req-1\",\"confirmed\":false}\n";
+    let mut reader = Cursor::new(response.to_string());
+    let mut writer: Vec<u8> = Vec::new();
+    let mut walker = Walker::new(
+        &procedure,
+        tmp.path().to_path_buf(),
+        context,
+        &mut reader,
+        &mut writer,
+    );
+    assert_eq!(walker.run().unwrap(), WalkOutcome::Complete);
+
+    let envelopes: Vec<Value> = std::str::from_utf8(&writer)
+        .unwrap()
+        .lines()
+        .map(|l| serde_json::from_str(l).unwrap())
+        .collect();
+    let types: Vec<&str> = envelopes
+        .iter()
+        .map(|v| v["type"].as_str().unwrap())
+        .collect();
+    // progress(step-2 prune-tasks preview), gate-confirm(step-4),
+    // progress(denied), complete(confirmed: false).
+    assert_eq!(
+        types,
+        vec!["progress", "gate-confirm", "progress", "complete"]
+    );
+    assert_eq!(envelopes[0]["primitive"], "prune-tasks");
+    assert_eq!(envelopes[0]["step"], "2");
+    assert_eq!(envelopes[1]["gate"], "step-4");
+    assert_eq!(envelopes[3]["result"]["confirmed"], false);
+
+    // The denied gate wrote nothing.
+    let after = std::fs::read_to_string(feature_dir.join("tasks.md")).unwrap();
+    assert_eq!(after, tasks_body, "tasks.md must be untouched after denial");
+}

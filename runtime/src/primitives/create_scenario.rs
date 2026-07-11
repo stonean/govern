@@ -60,7 +60,7 @@ fn render(args: &CreateScenarioArgs) -> String {
     let title = title_from_slug(&args.slug);
     let mut out = String::new();
     out.push_str("---\n");
-    let _ = writeln!(out, "section: \"{}\"", args.section);
+    let _ = writeln!(out, "section: {}", yaml_quoted(&args.section));
     out.push_str("---\n\n");
     let _ = writeln!(out, "# {title}\n");
     out.push_str(args.body.trim());
@@ -70,6 +70,18 @@ fn render(args: &CreateScenarioArgs) -> String {
     out.push_str("## Resolved Questions\n\n");
     out.push_str("*None yet.*\n");
     out
+}
+
+/// Serialize `value` as a double-quoted YAML scalar. JSON string escaping
+/// is a strict subset of YAML's double-quoted scalar syntax, so
+/// `serde_json` yields text any YAML parser reads back verbatim —
+/// embedded `"` and `\` in the `section` argument no longer corrupt the
+/// frontmatter (scenario primitive-robustness-hardening). Plain sections
+/// render exactly as before (`section: "Follow-on scenarios"`). The
+/// fallback arm is unreachable for strings; it exists to satisfy the
+/// crate's no-unwrap policy without panicking.
+fn yaml_quoted(value: &str) -> String {
+    serde_json::to_string(value).unwrap_or_else(|_| format!("\"{value}\""))
 }
 
 /// Capitalize the slug's first character for the H1 heading. Hyphens are
@@ -197,6 +209,46 @@ mod tests {
             tf.write_all(b"INTERRUPTED").unwrap();
         }
         assert!(!dest.exists());
+    }
+
+    /// Minimal frontmatter shape for the YAML round-trip assertion.
+    #[derive(serde::Deserialize)]
+    struct SectionFm {
+        section: String,
+    }
+
+    #[test]
+    fn section_with_quotes_and_backslashes_yields_valid_yaml() {
+        // Scenario primitive-robustness-hardening: `"` / `\` in the
+        // section argument previously landed unescaped inside the
+        // double-quoted scalar, corrupting the frontmatter.
+        let tmp = tempdir().unwrap();
+        make_feature(tmp.path(), "specs/042-foo");
+        let mut a = args("specs/042-foo", "escaped", None);
+        a.section = r#"Authentication "flow" \ test"#.into();
+        run(&a, tmp.path()).unwrap();
+
+        let body =
+            fs::read_to_string(tmp.path().join("specs/042-foo/scenarios/escaped.md")).unwrap();
+        let (fm, _rest) =
+            crate::primitives::split_frontmatter(&body, Path::new("escaped.md")).unwrap();
+        let parsed: SectionFm =
+            serde_norway::from_str(fm).expect("frontmatter must stay valid YAML");
+        assert_eq!(
+            parsed.section, r#"Authentication "flow" \ test"#,
+            "section must round-trip verbatim through the YAML"
+        );
+    }
+
+    #[test]
+    fn plain_section_renders_exactly_as_before() {
+        // The escaping change must not alter the shipped shape for
+        // ordinary sections.
+        let tmp = tempdir().unwrap();
+        make_feature(tmp.path(), "specs/042-foo");
+        run(&args("specs/042-foo", "plain", None), tmp.path()).unwrap();
+        let body = fs::read_to_string(tmp.path().join("specs/042-foo/scenarios/plain.md")).unwrap();
+        assert!(body.starts_with("---\nsection: \"Follow-on scenarios\"\n---\n"));
     }
 
     #[test]

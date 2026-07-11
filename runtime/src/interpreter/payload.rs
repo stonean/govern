@@ -3,7 +3,8 @@
 //! Bundles the static context (`constitution-excerpts`, `plan-relevant-files`,
 //! `write-boundary`) that LLM extension points need into the typed
 //! [`WriteCodeRequest`] / [`WriteSpecBodyRequest`] /
-//! [`AssessSpecQualityRequest`] shapes defined in
+//! [`AssessSpecQualityRequest`] / [`AskClarifyQuestionRequest`] /
+//! [`RouteInboxItemRequest`] shapes defined in
 //! [`crate::schema::extensions`]. The interpreter calls
 //! [`build_extension_request`] just before emitting an `llm-request` envelope;
 //! the result replaces the previous "dump the walker context as the request"
@@ -11,9 +12,17 @@
 //! spec 022 LLM extension points contract (stable prefix front, per-task
 //! variable suffix last).
 //!
+//! Per the extension-request-hygiene scenario, walker-internal accumulator
+//! keys (prior `llm:*` response echoes and the cross-pass `findings`
+//! array) are filtered from every legacy-compat context merge, and an
+//! unknown extension identifier is a structured error rather than a raw
+//! context dump.
+//!
 //! [`WriteCodeRequest`]: crate::schema::extensions::WriteCodeRequest
 //! [`WriteSpecBodyRequest`]: crate::schema::extensions::WriteSpecBodyRequest
 //! [`AssessSpecQualityRequest`]: crate::schema::extensions::AssessSpecQualityRequest
+//! [`AskClarifyQuestionRequest`]: crate::schema::extensions::AskClarifyQuestionRequest
+//! [`RouteInboxItemRequest`]: crate::schema::extensions::RouteInboxItemRequest
 
 #![allow(clippy::expect_used)]
 
@@ -26,10 +35,11 @@ use serde_json::{Map, Value};
 use crate::host::Host;
 use crate::primitives::read_tasks;
 use crate::schema::extensions::{
-    AssessSpecQualityRequest, AssessSpecQualityRule, PerformReviewRequest, PlanRelevantFile,
-    ReviewRuleFile, ReviewScopeFile, WriteCodeRequest, WriteCodeTask, WriteSpecBodyRequest,
+    AskClarifyQuestionRequest, AssessSpecQualityRequest, AssessSpecQualityRule, ClarifyQuestion,
+    PerformReviewRequest, PlanRelevantFile, ReviewRuleFile, ReviewScopeFile, RouteInboxItemRequest,
+    RouteInboxSpec, WriteCodeRequest, WriteCodeTask, WriteSpecBodyRequest,
 };
-use crate::schema::primitives::ReadTasksArgs;
+use crate::schema::primitives::{Frontmatter, ReadTasksArgs};
 
 /// Errors that abort payload construction. The interpreter surfaces these
 /// as structured `error` envelopes (e.g.,
@@ -50,6 +60,16 @@ pub enum PayloadError {
         /// for paths whose canonical form escapes the repo root.
         pattern: String,
     },
+    /// The extension identifier has no typed request builder in this
+    /// runtime version. Emitting the raw walker context (the pre-hygiene
+    /// fallback) would leak accumulator state to the host, so the walk
+    /// halts with a structured error instead
+    /// (extension-request-hygiene scenario).
+    #[error("unknown extension point `{identifier}`: no typed request builder in this runtime")]
+    UnknownExtension {
+        /// The unrecognized extension identifier from the step marker.
+        identifier: String,
+    },
 }
 
 /// Machine-readable code emitted in the `error` envelope when payload
@@ -60,6 +80,9 @@ impl PayloadError {
     pub fn code(&self) -> &'static str {
         match self {
             Self::SecretExfiltration { .. } => "secret-exfiltration-blocked",
+            // Matches the code the walker emits when a response arrives
+            // for an identifier `validate_response` does not know.
+            Self::UnknownExtension { .. } => "unknown-extension",
         }
     }
 }
@@ -75,23 +98,41 @@ impl PayloadError {
 ///   `write-boundary`, and the current task pulled from `tasks.md` (using
 ///   `feature` + `task-number` from the walker context). Legacy context
 ///   fields are appended after the typed prefix for backward compatibility
-///   with hosts that already parse them.
-/// - `writeSpecBody` — appends `existing-content` to the context dump when
-///   the procedure's step prose names a section that already has body
-///   content on disk. Other typed fields are left to the host (the runtime
-///   does not yet template the spec/plan templates here).
+///   with hosts that already parse them (walker-internal accumulator keys
+///   filtered — see [`is_walker_internal_key`]).
+/// - `writeSpecBody` — builds [`WriteSpecBodyRequest`]: the template the
+///   running command fills (`/gov:plan` → the plan template, `/gov:specify`
+///   → the spec template), the section named by the step prose, the
+///   `feature-description` context key, and `existing-content` when the
+///   named section already has body content in the file the running
+///   command owns. Filtered legacy context fields follow the typed prefix.
+/// - `performReview` — builds [`PerformReviewRequest`] (see
+///   [`build_perform_review_request`]); filtered legacy context fields
+///   follow the typed prefix, preserving the primitive results the pass
+///   needs (`scope`/`diff-base`, `selected`/`rules-dir`/`notices`).
 /// - `assessSpecQuality` — builds [`AssessSpecQualityRequest`] from the
 ///   walker context's `path` (the spec under review, read off disk for
 ///   `spec-content`) and the rule under assessment resolved from
 ///   `citations` / `rule-files`, with the severity tier taken from the
 ///   step prose (`MUST-tier` / `SHOULD-tier`). Emits the documented typed
 ///   shape only — the data model sanctions no legacy context dump here.
-/// - any other identifier — passthrough; emits the walker context as-is.
+/// - `askClarifyQuestion` — builds [`AskClarifyQuestionRequest`] from the
+///   spec resolved via `path`/`feature` and the question from the
+///   `question` context value (falling back to the first merged
+///   `open-questions` entry). Typed shape only.
+/// - `routeInboxItem` — builds [`RouteInboxItemRequest`] from the
+///   `item-text` context key, the fixed route vocabulary, and a scan of
+///   the spec root for available features. Typed shape only.
+/// - any other identifier — [`PayloadError::UnknownExtension`]; the raw
+///   context dump fallback was removed by the extension-request-hygiene
+///   scenario.
 ///
 /// # Errors
 ///
 /// Returns [`PayloadError::SecretExfiltration`] when any path in
-/// `plan-relevant-files` matches a secret-bearing pattern or `.gitignore`.
+/// `plan-relevant-files` matches a secret-bearing pattern or `.gitignore`,
+/// and [`PayloadError::UnknownExtension`] for an identifier with no typed
+/// builder.
 pub fn build_extension_request(
     identifier: &str,
     context: &Map<String, Value>,
@@ -101,10 +142,41 @@ pub fn build_extension_request(
 ) -> Result<Value, PayloadError> {
     match identifier {
         "writeCode" => build_write_code_request(context, repo, command_name),
-        "writeSpecBody" => Ok(build_write_spec_body_request(context, repo, step_prose)),
+        "writeSpecBody" => Ok(build_write_spec_body_request(
+            context,
+            repo,
+            command_name,
+            step_prose,
+        )),
         "performReview" => Ok(build_perform_review_request(context, repo)),
         "assessSpecQuality" => Ok(build_assess_spec_quality_request(context, repo, step_prose)),
-        _ => Ok(Value::Object(context.clone())),
+        "askClarifyQuestion" => Ok(build_ask_clarify_question_request(context, repo)),
+        "routeInboxItem" => Ok(build_route_inbox_item_request(context, repo)),
+        other => Err(PayloadError::UnknownExtension {
+            identifier: other.to_string(),
+        }),
+    }
+}
+
+/// `true` for walker-internal accumulator keys that never belong in an
+/// outbound request: prior `llm:<identifier>` response echoes and the
+/// cross-pass `findings` array the walker accumulates for `write-review`.
+/// Primitive results threaded through the context (`scope`, `diff-base`,
+/// `selected`, `rules-dir`, `notices`, …) are NOT accumulator state and
+/// pass through the merge untouched.
+fn is_walker_internal_key(key: &str) -> bool {
+    key == "findings" || key.starts_with("llm:")
+}
+
+/// Append the legacy-compat context fields after a typed prefix, skipping
+/// walker-internal accumulator keys ([`is_walker_internal_key`]) and any
+/// key the typed prefix already emitted (typed values win).
+fn merge_legacy_context(object: &mut Map<String, Value>, context: &Map<String, Value>) {
+    for (key, value) in context {
+        if is_walker_internal_key(key) {
+            continue;
+        }
+        object.entry(key.clone()).or_insert_with(|| value.clone());
     }
 }
 
@@ -134,9 +206,12 @@ fn build_perform_review_request(context: &Map<String, Value>, repo: &Path) -> Va
         Value::Object(map) => map,
         _ => Map::new(),
     };
-    for (key, value) in context {
-        object.entry(key.clone()).or_insert_with(|| value.clone());
-    }
+    // Filtered merge: pass N must not see passes 1..N-1's accumulated
+    // `findings` or raw `llm:performReview` echoes, but keeps the
+    // primitive results it legitimately needs (`scope`/`diff-base` from
+    // compute-review-scope, `selected`/`rules-dir`/`notices` from
+    // discover-rule-files).
+    merge_legacy_context(&mut object, context);
     Value::Object(object)
 }
 
@@ -256,63 +331,266 @@ fn build_write_code_request(
     };
 
     // Merge: typed prefix first (declaration order = cache-anchor order),
-    // then legacy context fields that hosts may already parse. Keys present
-    // in both prefer the typed value.
+    // then legacy context fields that hosts may already parse (filtered:
+    // no `llm:*` echoes or accumulated `findings` — the whole-session dump
+    // eroded the cache anchor). Keys present in both prefer the typed value.
     let typed_value = serde_json::to_value(&typed).unwrap_or(Value::Null);
     let mut object = match typed_value {
         Value::Object(map) => map,
         _ => Map::new(),
     };
-    for (key, value) in context {
-        object.entry(key.clone()).or_insert_with(|| value.clone());
-    }
+    merge_legacy_context(&mut object, context);
     Ok(Value::Object(object))
 }
 
+/// Build the `writeSpecBody` request. All documented typed fields are
+/// populated from the walker context and disk (mirroring
+/// `build_assess_spec_quality_request`'s "typed even when bare"
+/// discipline — a field the run cannot derive is an empty string, never a
+/// dropped key):
+///
+/// - `template-path` / `template-content` — the template the running
+///   command fills, resolved by [`load_template`].
+/// - `section` — the section heading named by the step prose; empty when
+///   the step fills a whole body rather than one section (`/gov:specify`).
+/// - `feature-description` — the `feature-description` context key the
+///   host seeds from the slash command's `$ARGUMENTS`; empty when unset.
+/// - `existing-content` — the section's current body in the file the
+///   running command owns (plan.md for `/gov:plan`, spec.md for
+///   `/gov:specify`); omitted when absent or empty.
+///
+/// Filtered legacy context fields follow the typed prefix for hosts that
+/// already parse them.
 fn build_write_spec_body_request(
     context: &Map<String, Value>,
     repo: &Path,
+    command_name: &str,
     step_prose: &str,
 ) -> Value {
-    let object = context.clone();
-    if let Some(section) = extract_section_name(step_prose) {
-        // Resolve which file the section belongs to from the running command
-        // (writeSpecBody is called from /gov:plan against plan.md and from
-        // /gov:specify against spec.md). The context's `feature` (or `path`)
-        // keys point at the feature directory.
+    let section = extract_section_name(step_prose).unwrap_or_default();
+    let (template_path, template_content) = load_template(command_name, repo);
+    let feature_description = context
+        .get("feature-description")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .to_string();
+    let existing_content = if section.is_empty() {
+        None
+    } else {
         let feature = context.get("feature").and_then(Value::as_str);
         let path_hint = context.get("path").and_then(Value::as_str);
-        if let Some(existing) = read_existing_section(&section, feature, path_hint, repo) {
-            // Build the typed payload merged on top so the `section` /
-            // `existing-content` fields land in the request alongside the
-            // legacy context dump. Other typed fields stay empty here; the
-            // host fills them when it has more context.
-            let typed = WriteSpecBodyRequest {
-                template_path: String::new(),
-                template_content: String::new(),
-                section: section.clone(),
-                feature_description: String::new(),
-                existing_content: Some(existing),
-            };
-            if let Ok(Value::Object(map)) = serde_json::to_value(&typed) {
-                // Insert the typed fields ahead of (or merged with) the
-                // context dump, but skip empty placeholders so we don't
-                // pollute the envelope with empty `template-path` etc.
-                let mut prefixed: Map<String, Value> = Map::new();
-                for (key, value) in map {
-                    if matches!(&value, Value::String(s) if s.is_empty()) {
-                        continue;
-                    }
-                    prefixed.insert(key, value);
-                }
-                for (key, value) in object {
-                    prefixed.entry(key).or_insert(value);
-                }
-                return Value::Object(prefixed);
-            }
+        read_existing_section(&section, feature, path_hint, repo, command_name)
+    };
+    let typed = WriteSpecBodyRequest {
+        template_path,
+        template_content,
+        section,
+        feature_description,
+        existing_content,
+    };
+    let typed_value = serde_json::to_value(&typed).unwrap_or(Value::Null);
+    let mut object = match typed_value {
+        Value::Object(map) => map,
+        _ => Map::new(),
+    };
+    merge_legacy_context(&mut object, context);
+    Value::Object(object)
+}
+
+/// Resolve the template file the running command fills. `/gov:plan` fills
+/// plan sections from the plan template; `/gov:specify` fills the spec
+/// body from the spec template. Candidates, in order: the installed
+/// adopter layout `{specs-root}/templates/<file>` (what `/gov:init`
+/// scaffolds and the command prose names), then the framework source
+/// layout `framework/templates/spec/<file>` (the govern repo itself).
+/// Returns `(repo-relative path, content)` for the first candidate on
+/// disk, or empty strings when the command fills no template or none
+/// exists.
+fn load_template(command_name: &str, repo: &Path) -> (String, String) {
+    let file = match command_name {
+        "plan" => "plan.md",
+        "specify" => "spec.md",
+        _ => return (String::new(), String::new()),
+    };
+    let specs_root = crate::schema::paths::Paths::load(repo).specs_root;
+    let candidates = [
+        format!("{specs_root}/templates/{file}"),
+        format!("framework/templates/spec/{file}"),
+    ];
+    for rel in candidates {
+        if let Some(content) = read_repo_file(repo, &rel) {
+            return (rel, content);
         }
     }
-    Value::Object(object)
+    (String::new(), String::new())
+}
+
+/// Build the `askClarifyQuestion` request (reserved by the
+/// clarify-command-acceleration scenario). Typed shape only, mirroring
+/// `assessSpecQuality` — no legacy context dump:
+///
+/// - `spec-path` / `spec-content` — the spec under clarification,
+///   resolved by [`resolve_spec_path`] and read repo-confined
+///   (BE-INPUT-004); content empty when missing.
+/// - `question` — an explicit `question` context value when the walker
+///   seeds one (string, or object with `text` / optional `section`),
+///   falling back to the first entry of `read-spec`'s merged
+///   `open-questions` result.
+fn build_ask_clarify_question_request(context: &Map<String, Value>, repo: &Path) -> Value {
+    let spec_path = resolve_spec_path(context, repo);
+    let spec_content = read_repo_file(repo, &spec_path).unwrap_or_default();
+    let question = resolve_clarify_question(context);
+    let typed = AskClarifyQuestionRequest {
+        spec_path,
+        spec_content,
+        question,
+    };
+    serde_json::to_value(&typed).unwrap_or(Value::Null)
+}
+
+/// Resolve the repo-relative path of the spec file the walker targets.
+/// Preference order: an explicit `.md`-shaped `path` context value (the
+/// analyze fixtures seed the spec file directly); `feature` joined under
+/// the configured specs root; a directory-shaped `path` (the session
+/// target's feature directory) joined with `spec.md`. Empty when the
+/// context carries neither.
+fn resolve_spec_path(context: &Map<String, Value>, repo: &Path) -> String {
+    let path = context
+        .get("path")
+        .and_then(Value::as_str)
+        .unwrap_or_default();
+    let is_markdown_file = Path::new(path)
+        .extension()
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("md"));
+    if is_markdown_file {
+        return path.to_string();
+    }
+    let feature = context
+        .get("feature")
+        .and_then(Value::as_str)
+        .unwrap_or_default();
+    if !feature.is_empty() {
+        let specs_root = crate::schema::paths::Paths::load(repo).specs_root;
+        return format!("{specs_root}/{feature}/spec.md");
+    }
+    if !path.is_empty() {
+        return format!("{path}/spec.md");
+    }
+    String::new()
+}
+
+/// Resolve the question an `askClarifyQuestion` round trip carries. An
+/// explicit `question` context value wins (a clarify walker loop seeds
+/// one per round trip); otherwise the first entry of the merged
+/// `open-questions` result. The typed shape is always present — an
+/// unseeded context yields an empty question text.
+fn resolve_clarify_question(context: &Map<String, Value>) -> ClarifyQuestion {
+    if let Some(question) = context.get("question") {
+        if let Some(text) = question.as_str() {
+            return ClarifyQuestion {
+                text: text.to_string(),
+                section: None,
+            };
+        }
+        if let Some(object) = question.as_object() {
+            return ClarifyQuestion {
+                text: object
+                    .get("text")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default()
+                    .to_string(),
+                section: object
+                    .get("section")
+                    .and_then(Value::as_str)
+                    .map(str::to_string),
+            };
+        }
+    }
+    let text = context
+        .get("open-questions")
+        .and_then(Value::as_array)
+        .and_then(|arr| arr.first())
+        .and_then(|q| q.get("text"))
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .to_string();
+    ClarifyQuestion {
+        text,
+        section: None,
+    }
+}
+
+/// The groom decision tree's route vocabulary, in walk order (see the
+/// groom-command-acceleration scenario: rule promotion → missing spec →
+/// spec edit [`spec`] → scenario vs. chore → discard).
+const INBOX_ROUTES: [&str; 5] = ["rule", "spec", "scenario", "chore", "discard"];
+
+/// Build the `routeInboxItem` request (reserved by the
+/// groom-command-acceleration scenario). Typed shape only — no legacy
+/// context dump:
+///
+/// - `item-text` — the `item-text` context key (seeded per inbox item by
+///   the groom walk); empty when unseeded.
+/// - `routes` — the fixed [`INBOX_ROUTES`] vocabulary, so hosts need not
+///   parse the command prose to learn the closed decision set.
+/// - `available-specs` — `NNN-slug` directories under the spec root with
+///   each spec's frontmatter `status` (status drives the
+///   done → in-progress reopen consent on a scenario route).
+fn build_route_inbox_item_request(context: &Map<String, Value>, repo: &Path) -> Value {
+    let item_text = context
+        .get("item-text")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .to_string();
+    let typed = RouteInboxItemRequest {
+        item_text,
+        routes: INBOX_ROUTES.iter().map(ToString::to_string).collect(),
+        available_specs: load_available_specs(repo),
+    };
+    serde_json::to_value(&typed).unwrap_or(Value::Null)
+}
+
+/// Scan the configured spec root for `NNN-slug` feature directories and
+/// read each spec's frontmatter `status`. Best-effort: an unreadable
+/// directory yields an empty list, an unreadable or malformed `spec.md`
+/// yields an empty status (the feature's existence still matters to the
+/// router). Sorted by slug for deterministic payloads.
+fn load_available_specs(repo: &Path) -> Vec<RouteInboxSpec> {
+    let specs_dir = crate::schema::paths::specs_dir(repo);
+    let Ok(read_dir) = std::fs::read_dir(&specs_dir) else {
+        return Vec::new();
+    };
+    let mut slugs: Vec<String> = read_dir
+        .filter_map(std::result::Result::ok)
+        .filter(|entry| entry.path().is_dir())
+        .filter_map(|entry| entry.file_name().into_string().ok())
+        .filter(|name| crate::primitives::is_feature_slug(name))
+        .collect();
+    slugs.sort();
+    slugs
+        .into_iter()
+        .map(|slug| {
+            let status = read_spec_status(&specs_dir.join(&slug).join("spec.md"));
+            RouteInboxSpec {
+                feature: slug,
+                status,
+            }
+        })
+        .collect()
+}
+
+/// Read a spec file's frontmatter `status`, best-effort: empty string
+/// when the file is missing or the frontmatter does not parse.
+fn read_spec_status(spec_path: &Path) -> String {
+    let Ok(content) = std::fs::read_to_string(spec_path) else {
+        return String::new();
+    };
+    let Ok((fm_text, _body)) = crate::primitives::split_frontmatter(&content, spec_path) else {
+        return String::new();
+    };
+    serde_norway::from_str::<Frontmatter>(fm_text)
+        .map(|fm| fm.status)
+        .unwrap_or_default()
 }
 
 /// Build the `assessSpecQuality` request for one per-rule Verification
@@ -706,11 +984,15 @@ pub fn extract_anchor_body(content: &str, anchor: &str) -> Option<String> {
     Some(rest[..end].trim_end_matches('\n').to_string())
 }
 
-/// Read a section body from a spec or plan file. Resolves the file from the
-/// running command:
+/// Read a section body from a spec or plan file. The running command
+/// selects the file explicitly (extension-request-hygiene — a
+/// `/gov:specify` re-run on a feature that has since gained a plan must
+/// not read plan.md's section):
 ///
-/// - `/gov:plan` → `specs/{feature}/plan.md`
-/// - `/gov:specify` → `specs/{feature}/spec.md`
+/// - `plan` (`/gov:plan`) → `specs/{feature}/plan.md`
+/// - `specify` (`/gov:specify`) → `specs/{feature}/spec.md`
+/// - any other command → the historical plan.md-then-spec.md fallback
+///   order (no other command invokes `writeSpecBody` today).
 ///
 /// Returns `None` when the file does not exist or the section is absent or
 /// empty. Whitespace-only bodies count as empty.
@@ -719,15 +1001,18 @@ fn read_existing_section(
     feature: Option<&str>,
     path_hint: Option<&str>,
     repo: &Path,
+    command_name: &str,
 ) -> Option<String> {
     let feature_dir = match feature {
         Some(f) if !f.is_empty() => crate::schema::paths::specs_dir(repo).join(f),
         _ => repo.join(path_hint.unwrap_or_default()),
     };
-    // Try both candidate files — the command name isn't threaded into the
-    // section reader, so prefer plan.md when it exists (writeSpecBody for
-    // /gov:plan), fall back to spec.md (writeSpecBody for /gov:specify).
-    for filename in ["plan.md", "spec.md"] {
+    let filenames: &[&str] = match command_name {
+        "plan" => &["plan.md"],
+        "specify" => &["spec.md"],
+        _ => &["plan.md", "spec.md"],
+    };
+    for filename in filenames {
         let candidate = feature_dir.join(filename);
         let Ok(content) = std::fs::read_to_string(&candidate) else {
             continue;
@@ -783,11 +1068,16 @@ fn extract_section_body(content: &str, section: &str) -> Option<String> {
 
 /// Extract the section name from a step prose like
 /// `Fill the Technical Decisions section of the plan.` Returns `None` when
-/// no such phrase is present.
+/// no such phrase is present. The name charset is restricted to plain
+/// heading words (`[A-Za-z0-9 _/-]`) so a whole-body fill step whose prose
+/// happens to mention "… section" much later — `/gov:specify`'s "Fill the
+/// new spec body following §spec-requirements: a Motivation section …" —
+/// does not smuggle intervening punctuation into the typed `section` field.
 fn extract_section_name(prose: &str) -> Option<String> {
     static R: OnceLock<Regex> = OnceLock::new();
     let re = R.get_or_init(|| {
-        Regex::new(r"(?i)Fill\s+the\s+(.+?)\s+section").expect("hard-coded regex compiles")
+        Regex::new(r"(?i)Fill\s+the\s+([A-Za-z][A-Za-z0-9 _/-]*?)\s+section")
+            .expect("hard-coded regex compiles")
     });
     re.captures(prose).map(|c| c[1].trim().to_string())
 }
@@ -969,6 +1259,9 @@ mod tests {
                 assert_eq!(path, ".env.production");
                 assert_eq!(pattern, ".env.*");
             }
+            other @ PayloadError::UnknownExtension { .. } => {
+                panic!("expected SecretExfiltration, got {other:?}")
+            }
         }
     }
 
@@ -995,6 +1288,9 @@ mod tests {
             PayloadError::SecretExfiltration { path, pattern } => {
                 assert_eq!(path, "secret-config.toml");
                 assert_eq!(pattern, ".gitignore");
+            }
+            other @ PayloadError::UnknownExtension { .. } => {
+                panic!("expected SecretExfiltration, got {other:?}")
             }
         }
     }
@@ -1036,6 +1332,9 @@ mod tests {
                 assert_eq!(path, "../outside.txt");
                 assert_eq!(pattern, "out-of-repo");
             }
+            other @ PayloadError::UnknownExtension { .. } => {
+                panic!("expected SecretExfiltration, got {other:?}")
+            }
         }
     }
 
@@ -1074,6 +1373,9 @@ mod tests {
             PayloadError::SecretExfiltration { path, pattern } => {
                 assert_eq!(path, abs_str);
                 assert_eq!(pattern, "out-of-repo");
+            }
+            other @ PayloadError::UnknownExtension { .. } => {
+                panic!("expected SecretExfiltration, got {other:?}")
             }
         }
     }
@@ -1126,6 +1428,9 @@ mod tests {
                 // of which case the author spelled.
                 assert_eq!(pattern, ".env");
             }
+            other @ PayloadError::UnknownExtension { .. } => {
+                panic!("expected SecretExfiltration, got {other:?}")
+            }
         }
     }
 
@@ -1173,27 +1478,123 @@ mod tests {
         let mut ctx = Map::new();
         ctx.insert("feature".into(), Value::String("123-foo".into()));
         let prose = "Fill the Technical Decisions section of the plan.";
-        let value = build_write_spec_body_request(&ctx, tmp.path(), prose);
+        let value = build_write_spec_body_request(&ctx, tmp.path(), "plan", prose);
         let obj = value.as_object().unwrap();
         assert_eq!(obj["section"], "Technical Decisions");
         assert_eq!(
             obj["existing-content"].as_str().unwrap(),
             "Use the standard library."
         );
+        // The typed prefix leads in declaration order even when the
+        // template fields could not be derived (no template on disk).
+        let prefix: Vec<&str> = obj.keys().map(String::as_str).take(4).collect();
+        assert_eq!(
+            prefix,
+            vec![
+                "template-path",
+                "template-content",
+                "section",
+                "feature-description"
+            ]
+        );
+        assert_eq!(obj["template-path"], "");
     }
 
     #[test]
-    fn build_write_spec_body_request_passes_through_when_no_existing_content() {
+    fn build_write_spec_body_request_stays_typed_when_no_existing_content() {
         let tmp = tempdir().unwrap();
         let mut ctx = Map::new();
         ctx.insert("feature".into(), Value::String("999-empty".into()));
         let prose = "Fill the Motivation section of the spec.";
-        let value = build_write_spec_body_request(&ctx, tmp.path(), prose);
+        let value = build_write_spec_body_request(&ctx, tmp.path(), "specify", prose);
         let obj = value.as_object().unwrap();
         // No existing content found → no `existing-content` key added.
         assert!(!obj.contains_key("existing-content"));
-        // Context dump is preserved.
+        // Typed fields are still emitted (empty, not dropped).
+        assert_eq!(obj["section"], "Motivation");
+        assert_eq!(obj["feature-description"], "");
+        // Context fields are preserved after the typed prefix.
         assert_eq!(obj["feature"], "999-empty");
+    }
+
+    #[test]
+    fn build_write_spec_body_request_selects_file_by_running_command() {
+        // A /gov:specify re-run on a feature that has since gained a plan
+        // must read spec.md's section, not plan.md's (and vice versa).
+        let tmp = tempdir().unwrap();
+        let feature_dir = tmp.path().join("specs/123-foo");
+        fs::create_dir_all(&feature_dir).unwrap();
+        fs::write(
+            feature_dir.join("plan.md"),
+            "# Plan\n\n## Motivation\n\nPlan motivation.\n",
+        )
+        .unwrap();
+        fs::write(
+            feature_dir.join("spec.md"),
+            "# Spec\n\n## Motivation\n\nSpec motivation.\n",
+        )
+        .unwrap();
+        let mut ctx = Map::new();
+        ctx.insert("feature".into(), Value::String("123-foo".into()));
+        let prose = "Fill the Motivation section of the file.";
+        let plan = build_write_spec_body_request(&ctx, tmp.path(), "plan", prose);
+        assert_eq!(plan["existing-content"], "Plan motivation.");
+        let spec = build_write_spec_body_request(&ctx, tmp.path(), "specify", prose);
+        assert_eq!(spec["existing-content"], "Spec motivation.");
+    }
+
+    #[test]
+    fn build_write_spec_body_request_populates_template_and_description() {
+        let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join("specs/templates")).unwrap();
+        fs::write(
+            tmp.path().join("specs/templates/plan.md"),
+            "# Plan template\n",
+        )
+        .unwrap();
+        let mut ctx = Map::new();
+        ctx.insert(
+            "feature-description".into(),
+            Value::String("webhook delivery".into()),
+        );
+        let prose = "Fill the Technical Decisions section of the plan.";
+        let value = build_write_spec_body_request(&ctx, tmp.path(), "plan", prose);
+        assert_eq!(value["template-path"], "specs/templates/plan.md");
+        assert_eq!(value["template-content"], "# Plan template\n");
+        assert_eq!(value["feature-description"], "webhook delivery");
+        assert_eq!(value["section"], "Technical Decisions");
+    }
+
+    #[test]
+    fn load_template_falls_back_to_framework_source_layout() {
+        // No installed {specs-root}/templates/ → the framework source
+        // layout (the govern repo itself) is the second candidate.
+        let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join("framework/templates/spec")).unwrap();
+        fs::write(
+            tmp.path().join("framework/templates/spec/spec.md"),
+            "# Spec template\n",
+        )
+        .unwrap();
+        let (path, content) = load_template("specify", tmp.path());
+        assert_eq!(path, "framework/templates/spec/spec.md");
+        assert_eq!(content, "# Spec template\n");
+        // A command that fills no template resolves nothing.
+        assert_eq!(
+            load_template("review", tmp.path()),
+            (String::new(), String::new())
+        );
+    }
+
+    #[test]
+    fn extract_section_name_ignores_whole_body_fill_prose() {
+        // /gov:specify's step 2 fills the whole spec body; its prose
+        // mentions "a Motivation section" behind punctuation the heading
+        // charset excludes, so no section is extracted.
+        let prose = "Fill the new spec body following §spec-requirements: a \
+                     Motivation section, Acceptance Criteria with concrete and \
+                     testable checkboxes, and Open Questions.";
+        assert!(extract_section_name(prose).is_none());
     }
 
     #[test]
@@ -1491,5 +1892,175 @@ mod tests {
         assert_eq!(files.len(), 1, "only the in-repo scope file is read");
         assert_eq!(files[0].path, "src/in.rs");
         assert_eq!(files[0].content, "fn a() {}");
+    }
+
+    #[test]
+    fn write_code_merge_filters_walker_accumulator_keys() {
+        let tmp = tempdir().unwrap();
+        let mut ctx = Map::new();
+        ctx.insert("feature".into(), Value::String("123-foo".into()));
+        ctx.insert("legacy-extra".into(), Value::String("kept".into()));
+        // Walker-internal accumulator state that must not ride along.
+        ctx.insert(
+            "llm:writeSpecBody".into(),
+            serde_json::json!({ "content": "prior response" }),
+        );
+        ctx.insert("findings".into(), serde_json::json!([{ "rule": "X" }]));
+
+        let value = build_write_code_request(&ctx, tmp.path(), "implement").unwrap();
+        let obj = value.as_object().unwrap();
+        assert!(!obj.contains_key("llm:writeSpecBody"));
+        assert!(!obj.contains_key("findings"));
+        assert_eq!(obj["legacy-extra"], "kept");
+        // The cache-anchor prefix is untouched by the filtering.
+        let prefix: Vec<&str> = obj.keys().map(String::as_str).take(4).collect();
+        assert_eq!(
+            prefix,
+            vec![
+                "constitution-excerpts",
+                "plan-relevant-files",
+                "write-boundary",
+                "task"
+            ]
+        );
+    }
+
+    #[test]
+    fn perform_review_merge_keeps_primitive_results_drops_accumulators() {
+        // Pass N must not see passes 1..N-1's findings or llm:* echoes,
+        // but keeps the task-46 result threading: scope/diff-base from
+        // compute-review-scope, selected/rules-dir/notices from
+        // discover-rule-files.
+        let tmp = tempdir().unwrap();
+        let mut ctx = Map::new();
+        ctx.insert("pass".into(), Value::String("reuse".into()));
+        ctx.insert("scope".into(), serde_json::json!(["runtime/src/a.rs"]));
+        ctx.insert("diff-base".into(), Value::String("abc1234".into()));
+        ctx.insert("rules-dir".into(), Value::String("framework/rules".into()));
+        ctx.insert("selected".into(), serde_json::json!(["reuse.md"]));
+        ctx.insert("notices".into(), serde_json::json!(["fallback notice"]));
+        ctx.insert(
+            "findings".into(),
+            serde_json::json!([{ "rule": "SEC-BE-001" }]),
+        );
+        ctx.insert(
+            "llm:performReview".into(),
+            serde_json::json!({ "findings": [] }),
+        );
+
+        let value = build_perform_review_request(&ctx, tmp.path());
+        let obj = value.as_object().unwrap();
+        assert!(!obj.contains_key("findings"));
+        assert!(!obj.contains_key("llm:performReview"));
+        for kept in ["scope", "diff-base", "rules-dir", "selected", "notices"] {
+            assert!(obj.contains_key(kept), "primitive result `{kept}` dropped");
+        }
+    }
+
+    #[test]
+    fn build_ask_clarify_question_request_emits_typed_shape() {
+        let tmp = tempdir().unwrap();
+        let feature_dir = tmp.path().join("specs/007-clarify");
+        fs::create_dir_all(&feature_dir).unwrap();
+        fs::write(feature_dir.join("spec.md"), "# Spec body\n").unwrap();
+        let mut ctx = Map::new();
+        ctx.insert("feature".into(), Value::String("007-clarify".into()));
+        // Session-style directory path (not the spec file).
+        ctx.insert("path".into(), Value::String("specs/007-clarify".into()));
+        // Merged read-spec result.
+        ctx.insert(
+            "open-questions".into(),
+            serde_json::json!([{ "text": "Which auth mode?" }, { "text": "Second?" }]),
+        );
+        // A dump key that must NOT leak into the typed payload.
+        ctx.insert("stdout".into(), Value::String("noise".into()));
+
+        let value = build_ask_clarify_question_request(&ctx, tmp.path());
+        let keys: Vec<&str> = value
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect();
+        assert_eq!(keys, vec!["spec-path", "spec-content", "question"]);
+        assert_eq!(value["spec-path"], "specs/007-clarify/spec.md");
+        assert_eq!(value["spec-content"], "# Spec body\n");
+        assert_eq!(value["question"]["text"], "Which auth mode?");
+        assert!(
+            value["question"].get("section").is_none(),
+            "unattributed question omits `section`"
+        );
+    }
+
+    #[test]
+    fn ask_clarify_question_prefers_explicit_question_value() {
+        let tmp = tempdir().unwrap();
+        let mut ctx = Map::new();
+        ctx.insert(
+            "question".into(),
+            serde_json::json!({ "text": "Cap at 60s?", "section": "Behavior" }),
+        );
+        ctx.insert(
+            "open-questions".into(),
+            serde_json::json!([{ "text": "ignored fallback" }]),
+        );
+        let value = build_ask_clarify_question_request(&ctx, tmp.path());
+        assert_eq!(value["question"]["text"], "Cap at 60s?");
+        assert_eq!(value["question"]["section"], "Behavior");
+    }
+
+    #[test]
+    fn build_route_inbox_item_request_lists_available_specs() {
+        let tmp = tempdir().unwrap();
+        for (slug, status) in [("001-alpha", "done"), ("002-beta", "draft")] {
+            let dir = tmp.path().join("specs").join(slug);
+            fs::create_dir_all(&dir).unwrap();
+            fs::write(
+                dir.join("spec.md"),
+                format!("---\nstatus: {status}\ndependencies: []\n---\n\n# {slug}\n"),
+            )
+            .unwrap();
+        }
+        // Non-feature siblings are skipped.
+        fs::create_dir_all(tmp.path().join("specs/templates")).unwrap();
+
+        let mut ctx = Map::new();
+        ctx.insert(
+            "item-text".into(),
+            Value::String("Bug: retry loop never backs off".into()),
+        );
+        ctx.insert("stdout".into(), Value::String("noise".into()));
+
+        let value = build_route_inbox_item_request(&ctx, tmp.path());
+        let keys: Vec<&str> = value
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect();
+        assert_eq!(keys, vec!["item-text", "routes", "available-specs"]);
+        assert_eq!(value["item-text"], "Bug: retry loop never backs off");
+        assert_eq!(
+            value["routes"],
+            serde_json::json!(["rule", "spec", "scenario", "chore", "discard"])
+        );
+        assert_eq!(
+            value["available-specs"],
+            serde_json::json!([
+                { "feature": "001-alpha", "status": "done" },
+                { "feature": "002-beta", "status": "draft" }
+            ])
+        );
+    }
+
+    #[test]
+    fn build_extension_request_errors_on_unknown_identifier() {
+        // The raw-context-dump fallback is gone: an identifier without a
+        // typed builder is a structured error (extension-request-hygiene).
+        let tmp = tempdir().unwrap();
+        let err = build_extension_request("mysteryPoint", &Map::new(), tmp.path(), "test", "")
+            .unwrap_err();
+        assert_eq!(err.code(), "unknown-extension");
+        assert!(err.to_string().contains("mysteryPoint"));
     }
 }

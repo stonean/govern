@@ -13,15 +13,23 @@
 //!
 //! - `sha256_url = Some(_)`: download the archive, fetch the sidecar,
 //!   parse its leading hex token, compare against the computed sha. A
-//!   mismatch raises [`PrimitiveError::ChecksumMismatch`]; the archive
-//!   is still written (the host decides what to do with the artifact —
-//!   inspect, retry, abort).
+//!   mismatch raises [`PrimitiveError::ChecksumMismatch`] *before* the
+//!   archive is written — nothing lands on disk. The error's `path`
+//!   names the destination the archive would have been written to
+//!   (kept for message compatibility and retry context); that file is
+//!   never created.
 //! - `sha256_url = None`: download the archive, compute the sha256,
 //!   return it in the result with `verified: false`. The host can
 //!   compare against a known-good digest out-of-band if it cares.
 //!
 //! Either way the result includes the computed digest and a
 //! `verified: bool` so the host knows whether to trust it.
+//!
+//! Response bodies are capped at `MAX_FETCH_BYTES`. A body that exceeds
+//! the cap raises an operational error naming the cap and the archive is
+//! not written — never a silent truncation, which would otherwise carry
+//! a self-consistent computed sha and only surface as corruption later
+//! in `extract-archive`. A body of exactly the cap size succeeds.
 //!
 //! The primitive is blocking — it spins reqwest's blocking client per
 //! call rather than dragging an async runtime through the primitive
@@ -45,9 +53,13 @@ use crate::schema::primitives::{FetchArchiveArgs, FetchArchiveResult};
 /// # Errors
 ///
 /// - [`PrimitiveError::Http`] / [`PrimitiveError::HttpStatus`] on network failure.
-/// - [`PrimitiveError::Io`] on local filesystem failures writing the archive.
+/// - [`PrimitiveError::Io`] on local filesystem failures writing the archive,
+///   or when the response body exceeds the `MAX_FETCH_BYTES` fetch cap
+///   (the error message names the cap; the archive is not written).
 /// - [`PrimitiveError::MalformedSidecar`] when the sidecar's first hex token isn't a valid 64-char sha256.
-/// - [`PrimitiveError::ChecksumMismatch`] when the computed sha differs from the sidecar.
+/// - [`PrimitiveError::ChecksumMismatch`] when the computed sha differs from
+///   the sidecar. Raised before the archive is written; the error's `path`
+///   is the intended destination, which is never created.
 pub fn run(args: &FetchArchiveArgs, repo: &Path) -> Result<FetchArchiveResult> {
     let dest = resolve_dest(repo, &args.archive);
 
@@ -59,6 +71,9 @@ pub fn run(args: &FetchArchiveArgs, repo: &Path) -> Result<FetchArchiveResult> {
             let sidecar = fetch_text(sidecar_url)?;
             let expected = parse_sidecar_hex(&sidecar, sidecar_url)?;
             if computed != expected {
+                // Fail before write: `path` carries the *intended*
+                // destination (kept for error-message compatibility and
+                // retry context), but no file is created there.
                 return Err(PrimitiveError::ChecksumMismatch {
                     path: dest,
                     expected,
@@ -102,14 +117,32 @@ fn fetch_bytes(url: &str) -> Result<Vec<u8>> {
             status: status.as_u16(),
         });
     }
+    read_capped(response, MAX_FETCH_BYTES, url)
+}
+
+/// Read at most `cap` bytes from `reader`, erroring when the stream holds
+/// more. Reads `cap + 1` bytes so an over-cap body is *detected* and
+/// rejected with an error naming the cap, rather than silently truncated
+/// (a truncated archive would carry a self-consistent computed sha and
+/// only surface as corruption later). A stream of exactly `cap` bytes
+/// succeeds.
+fn read_capped(reader: impl Read, cap: u64, url: &str) -> Result<Vec<u8>> {
     let mut buf: Vec<u8> = Vec::new();
-    response
-        .take(MAX_FETCH_BYTES)
+    reader
+        .take(cap.saturating_add(1))
         .read_to_end(&mut buf)
         .map_err(|source| PrimitiveError::Io {
             path: PathBuf::from(url),
             source,
         })?;
+    if u64::try_from(buf.len()).unwrap_or(u64::MAX) > cap {
+        return Err(PrimitiveError::Io {
+            path: PathBuf::from(url),
+            source: std::io::Error::other(format!(
+                "response body exceeds the fetch cap of {cap} bytes; archive not written"
+            )),
+        });
+    }
     Ok(buf)
 }
 
@@ -169,14 +202,17 @@ fn sha256_hex(bytes: &[u8]) -> String {
 
 /// Cap the per-fetch body size to ~256 MiB. Framework release tarballs
 /// are well under 50 MiB; this ceiling defends against accidentally
-/// streaming an unbounded URL into memory.
+/// streaming an unbounded URL into memory. A body exceeding the cap is
+/// an operational error (see [`read_capped`]), never a silent truncation.
 const MAX_FETCH_BYTES: u64 = 256 * 1024 * 1024;
 
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-    use super::{is_sha256_hex, parse_sidecar_hex, sha256_hex};
+    use std::io::Cursor;
+
+    use super::{is_sha256_hex, parse_sidecar_hex, read_capped, sha256_hex};
 
     #[test]
     fn sha256_hex_matches_known_vector() {
@@ -225,6 +261,28 @@ mod tests {
         let err = parse_sidecar_hex("", "http://t").unwrap_err();
         let msg = err.to_string();
         assert!(msg.contains("empty"), "got: {msg}");
+    }
+
+    #[test]
+    fn read_capped_accepts_body_under_cap() {
+        let got = read_capped(Cursor::new(vec![7u8; 4]), 8, "http://t").unwrap();
+        assert_eq!(got, vec![7u8; 4]);
+    }
+
+    #[test]
+    fn read_capped_accepts_body_of_exactly_cap_size() {
+        let got = read_capped(Cursor::new(vec![7u8; 8]), 8, "http://t").unwrap();
+        assert_eq!(got.len(), 8);
+    }
+
+    #[test]
+    fn read_capped_rejects_body_exceeding_cap_naming_the_cap() {
+        let err = read_capped(Cursor::new(vec![7u8; 9]), 8, "http://t").unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("fetch cap of 8 bytes"),
+            "error must name the cap; got: {msg}"
+        );
     }
 
     #[test]

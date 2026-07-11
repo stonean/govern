@@ -1,6 +1,6 @@
 # 022 — Deterministic Runtime Data Model
 
-Defines the data structures the runtime owns: the parsed procedure AST, the JSON-over-stdio protocol envelope and message types, the primitive request/response schemas, and the three initial-release extension-point schemas. These types live in `runtime/src/schema/` as Rust types with `serde::{Serialize, Deserialize}` derives; their serialized JSON shape is the stable contract for host integrators.
+Defines the data structures the runtime owns: the parsed procedure AST, the JSON-over-stdio protocol envelope and message types, the primitive request/response schemas, and the extension-point schemas (the three initial-release points plus the follow-on request/response shapes). These types live in `runtime/src/schema/` as Rust types with `serde::{Serialize, Deserialize}` derives; their serialized JSON shape is the stable contract for host integrators.
 
 ## Procedure AST
 
@@ -59,7 +59,7 @@ Newline-delimited JSON. Each line is one complete JSON object terminated by `\n`
 ```json
 {
   "type": "llm-request",
-  "extension-point": "writeCode | writeSpecBody | assessSpecQuality",
+  "extension-point": "writeCode | writeSpecBody | assessSpecQuality | performReview | askClarifyQuestion | routeInboxItem",
   "request-id": "<opaque string, unique per request>",
   "request": { }
 }
@@ -405,7 +405,7 @@ Under the MCP surface, this is the only primitive whose semantics depend on host
 
 ## Extension-point schemas (initial release)
 
-The three single-shot extension points. Each has request and response payload schemas; the runtime validates incoming responses against these and emits `error: schema-mismatch` on failure.
+The three initial-release single-shot extension points, plus the two follow-on points (`askClarifyQuestion`, `routeInboxItem`) whose typed shapes ship ahead of their scenarios per the extension-request-hygiene scenario. Each has request and response payload schemas; the runtime validates incoming responses against these and emits `error: schema-mismatch` on failure. An extension identifier outside this closed set is an `error: unknown-extension` at request-build time — never a raw walker-context dump. In every request that carries legacy-compat context fields after its typed prefix (`writeCode`, `writeSpecBody`, `performReview`), walker-internal accumulator keys (prior `llm:*` response echoes and the accumulated `findings` array) are filtered out; primitive results threaded through the context (`scope`, `diff-base`, `selected`, `rules-dir`, `notices`, …) pass through.
 
 ### `assessSpecQuality`
 
@@ -513,7 +513,72 @@ Response payload:
 }
 ```
 
-When invoked from `/gov:plan` to fill in plan sections, `template-path` points at `framework/templates/spec/plan.md` and `section` enumerates the plan section to fill.
+When invoked from `/gov:plan` to fill in plan sections, `template-path` points at the plan template and `section` enumerates the plan section to fill.
+
+Field sourcing (extension-request-hygiene):
+
+- `template-path` / `template-content` — resolved from the running command (`/gov:plan` → the plan template, `/gov:specify` → the spec template), trying `{specs-root}/templates/<file>` (the installed adopter layout) then `framework/templates/spec/<file>` (the framework source layout). Both are empty strings when no template exists on disk.
+- `section` — the section heading named by the step prose ("Fill the `<name>` section …"); empty when the step fills a whole body rather than one section (`/gov:specify`).
+- `feature-description` — the `feature-description` walker-context key, seeded by the host from the slash command's `$ARGUMENTS` (session file or `key=value` exec argument); empty when the host seeds none.
+- `existing-content` — the named section's current body from the file the running command owns (`/gov:plan` reads `plan.md`, `/gov:specify` reads `spec.md` — selected by command, never by fallback order); omitted when the file or section is absent or empty.
+
+### `askClarifyQuestion` (follow-on)
+
+Reserved by the [clarify-command-acceleration](scenarios/clarify-command-acceleration.md) scenario; the typed request builder ships ahead of it ([extension-request-hygiene](scenarios/extension-request-hygiene.md)) so the point never falls back to a raw context dump. One host-mediated request/response round trip per open question.
+
+Request payload:
+
+```json
+{
+  "spec-path": "specs/022-deterministic-runtime/spec.md",
+  "spec-content": "...full spec text...",
+  "question": {
+    "text": "Should retries back off exponentially or linearly?",
+    "section": "Open Questions"
+  }
+}
+```
+
+`question.section` is optional and omitted when the walker cannot attribute the question to a section. The question comes from an explicit `question` walker-context value when present, else the first entry of `read-spec`'s merged `open-questions` result.
+
+Response payload:
+
+```json
+{ "answer": "Exponential, capped at 60s." }
+```
+
+The answer is the user's resolution verbatim; applying it to the spec body remains LLM work per the clarify scenario.
+
+### `routeInboxItem` (follow-on)
+
+Reserved by the [groom-command-acceleration](scenarios/groom-command-acceleration.md) scenario; typed builder ships ahead of it. Kept deliberately minimal: the item under decision, the closed route vocabulary (the groom decision tree's leaves, in walk order), and the specs the router may match — enough to make the routing decision without a walker-context dump.
+
+Request payload:
+
+```json
+{
+  "item-text": "Bug: retry loop never backs off",
+  "routes": ["rule", "spec", "scenario", "chore", "discard"],
+  "available-specs": [
+    { "feature": "021-webhook-delivery", "status": "done" },
+    { "feature": "022-deterministic-runtime", "status": "in-progress" }
+  ]
+}
+```
+
+`item-text` comes from the `item-text` walker-context key (seeded per inbox item by the groom walk); `available-specs` is scanned from the spec root (`NNN-slug` directories, sorted, with each spec's frontmatter `status` — status drives the done → in-progress reopen consent on a scenario route; empty status means the spec file was unreadable).
+
+Response payload:
+
+```json
+{
+  "route": "scenario",
+  "feature": "021-webhook-delivery",
+  "reason": "Durable edge case the spec covers at a high level."
+}
+```
+
+`route` is one of the request's `routes` vocabulary (closed set — anything else is a schema mismatch); `feature` is present when the route targets an existing spec; `reason` is optional prose the host may surface in the per-item confirmation prompt.
 
 ## Versioning of these schemas
 

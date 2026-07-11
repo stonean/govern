@@ -43,7 +43,7 @@ use std::path::{Path, PathBuf};
 use regex::Regex;
 use walkdir::WalkDir;
 
-use crate::primitives::{PrimitiveError, Result};
+use crate::primitives::{PrimitiveError, Result, validate_no_traversal};
 use crate::schema::primitives::{EnforceManifestArgs, EnforceManifestResult};
 
 const DEFAULT_GLOB: &str = "*.md";
@@ -52,10 +52,16 @@ const DEFAULT_GLOB: &str = "*.md";
 ///
 /// # Errors
 ///
+/// - [`PrimitiveError::InvalidPath`] when `directory` resolves outside
+///   the repo root (parent-directory components, or an absolute path
+///   that does not sit under `repo`). This primitive deletes files, so
+///   the containment check runs before any filesystem operation
+///   (BE-INPUT-004 defense-in-depth). Legitimate absolute directories
+///   inside the repo keep working.
 /// - [`PrimitiveError::Io`] on local filesystem failures while walking
 ///   the directory or removing files.
 pub fn run(args: &EnforceManifestArgs, repo: &Path) -> Result<EnforceManifestResult> {
-    let directory = resolve_path(repo, &args.directory);
+    let directory = resolve_contained_dir(repo, &args.directory)?;
     let mut result = EnforceManifestResult::default();
 
     // Missing directory: zero-removal success. The primitive does not
@@ -114,13 +120,36 @@ pub fn run(args: &EnforceManifestArgs, repo: &Path) -> Result<EnforceManifestRes
     Ok(result)
 }
 
-fn resolve_path(repo: &Path, p: &str) -> PathBuf {
+/// Resolve `directory` against `repo`, guaranteeing the result sits under
+/// the repo root. Relative paths go through [`validate_no_traversal`]
+/// (no `..`, non-empty); absolute paths are allowed only when they are
+/// `..`-free and prefixed by `repo` — the destructive cleanup loop must
+/// never walk an arbitrary filesystem location.
+fn resolve_contained_dir(repo: &Path, p: &str) -> Result<PathBuf> {
     let candidate = Path::new(p);
-    if candidate.is_absolute() {
-        candidate.to_path_buf()
-    } else {
-        repo.join(candidate)
+    if !candidate.is_absolute() {
+        validate_no_traversal(p)?;
+        return Ok(repo.join(candidate));
     }
+    if candidate
+        .components()
+        .any(|c| matches!(c, std::path::Component::ParentDir))
+    {
+        return Err(PrimitiveError::InvalidPath {
+            path: p.into(),
+            reason: "parent-directory component ('..') not permitted".into(),
+        });
+    }
+    if !candidate.starts_with(repo) {
+        return Err(PrimitiveError::InvalidPath {
+            path: p.into(),
+            reason: format!(
+                "absolute directory must sit under the repo root {}",
+                repo.display()
+            ),
+        });
+    }
+    Ok(candidate.to_path_buf())
 }
 
 fn normalize(p: &str) -> String {
@@ -476,6 +505,69 @@ mod tests {
             }
             other => panic!("expected Io error, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn relative_directory_resolves_under_repo_root() {
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path().join("cmds");
+        for f in ["status.md", "stale.md"] {
+            touch(&dir.join(f));
+        }
+        // Pass the directory as a repo-relative path, the bootstrap's shape.
+        let args = EnforceManifestArgs {
+            directory: "cmds".into(),
+            expected: vec!["status.md".into()],
+            pinned: vec![],
+            recursive: false,
+            glob_include: None,
+        };
+        let result = run(&args, tmp.path()).unwrap();
+        assert_eq!(result.removed, vec!["stale.md"]);
+        assert!(dir.join("status.md").exists());
+    }
+
+    #[test]
+    fn absolute_directory_outside_repo_is_rejected_before_any_removal() {
+        let tmp = tempfile::tempdir().unwrap();
+        let outside = tempfile::tempdir().unwrap();
+        let victim = outside.path().join("innocent.md");
+        touch(&victim);
+
+        let args = args_for(outside.path(), &[], &[], true, Some("*"));
+        let err = run(&args, tmp.path()).unwrap_err();
+        assert!(
+            matches!(err, PrimitiveError::InvalidPath { .. }),
+            "expected InvalidPath, got {err:?}"
+        );
+        assert!(victim.exists(), "no file outside the repo may be removed");
+    }
+
+    #[test]
+    fn relative_directory_with_parent_component_is_rejected() {
+        let tmp = tempfile::tempdir().unwrap();
+        let args = EnforceManifestArgs {
+            directory: "../escape".into(),
+            expected: vec![],
+            pinned: vec![],
+            recursive: false,
+            glob_include: None,
+        };
+        let err = run(&args, tmp.path()).unwrap_err();
+        assert!(matches!(err, PrimitiveError::InvalidPath { .. }));
+    }
+
+    #[test]
+    fn absolute_directory_with_parent_component_is_rejected() {
+        let tmp = tempfile::tempdir().unwrap();
+        // Absolute, `..`-laden path that would resolve back inside the
+        // repo after normalization — still rejected (no `..` anywhere).
+        let sneaky = tmp.path().join("cmds/../cmds");
+        touch(&tmp.path().join("cmds/stale.md"));
+        let args = args_for(&sneaky, &[], &[], false, None);
+        let err = run(&args, tmp.path()).unwrap_err();
+        assert!(matches!(err, PrimitiveError::InvalidPath { .. }));
+        assert!(tmp.path().join("cmds/stale.md").exists());
     }
 
     #[test]

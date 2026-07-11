@@ -10,12 +10,12 @@
 #
 # Files NOT in this list must parse cleanly as a Procedure under
 # `runtime parse --check`. Files in this list MAY return legacy-prose
-# without failing CI; if a file in this list ever starts parsing as a
-# real procedure, that's a win and the entry can be removed.
+# without failing CI — but an Invalid parse (malformed structure) fails
+# the lint even for listed files. If a file in this list ever starts
+# parsing as a real procedure, that's a win and the entry can be removed.
 
 framework/commands/amend.md
 framework/commands/clarify.md
 framework/commands/groom.md
 framework/commands/help.md
 framework/commands/log.md
-framework/commands/prune.md

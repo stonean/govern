@@ -45,7 +45,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::primitives::substitute_templates::apply_substitutions;
-use crate::primitives::{PrimitiveError, Result, write_atomic_bytes};
+use crate::primitives::{PrimitiveError, Result, validate_no_traversal, write_atomic_bytes};
 use crate::schema::primitives::{
     ApplyManifestArgs, ApplyManifestResult, ManifestEntry, ManifestEntryResult,
 };
@@ -61,12 +61,22 @@ const ACTION_SOURCE_MISSING: &str = "source-missing";
 ///
 /// # Errors
 ///
+/// - [`PrimitiveError::InvalidPath`] when any entry's `source` or `dest`
+///   is absolute, empty, or contains a parent-directory component. The
+///   manifest is fetched-artifact-class input (BE-INPUT-004): a `..`
+///   entry would write outside the target root. Every entry is validated
+///   before any filesystem operation so a bad entry halts the whole walk
+///   with zero writes. The two *roots* stay absolute-capable as before.
 /// - [`PrimitiveError::Io`] on local filesystem failures while reading
 ///   sources or writing destinations.
 /// - [`PrimitiveError::UnknownManifestStrategy`] when an entry's
 ///   `strategy` field is not one of `update`, `create`, or
 ///   `skip-if-conflict`.
 pub fn run(args: &ApplyManifestArgs, repo: &Path) -> Result<ApplyManifestResult> {
+    for entry in &args.entries {
+        validate_no_traversal(&entry.source)?;
+        validate_no_traversal(&entry.dest)?;
+    }
     let source_root = resolve_path(repo, &args.source_root);
     let target_root = resolve_path(repo, &args.target_root);
 
@@ -244,7 +254,10 @@ fn apply_skip_if_conflict(source: &Path, dest: &Path, dest_exists: bool) -> Resu
 /// Only called on the write paths (`created` / `updated`); the
 /// `unchanged` path never touches the destination, so its mode — already
 /// correct from the write that created it — is preserved untouched.
-fn mirror_source_mode(source: &Path, dest: &Path) -> Result<()> {
+///
+/// `pub(crate)` because `substitute-templates` shares the same
+/// tempfile-mode problem and mirrors modes through this one helper.
+pub(crate) fn mirror_source_mode(source: &Path, dest: &Path) -> Result<()> {
     let perms = fs::metadata(source)
         .map_err(|src| PrimitiveError::Io {
             path: source.into(),
@@ -683,6 +696,73 @@ mod tests {
         let result = run(&args, tmp.path()).unwrap();
         assert_eq!(result.created, 1);
         assert_eq!(fs::read_to_string(dst.join("a.md")).unwrap(), "anvil\n");
+    }
+
+    #[test]
+    fn traversal_in_entry_dest_halts_before_any_write() {
+        let tmp = tempfile::tempdir().unwrap();
+        let src = write_source(tmp.path(), &[("ok.md", "fine\n"), ("evil.md", "payload\n")]);
+        let dst = tmp.path().join("dst");
+
+        // The good entry comes FIRST; validation must still reject the
+        // whole manifest before writing anything.
+        let args = args_for(
+            &src,
+            &dst,
+            vec![
+                entry("ok.md", "ok.md", "update"),
+                entry("evil.md", "../outside.md", "update"),
+            ],
+            vec![],
+            BTreeMap::new(),
+        );
+        let err = run(&args, tmp.path()).unwrap_err();
+        assert!(
+            matches!(err, PrimitiveError::InvalidPath { .. }),
+            "expected InvalidPath, got {err:?}"
+        );
+        assert!(!dst.join("ok.md").exists(), "no entry may write");
+        assert!(!tmp.path().join("outside.md").exists());
+    }
+
+    #[test]
+    fn traversal_in_entry_source_is_rejected() {
+        let tmp = tempfile::tempdir().unwrap();
+        let src = write_source(tmp.path(), &[]);
+        // A secret outside the source root that a `..` source would leak
+        // into the target tree.
+        fs::write(tmp.path().join("secret.md"), "secret\n").unwrap();
+        let dst = tmp.path().join("dst");
+
+        let args = args_for(
+            &src,
+            &dst,
+            vec![entry("../secret.md", "leaked.md", "update")],
+            vec![],
+            BTreeMap::new(),
+        );
+        let err = run(&args, tmp.path()).unwrap_err();
+        assert!(matches!(err, PrimitiveError::InvalidPath { .. }));
+        assert!(!dst.join("leaked.md").exists());
+    }
+
+    #[test]
+    fn absolute_entry_paths_are_rejected() {
+        let tmp = tempfile::tempdir().unwrap();
+        let src = write_source(tmp.path(), &[("a.md", "x\n")]);
+        let dst = tmp.path().join("dst");
+        let abs_dest = tmp.path().join("elsewhere.md");
+
+        let args = args_for(
+            &src,
+            &dst,
+            vec![entry("a.md", abs_dest.to_string_lossy().as_ref(), "update")],
+            vec![],
+            BTreeMap::new(),
+        );
+        let err = run(&args, tmp.path()).unwrap_err();
+        assert!(matches!(err, PrimitiveError::InvalidPath { .. }));
+        assert!(!abs_dest.exists());
     }
 
     #[test]

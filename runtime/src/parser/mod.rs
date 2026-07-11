@@ -7,7 +7,14 @@
 //! - The procedure body lives in the `## Instructions` section (any
 //!   heading level whose text equals `Instructions`).
 //! - Numbered list items are procedure steps; nested ordered lists become
-//!   sub-step numbers (`1.1`, `1.2`).
+//!   sub-step numbers (`1.1`, `1.2`). Nested *unordered* lists are not
+//!   steps: their bullets fold into the enclosing step's prose.
+//! - Step numbers honor the document: an ordered list's `start` value
+//!   seeds the step counter, and consecutive ordered lists separated only
+//!   by HTML comments and blank lines (the `<!-- audit:ignore-promotion -->`
+//!   shape) continue the previous numbering rather than restarting. A
+//!   list separated from the previous one by real prose re-seeds from its
+//!   literal `start` value.
 //! - A backtick-quoted code span whose text matches a known primitive name
 //!   (`PRIMITIVE_NAMES`) marks the step as `Step::Primitive`.
 //! - An HTML comment of the form `<!-- llm:<identifier> -->` marks the
@@ -18,8 +25,13 @@
 //! A file with no Instructions section, or one whose Instructions section
 //! contains no recognized primitives or extension markers, is treated as
 //! legacy prose: the parser returns [`ParseError::LegacyProse`]. A code
-//! span that looks like a primitive name (kebab-case verb-noun) but does
-//! not match the known set raises [`ParseError::Invalid`].
+//! span raises [`ParseError::Invalid`] only when it is plausibly a typo'd
+//! primitive invocation: it sits in primitive-invoking position (the step
+//! prose immediately before it ends with the word "invoke" or "call") and
+//! looks like a primitive name (kebab-case verb-noun), or it is within
+//! edit distance 2 of a known primitive name. Ordinary kebab-case
+//! vocabulary (`no-checkbox`, `keep-pending`, `cli-config-dir`) parses as
+//! prose.
 
 #![allow(clippy::module_name_repetitions)]
 
@@ -138,13 +150,27 @@ struct Walker {
     line_starts: Vec<usize>,
     source_len: usize,
     state: State,
-    list_depth: u32,
+    /// Stack of currently open lists inside Instructions. Both ordered
+    /// and unordered lists are pushed so that bullets nested in a
+    /// numbered step never masquerade as top-level steps.
+    list_stack: Vec<ListKind>,
+    /// Byte offset just past the last content of the most recent
+    /// top-level ordered list. Used to decide whether the next ordered
+    /// list continues the same step sequence (separated only by HTML
+    /// comments / blank lines) or starts fresh.
+    last_top_list_end: Option<usize>,
     top_index: u32,
     sub_index: u32,
     current_step: Option<StepBuilder>,
     steps: Vec<Step>,
     found_any: bool,
     suspicious_spans: Vec<(String, SourceRange)>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ListKind {
+    Ordered,
+    Unordered,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -175,7 +201,8 @@ impl Walker {
             line_starts,
             source_len: source.len(),
             state: State::BeforeInstructions,
-            list_depth: 0,
+            list_stack: Vec::new(),
+            last_top_list_end: None,
             top_index: 0,
             sub_index: 0,
             current_step: None,
@@ -190,7 +217,7 @@ impl Walker {
         opts.insert(Options::ENABLE_TABLES);
         let parser = Parser::new_ext(source, opts);
         for (event, range) in parser.into_offset_iter() {
-            self.handle(&event, range);
+            self.handle(source, &event, range);
         }
         if let Some(step) = self.current_step.take() {
             self.finalize_step(step);
@@ -214,7 +241,16 @@ impl Walker {
         Ok(())
     }
 
-    fn handle(&mut self, event: &Event<'_>, range: std::ops::Range<usize>) {
+    fn handle(&mut self, source: &str, event: &Event<'_>, range: std::ops::Range<usize>) {
+        // While inside a top-level ordered list, keep the high-water byte
+        // offset of its content current so the next list's continuation
+        // check inspects exactly the gap between the two lists.
+        if self.state == State::InInstructions
+            && self.list_stack.first() == Some(&ListKind::Ordered)
+        {
+            let end = range.end.min(self.source_len);
+            self.last_top_list_end = Some(self.last_top_list_end.map_or(end, |e| e.max(end)));
+        }
         match (&self.state, event) {
             (State::BeforeInstructions, Event::Start(Tag::Heading { .. })) => {
                 self.state = State::InInstructionsHeading;
@@ -231,7 +267,7 @@ impl Walker {
             }
             (State::InInstructions, Event::Start(Tag::Heading { level, .. }))
                 if *level <= HeadingLevel::H2
-                    || (matches!(level, HeadingLevel::H3) && self.list_depth == 0) =>
+                    || (matches!(level, HeadingLevel::H3) && self.list_stack.is_empty()) =>
             {
                 // A sibling heading closes the Instructions section.
                 if let Some(step) = self.current_step.take() {
@@ -239,36 +275,21 @@ impl Walker {
                 }
                 self.state = State::Done;
             }
-            (State::InInstructions, Event::Start(Tag::List(Some(_)))) => {
-                self.list_depth += 1;
-                if self.list_depth == 1 {
-                    self.top_index = 0;
-                }
+            (State::InInstructions, Event::Start(Tag::List(start))) => {
+                self.handle_list_start(source, *start, &range);
             }
-            (State::InInstructions, Event::End(TagEnd::List(true))) => {
-                self.list_depth = self.list_depth.saturating_sub(1);
+            (State::InInstructions, Event::End(TagEnd::List(_))) => {
+                self.list_stack.pop();
             }
             (State::InInstructions, Event::Start(Tag::Item)) => {
-                if let Some(step) = self.current_step.take() {
-                    self.finalize_step(step);
-                }
-                if self.list_depth == 1 {
-                    self.top_index += 1;
-                    self.sub_index = 0;
-                    self.current_step = Some(StepBuilder::new(
-                        StepNumber(vec![self.top_index]),
-                        self.byte_range_to_source_range(&range),
-                    ));
-                } else if self.list_depth >= 2 {
-                    self.sub_index += 1;
-                    self.current_step = Some(StepBuilder::new(
-                        StepNumber(vec![self.top_index, self.sub_index]),
-                        self.byte_range_to_source_range(&range),
-                    ));
-                }
+                self.handle_item_start(&range);
             }
             (State::InInstructions, Event::End(TagEnd::Item)) => {
-                if let Some(step) = self.current_step.take() {
+                // Only an ordered item boundary closes a step; the end of
+                // a nested bullet leaves the enclosing step open.
+                if self.list_stack.last() == Some(&ListKind::Ordered)
+                    && let Some(step) = self.current_step.take()
+                {
                     self.finalize_step(step);
                 }
             }
@@ -277,7 +298,7 @@ impl Walker {
                 if let Some(step) = self.current_step.as_mut() {
                     if PRIMITIVE_NAMES.contains(&code.as_ref()) {
                         step.primitive_name = Some(code.as_ref().into());
-                    } else if looks_like_primitive(code.as_ref()) {
+                    } else if span_is_suspicious(code.as_ref(), &step.prose) {
                         self.suspicious_spans
                             .push((code.as_ref().into(), source_range));
                     }
@@ -305,6 +326,78 @@ impl Walker {
                 }
             }
             _ => {}
+        }
+    }
+
+    /// Open a list inside Instructions. A top-level ordered list seeds the
+    /// step counter from the document's literal numbering; when it is
+    /// separated from the previous top-level ordered list only by HTML
+    /// comments and blank lines it continues that list's step sequence
+    /// instead (an HTML comment between items splits one logical markdown
+    /// list into several parser-level lists).
+    fn handle_list_start(
+        &mut self,
+        source: &str,
+        start: Option<u64>,
+        range: &std::ops::Range<usize>,
+    ) {
+        if self.list_stack.is_empty()
+            && let Some(start) = start
+        {
+            let seed = u32::try_from(start.saturating_sub(1)).unwrap_or(u32::MAX);
+            let continues = self.last_top_list_end.is_some_and(|end| {
+                source
+                    .get(end..range.start)
+                    .is_some_and(gap_is_only_comments_and_blank)
+            });
+            self.top_index = if continues {
+                self.top_index.max(seed)
+            } else {
+                seed
+            };
+        }
+        self.list_stack.push(if start.is_some() {
+            ListKind::Ordered
+        } else {
+            ListKind::Unordered
+        });
+    }
+
+    /// Open a list item inside Instructions. An ordered item starts a new
+    /// step (top-level or sub-numbered by nesting depth); an unordered
+    /// item stays part of the enclosing step's prose.
+    fn handle_item_start(&mut self, range: &std::ops::Range<usize>) {
+        match self.list_stack.last() {
+            Some(ListKind::Ordered) => {
+                if let Some(step) = self.current_step.take() {
+                    self.finalize_step(step);
+                }
+                if self.list_stack.len() == 1 {
+                    self.top_index += 1;
+                    self.sub_index = 0;
+                    self.current_step = Some(StepBuilder::new(
+                        StepNumber(vec![self.top_index]),
+                        self.byte_range_to_source_range(range),
+                    ));
+                } else {
+                    self.sub_index += 1;
+                    self.current_step = Some(StepBuilder::new(
+                        StepNumber(vec![self.top_index, self.sub_index]),
+                        self.byte_range_to_source_range(range),
+                    ));
+                }
+            }
+            Some(ListKind::Unordered) => {
+                // A bullet nested in a numbered step stays part of that
+                // step: keep the current builder and separate the bullet's
+                // text from what came before.
+                if let Some(step) = self.current_step.as_mut()
+                    && !step.prose.is_empty()
+                {
+                    step.prose.push(' ');
+                }
+            }
+            None => {}
         }
     }
 
@@ -390,6 +483,83 @@ fn looks_like_primitive(text: &str) -> bool {
         return false;
     }
     text.chars().all(|c| c.is_ascii_lowercase() || c == '-')
+}
+
+/// Whether the gap between two top-level ordered lists consists only of
+/// whitespace and HTML comments (`<!-- ... -->`). Such a gap means the
+/// second list continues the first's step sequence.
+fn gap_is_only_comments_and_blank(gap: &str) -> bool {
+    let mut rest = gap.trim_start();
+    while !rest.is_empty() {
+        let Some(after_open) = rest.strip_prefix("<!--") else {
+            return false;
+        };
+        let Some(close) = after_open.find("-->") else {
+            return false;
+        };
+        rest = after_open.get(close + 3..).unwrap_or_default().trim_start();
+    }
+    true
+}
+
+/// Whether a code span that failed the exact `PRIMITIVE_NAMES` match is
+/// plausibly a typo'd primitive invocation. Two signals qualify:
+///
+/// - The span sits in primitive-invoking position — the step prose
+///   accumulated so far ends with the word "invoke" or "call" — and has
+///   the kebab-case shape of a primitive name.
+/// - The span is within edit distance 2 of a known primitive name.
+///
+/// Anything else is ordinary vocabulary (`no-checkbox`, `keep-pending`,
+/// `cli-config-dir`) and parses as prose.
+fn span_is_suspicious(span: &str, preceding_prose: &str) -> bool {
+    if span.is_empty() || span.contains(char::is_whitespace) {
+        return false;
+    }
+    if looks_like_primitive(span) && in_invoking_position(preceding_prose) {
+        return true;
+    }
+    PRIMITIVE_NAMES
+        .iter()
+        .any(|name| within_edit_distance(span, name, 2))
+}
+
+/// Whether the prose immediately preceding a code span puts that span in
+/// primitive-invoking position: its last whitespace-separated word is
+/// "invoke" or "call" (case-insensitive).
+fn in_invoking_position(preceding_prose: &str) -> bool {
+    preceding_prose
+        .split_whitespace()
+        .next_back()
+        .is_some_and(|word| {
+            word.eq_ignore_ascii_case("invoke") || word.eq_ignore_ascii_case("call")
+        })
+}
+
+/// Bounded Levenshtein distance check: true when `a` and `b` are within
+/// `max` single-character edits (insert / delete / substitute) of each
+/// other. Bails out early once every path exceeds `max`.
+fn within_edit_distance(a: &str, b: &str, max: usize) -> bool {
+    let a: Vec<char> = a.chars().collect();
+    let b: Vec<char> = b.chars().collect();
+    if a.len().abs_diff(b.len()) > max {
+        return false;
+    }
+    let mut prev: Vec<usize> = (0..=b.len()).collect();
+    for (i, ca) in a.iter().enumerate() {
+        let mut cur = Vec::with_capacity(b.len() + 1);
+        cur.push(i + 1);
+        for (j, cb) in b.iter().enumerate() {
+            let cost = usize::from(ca != cb);
+            let val = (prev[j] + cost).min(prev[j + 1] + 1).min(cur[j] + 1);
+            cur.push(val);
+        }
+        if cur.iter().min().copied().unwrap_or(usize::MAX) > max {
+            return false;
+        }
+        prev = cur;
+    }
+    prev.last().copied().unwrap_or(usize::MAX) <= max
 }
 
 fn find_inline_extension_marker(prose: &str) -> Option<String> {
@@ -590,5 +760,238 @@ mod tests {
         assert!(!looks_like_primitive(""));
         assert!(!looks_like_primitive("-foo"));
         assert!(!looks_like_primitive("foo with space"));
+    }
+
+    fn step_numbers(procedure: &Procedure) -> Vec<Vec<u32>> {
+        procedure
+            .steps
+            .iter()
+            .map(|s| match s {
+                Step::Primitive { number, .. }
+                | Step::Extension { number, .. }
+                | Step::Prose { number, .. } => number.0.clone(),
+            })
+            .collect()
+    }
+
+    #[test]
+    fn comment_separated_lists_continue_one_step_sequence() {
+        // `<!-- audit:ignore-promotion -->` between items splits one
+        // markdown list into several parser-level lists; the step
+        // sequence must continue across the split (prune.md's shape).
+        let source = "# Cmd\n\n## Instructions\n\n\
+            1. Invoke `read-spec` first.\n\n\
+            2. Second step.\n\n\
+            <!-- audit:ignore-promotion -->\n\
+            3. Invoke `read-tasks` third.\n\n\
+            4. Fourth step.\n\n\
+            <!-- audit:ignore-promotion -->\n\
+            5. Fifth step.\n";
+        let procedure = parse_str(source).unwrap();
+        assert_eq!(
+            step_numbers(&procedure),
+            vec![vec![1], vec![2], vec![3], vec![4], vec![5]]
+        );
+    }
+
+    #[test]
+    fn lazy_numbering_across_comment_splits_continues_sequence() {
+        // status.md's shape: every item is literally `1.` and every item
+        // is preceded by an ignore-promotion comment. The comment-split
+        // lists continue the sequence, so the steps number 1..N.
+        let source = "# Cmd\n\n## Instructions\n\n\
+            <!-- audit:ignore-promotion -->\n\
+            1. Invoke `dashboard` to load state.\n\n\
+            <!-- audit:ignore-promotion -->\n\
+            1. Render the preamble.\n\n\
+            <!-- audit:ignore-promotion -->\n\
+            1. Render the table.\n";
+        let procedure = parse_str(source).unwrap();
+        assert_eq!(step_numbers(&procedure), vec![vec![1], vec![2], vec![3]]);
+    }
+
+    #[test]
+    fn ordered_list_start_value_seeds_the_counter() {
+        // A list separated from the previous one by real prose re-seeds
+        // from its literal start value instead of restarting at 1.
+        let source = "# Cmd\n\n## Instructions\n\n\
+            1. Invoke `read-spec` first.\n\n\
+            A prose interlude between the lists.\n\n\
+            4. Invoke `read-tasks` fourth.\n\
+            5. Fifth step.\n";
+        let procedure = parse_str(source).unwrap();
+        assert_eq!(step_numbers(&procedure), vec![vec![1], vec![4], vec![5]]);
+    }
+
+    #[test]
+    fn nested_bullets_stay_part_of_their_parent_step() {
+        // Bullets nested in a numbered step are not steps of their own —
+        // they fold into the parent step's prose, and the following
+        // numbered item keeps the right top-level number.
+        // NB: `concat!` (not `\`-continuation) so the bullets keep the
+        // three-space indent that nests them under step 1.
+        let source = concat!(
+            "# Cmd\n\n## Instructions\n\n",
+            "1. Invoke `read-spec` and check:\n",
+            "   - the first bullet\n",
+            "   - the second bullet\n",
+            "2. Invoke `read-tasks` next.\n",
+        );
+        let procedure = parse_str(source).unwrap();
+        assert_eq!(step_numbers(&procedure), vec![vec![1], vec![2]]);
+        match &procedure.steps[0] {
+            Step::Primitive { name, prose, .. } => {
+                assert_eq!(name, "read-spec");
+                assert!(
+                    prose.contains("the first bullet") && prose.contains("the second bullet"),
+                    "bullets fold into the parent step's prose: {prose:?}"
+                );
+            }
+            other => panic!("expected primitive, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn ordinary_kebab_vocabulary_does_not_invalidate_new_format_files() {
+        // Kebab-case spans that are neither in invoking position nor near
+        // a primitive name are plain vocabulary (prune.md's shape).
+        let source = "# Cmd\n\n## Instructions\n\n\
+            1. Invoke `prune-tasks` in preview mode (`apply: false`); sections \
+            classify as `spent` / `pending` / `no-checkbox`, default is a \
+            `keep-pending` prune honoring `cli-config-dir`.\n";
+        let procedure = parse_str(source).unwrap();
+        match &procedure.steps[0] {
+            Step::Primitive { name, .. } => assert_eq!(name, "prune-tasks"),
+            other => panic!("expected primitive, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn unknown_name_in_invoking_position_is_invalid() {
+        // "Invoke `X`" is primitive-invoking position: an unknown
+        // kebab-case name there fails parsing even when it is nowhere
+        // near a known primitive name.
+        let source = "# Cmd\n\n## Instructions\n\n\
+            1. Invoke `frobnicate-widget` on the target.\n\
+            2. Invoke `read-tasks` to load tasks.\n";
+        let err = parse_str(source).unwrap_err();
+        match err {
+            ParseError::Invalid { message, .. } => {
+                assert!(message.contains("frobnicate-widget"));
+            }
+            ParseError::LegacyProse => panic!("expected Invalid, got LegacyProse"),
+        }
+    }
+
+    #[test]
+    fn near_miss_typo_outside_invoking_position_is_invalid() {
+        // `read-spek` is edit distance 1 from `read-spec` — a typo even
+        // without an "Invoke"/"call" cue in front of it.
+        let source = "# Cmd\n\n## Instructions\n\n\
+            1. The `read-spek` result feeds the next step.\n\
+            2. Invoke `read-tasks` to load tasks.\n";
+        let err = parse_str(source).unwrap_err();
+        match err {
+            ParseError::Invalid { message, .. } => {
+                assert!(message.contains("read-spek"));
+            }
+            ParseError::LegacyProse => panic!("expected Invalid, got LegacyProse"),
+        }
+    }
+
+    #[test]
+    fn within_edit_distance_bounds() {
+        assert!(within_edit_distance("read-spek", "read-spec", 2));
+        assert!(within_edit_distance("read-spec", "read-spec", 2));
+        assert!(within_edit_distance("gateconfirm", "gate-confirm", 2));
+        assert!(!within_edit_distance("no-checkbox", "check-stuck", 2));
+        assert!(!within_edit_distance("keep-pending", "append-task", 2));
+        assert!(!within_edit_distance("cli-config-dir", "gate-confirm", 2));
+    }
+
+    /// Every rewritten command file must parse with step numbers equal to
+    /// the document's literal numbering: monotonic 1..N at the top level
+    /// (lazy `1.` numbering split by ignore-promotion comments renders as
+    /// 1..N, and explicitly numbered documents carry 1..N literally).
+    #[test]
+    fn rewritten_command_files_parse_with_document_step_numbers() {
+        let commands_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .expect("runtime/.. exists")
+            .join("framework/commands");
+        for command in [
+            "status",
+            "target",
+            "analyze",
+            "implement",
+            "plan",
+            "specify",
+            "review",
+            "audit",
+            "link",
+        ] {
+            let path = commands_dir.join(format!("{command}.md"));
+            let source = std::fs::read_to_string(&path)
+                .unwrap_or_else(|err| panic!("read {}: {err}", path.display()));
+            let procedure = parse(&source, command)
+                .unwrap_or_else(|err| panic!("{command}.md must parse: {err}"));
+
+            let top_level: Vec<u32> = step_numbers(&procedure)
+                .into_iter()
+                .filter(|n| n.len() == 1)
+                .map(|n| n[0])
+                .collect();
+            let literals = top_level_literal_markers(&source);
+            assert_eq!(
+                top_level.len(),
+                literals.len(),
+                "{command}.md: parsed top-level step count differs from the \
+                 document's numbered items (parsed {top_level:?}, literal {literals:?})"
+            );
+            let expected: Vec<u32> = (1..=u32::try_from(literals.len()).unwrap()).collect();
+            assert_eq!(
+                top_level, expected,
+                "{command}.md: steps must number monotonically 1..N \
+                 (literal markers: {literals:?})"
+            );
+            // Explicitly numbered documents (not lazy all-`1.` style) must
+            // match their literal numbers exactly.
+            if literals.windows(2).all(|w| w[1] > w[0]) {
+                assert_eq!(
+                    top_level, literals,
+                    "{command}.md: parsed numbers must equal the document's \
+                     explicit literal numbers"
+                );
+            }
+        }
+    }
+
+    /// Top-level ordered-list markers (`N. `) inside the `## Instructions`
+    /// section, in document order, skipping fenced code blocks.
+    fn top_level_literal_markers(source: &str) -> Vec<u32> {
+        let mut in_instructions = false;
+        let mut in_fence = false;
+        let mut markers = Vec::new();
+        for line in source.lines() {
+            if line.starts_with("```") {
+                in_fence = !in_fence;
+                continue;
+            }
+            if in_fence {
+                continue;
+            }
+            if line.starts_with("## ") {
+                in_instructions = line.trim() == "## Instructions";
+                continue;
+            }
+            if !in_instructions {
+                continue;
+            }
+            let digits: String = line.chars().take_while(char::is_ascii_digit).collect();
+            if !digits.is_empty() && line[digits.len()..].starts_with(". ") {
+                markers.push(digits.parse::<u32>().expect("digits parse"));
+            }
+        }
+        markers
     }
 }

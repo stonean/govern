@@ -77,15 +77,18 @@ pub fn run(args: &WriteReviewArgs, repo: &Path) -> Result<WriteReviewResult> {
     let waived_n = u32::try_from(waived.len()).unwrap_or(u32::MAX);
     let blocking = must_n > 0;
 
-    // Render + write the report.
+    // Read and compute BOTH outputs before performing either write: a
+    // malformed spec (missing frontmatter, YAML parse failure) must halt
+    // before review.md exists, never between the two writes — otherwise
+    // a halt leaves review.md and the spec `review:` block inconsistent.
     let report = render_report(args, &must, &should, &low, &waived, blocking);
     let review_path = feature_dir.join("review.md");
-    write_atomic(&review_path, &report)?;
-
-    // Update the spec's `review:` frontmatter block.
     let spec_content = read_text(&spec_path)?;
     let updated =
         update_spec_review_block(&spec_content, &spec_path, args, must_n, should_n, low_n)?;
+
+    // Both outputs computed; only now touch the filesystem.
+    write_atomic(&review_path, &report)?;
     if updated != spec_content {
         write_atomic(&spec_path, &updated)?;
     }
@@ -830,6 +833,41 @@ mod tests {
         let tmp = tempdir().unwrap();
         let err = run(&base_args("999-nope"), tmp.path()).unwrap_err();
         assert!(matches!(err, PrimitiveError::FeatureNotFound { .. }));
+    }
+
+    #[test]
+    fn malformed_spec_frontmatter_halts_before_any_write() {
+        // The spec's frontmatter fails YAML parse. The halt must land
+        // BEFORE the first write: no review.md may exist afterward
+        // (scenario primitive-robustness-hardening — a halt between the
+        // two writes leaves review.md and the spec `review:` block
+        // inconsistent).
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: [unclosed");
+        let mut args = base_args("001-x");
+        args.findings = vec![finding("SEC-BE-001", "must", "src/a.rs", "1-5", "high")];
+        let err = run(&args, tmp.path()).unwrap_err();
+        assert!(
+            matches!(err, PrimitiveError::Yaml { .. }),
+            "expected Yaml error, got {err:?}"
+        );
+        assert!(
+            !tmp.path().join("specs/001-x/review.md").exists(),
+            "a malformed spec must halt before review.md is written"
+        );
+    }
+
+    #[test]
+    fn spec_without_frontmatter_halts_before_any_write() {
+        let tmp = tempdir().unwrap();
+        let dir = tmp.path().join("specs/001-x");
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join("spec.md"), "# No frontmatter here\n").unwrap();
+        let err = run(&base_args("001-x"), tmp.path()).unwrap_err();
+        assert!(
+            matches!(err, PrimitiveError::MissingFrontmatter { .. }),
+            "expected MissingFrontmatter, got {err:?}"
+        );
+        assert!(!dir.join("review.md").exists());
     }
 
     #[test]

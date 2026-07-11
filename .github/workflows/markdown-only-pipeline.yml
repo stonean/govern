@@ -76,7 +76,14 @@ jobs:
       # (a) (no runtime binary on PATH) is unchanged: a workflow-local
       # compile for the parseability check does not constitute a
       # runtime install.
-      - uses: dtolnay/rust-toolchain@stable
+      # Pinned — keep in sync with runtime/rust-toolchain.toml.
+      # `components` must match the toolchain file: any cargo command run
+      # under runtime/ makes rustup honor rust-toolchain.toml, and if the
+      # declared components are missing it auto-installs them mid-build —
+      # a path that hits rustup's "detected conflict: 'bin/cargo-fmt'" bug.
+      - uses: dtolnay/rust-toolchain@1.97.0
+        with:
+          components: clippy, rustfmt
       - uses: actions/cache@v6
         with:
           path: |
@@ -86,8 +93,13 @@ jobs:
           key: ${{ runner.os }}-runtime-parseability-${{ hashFiles('runtime/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-runtime-parseability-
+      # Build with --locked here so a stale Cargo.lock fails loudly; the
+      # script's own `cargo build --release` then becomes a cache-warm
+      # no-op against the same target dir.
       - name: (f) Procedure parseability
-        run: bash scripts/lint-procedure-parseability.sh
+        run: |
+          (cd runtime && cargo build --release --locked --quiet)
+          bash scripts/lint-procedure-parseability.sh
 
       # Step (h) runs the framework self-audit (spec 026). The v1
       # advisories (Family 4 placeholder-roundtrip, Family 8 introducing-

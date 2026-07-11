@@ -17,8 +17,10 @@ use common::copy_dir_recursive;
 
 fn runtime_binary() -> PathBuf {
     // CARGO_MANIFEST_DIR is the runtime crate. The release binary lives
-    // under target/release/gvrn relative to it.
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/release/gvrn")
+    // under target/release/gvrn relative to it (gvrn.exe on Windows).
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("target/release")
+        .join(format!("gvrn{}", std::env::consts::EXE_SUFFIX))
 }
 
 fn write_procedure_repo(tmp: &Path, command_name: &str, body: &str) {
@@ -201,13 +203,15 @@ fn exec_chains_bootstrap_primitives_extract_substitute_merge() {
 
     // Seed `.govern.session.toml` with every arg the three primitives
     // need. Post-consolidation, the walker reads this single repo-root
-    // file regardless of AI CLI / project name.
+    // file regardless of AI CLI / project name. `path` is repo-relative:
+    // merge-claude-md rejects absolute paths (BE-INPUT-004) and resolves
+    // against the repo root — the exec cwd, i.e. this tempdir.
     let session_toml = format!(
         "archive = {archive:?}\n\
          dest = {dest:?}\n\
          source-dir = {source_dir:?}\n\
          target-dir = {target_dir:?}\n\
-         path = {path:?}\n\
+         path = \"CLAUDE.md\"\n\
          block = \"framework managed block\\nproject = anvil\"\n\
          \n\
          [substitutions]\n\
@@ -216,7 +220,6 @@ fn exec_chains_bootstrap_primitives_extract_substitute_merge() {
         dest = tmp.path().join("staging").to_string_lossy().to_string(),
         source_dir = tmp.path().join("staging").to_string_lossy().to_string(),
         target_dir = tmp.path().join("project").to_string_lossy().to_string(),
-        path = tmp.path().join("CLAUDE.md").to_string_lossy().to_string(),
     );
     let session_path = tmp.path().join(".govern.session.toml");
     let mut sf = fs::File::create(&session_path).unwrap();

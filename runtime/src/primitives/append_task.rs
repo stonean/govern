@@ -19,11 +19,25 @@ use crate::schema::primitives::{AppendTaskArgs, AppendTaskResult};
 ///
 /// # Errors
 ///
-/// Returns [`PrimitiveError::FeaturePathNotFound`] when the resolved feature
-/// directory does not exist, or [`PrimitiveError::Io`] for filesystem
-/// failures.
+/// Returns [`PrimitiveError::InvalidArgument`] when `title`, `done-when`,
+/// or a `body` item carries an embedded newline (structure injection into
+/// `tasks.md`), [`PrimitiveError::FeaturePathNotFound`] when the resolved
+/// feature directory does not exist, or [`PrimitiveError::Io`] for
+/// filesystem failures.
 pub fn run(args: &AppendTaskArgs, repo: &Path) -> Result<AppendTaskResult> {
     validate_no_traversal(&args.feature_path)?;
+    // Text arguments are interpolated verbatim into tasks.md line
+    // templates; an embedded newline would smuggle extra markdown
+    // structure (phantom headings, checkboxes, Done-when lines) past the
+    // renderer. Reject rather than flatten — the caller sees exactly
+    // which argument to fix (scenario primitive-robustness-hardening).
+    validate_single_line("title", &args.title)?;
+    validate_single_line("done-when", &args.done_when)?;
+    if let Some(items) = &args.body {
+        for (idx, item) in items.iter().enumerate() {
+            validate_single_line(&format!("body[{idx}]"), item)?;
+        }
+    }
     // Q1 resolution: when body is omitted, slug is required. Refuse cleanly
     // rather than silently doubling the slug from the title (the bug the
     // 022/runtime-primitive-structural-bugs scenario closed).
@@ -73,6 +87,22 @@ pub fn run(args: &AppendTaskArgs, repo: &Path) -> Result<AppendTaskResult> {
         path: rel_path(&tasks_path, repo),
         created: created_now,
     })
+}
+
+/// Reject a single-line text argument that carries an embedded newline
+/// (`\n` or `\r`). The renderer interpolates these values into one-line
+/// templates; a newline injects task structure.
+fn validate_single_line(argument: &str, value: &str) -> Result<()> {
+    if value.contains('\n') || value.contains('\r') {
+        return Err(PrimitiveError::InvalidArgument {
+            primitive: "append-task".into(),
+            argument: argument.into(),
+            reason: "embedded newlines would inject markdown structure into tasks.md; \
+                     supply single-line text"
+                .into(),
+        });
+    }
+    Ok(())
 }
 
 /// Return `max(existing-task-number) + 1` across both flat (`## N.`) and
@@ -500,6 +530,58 @@ mod tests {
         let tmp = tempdir().unwrap();
         let err = run(&args("specs/999-nope", "x", "done."), tmp.path()).unwrap_err();
         assert!(matches!(err, PrimitiveError::FeaturePathNotFound { .. }));
+    }
+
+    #[test]
+    fn rejects_structure_injection_via_title_newline() {
+        // A title smuggling `\n## 99. Phantom task` would append a second
+        // task heading through one call. Must refuse before any write.
+        let tmp = tempdir().unwrap();
+        make_feature_with_spec(tmp.path(), "specs/042-foo", "042 — Foo");
+        let tasks_path = tmp.path().join("specs/042-foo/tasks.md");
+        fs::write(&tasks_path, "# Tasks\n\n## 1. First\n").unwrap();
+        let original = fs::read_to_string(&tasks_path).unwrap();
+
+        let a = args(
+            "specs/042-foo",
+            "Innocent\n\n## 99. Phantom task\n\n- [ ] injected",
+            "done.",
+        );
+        let err = run(&a, tmp.path()).unwrap_err();
+        assert!(
+            matches!(&err, PrimitiveError::InvalidArgument { primitive, argument, .. }
+                if primitive == "append-task" && argument == "title"),
+            "expected InvalidArgument for title, got {err:?}"
+        );
+        assert_eq!(
+            fs::read_to_string(&tasks_path).unwrap(),
+            original,
+            "tasks.md must be untouched"
+        );
+    }
+
+    #[test]
+    fn rejects_newlines_in_done_when_and_body_items() {
+        let tmp = tempdir().unwrap();
+        make_feature_with_spec(tmp.path(), "specs/042-foo", "042 — Foo");
+
+        let mut a = args("specs/042-foo", "Fine title", "done.\n- [ ] extra");
+        let err = run(&a, tmp.path()).unwrap_err();
+        assert!(
+            matches!(&err, PrimitiveError::InvalidArgument { argument, .. }
+                if argument == "done-when"),
+            "expected InvalidArgument for done-when, got {err:?}"
+        );
+
+        a = args("specs/042-foo", "Fine title", "done.");
+        a.body = Some(vec!["ok item".into(), "bad\r\nitem".into()]);
+        a.slug = None;
+        let err = run(&a, tmp.path()).unwrap_err();
+        assert!(
+            matches!(&err, PrimitiveError::InvalidArgument { argument, .. }
+                if argument == "body[1]"),
+            "expected InvalidArgument for body[1], got {err:?}"
+        );
     }
 
     #[test]

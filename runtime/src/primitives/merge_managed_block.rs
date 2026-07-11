@@ -44,9 +44,9 @@
 //! yields [`PrimitiveError::MalformedMarkers`] — that's an
 //! adopter-edit error the primitive refuses to silently repair.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
-use crate::primitives::{PrimitiveError, Result, read_text, write_atomic};
+use crate::primitives::{PrimitiveError, Result, read_text, validate_no_traversal, write_atomic};
 use crate::schema::primitives::{MergeManagedBlockArgs, MergeManagedBlockResult};
 
 const DEFAULT_MARKER: &str = "govern-managed";
@@ -57,6 +57,11 @@ const STYLE_LINE_PREFIX: &str = "line-prefix";
 ///
 /// # Errors
 ///
+/// - [`PrimitiveError::InvalidPath`] when `path` is absolute, empty, or
+///   contains a parent-directory component — the BE-INPUT-004
+///   defense-in-depth check every path-taking primitive applies before
+///   filesystem operations. `path` is repo-relative (`.gitignore`,
+///   `CLAUDE.md`); no caller needs an out-of-repo destination.
 /// - [`PrimitiveError::Io`] on local filesystem failures.
 /// - [`PrimitiveError::MalformedMarkers`] when an `html-comment` style
 ///   file has a BEGIN marker without an END (or vice versa).
@@ -66,7 +71,8 @@ const STYLE_LINE_PREFIX: &str = "line-prefix";
 ///   to cover both manifest strategies and marker styles); the message
 ///   text makes the surface explicit.
 pub fn run(args: &MergeManagedBlockArgs, repo: &Path) -> Result<MergeManagedBlockResult> {
-    let path = resolve_path(repo, &args.path);
+    validate_no_traversal(&args.path)?;
+    let path = repo.join(&args.path);
     let marker = args
         .marker
         .as_deref()
@@ -117,15 +123,6 @@ pub fn run(args: &MergeManagedBlockArgs, repo: &Path) -> Result<MergeManagedBloc
         dedup_removed,
         dedup_removed_lines,
     })
-}
-
-fn resolve_path(repo: &Path, p: &str) -> PathBuf {
-    let candidate = Path::new(p);
-    if candidate.is_absolute() {
-        candidate.to_path_buf()
-    } else {
-        repo.join(candidate)
-    }
 }
 
 fn normalize_block(block: &str) -> String {
@@ -585,9 +582,16 @@ mod tests {
     use super::*;
     use std::fs;
 
+    /// Build args from the test file's absolute path. `path` must be a
+    /// direct child of the tempdir passed as `repo`; the args carry only
+    /// the repo-relative basename (the primitive rejects absolute paths).
     fn args(path: &Path, block: &str, style: Option<&str>) -> MergeManagedBlockArgs {
         MergeManagedBlockArgs {
-            path: path.to_string_lossy().into_owned(),
+            path: path
+                .file_name()
+                .expect("test path has a basename")
+                .to_string_lossy()
+                .into_owned(),
             block: block.into(),
             marker: None,
             marker_style: style.map(str::to_string),
@@ -743,7 +747,7 @@ mod tests {
         let path = tmp.path().join(".gitignore");
         let result = run(
             &MergeManagedBlockArgs {
-                path: path.to_string_lossy().into_owned(),
+                path: ".gitignore".into(),
                 block: ".tmp/".into(),
                 marker: Some("anvil".into()),
                 marker_style: Some("line-prefix".into()),
@@ -770,6 +774,63 @@ mod tests {
         let body = fs::read_to_string(&path).unwrap();
         assert!(body.starts_with("user-ignore # govern-managed\n"));
         assert!(body.contains("# govern-managed\n.claude/\n"));
+    }
+
+    #[test]
+    fn absolute_path_is_rejected_before_any_write() {
+        let tmp = tempfile::tempdir().unwrap();
+        let outside = tempfile::tempdir().unwrap();
+        let target = outside.path().join("victim.gitignore");
+        let err = run(
+            &MergeManagedBlockArgs {
+                path: target.to_string_lossy().into_owned(),
+                block: ".claude/".into(),
+                marker: None,
+                marker_style: Some("line-prefix".into()),
+            },
+            tmp.path(),
+        )
+        .unwrap_err();
+        assert!(
+            matches!(err, PrimitiveError::InvalidPath { .. }),
+            "expected InvalidPath, got {err:?}"
+        );
+        assert!(!target.exists(), "nothing may be written outside the repo");
+    }
+
+    #[test]
+    fn traversal_path_is_rejected_before_any_write() {
+        let tmp = tempfile::tempdir().unwrap();
+        let err = run(
+            &MergeManagedBlockArgs {
+                path: "../escape.gitignore".into(),
+                block: ".claude/".into(),
+                marker: None,
+                marker_style: Some("line-prefix".into()),
+            },
+            tmp.path(),
+        )
+        .unwrap_err();
+        assert!(matches!(err, PrimitiveError::InvalidPath { .. }));
+    }
+
+    #[test]
+    fn nested_relative_path_still_works() {
+        let tmp = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(tmp.path().join("sub")).unwrap();
+        let result = run(
+            &MergeManagedBlockArgs {
+                path: "sub/.gitignore".into(),
+                block: ".cache/".into(),
+                marker: None,
+                marker_style: Some("line-prefix".into()),
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert_eq!(result.action, "created");
+        let body = fs::read_to_string(tmp.path().join("sub/.gitignore")).unwrap();
+        assert_eq!(body, "# govern-managed\n.cache/\n");
     }
 
     #[test]

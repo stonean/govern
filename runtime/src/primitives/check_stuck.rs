@@ -1,11 +1,23 @@
 //! `check-stuck` — count commits on `tasks.md` since the spec entered
 //! `in-progress`, surfacing cycles where the same task is touched repeatedly.
+//!
+//! History reading is branch-shape tolerant (scenario
+//! `primitive-robustness-hardening`): the `in-progress` transition commit
+//! is found even when it landed on a merged side branch, transitions are
+//! detected by comparing each commit's status against its *own parents'*
+//! blobs (never against walk-order neighbors, which fabricates phantom
+//! transitions across topologically adjacent commits of different
+//! branches), and the commit count uses `since..HEAD` reachability rather
+//! than a first-parent walk (which never reaches a side-branch `since`).
+//! On a repo with no merge commits the results are identical to the
+//! pre-hardening behavior.
 
+use std::collections::HashMap;
 use std::path::Path;
 
 use git2::{Repository, Sort};
 
-use crate::primitives::{PrimitiveError, Result, SkipScanner};
+use crate::primitives::{PrimitiveError, Result, SkipScanner, split_frontmatter};
 use crate::schema::paths;
 use crate::schema::primitives::{CheckStuckArgs, CheckStuckResult};
 
@@ -119,9 +131,25 @@ fn first_incomplete_subtask_index(content: &str) -> Option<usize> {
     None
 }
 
-/// Walk commits oldest-first looking for the most recent commit whose
-/// `spec.md` content transitions `status` *into* `in-progress`. Returns the
-/// sha of that commit, or `None` when no such transition exists.
+/// Walk every commit reachable from HEAD looking for the most recent
+/// commit whose `spec.md` transitions `status` *into* `in-progress`.
+/// Returns the sha of that commit, or `None` when no such transition
+/// exists.
+///
+/// Branch-shape tolerance: the walk covers all parents (not just the
+/// first-parent chain), so a transition commit that landed on a merged
+/// side branch is still visited. A commit is a transition exactly when
+/// its own status is `in-progress` and *none of its own parents'* is —
+/// comparing against walk-order neighbors (the pre-hardening behavior)
+/// fabricates phantom transitions when the topological order interleaves
+/// commits from different branches. A merge that simply carries an
+/// already-in-progress parent forward is not a transition; the real
+/// transition lives in that parent's history and is found there.
+///
+/// With `TOPOLOGICAL | REVERSE` sorting parents are always visited
+/// before children, so "most recent" is the last transition seen; the
+/// per-commit status cache is likewise guaranteed to hold every parent
+/// by the time its child asks.
 ///
 /// Shared with `compute-review-scope`, which uses the same commit as its
 /// default `diff-base`.
@@ -131,25 +159,59 @@ pub(crate) fn find_in_progress_commit(repo: &Repository, spec_rel: &str) -> Resu
     walk.set_sorting(Sort::TOPOLOGICAL | Sort::REVERSE)?;
 
     let mut newest_in_progress: Option<String> = None;
-    let mut previous_status: Option<String> = None;
+    let mut status_cache: HashMap<git2::Oid, Option<String>> = HashMap::new();
     for oid in walk {
         let oid = oid?;
+        let status = status_of_commit(repo, &mut status_cache, oid, spec_rel)?;
+        if status.as_deref() != Some("in-progress") {
+            continue;
+        }
         let commit = repo.find_commit(oid)?;
-        let tree = commit.tree()?;
-        let status = read_blob_from_tree(repo, &tree, spec_rel)?
-            .as_deref()
-            .and_then(extract_status)
-            .map(str::to_string);
-        if previous_status.as_deref() != Some("in-progress")
-            && status.as_deref() == Some("in-progress")
-        {
+        let mut parent_in_progress = false;
+        for parent in commit.parent_ids() {
+            if status_of_commit(repo, &mut status_cache, parent, spec_rel)?.as_deref()
+                == Some("in-progress")
+            {
+                parent_in_progress = true;
+                break;
+            }
+        }
+        if !parent_in_progress {
             newest_in_progress = Some(oid.to_string());
         }
-        previous_status = status;
     }
     Ok(newest_in_progress)
 }
 
+/// Read (with memoization) the spec's `status:` value at a commit. The
+/// cache is warm for every parent lookup because the caller walks in
+/// reverse-topological order, but a miss still computes correctly.
+fn status_of_commit(
+    repo: &Repository,
+    cache: &mut HashMap<git2::Oid, Option<String>>,
+    oid: git2::Oid,
+    spec_rel: &str,
+) -> Result<Option<String>> {
+    if let Some(cached) = cache.get(&oid) {
+        return Ok(cached.clone());
+    }
+    let commit = repo.find_commit(oid)?;
+    let status = read_blob_from_tree(repo, &commit.tree()?, spec_rel)?
+        .as_deref()
+        .and_then(|content| extract_status(content, spec_rel));
+    cache.insert(oid, status.clone());
+    Ok(status)
+}
+
+/// Count commits touching `path_rel` in the `since..HEAD` reachability
+/// set, plus the `since` commit itself when it touches the file
+/// (inclusive per the data-model semantics: the count begins at the
+/// transition). Reachability-based selection is branch-shape tolerant: a
+/// `since` on a merged side branch is still an ancestor cutoff, and side
+/// branch commits merged after the transition are counted exactly once
+/// (see [`commit_touches`] for the merge-commit TREESAME rule). The
+/// count is a property of the commit *set*, so walk order never affects
+/// the result — deterministic without relying on TIME sorting.
 fn count_commits_touching(
     repo: &Repository,
     path_rel: &str,
@@ -158,75 +220,60 @@ fn count_commits_touching(
     let Some(since) = since_sha else {
         return Ok(0);
     };
-    // Walk the first-parent chain from HEAD until we reach `since`.
-    // TIME-sorted revwalk is unstable when commits share timestamps; this
-    // linear traversal is deterministic for the linear-history case.
-    let mut current = Some(repo.head()?.peel_to_commit()?);
+    let since_oid = git2::Oid::from_str(since)?;
+    let mut walk = repo.revwalk()?;
+    walk.push_head()?;
+    walk.hide(since_oid)?;
     let mut count: u32 = 0;
-    while let Some(commit) = current.take() {
-        let oid = commit.id();
-        let sha = oid.to_string();
-        let touched = commit_touches(repo, oid, path_rel)?;
-        if sha == since {
-            // Inclusive of the in-progress commit per the data-model
-            // semantics: the count begins at the transition.
-            if touched {
-                count = count.saturating_add(1);
-            }
-            break;
-        }
-        if touched {
+    for oid in walk {
+        if commit_touches(repo, oid?, path_rel)? {
             count = count.saturating_add(1);
         }
-        if commit.parent_count() > 0 {
-            current = Some(commit.parent(0)?);
-        }
+    }
+    if commit_touches(repo, since_oid, path_rel)? {
+        count = count.saturating_add(1);
     }
     Ok(count)
 }
 
+/// Whether a commit changed `path_rel`. For a root commit: the path
+/// exists in its tree. For a single-parent commit: the blob differs from
+/// the parent's (add/remove/modify all differ). For a merge commit: the
+/// blob differs from *every* parent — git's TREESAME rule. A merge that
+/// merely integrates a side branch's edit is TREESAME to that side
+/// parent and does not count; the side branch's own commits are in the
+/// walked set and carry the count, so nothing is double-counted. A merge
+/// whose conflict resolution produced content unlike any parent counts
+/// once, as it should.
 fn commit_touches(repo: &Repository, oid: git2::Oid, path_rel: &str) -> Result<bool> {
     let commit = repo.find_commit(oid)?;
-    let tree = commit.tree()?;
-    let parent_tree = if commit.parent_count() == 0 {
-        None
-    } else {
-        Some(commit.parent(0)?.tree()?)
-    };
-    let diff = repo.diff_tree_to_tree(parent_tree.as_ref(), Some(&tree), None)?;
-    let mut touched = false;
-    diff.foreach(
-        &mut |delta, _| {
-            let old_match = delta
-                .old_file()
-                .path()
-                .is_some_and(|p| p == Path::new(path_rel));
-            let new_match = delta
-                .new_file()
-                .path()
-                .is_some_and(|p| p == Path::new(path_rel));
-            if old_match || new_match {
-                touched = true;
-            }
-            true
-        },
-        None,
-        None,
-        None,
-    )?;
-    Ok(touched)
+    let own = tree_entry_id(&commit.tree()?, path_rel);
+    if commit.parent_count() == 0 {
+        return Ok(own.is_some());
+    }
+    for parent in commit.parents() {
+        if tree_entry_id(&parent.tree()?, path_rel) == own {
+            return Ok(false);
+        }
+    }
+    Ok(true)
 }
 
-fn extract_status(content: &str) -> Option<&str> {
-    let after_open = content
-        .strip_prefix("---\n")
-        .or_else(|| content.strip_prefix("---\r\n"))?;
-    let end = after_open.find("\n---\n")?;
-    let fm = &after_open[..end];
+/// The object id at `path_rel` in `tree`, or `None` when absent.
+fn tree_entry_id(tree: &git2::Tree<'_>, path_rel: &str) -> Option<git2::Oid> {
+    tree.get_path(Path::new(path_rel)).ok().map(|e| e.id())
+}
+
+/// Extract the frontmatter `status:` value from a spec blob. Frontmatter
+/// splitting reuses the shared CRLF-aware [`split_frontmatter`] helper —
+/// the hand-rolled predecessor missed `\r\n---\r\n` close fences, so a
+/// CRLF checkout's transitions were invisible.
+fn extract_status(content: &str, spec_rel: &str) -> Option<String> {
+    let (fm, _body) = split_frontmatter(content, Path::new(spec_rel)).ok()?;
     for line in fm.lines() {
         let trimmed = line.trim();
         if let Some(rest) = trimmed.strip_prefix("status:") {
-            return Some(rest.trim().trim_matches('"'));
+            return Some(rest.trim().trim_matches('"').to_string());
         }
     }
     None
@@ -258,6 +305,32 @@ mod tests {
             .unwrap()
     }
 
+    /// Stage the full workdir and create a commit with explicit parents.
+    /// `update_head: false` leaves HEAD where it is (side-branch commit);
+    /// `true` advances HEAD (libgit2 requires the current tip to be the
+    /// first parent, which merge fixtures satisfy by listing it first).
+    fn commit_with_parents(
+        repo: &Repository,
+        message: &str,
+        parents: &[git2::Oid],
+        update_head: bool,
+    ) -> git2::Oid {
+        let mut index = repo.index().unwrap();
+        index.add_all(["*"], IndexAddOption::DEFAULT, None).unwrap();
+        index.write().unwrap();
+        let tree_id = index.write_tree().unwrap();
+        let tree = repo.find_tree(tree_id).unwrap();
+        let sig = Signature::now("Test", "test@example.com").unwrap();
+        let parent_commits: Vec<git2::Commit> = parents
+            .iter()
+            .map(|oid| repo.find_commit(*oid).unwrap())
+            .collect();
+        let parent_refs: Vec<&git2::Commit> = parent_commits.iter().collect();
+        let refname = if update_head { Some("HEAD") } else { None };
+        repo.commit(refname, &sig, &sig, message, &tree, &parent_refs)
+            .unwrap()
+    }
+
     fn write(path: &Path, body: &str) {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).unwrap();
@@ -269,6 +342,12 @@ mod tests {
         format!(
             "---\nstatus: {status}\ndependencies: []\n---\n\n# X\n\n## Acceptance Criteria\n\n- [ ] one\n"
         )
+    }
+
+    /// CRLF variant of [`spec`] — close fence is `\r\n---\r\n`, invisible
+    /// to a splitter that only knows the LF form.
+    fn spec_crlf(status: &str) -> String {
+        format!("---\r\nstatus: {status}\r\ndependencies: []\r\n---\r\n\r\n# X\r\n")
     }
 
     #[test]
@@ -519,6 +598,180 @@ mod tests {
         // touch tasks.md so it doesn't count toward stuck.
         assert_eq!(result.commit_count, 1);
         assert!(!result.stuck);
+    }
+
+    /// Branch-shape tolerance (scenario primitive-robustness-hardening):
+    /// the `in-progress` transition commit landed on a side branch that
+    /// was merged into main. The transition must still be found (the
+    /// side-branch commit is `since`), and the count must cover the
+    /// post-merge tasks.md commits — a first-parent-only walk from HEAD
+    /// never reaches a side-branch `since` and would count back to root.
+    #[test]
+    fn transition_on_merged_side_branch_is_found() {
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = Repository::init(tmp.path()).unwrap();
+        let spec_path = tmp.path().join("specs/010-demo/spec.md");
+        let tasks_path = tmp.path().join("specs/010-demo/tasks.md");
+
+        write(&spec_path, &spec("planned"));
+        write(&tasks_path, "# Tasks\n\n## 1. Bootstrap\n\n- [ ] start\n");
+        let m1 = commit_all(&repo, "feat: plan");
+
+        // Side branch off m1 flips the spec to in-progress. HEAD stays
+        // at m1.
+        write(&spec_path, &spec("in-progress"));
+        let s1 = commit_with_parents(&repo, "side: begin", &[m1], false);
+
+        // Main advances independently (spec restored to planned, an
+        // unrelated file added).
+        write(&spec_path, &spec("planned"));
+        write(&tmp.path().join("README.md"), "readme\n");
+        let m2 = commit_all(&repo, "main: unrelated");
+
+        // Merge the side branch: the merged tree carries in-progress.
+        write(&spec_path, &spec("in-progress"));
+        commit_with_parents(&repo, "merge side", &[m2, s1], true);
+
+        // Two tasks.md commits after the merge; the first incomplete
+        // subtask stays at the same line index (genuinely stuck).
+        for i in 1..=2 {
+            write(
+                &tasks_path,
+                &format!("# Tasks v{i}\n\n## 1. Bootstrap\n\n- [ ] still\n"),
+            );
+            commit_all(&repo, &format!("wip: pass {i}"));
+        }
+
+        let result = run(
+            &CheckStuckArgs {
+                feature: "010-demo".into(),
+                threshold: 2,
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert_eq!(
+            result.since_sha,
+            s1.to_string(),
+            "since must be the side-branch transition commit"
+        );
+        assert_eq!(
+            result.commit_count, 2,
+            "only the two post-merge tasks.md commits count"
+        );
+        assert!(result.stuck);
+    }
+
+    /// Phantom-transition regression: a side branch whose spec never left
+    /// `planned` merges into a main line that has been `in-progress` for
+    /// several commits. Under walk-order neighbor tracking the planned
+    /// side commit interleaves before the merge and fabricates a
+    /// transition at the merge commit; per-parent comparison keeps the
+    /// real (older) transition.
+    #[test]
+    fn merged_planned_branch_does_not_fabricate_transition() {
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = Repository::init(tmp.path()).unwrap();
+        let spec_path = tmp.path().join("specs/010-demo/spec.md");
+        let tasks_path = tmp.path().join("specs/010-demo/tasks.md");
+        let base_tasks = "# Tasks\n\n## 1. Bootstrap\n\n- [ ] start\n";
+
+        write(&spec_path, &spec("planned"));
+        write(&tasks_path, base_tasks);
+        let m1 = commit_all(&repo, "feat: plan");
+
+        write(&spec_path, &spec("in-progress"));
+        let m2 = commit_all(&repo, "chore: begin"); // the real transition
+
+        write(
+            &tasks_path,
+            "# Tasks v1\n\n## 1. Bootstrap\n\n- [ ] still\n",
+        );
+        commit_all(&repo, "wip: pass 1");
+        write(
+            &tasks_path,
+            "# Tasks v2\n\n## 1. Bootstrap\n\n- [ ] still\n",
+        );
+        let m4 = commit_all(&repo, "wip: pass 2");
+
+        // Side branch off m1: spec still planned, tasks untouched, one
+        // unrelated file. Topologically unordered w.r.t. m2..m4.
+        write(&spec_path, &spec("planned"));
+        write(&tasks_path, base_tasks);
+        write(&tmp.path().join("side.md"), "side\n");
+        let s1 = commit_with_parents(&repo, "side: unrelated", &[m1], false);
+
+        // Merge keeps main's in-progress spec and tasks.
+        write(&spec_path, &spec("in-progress"));
+        write(
+            &tasks_path,
+            "# Tasks v2\n\n## 1. Bootstrap\n\n- [ ] still\n",
+        );
+        commit_with_parents(&repo, "merge side", &[m4, s1], true);
+
+        write(
+            &tasks_path,
+            "# Tasks v3\n\n## 1. Bootstrap\n\n- [ ] still\n",
+        );
+        commit_all(&repo, "wip: pass 3");
+
+        let result = run(
+            &CheckStuckArgs {
+                feature: "010-demo".into(),
+                threshold: 99,
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert_eq!(
+            result.since_sha,
+            m2.to_string(),
+            "since must be the real main-line transition, not the merge"
+        );
+        // Three tasks.md commits since m2 (side commit restored tasks →
+        // TREESAME; merge TREESAME to first parent).
+        assert_eq!(result.commit_count, 3);
+        assert!(!result.stuck);
+    }
+
+    /// CRLF close fence: a spec checked out with CRLF line endings has a
+    /// `\r\n---\r\n` close fence, which the hand-rolled splitter missed
+    /// (it only knew `\n---\n`), making every transition invisible. The
+    /// shared CRLF-aware helper reads it.
+    #[test]
+    fn crlf_spec_frontmatter_transition_is_detected() {
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = Repository::init(tmp.path()).unwrap();
+        let spec_path = tmp.path().join("specs/010-demo/spec.md");
+        let tasks_path = tmp.path().join("specs/010-demo/tasks.md");
+
+        write(&spec_path, &spec_crlf("planned"));
+        write(&tasks_path, "# Tasks\n\n## 1. Bootstrap\n\n- [ ] start\n");
+        commit_all(&repo, "feat: plan");
+
+        write(&spec_path, &spec_crlf("in-progress"));
+        commit_all(&repo, "chore: begin");
+
+        write(
+            &tasks_path,
+            "# Tasks v1\n\n## 1. Bootstrap\n\n- [ ] still\n",
+        );
+        commit_all(&repo, "wip: pass 1");
+
+        let result = run(
+            &CheckStuckArgs {
+                feature: "010-demo".into(),
+                threshold: 1,
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert!(
+            !result.since_sha.is_empty(),
+            "CRLF close fence must not hide the transition"
+        );
+        assert_eq!(result.commit_count, 1);
+        assert!(result.stuck);
     }
 
     /// The false-positive case the `check-stuck-tasks-md-advancement`

@@ -47,7 +47,7 @@ The runtime expects to be invoked from a govern-adopting repository — one with
 
 ## JSON-over-stdio protocol
 
-`gvrn exec` and `gvrn <primitive>` emit one JSON envelope per line on stdout. The closed set of envelope types:
+`gvrn exec` (and the interactive `gvrn gate-confirm` subcommand) speaks the envelope protocol: one JSON envelope per line on stdout. Standalone `gvrn <primitive>` invocations instead print the primitive's bare result object as a single line of JSON, with no envelope wrapper. The closed set of envelope types:
 
 | Type | Direction | Payload |
 | --- | --- | --- |

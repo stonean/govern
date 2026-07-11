@@ -14,6 +14,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use std::fs;
+#[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 
@@ -385,6 +386,9 @@ async fn derive_boundary_returns_diff_paths() {
     assert!(obj["first-commit"].is_string());
 }
 
+// Requires bash and Unix permission bits; the production run-generator
+// path is likewise Unix-oriented (see run_generator.rs's unix-gated tests).
+#[cfg(unix)]
 #[tokio::test]
 async fn run_generator_invokes_bash_script() {
     let tmp = tempfile::tempdir().unwrap();

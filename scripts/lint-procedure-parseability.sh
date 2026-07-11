@@ -10,10 +10,18 @@
 # parseability check is a workflow-private compile, not a runtime
 # install.
 #
+# The allowlist covers ONLY the legacy-prose case: an allowlisted file
+# may return LegacyProse (no parseable Instructions section), but an
+# Invalid parse (malformed structure, e.g. a typo'd primitive name)
+# fails the lint for every file — allowlisted or not. `gvrn parse
+# --check` distinguishes the two: exit 0 = parses as a Procedure,
+# exit 2 = legacy prose, exit 1 = Invalid (or unreadable input).
+#
 # Exit codes:
-#   0  — every file is either parseable as a Procedure OR present in
-#        the legacy allowlist
-#   1  — at least one file failed to parse AND is not in the allowlist
+#   0  — every file parses as a Procedure, or is legacy prose AND
+#        present in the legacy allowlist
+#   1  — at least one file is Invalid (any file), or legacy prose
+#        without an allowlist entry
 #   2  — internal error (binary build failure, missing inputs, etc.)
 
 set -euo pipefail
@@ -82,20 +90,25 @@ for abs_path in "${command_files[@]}"; do
   set -e
   case "$rc" in
     0)
-      # Parseable, or legacy-prose (--check exits 0 for either). When the
-      # file is in the allowlist, allow the legacy case explicitly; when
-      # it isn't, accept the result either way and let the parser's
-      # own rules govern.
+      # Parses as a Procedure.
       :
       ;;
-    *)
+    2)
+      # Legacy prose — allowed only for allowlisted files.
       if is_allowed "$rel_path"; then
-        echo "::notice::$rel_path is on the legacy allowlist — skipping ($output)"
+        echo "::notice::$rel_path is legacy prose (on the allowlist)"
       else
-        echo "::error::$rel_path failed parseability check"
+        echo "::error::$rel_path is legacy prose but not on the allowlist"
         echo "$output" | sed 's/^/  /'
         fail=1
       fi
+      ;;
+    *)
+      # Invalid (malformed structure) or unreadable — never allowed,
+      # even for allowlisted files.
+      echo "::error::$rel_path failed parseability check (Invalid is never allowlisted)"
+      echo "$output" | sed 's/^/  /'
+      fail=1
       ;;
   esac
 done

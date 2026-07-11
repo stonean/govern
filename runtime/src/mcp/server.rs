@@ -6,7 +6,10 @@
 //! makes the Claude Code-side wire identifier `mcp__gvrn__<verb>-<noun>`.
 //! Tools are async wrappers around the synchronous
 //! `primitives::<name>::run` functions; the server holds an `Arc<PathBuf>`
-//! to the repo root that every primitive operates on.
+//! to the repo root that every primitive operates on. Blocking-heavy
+//! primitives (network downloads, subprocess shell-outs, whole-archive
+//! decompression) are dispatched through [`dispatch_blocking`] so they run
+//! on tokio's blocking pool instead of pinning an async worker thread.
 //!
 //! `gate-confirm` is special-cased: the MCP surface returns the prompt
 //! payload (gate + prompt + fresh request-id) without blocking. The LLM
@@ -153,6 +156,31 @@ fn strip_numeric_formats(value: &mut Value) {
         }
         Value::Array(items) => items.iter_mut().for_each(strip_numeric_formats),
         _ => {}
+    }
+}
+
+/// Run a blocking primitive on tokio's dedicated blocking pool and map its
+/// outcome into the tool-handler result shape.
+///
+/// `fetch-archive` drives reqwest's *blocking* client, which panics when
+/// invoked from an async context in debug builds (reqwest guards
+/// blocking-in-async under `cfg(debug_assertions)`) and would pin a tokio
+/// worker thread for the whole download in release. `run-generator` and
+/// `lint-markdown` shell out via `std::process::Command`, and
+/// `extract-archive` decompresses entire archives — the same
+/// worker-pinning hazard, so they take the same seam. The CLI surfaces
+/// (`main.rs` subcommands and the subprocess interpreter) call the
+/// primitives directly with no tokio runtime and are unaffected.
+async fn dispatch_blocking<T, F>(work: F) -> Result<Json<T>, String>
+where
+    F: FnOnce() -> primitives::Result<T> + Send + 'static,
+    T: Send + 'static,
+{
+    match tokio::task::spawn_blocking(work).await {
+        Ok(outcome) => outcome.map(Json).map_err(|e| e.to_string()),
+        // A join error means the blocking task panicked or the runtime is
+        // shutting down; surface it as a tool error instead of unwinding.
+        Err(join_error) => Err(format!("blocking primitive task failed: {join_error}")),
     }
 }
 
@@ -322,9 +350,8 @@ impl GovRuntimeServer {
         &self,
         params: Parameters<RunGeneratorArgs>,
     ) -> Result<Json<RunGeneratorResult>, String> {
-        primitives::run_generator::run(&params.0, self.repo())
-            .map(Json)
-            .map_err(|e| e.to_string())
+        let repo = Arc::clone(&self.repo);
+        dispatch_blocking(move || primitives::run_generator::run(&params.0, repo.as_path())).await
     }
 
     #[tool(
@@ -335,9 +362,8 @@ impl GovRuntimeServer {
         &self,
         params: Parameters<LintMarkdownArgs>,
     ) -> Result<Json<LintMarkdownResult>, String> {
-        primitives::lint_markdown::run(&params.0, self.repo())
-            .map(Json)
-            .map_err(|e| e.to_string())
+        let repo = Arc::clone(&self.repo);
+        dispatch_blocking(move || primitives::lint_markdown::run(&params.0, repo.as_path())).await
     }
 
     #[tool(
@@ -363,9 +389,8 @@ impl GovRuntimeServer {
         &self,
         params: Parameters<FetchArchiveArgs>,
     ) -> Result<Json<FetchArchiveResult>, String> {
-        primitives::fetch_archive::run(&params.0, self.repo())
-            .map(Json)
-            .map_err(|e| e.to_string())
+        let repo = Arc::clone(&self.repo);
+        dispatch_blocking(move || primitives::fetch_archive::run(&params.0, repo.as_path())).await
     }
 
     #[tool(
@@ -376,9 +401,8 @@ impl GovRuntimeServer {
         &self,
         params: Parameters<ExtractArchiveArgs>,
     ) -> Result<Json<ExtractArchiveResult>, String> {
-        primitives::extract_archive::run(&params.0, self.repo())
-            .map(Json)
-            .map_err(|e| e.to_string())
+        let repo = Arc::clone(&self.repo);
+        dispatch_blocking(move || primitives::extract_archive::run(&params.0, repo.as_path())).await
     }
 
     #[tool(

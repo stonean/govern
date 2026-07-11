@@ -52,9 +52,17 @@ mod tests {
     use crate::primitives::PrimitiveError;
     use std::fs;
 
+    /// Build args from the test file's absolute path. `path` must be a
+    /// direct child of the tempdir passed as `repo`; the args carry only
+    /// the repo-relative basename (the delegated `merge-managed-block`
+    /// rejects absolute paths per BE-INPUT-004).
     fn args(path: &Path, block: &str) -> MergeClaudeMdArgs {
         MergeClaudeMdArgs {
-            path: path.to_string_lossy().into_owned(),
+            path: path
+                .file_name()
+                .expect("test path has a basename")
+                .to_string_lossy()
+                .into_owned(),
             block: block.into(),
             marker: None,
         }
@@ -141,7 +149,7 @@ mod tests {
         let path = tmp.path().join("CLAUDE.md");
         let result = run(
             &MergeClaudeMdArgs {
-                path: path.to_string_lossy().into_owned(),
+                path: "CLAUDE.md".into(),
                 block: "other framework".into(),
                 marker: Some("other-managed".into()),
             },

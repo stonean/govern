@@ -2,6 +2,7 @@
 
 use std::path::Path;
 
+use crate::primitives::validate_frontmatter::ALLOWED_STATUSES;
 use crate::primitives::{
     PrimitiveError, Result, read_text, rel_path, split_frontmatter_with_offset, write_atomic,
 };
@@ -11,17 +12,31 @@ use crate::schema::primitives::{SetStatusArgs, SetStatusResult};
 /// Execute the `set-status` primitive.
 ///
 /// Refuses the write when the caller's `from` value does not match the
-/// current on-disk status. The atomic create-then-rename pattern leaves
-/// `spec.md` unchanged on a crash mid-write.
+/// current on-disk status. Both `from` and `to` must be members of the
+/// constitution's lifecycle set (`draft|clarified|planned|in-progress|done`);
+/// transition-edge legality stays with procedures. The atomic
+/// create-then-rename pattern leaves `spec.md` unchanged on a crash
+/// mid-write.
 ///
 /// # Errors
 ///
-/// Returns [`PrimitiveError::FeatureNotFound`] when the feature directory
-/// is missing, [`PrimitiveError::MissingFrontmatter`] when the spec lacks
-/// `---` fences, [`PrimitiveError::StatusFieldMissing`] when no `status:`
-/// key is present, [`PrimitiveError::StatusMismatch`] when `args.from`
-/// does not match disk, or [`PrimitiveError::Io`] for filesystem failures.
+/// Returns [`PrimitiveError::InvalidStatus`] when `args.from` or `args.to`
+/// is outside the lifecycle set, [`PrimitiveError::FeatureNotFound`] when
+/// the feature directory is missing, [`PrimitiveError::MissingFrontmatter`]
+/// when the spec lacks `---` fences, [`PrimitiveError::StatusFieldMissing`]
+/// when no `status:` key is present, [`PrimitiveError::StatusMismatch`]
+/// when `args.from` does not match disk, or [`PrimitiveError::Io`] for
+/// filesystem failures.
 pub fn run(args: &SetStatusArgs, repo: &Path) -> Result<SetStatusResult> {
+    for (argument, value) in [("from", args.from.as_str()), ("to", args.to.as_str())] {
+        if !ALLOWED_STATUSES.contains(&value) {
+            return Err(PrimitiveError::InvalidStatus {
+                argument: argument.into(),
+                value: value.into(),
+                allowed: ALLOWED_STATUSES.join("|"),
+            });
+        }
+    }
     let root = paths::Paths::load(repo).specs_root;
     let feature_dir = repo.join(&root).join(&args.feature);
     if !feature_dir.is_dir() {
@@ -205,6 +220,63 @@ mod tests {
         assert_eq!(result.current, "planned");
         let mtime_after = fs::metadata(&spec_path).unwrap().modified().unwrap();
         assert_eq!(mtime_before, mtime_after);
+    }
+
+    #[test]
+    fn rejects_from_outside_lifecycle_set() {
+        let tmp = tempdir().unwrap();
+        write_spec(tmp.path(), "clarified");
+        let err = run(
+            &SetStatusArgs {
+                feature: "feat".into(),
+                from: "reviewing".into(),
+                to: "planned".into(),
+            },
+            tmp.path(),
+        )
+        .unwrap_err();
+        match err {
+            PrimitiveError::InvalidStatus {
+                argument,
+                value,
+                allowed,
+            } => {
+                assert_eq!(argument, "from");
+                assert_eq!(value, "reviewing");
+                assert_eq!(allowed, "draft|clarified|planned|in-progress|done");
+            }
+            other => panic!("expected InvalidStatus, got {other:?}"),
+        }
+        // Disk untouched.
+        let content = fs::read_to_string(tmp.path().join("specs/feat/spec.md")).unwrap();
+        assert!(content.contains("status: clarified"));
+    }
+
+    #[test]
+    fn rejects_to_outside_lifecycle_set() {
+        let tmp = tempdir().unwrap();
+        write_spec(tmp.path(), "in-progress");
+        let err = run(
+            &SetStatusArgs {
+                feature: "feat".into(),
+                from: "in-progress".into(),
+                to: "shipped".into(),
+            },
+            tmp.path(),
+        )
+        .unwrap_err();
+        match err {
+            PrimitiveError::InvalidStatus {
+                argument, value, ..
+            } => {
+                assert_eq!(argument, "to");
+                assert_eq!(value, "shipped");
+            }
+            other => panic!("expected InvalidStatus, got {other:?}"),
+        }
+        // Disk untouched.
+        let content = fs::read_to_string(tmp.path().join("specs/feat/spec.md")).unwrap();
+        assert!(content.contains("status: in-progress"));
     }
 
     #[test]

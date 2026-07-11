@@ -1,9 +1,13 @@
-//! Initial-release LLM extension-point payload schemas.
+//! LLM extension-point payload schemas.
 //!
 //! Mirrors the request/response shapes in
-//! `specs/022-deterministic-runtime/data-model.md`. The runtime emits these
-//! as the `request` field of `llm-request` envelopes and validates incoming
-//! `llm-response` payloads against them.
+//! `specs/022-deterministic-runtime/data-model.md`: the three
+//! initial-release points (`assessSpecQuality`, `writeCode`,
+//! `writeSpecBody`), `performReview`, and the two follow-on points
+//! (`askClarifyQuestion`, `routeInboxItem`) whose typed shapes ship ahead
+//! of their scenarios per the extension-request-hygiene scenario. The
+//! runtime emits these as the `request` field of `llm-request` envelopes
+//! and validates incoming `llm-response` payloads against them.
 
 #![allow(clippy::module_name_repetitions)]
 
@@ -237,6 +241,109 @@ pub struct PerformReviewResponse {
     pub findings: Vec<crate::schema::primitives::ReviewFinding>,
 }
 
+// -- askClarifyQuestion --------------------------------------------------------
+
+/// One open question presented to the user (host-mediated, one
+/// request/response round trip per question).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct ClarifyQuestion {
+    /// Question text, verbatim from the spec's Open Questions list.
+    pub text: String,
+    /// Spec section the question is attributed to; omitted when the
+    /// walker cannot attribute it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub section: Option<String>,
+}
+
+/// Request payload for `askClarifyQuestion` (reserved by the
+/// clarify-command-acceleration scenario; the typed builder ships ahead
+/// of it per extension-request-hygiene so the point never falls back to
+/// a raw walker-context dump).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct AskClarifyQuestionRequest {
+    /// Repo-relative path to the spec under clarification.
+    pub spec_path: String,
+    /// Full spec contents.
+    pub spec_content: String,
+    /// The open question this round trip resolves.
+    pub question: ClarifyQuestion,
+}
+
+/// Response payload for `askClarifyQuestion` — the user's answer,
+/// mediated by the host. Applying the resolution to the spec body
+/// remains LLM work per the clarify scenario.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct AskClarifyQuestionResponse {
+    /// The user's resolution, verbatim.
+    pub answer: String,
+}
+
+// -- routeInboxItem ------------------------------------------------------------
+
+/// One feature spec the inbox router may match an item against.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct RouteInboxSpec {
+    /// Feature directory basename (`NNN-slug`).
+    pub feature: String,
+    /// Frontmatter `status` (drives the done → in-progress reopen
+    /// consent on a scenario route); empty when unreadable.
+    pub status: String,
+}
+
+/// Request payload for `routeInboxItem` (reserved by the
+/// groom-command-acceleration scenario; typed builder ships ahead of it).
+/// Kept minimal: the item under decision, the closed route vocabulary
+/// (the groom decision tree's leaves, in walk order), and the specs the
+/// router may match — enough for the routing decision without a
+/// walker-context dump.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct RouteInboxItemRequest {
+    /// Raw inbox item text under decision.
+    pub item_text: String,
+    /// Closed route vocabulary, in decision-tree walk order:
+    /// `rule`, `spec`, `scenario`, `chore`, `discard`.
+    pub routes: Vec<String>,
+    /// Feature specs the router may target, sorted by slug.
+    pub available_specs: Vec<RouteInboxSpec>,
+}
+
+/// Route decision discriminator — the groom decision tree's leaves.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum InboxRoute {
+    /// Cross-cutting concern: promote to (or amend) a rule file.
+    Rule,
+    /// No covering spec exists: direct the user to `/gov:specify`.
+    Spec,
+    /// Durable behavioral requirement under an existing spec: create a
+    /// scenario (plus task append and possible done → in-progress reopen).
+    Scenario,
+    /// Project maintenance with no feature home: stays in the inbox.
+    Chore,
+    /// Not actionable: remove from the inbox.
+    Discard,
+}
+
+/// Response payload for `routeInboxItem` — the routing decision.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct RouteInboxItemResponse {
+    /// Chosen route from the request's `routes` vocabulary.
+    pub route: InboxRoute,
+    /// Matched feature slug when the route targets an existing spec.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub feature: Option<String>,
+    /// Optional prose justification the host may surface in the
+    /// per-item confirmation prompt.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+}
+
 // -- validation --------------------------------------------------------------
 
 /// Validation errors raised by [`validate_response`] and
@@ -281,8 +388,9 @@ pub enum ValidationError {
 /// # Errors
 ///
 /// Returns [`ValidationError::UnknownExtension`] when `identifier` is not
-/// `assessSpecQuality`, `writeCode`, `writeSpecBody`, or `performReview`;
-/// otherwise [`ValidationError::Schema`] when deserialization fails.
+/// `assessSpecQuality`, `writeCode`, `writeSpecBody`, `performReview`,
+/// `askClarifyQuestion`, or `routeInboxItem`; otherwise
+/// [`ValidationError::Schema`] when deserialization fails.
 pub fn validate_response(identifier: &str, response: &Value) -> Result<(), ValidationError> {
     macro_rules! check {
         ($ty:ty) => {{
@@ -299,6 +407,8 @@ pub fn validate_response(identifier: &str, response: &Value) -> Result<(), Valid
         "writeCode" => check!(WriteCodeResponse),
         "writeSpecBody" => check!(WriteSpecBodyResponse),
         "performReview" => check!(PerformReviewResponse),
+        "askClarifyQuestion" => check!(AskClarifyQuestionResponse),
+        "routeInboxItem" => check!(RouteInboxItemResponse),
         other => Err(ValidationError::UnknownExtension(other.into())),
     }
 }
@@ -401,11 +511,12 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
 
     use super::{
-        AssessSpecQualityFinding, AssessSpecQualityRequest, AssessSpecQualityResponse,
-        AssessSpecQualityRule, FindingLocation, PerformReviewRequest, PerformReviewResponse,
-        PlanRelevantFile, ReviewRuleFile, ReviewScopeFile, WriteCodeAction, WriteCodeEdit,
-        WriteCodeRequest, WriteCodeResponse, WriteCodeTask, WriteSpecBodyRequest,
-        WriteSpecBodyResponse,
+        AskClarifyQuestionRequest, AskClarifyQuestionResponse, AssessSpecQualityFinding,
+        AssessSpecQualityRequest, AssessSpecQualityResponse, AssessSpecQualityRule,
+        ClarifyQuestion, FindingLocation, InboxRoute, PerformReviewRequest, PerformReviewResponse,
+        PlanRelevantFile, ReviewRuleFile, ReviewScopeFile, RouteInboxItemRequest,
+        RouteInboxItemResponse, RouteInboxSpec, WriteCodeAction, WriteCodeEdit, WriteCodeRequest,
+        WriteCodeResponse, WriteCodeTask, WriteSpecBodyRequest, WriteSpecBodyResponse,
     };
     use crate::schema::primitives::ReviewFinding;
 
@@ -858,6 +969,112 @@ mod tests {
         let err = validate_response("performReview", &response).unwrap_err();
         match err {
             ValidationError::Schema { identifier, .. } => assert_eq!(identifier, "performReview"),
+            other => panic!("expected Schema, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn ask_clarify_question_round_trip() {
+        let request = AskClarifyQuestionRequest {
+            spec_path: "specs/022-deterministic-runtime/spec.md".into(),
+            spec_content: "# spec".into(),
+            question: ClarifyQuestion {
+                text: "Should retries back off exponentially or linearly?".into(),
+                section: Some("Open Questions".into()),
+            },
+        };
+        let value: serde_json::Value = serde_json::to_value(&request).unwrap();
+        // Typed field order: spec-path, spec-content, question.
+        let keys: Vec<&str> = value
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect();
+        assert_eq!(keys, vec!["spec-path", "spec-content", "question"]);
+        assert_eq!(value["question"]["section"], "Open Questions");
+        assert_eq!(round_trip(&request), request);
+
+        // `section` is omitted, not null, when unattributed.
+        let bare = AskClarifyQuestionRequest {
+            question: ClarifyQuestion {
+                text: "q".into(),
+                section: None,
+            },
+            ..request
+        };
+        let b_value: serde_json::Value = serde_json::to_value(&bare).unwrap();
+        assert!(
+            !b_value["question"]
+                .as_object()
+                .unwrap()
+                .contains_key("section")
+        );
+
+        let response = AskClarifyQuestionResponse {
+            answer: "Exponential, capped at 60s.".into(),
+        };
+        assert_eq!(round_trip(&response), response);
+    }
+
+    #[test]
+    fn route_inbox_item_round_trip() {
+        let request = RouteInboxItemRequest {
+            item_text: "Bug: retry loop never backs off".into(),
+            routes: ["rule", "spec", "scenario", "chore", "discard"]
+                .iter()
+                .map(ToString::to_string)
+                .collect(),
+            available_specs: vec![RouteInboxSpec {
+                feature: "021-webhook-delivery".into(),
+                status: "done".into(),
+            }],
+        };
+        let value: serde_json::Value = serde_json::to_value(&request).unwrap();
+        let keys: Vec<&str> = value
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect();
+        assert_eq!(keys, vec!["item-text", "routes", "available-specs"]);
+        assert_eq!(
+            value["available-specs"][0]["feature"],
+            "021-webhook-delivery"
+        );
+        assert_eq!(round_trip(&request), request);
+
+        let response = RouteInboxItemResponse {
+            route: InboxRoute::Scenario,
+            feature: Some("021-webhook-delivery".into()),
+            reason: Some("Durable edge case.".into()),
+        };
+        let r_value: serde_json::Value = serde_json::to_value(&response).unwrap();
+        assert_eq!(r_value["route"], "scenario");
+        assert_eq!(round_trip(&response), response);
+    }
+
+    #[test]
+    fn validate_response_accepts_minimal_clarify_and_route_payloads() {
+        use super::validate_response;
+        validate_response(
+            "askClarifyQuestion",
+            &serde_json::json!({ "answer": "Use exponential backoff." }),
+        )
+        .unwrap();
+        // `feature` and `reason` are optional on a route decision.
+        validate_response("routeInboxItem", &serde_json::json!({ "route": "chore" })).unwrap();
+    }
+
+    #[test]
+    fn validate_response_rejects_unknown_inbox_route() {
+        use super::{ValidationError, validate_response};
+        // The route vocabulary is closed — a value outside the decision
+        // tree's leaves is a schema mismatch, not a silent passthrough.
+        let err = validate_response("routeInboxItem", &serde_json::json!({ "route": "shrug" }))
+            .unwrap_err();
+        match err {
+            ValidationError::Schema { identifier, .. } => assert_eq!(identifier, "routeInboxItem"),
             other => panic!("expected Schema, got {other:?}"),
         }
     }

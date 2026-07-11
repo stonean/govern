@@ -40,7 +40,9 @@ const UNBLOCKING_STATUSES: &[&str] = &["clarified", "planned", "in-progress", "d
 /// convention promises one), [`PrimitiveError::Io`] on filesystem
 /// failures, [`PrimitiveError::Yaml`] when any spec's frontmatter is
 /// malformed, or [`PrimitiveError::Toml`] when `.govern.toml` or
-/// `.govern.session.toml` is malformed.
+/// `.govern.session.toml` is malformed. A *targeted scenario* with
+/// missing or malformed frontmatter is NOT an error — it degrades to a
+/// detail-less session target (see [`load_scenario_detail`]).
 pub fn run(_args: &DashboardArgs, repo: &Path) -> Result<DashboardResult> {
     let specs = load_specs(repo)?;
     let tags_union = compute_tags_union(&specs);
@@ -173,12 +175,14 @@ fn count_scenario_files(scenarios_dir: &Path) -> u32 {
 }
 
 /// Count unresolved entries in a spec body's `## Open Questions` section.
-/// Top-level list items (`-` bullets) are entries; the canonical
-/// `*None — all resolved.*` placeholder is treated as zero. Continuation
-/// lines and nested sub-bullets inside an entry don't add to the count.
-/// Shares section traversal with `read_spec::parse_open_questions` via
-/// the shared `section_lines` helper — the two consumers only differ in
-/// how they fold the yielded lines into their result shape.
+/// Every `- ` bullet at any indentation is an entry — nested sub-bullets
+/// DO count, matching `read_spec::parse_open_questions`, which likewise
+/// starts a new question on each `- ` line regardless of indent (the
+/// two-paths parity). Non-bullet continuation lines don't add to the
+/// count, and the canonical `*None — all resolved.*` placeholder is
+/// treated as zero. Shares section traversal with `read_spec` via the
+/// shared `section_lines` helper — the two consumers only differ in how
+/// they fold the yielded lines into their result shape.
 fn count_open_questions(body: &str) -> u32 {
     let mut count: u32 = 0;
     for line in section_lines(body, "Open Questions") {
@@ -302,20 +306,24 @@ fn load_session_target(repo: &Path) -> Result<Option<DashboardSessionTarget>> {
 }
 
 /// Read a scenario file and extract its dashboard header detail. Returns
-/// `Ok(None)` when the file doesn't exist (session pointing at a stale
-/// scenario is the caller's problem, not the dashboard's).
+/// `Ok(None)` when the file doesn't exist OR exists with missing/
+/// malformed frontmatter — a parse failure degrades to a detail-less
+/// target exactly like the stale-path case, so one bad scenario cannot
+/// brick the whole `/gov:status` render (scenario
+/// primitive-robustness-hardening). The corrective surface for both is
+/// the same: re-target or fix the scenario file.
 fn load_scenario_detail(repo: &Path, rel_path: &str) -> Result<Option<DashboardScenarioDetail>> {
     let path = repo.join(rel_path);
     if !path.is_file() {
         return Ok(None);
     }
     let content = read_text(&path)?;
-    let (fm_text, body) = split_frontmatter(&content, &path)?;
-    let frontmatter: ScenarioFrontmatter =
-        serde_norway::from_str(fm_text).map_err(|source| PrimitiveError::Yaml {
-            path: path.clone(),
-            source,
-        })?;
+    let Ok((fm_text, body)) = split_frontmatter(&content, &path) else {
+        return Ok(None);
+    };
+    let Ok(frontmatter) = serde_norway::from_str::<ScenarioFrontmatter>(fm_text) else {
+        return Ok(None);
+    };
     let section = frontmatter
         .section
         .or(frontmatter.spec_ref)
@@ -690,5 +698,83 @@ reason = "Deferred until v2 perf budget lands."
         );
         let result = run(&DashboardArgs::default(), tmp.path()).unwrap();
         assert_eq!(result.specs[0].open_question_count, 2);
+    }
+
+    #[test]
+    fn open_question_count_includes_nested_sub_bullets() {
+        // Documented behavior (read_spec parity): every `- ` bullet at
+        // any indentation is an entry — nested sub-bullets DO count.
+        let tmp = TempDir::new().unwrap();
+        write_spec(
+            tmp.path(),
+            "001-x",
+            "status: draft\ndependencies: []\n",
+            "- Top-level question?\n  - Nested sub-bullet also counts.\n- Second top-level?",
+        );
+        let result = run(&DashboardArgs::default(), tmp.path()).unwrap();
+        assert_eq!(result.specs[0].open_question_count, 3);
+    }
+
+    #[test]
+    fn session_with_malformed_scenario_frontmatter_degrades_to_detail_less_target() {
+        // Scenario primitive-robustness-hardening: a targeted scenario
+        // whose frontmatter fails YAML parse must degrade exactly like
+        // the missing-file case — target surfaced, no detail — instead
+        // of erroring the whole dashboard (one bad scenario bricking
+        // /gov:status).
+        let tmp = TempDir::new().unwrap();
+        write_spec(
+            tmp.path(),
+            "022-foo",
+            "status: in-progress\ndependencies: []\n",
+            "*None — all resolved.*",
+        );
+        let scenarios = tmp.path().join("specs/022-foo/scenarios");
+        std::fs::create_dir_all(&scenarios).unwrap();
+        std::fs::write(
+            scenarios.join("broken.md"),
+            "---\nsection: [unclosed\n---\n\n# Broken\n\n## Context\n\nStill here.\n",
+        )
+        .unwrap();
+        write_session_toml(
+            tmp.path(),
+            "feature = \"022-foo\"\npath = \"specs/022-foo\"\nscenario = \"broken\"\nscenario-path = \"specs/022-foo/scenarios/broken.md\"\nset-at = \"2026-05-23T12:34:56Z\"\n",
+        );
+        let result = run(&DashboardArgs::default(), tmp.path()).unwrap();
+        let target = result.session_target.unwrap();
+        assert_eq!(target.feature, "022-foo");
+        assert_eq!(target.scenario.as_deref(), Some("broken"));
+        assert!(
+            target.scenario_detail.is_none(),
+            "malformed frontmatter must degrade, not error"
+        );
+    }
+
+    #[test]
+    fn session_with_scenario_missing_frontmatter_degrades_to_detail_less_target() {
+        // No `---` fence at all — the split itself fails. Same
+        // degradation as the parse-failure case.
+        let tmp = TempDir::new().unwrap();
+        write_spec(
+            tmp.path(),
+            "022-foo",
+            "status: in-progress\ndependencies: []\n",
+            "*None — all resolved.*",
+        );
+        let scenarios = tmp.path().join("specs/022-foo/scenarios");
+        std::fs::create_dir_all(&scenarios).unwrap();
+        std::fs::write(
+            scenarios.join("bare.md"),
+            "# Bare\n\n## Context\n\nNo frontmatter here.\n",
+        )
+        .unwrap();
+        write_session_toml(
+            tmp.path(),
+            "feature = \"022-foo\"\npath = \"specs/022-foo\"\nscenario = \"bare\"\nscenario-path = \"specs/022-foo/scenarios/bare.md\"\nset-at = \"2026-05-23T12:34:56Z\"\n",
+        );
+        let result = run(&DashboardArgs::default(), tmp.path()).unwrap();
+        let target = result.session_target.unwrap();
+        assert_eq!(target.scenario.as_deref(), Some("bare"));
+        assert!(target.scenario_detail.is_none());
     }
 }

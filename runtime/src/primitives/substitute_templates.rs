@@ -23,6 +23,7 @@ use std::path::{Path, PathBuf};
 
 use walkdir::WalkDir;
 
+use crate::primitives::apply_manifest::mirror_source_mode;
 use crate::primitives::{PrimitiveError, Result, write_atomic_bytes};
 use crate::schema::primitives::{SubstituteTemplatesArgs, SubstituteTemplatesResult};
 
@@ -75,6 +76,11 @@ pub fn run(args: &SubstituteTemplatesArgs, repo: &Path) -> Result<SubstituteTemp
         };
 
         write_atomic_bytes(&dest_path, &written_bytes)?;
+        // `write_atomic_bytes` lands the output at the tempfile's mode
+        // (0600 on Unix), discarding the source's — fatal for shipped
+        // executables (generator scripts, hooks). Mirror the source
+        // file's permissions, matching apply-manifest / extract-archive.
+        mirror_source_mode(abs, &dest_path)?;
         substitutions_applied = substitutions_applied.saturating_add(replaced);
         files.push(rel.to_string_lossy().replace('\\', "/"));
     }
@@ -209,6 +215,55 @@ mod tests {
         assert_eq!(result.files_written, 1);
         assert_eq!(result.substitutions_applied, 0);
         assert_eq!(fs::read(dst.join("bin.dat")).unwrap(), bin);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn executable_source_produces_executable_output() {
+        // Regression (scenario primitive-robustness-hardening): outputs
+        // landed at the 0600 tempfile mode, stripping the source's +x bit.
+        use std::os::unix::fs::PermissionsExt;
+
+        let tmp = tempfile::tempdir().unwrap();
+        let src = tmp.path().join("src");
+        let dst = tmp.path().join("dst");
+        fs::create_dir_all(&src).unwrap();
+        fs::write(src.join("gen.sh"), "#!/bin/sh\necho {project}\n").unwrap();
+        fs::set_permissions(src.join("gen.sh"), fs::Permissions::from_mode(0o755)).unwrap();
+        fs::write(src.join("plain.md"), "# {project}\n").unwrap();
+
+        let args = SubstituteTemplatesArgs {
+            source_dir: src.to_string_lossy().into_owned(),
+            target_dir: dst.to_string_lossy().into_owned(),
+            substitutions: map(&[("project", "anvil")]),
+        };
+        let result = run(&args, tmp.path()).unwrap();
+        assert_eq!(result.files_written, 2);
+
+        let script_mode = fs::metadata(dst.join("gen.sh"))
+            .unwrap()
+            .permissions()
+            .mode();
+        assert_ne!(
+            script_mode & 0o111,
+            0,
+            "executable source must yield executable output, got {script_mode:o}"
+        );
+        // Substitution still applied to the executable's content.
+        assert_eq!(
+            fs::read_to_string(dst.join("gen.sh")).unwrap(),
+            "#!/bin/sh\necho anvil\n"
+        );
+        // Non-executable sibling stays non-executable.
+        let plain_mode = fs::metadata(dst.join("plain.md"))
+            .unwrap()
+            .permissions()
+            .mode();
+        assert_eq!(
+            plain_mode & 0o111,
+            0,
+            "non-executable source must stay non-executable, got {plain_mode:o}"
+        );
     }
 
     #[test]

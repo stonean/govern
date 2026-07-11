@@ -13,7 +13,11 @@ use crate::schema::primitives::{
     FrontmatterFinding, ValidateFrontmatterArgs, ValidateFrontmatterResult,
 };
 
-const ALLOWED_STATUSES: &[&str] = &["draft", "clarified", "planned", "in-progress", "done"];
+/// The constitution's lifecycle set. `pub(crate)` so `set-status` reuses
+/// the same membership list instead of growing a drifting copy (a later
+/// consolidation pass owns promoting this to a schema-level const).
+pub(crate) const ALLOWED_STATUSES: &[&str] =
+    &["draft", "clarified", "planned", "in-progress", "done"];
 
 /// Execute the `validate-frontmatter` primitive.
 ///

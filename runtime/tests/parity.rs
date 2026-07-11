@@ -350,7 +350,9 @@ fn repo_root() -> PathBuf {
 }
 
 fn runtime_binary() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/release/gvrn")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("target/release")
+        .join(format!("gvrn{}", std::env::consts::EXE_SUFFIX))
 }
 
 fn ensure_binary_built() {
