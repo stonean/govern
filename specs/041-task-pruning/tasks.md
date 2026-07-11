@@ -90,5 +90,5 @@ Surfaced by the pre-`done` durability review: `tasks.md` must be treated as disp
 
 ### 13. Relax `/{project}:analyze` scenario-consistency for pruned tasks
 
-- [ ] Update `framework/commands/analyze.md` so the scenario-consistency check does not require a scenario's implementing task to persist in `tasks.md` after the scenario is implemented (a `done` spec with pruned scenario tasks is not a drift finding); regenerate the materialized command.
+- [x] Update `framework/commands/analyze.md` so the scenario-consistency check does not require a scenario's implementing task to persist in `tasks.md` after the scenario is implemented (a `done` spec with pruned scenario tasks is not a drift finding); regenerate the materialized command.
 - **Done when**: analyze reports no false scenario-consistency finding for a `done` spec whose scenario tasks were pruned; the framework audit is clean.

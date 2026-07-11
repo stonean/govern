@@ -116,8 +116,8 @@ Reference: the schema is canonically declared in `framework/constitution.md` §t
 ### Scenario consistency (advisory)
 
 - Every scenario file has Context and Behavior sections (frontmatter `spec-ref` is checked under Frontmatter schema above)
-- Every scenario file in `scenarios/` has a corresponding task in `tasks.md`
-- Scenario-linked tasks in `tasks.md` are marked complete if the spec status is `done`
+- Every scenario file in `scenarios/` has a corresponding task in `tasks.md` **only while that task is still pending**. `tasks.md` is an ephemeral tracking artifact (§tasks-phase) that `/gov:prune` reduces once work is complete, so a *missing* scenario task is a finding only when the scenario is unimplemented; do NOT flag a scenario whose task was completed and pruned, and do NOT flag any scenario under a `done` spec (its tasks may have been pruned, or the file reset to template state). The durable record of an implemented scenario is the scenario file, the code, and git history — not a retained checkbox.
+- A scenario task that is *still present* in `tasks.md` is marked complete when the spec status is `done`; an absent (pruned) scenario task is not treated as incomplete.
 
 ### Cross-spec references (advisory)
 
