@@ -722,6 +722,66 @@ pub(crate) fn is_feature_slug(name: &str) -> bool {
         && bytes[3] == b'-'
 }
 
+/// Parse the `## Affected Files` markdown table in a plan body and return
+/// the first-column path entries in document order. Tolerates rows with
+/// backtick-wrapped paths and skips the header separator row. Shared by the
+/// writeCode plan reader (`interpreter::payload`) and `compute-review-scope`
+/// so both readers agree on the one canonical plan format (a table; see spec
+/// 022 task 47).
+pub(crate) fn parse_affected_files(plan_content: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut in_section = false;
+    let mut in_fence = false;
+    let mut saw_header = false;
+    for line in plan_content.lines() {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with("```") {
+            in_fence = !in_fence;
+            continue;
+        }
+        if in_fence {
+            continue;
+        }
+        if let Some(rest) = trimmed.strip_prefix("## ") {
+            // Heading boundary: enter the section when we hit its header,
+            // exit on any other H2.
+            in_section = rest.trim().eq_ignore_ascii_case("Affected Files");
+            saw_header = false;
+            continue;
+        }
+        if !in_section {
+            continue;
+        }
+        if !trimmed.starts_with('|') {
+            continue;
+        }
+        // Skip the separator row (e.g., `| --- | --- | --- |`).
+        if trimmed
+            .bytes()
+            .all(|b| matches!(b, b'|' | b'-' | b':' | b' '))
+        {
+            saw_header = true;
+            continue;
+        }
+        if !saw_header {
+            // First row is the header (`| File | Action | ... |`) — skip
+            // until the separator passes.
+            continue;
+        }
+        // Strip the leading `|`, take the first cell.
+        let after_pipe = trimmed.trim_start_matches('|');
+        let Some((cell, _)) = after_pipe.split_once('|') else {
+            continue;
+        };
+        let path = cell.trim().trim_matches('`').trim().to_string();
+        if path.is_empty() {
+            continue;
+        }
+        out.push(path);
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
@@ -870,6 +930,50 @@ mod tests {
         let body = "## A\n\nfirst\n\n## B\n\nx\n\n## A\n\nsecond\n";
         let a = section_lines(body, "A");
         assert_eq!(a, vec!["", "first", "", "", "second"]);
+    }
+
+    #[test]
+    fn parse_affected_files_extracts_first_column_paths() {
+        let plan = "# Plan\n\n\
+                    ## Affected Files\n\n\
+                    | File | Action | Purpose |\n\
+                    | --- | --- | --- |\n\
+                    | `runtime/src/foo.rs` | Create | Foo |\n\
+                    | `runtime/src/bar.rs` | Edit | Bar |\n\
+                    | scripts/baz.sh | Create | Baz |\n\n\
+                    ## Trade-offs\n\nIrrelevant.\n";
+        let paths = parse_affected_files(plan);
+        assert_eq!(
+            paths,
+            vec![
+                "runtime/src/foo.rs".to_string(),
+                "runtime/src/bar.rs".to_string(),
+                "scripts/baz.sh".to_string()
+            ]
+        );
+    }
+
+    #[test]
+    fn parse_affected_files_handles_missing_section() {
+        let plan = "# Plan\n\n## Trade-offs\n\nNo affected files.\n";
+        let paths = parse_affected_files(plan);
+        assert!(paths.is_empty());
+    }
+
+    #[test]
+    fn parse_affected_files_ignores_table_inside_fenced_block() {
+        let plan = "# Plan\n\n\
+                    ## Affected Files\n\n\
+                    ```text\n\
+                    | not | a | table |\n\
+                    | --- | --- | --- |\n\
+                    | `nope.md` | Create | Fake |\n\
+                    ```\n\n\
+                    | File | Action | Purpose |\n\
+                    | --- | --- | --- |\n\
+                    | `real.md` | Create | Real |\n";
+        let paths = parse_affected_files(plan);
+        assert_eq!(paths, vec!["real.md".to_string()]);
     }
 
     #[test]

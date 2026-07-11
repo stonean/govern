@@ -20,7 +20,7 @@ use std::path::Path;
 use git2::{DiffLineType, DiffOptions, Oid, Repository};
 
 use crate::primitives::check_stuck::find_in_progress_commit;
-use crate::primitives::{PrimitiveError, Result, section_lines};
+use crate::primitives::{PrimitiveError, Result, parse_affected_files};
 use crate::schema::paths;
 use crate::schema::primitives::{ComputeReviewScopeArgs, ComputeReviewScopeResult};
 
@@ -128,30 +128,14 @@ fn diff_since(
 }
 
 /// Parse a feature's `plan.md` `## Affected Files` section into a list of file
-/// paths. Each list item's first token (backticks stripped) is the path.
+/// paths, using the shared canonical-table parser (`parse_affected_files`) so
+/// `compute-review-scope` and the writeCode plan reader agree on one format.
 /// Returns an empty list when `plan.md` is absent or has no such section.
 fn read_plan_affected(feature_dir: &Path) -> Vec<String> {
     let Ok(content) = std::fs::read_to_string(feature_dir.join("plan.md")) else {
         return Vec::new();
     };
-    let mut files = Vec::new();
-    for line in section_lines(&content, "Affected Files") {
-        let trimmed = line.trim_start();
-        let Some(rest) = trimmed.strip_prefix("- ") else {
-            continue;
-        };
-        let token = rest
-            .trim()
-            .trim_start_matches('`')
-            .split(['`', ' '])
-            .next()
-            .unwrap_or("")
-            .trim();
-        if !token.is_empty() {
-            files.push(token.to_string());
-        }
-    }
-    files
+    parse_affected_files(&content)
 }
 
 #[cfg(test)]
@@ -254,7 +238,12 @@ mod tests {
         write(&tmp.path().join("src/only.rs"), "fn only() {}\n");
         write(
             &tmp.path().join("specs/001-x/plan.md"),
-            "# Plan\n\n## Affected Files\n\n- `src/one.rs`\n- `src/two.rs` — the second\n- `src/three.rs`\n",
+            "# Plan\n\n## Affected Files\n\n\
+             | File | Action | Purpose |\n\
+             | --- | --- | --- |\n\
+             | `src/one.rs` | Edit | one |\n\
+             | `src/two.rs` | Edit | the second |\n\
+             | `src/three.rs` | Edit | three |\n",
         );
         commit_all(&repo, "feat: implement");
         let result = run(&args("001-x", None), tmp.path()).unwrap();
