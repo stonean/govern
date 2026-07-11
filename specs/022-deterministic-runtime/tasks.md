@@ -481,3 +481,57 @@ Follow-on to task 45c: `compute-review-scope`'s `read_plan_affected` parses `## 
 - [x] Implement the behavior described in `scenarios/waiver-processing-order.md`
 
 - **Done when**: `framework/commands/review.md` (source, placeholder form) orders `process-waivers` after the five passes and before `write-review` in both the numbered steps and the markdown-only reference; the exec walker binds accumulated findings to `fired`; `review_command.rs` and the review golden/parity capture pin the corrected sequence; `cargo test` green.
+
+## 54. Implement scenario: [primitive-robustness-hardening](scenarios/primitive-robustness-hardening.md)
+
+- [ ] Implement the behavior described in `scenarios/primitive-robustness-hardening.md`
+
+- **Done when**: Path validation applied uniformly (enforce-manifest, apply-manifest entries, merge-managed-block, merge-permissions); check-stuck is branch-shape tolerant and CRLF-safe; write-review reads before writing; substitute-templates mirrors modes; create-scenario/append-task sanitize inputs; dashboard degrades on malformed scenarios; check-rule-ids scopes deprecation to the rule's section; set-status validates lifecycle membership — each with regression tests, `cargo test` green.
+
+## 55. Implement scenario: [archive-network-hardening](scenarios/archive-network-hardening.md)
+
+- [ ] Implement the behavior described in `scenarios/archive-network-hardening.md`
+
+- **Done when**: fetch-archive's blocking HTTP is wrapped at the MCP seam, over-cap bodies error instead of truncating, checksum doc matches fail-before-write behavior; extract-archive skips zip symlinks and masks modes to 0o777 — each with tests, `cargo test` green.
+
+## 56. Implement scenario: [parser-walker-conventions](scenarios/parser-walker-conventions.md)
+
+- [ ] Implement the behavior described in `scenarios/parser-walker-conventions.md`
+
+- **Done when**: Parsed step numbers match document numbering across all rewritten commands (comment-split lists continue numbering); a `gate-confirm` step blocks regardless of prose phrasing and never drops a dispatch; benign kebab-case spans no longer fail parsing; prune.md parses and leaves legacy-prose-commands.txt; the parseability lint rejects Invalid for allowlisted files; goldens re-blessed with verified diffs; `cargo test` green.
+
+## 57. Implement scenario: [extension-request-hygiene](scenarios/extension-request-hygiene.md)
+
+- [ ] Implement the behavior described in `scenarios/extension-request-hygiene.md`
+
+- **Done when**: Walker-internal keys are filtered from every extension request; writeSpecBody populates its documented fields (or the data model is amended); read_existing_section is command-aware; askClarifyQuestion and routeInboxItem have typed builders — with tests, affected goldens re-blessed, `cargo test` green.
+
+## 58. Implement scenario: [implement-completion-gate](scenarios/implement-completion-gate.md)
+
+- [ ] Implement the behavior described in `scenarios/implement-completion-gate.md`
+
+- **Done when**: implement.md's completion gate is numbered parseable steps invoking read-tasks, read-spec, mark-criterion, and set-status with the review-gate reads and halt messages; mark-criterion has its first prose consumer; the markdown-only reference matches; parseability and lint-tool-coverage pass; implement golden re-blessed; `cargo test` green.
+
+## 59. Implement scenario: [clarify-command-acceleration](scenarios/clarify-command-acceleration.md)
+
+- [ ] Implement the behavior described in `scenarios/clarify-command-acceleration.md`
+
+- **Done when**: clarify.md parses cleanly under the conventions naming read-spec, traverse-deps, run-generator, lint-markdown, set-status and the askClarifyQuestion marker; the file leaves legacy-prose-commands.txt; markdown-only reference preserved; parseability + lint-tool-coverage pass; `cargo test` green.
+
+## 60. Implement scenario: [groom-command-acceleration](scenarios/groom-command-acceleration.md)
+
+- [ ] Implement the behavior described in `scenarios/groom-command-acceleration.md`
+
+- **Done when**: groom.md parses cleanly, routes each item via the routeInboxItem marker, and invokes create-scenario/append-task/set-status/write-session instead of re-specifying the writes long-hand; the file leaves legacy-prose-commands.txt; parseability + lint-tool-coverage pass; `cargo test` green.
+
+## 61. Implement scenario: [scaffolding-primitives](scenarios/scaffolding-primitives.md)
+
+- [ ] Implement the behavior described in `scenarios/scaffolding-primitives.md`
+
+- **Done when**: write-session has a clear mode; resolve-feature, create-feature, and append-inbox exist with full six-site wiring, runtime-tools.txt entries, data-model entries, and regenerated configure permission blocks; target.md/specify.md/log.md invoke them (stale no-primitive claim deleted); plan.md/specify.md gates use gate-confirm; raw gen-spec-deps.sh references route through run-generator; all lints and `cargo test` green.
+
+## 62. Implement scenario: [analyze-artifact-checks](scenarios/analyze-artifact-checks.md)
+
+- [ ] Implement the behavior described in `scenarios/analyze-artifact-checks.md`
+
+- **Done when**: check-artifacts exists (full wiring + runtime-tools.txt + data-model + configure regen) reporting artifact-completeness, task-consistency, scenario→task-mapping (prune-aware per §tasks-phase), and review-state-drift findings with the reference's severity tiers; analyze.md invokes it in a numbered step; analyze golden re-blessed; `cargo test` green.
