@@ -15,12 +15,12 @@ test before the command (Phase B) wires to it.
 
 ### 2. Segmentation, classification, and rebuild
 
-- [ ] Create `runtime/src/primitives/prune_tasks.rs` with `run(&PruneTasksArgs, &Path) -> Result<PruneTasksResult>`: segment via `detect_tasks_structure` / `parse_atx_heading` / `iter_phase_ranges`, and classify each task section `Spent` / `Pending` / `NoCheckbox` using `checkbox::find_checkbox_line`.
-- [ ] Implement keep-pending rebuild: drop `Spent` sections, drop phase containers with no surviving task section, preserve the preamble verbatim, normalize seams to one blank line, and set `nothing-to-prune` when nothing is spent.
-- [ ] Implement reset rebuild: existing first `# …` heading + a `CANONICAL_EMPTY_TASKS_BODY` constant, with a test asserting the constant equals `framework/templates/spec/tasks.md` minus its H1.
-- [ ] Implement the `--reset` status gate (read `spec.md` status; `allowed` / `blocked-needs-force`; `force` override; domain-outcome, not error) and the `apply` write via `write_atomic`.
-- [ ] Add `TasksFileMissing` and `MalformedTasks` variants to `PrimitiveError` and `pub mod prune_tasks;` in `runtime/src/primitives/mod.rs`.
-- [ ] Add inline `#[cfg(test)]` tests + fixtures under `runtime/tests/fixtures/primitives/` covering flat and phased spent-section removal, pending / no-checkbox preservation, empty-phase drop, keep-pending no-op, reset target, reset gate (done vs non-done vs `force`), missing `tasks.md`, and malformed `tasks.md`.
+- [x] Create `runtime/src/primitives/prune_tasks.rs` with `run(&PruneTasksArgs, &Path) -> Result<PruneTasksResult>`: segment via `detect_tasks_structure` / `parse_atx_heading` / `iter_phase_ranges`, and classify each task section `Spent` / `Pending` / `NoCheckbox` using `checkbox::find_checkbox_line`.
+- [x] Implement keep-pending rebuild: drop `Spent` sections, drop phase containers with no surviving task section, preserve the preamble verbatim, normalize seams to one blank line, and set `nothing-to-prune` when nothing is spent.
+- [x] Implement reset rebuild: existing first `# …` heading + a `CANONICAL_EMPTY_TASKS_BODY` constant, with a test asserting the constant equals `framework/templates/spec/tasks.md` minus its H1.
+- [x] Implement the `--reset` status gate (read `spec.md` status; `allowed` / `blocked-needs-force`; `force` override; domain-outcome, not error) and the `apply` write via `write_atomic`.
+- [x] Add `TasksFileMissing` and `MalformedTasks` variants to `PrimitiveError` and `pub mod prune_tasks;` in `runtime/src/primitives/mod.rs`.
+- [x] Add inline `#[cfg(test)]` tests + fixtures under `runtime/tests/fixtures/primitives/` covering flat and phased spent-section removal, pending / no-checkbox preservation, empty-phase drop, keep-pending no-op, reset target, reset gate (done vs non-done vs `force`), missing `tasks.md`, and malformed `tasks.md`.
 - **Done when**: all `prune_tasks` unit tests pass and preview output carries no file body.
 
 ### 3. Wire the primitive through CLI, MCP, interpreter, parser

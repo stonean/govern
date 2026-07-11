@@ -31,6 +31,7 @@ pub mod merge_managed_block;
 pub mod merge_permissions;
 pub mod migrate_session_file;
 pub mod process_waivers;
+pub mod prune_tasks;
 pub mod read_spec;
 pub mod read_tasks;
 pub mod resolve_anchor;
@@ -306,6 +307,24 @@ pub enum PrimitiveError {
         root: String,
         /// Feature directory name that lacks a `spec.md`.
         feature: String,
+    },
+    /// Feature directory exists but has no `tasks.md`. `prune-tasks` raises
+    /// this so the command can direct the user to run the plan phase.
+    #[error("tasks.md not found: {root}/{feature}/tasks.md")]
+    TasksFileMissing {
+        /// Configured spec-root directory name (default `specs`; spec 040).
+        root: String,
+        /// Feature whose tasks file is missing.
+        feature: String,
+    },
+    /// `prune-tasks --reset` found a `tasks.md` with no `# …` heading, so it
+    /// cannot preserve the feature identity for the reset. Writes nothing.
+    #[error("malformed tasks.md at {path}: {reason}")]
+    MalformedTasks {
+        /// Path of the offending tasks file.
+        path: PathBuf,
+        /// One-line description of the structural problem.
+        reason: String,
     },
     /// `[rules] surfaces` named a member outside `{backend, frontend}`.
     /// `discover-rule-files` fails fast rather than silently ignoring it.
