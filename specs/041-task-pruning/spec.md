@@ -39,17 +39,17 @@ The command's scope is `tasks.md` only. It does not edit the plan, the spec, sce
      deferred to Open Questions and resolved by /{project}:clarify. The criteria
      below capture the behavior that holds regardless of how those resolve. -->
 
-- [ ] A `/{project}:prune` command exists and, with no argument, operates on the current session target's `tasks.md`.
-- [ ] Running prune on a `tasks.md` that contains completed task sections produces a materially smaller file.
-- [ ] Prune preserves every incomplete task section — a section with any unchecked checkbox is never silently removed.
-- [ ] Prune's output is a valid `tasks.md`: it starts with the template's top-level heading, passes `npx markdownlint-cli2`, and passes the `/{project}:analyze` task-consistency checks for the feature's current status.
-- [ ] Prune requires explicit user confirmation before writing the reduced file; declining leaves `tasks.md` unchanged.
-- [ ] A full reset restores `tasks.md` to the template's initial state (heading plus guidance comment) with no residual task entries.
-- [ ] Pruned content is recoverable only from git history — prune writes no backup file or gitignored sidecar.
-- [ ] `/{project}:prune --reset` on a non-`done` spec refuses — naming the current status and pointing at the keep-pending default — and writes nothing unless `--force` is also supplied.
-- [ ] Running prune when no task section is spent makes no write and reports that there is nothing to prune.
-- [ ] Prune stops without writing when there is no session target (directs to `/{project}:target`) or the target has no `tasks.md` (directs to `/{project}:plan`).
-- [ ] The reduction is produced and written by the deterministic runtime prune primitive, with the file body never round-tripped through agent context; the markdown-only fallback reaches identical bytes.
+- [x] A `/{project}:prune` command exists and, with no argument, operates on the current session target's `tasks.md`.
+- [x] Running prune on a `tasks.md` that contains completed task sections produces a materially smaller file.
+- [x] Prune preserves every incomplete task section — a section with any unchecked checkbox is never silently removed.
+- [x] Prune's output is a valid `tasks.md`: it starts with the template's top-level heading, passes `npx markdownlint-cli2`, and passes the `/{project}:analyze` task-consistency checks for the feature's current status.
+- [x] Prune requires explicit user confirmation before writing the reduced file; declining leaves `tasks.md` unchanged.
+- [x] A full reset restores `tasks.md` to the template's initial state (heading plus guidance comment) with no residual task entries.
+- [x] Pruned content is recoverable only from git history — prune writes no backup file or gitignored sidecar.
+- [x] `/{project}:prune --reset` on a non-`done` spec refuses — naming the current status and pointing at the keep-pending default — and writes nothing unless `--force` is also supplied.
+- [x] Running prune when no task section is spent makes no write and reports that there is nothing to prune.
+- [x] Prune stops without writing when there is no session target (directs to `/{project}:target`) or the target has no `tasks.md` (directs to `/{project}:plan`).
+- [x] The reduction is produced and written by the deterministic runtime prune primitive, with the file body never round-tripped through agent context; the markdown-only fallback reaches identical bytes.
 
 ## Edge Cases
 
