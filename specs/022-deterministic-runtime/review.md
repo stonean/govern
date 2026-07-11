@@ -1,63 +1,126 @@
 ---
 spec: 022-deterministic-runtime
-reviewed-at: 2026-06-20T18:12:31Z
-reviewed-against: 5fb4be3
-diff-base: 5fb4be3
+scenario: review-exec-wiring
+reviewed-at: 2026-07-11T01:10:55Z
+reviewed-against: 2733d9d
+diff-base: a525beb
 must-violations: 0
-should-violations: 1
-low-confidence: 2
-captured-issues: 0
+should-violations: 0
+low-confidence: 3
+captured-issues: 1
 skipped-passes: []
-notes: "Scoped to the uncommitted gvrn 0.13.0 runtime changes (git diff HEAD -- runtime/), layered on 5fb4be3 — the code under review is the working tree, not a committed sha. Supersedes the prior commands-dir-parameterization scenario review."
 ---
 
 # Review — 022-deterministic-runtime
 
 ## Summary
 
-Scoped to the uncommitted gvrn 0.13.0 runtime changes (`git diff HEAD -- runtime/src runtime/tests`, layered on `5fb4be3`): the `merge-managed-block` group-alignment rewrite, the `cli-config-dir` relocation (`host.rs` read order, `write-session` merge-writer, `dashboard` optional feature), and OpenCode command resolution (`command_file_candidates`). **No MUST violations — not blocking.** The headline behaviors verified correct: the merge-writer preserves `cli-config-dir` on a target write and the target block on a host-config write; `host.rs` precedence (session → legacy `[host]` → default) is sound; `command_file_candidates` plural-first ordering is backward-compatible; the two-pointer walk cannot infinite-loop or panic on byte offsets / multibyte UTF-8 (slicing only at `\n`/string-end; `ci` strictly increases, bounded by `canon.len()`). No security-rule violations: `cli-config-dir` is config-file input (not a boundary request), resolved paths are `repo.join`ed and existence-checked, TOML parse errors are handled, and the atomic tempfile+rename write is preserved. One advisory SHOULD (a pre-existing, documented `walk_body_extent` edge case) and two low-confidence findings remain; one low-confidence simplicity finding (dead `Default` derives) was fixed inline during the review.
+Scope: 60 files modified since the spec re-entered `in-progress` at `a525beb`
+(the tasks 45–46 work — the review primitives, the exec-walker result-threading,
+the rewritten command set, and the `review-basic` fixture), reviewed against the
+11 loaded rule files across five passes. Posture is strong: sound path-containment
+and secret screening on the writeCode plan reader, TOCTOU-safe atomic writes,
+data-only deserialization, and no frontend code in scope. The two MUST violations
+found on the prior run (2026-07-07) — a path-traversal gap in the `performReview`
+scope-file reader and a silent-pass-through where waiver results failed to thread
+into `write-review` on the exec path — were **fixed directly this run** and are
+recorded under Resolved this run. **No MUST violations remain — not blocking.**
+Three low-confidence findings (non-blocking) and one captured issue remain.
 
 ## MUST violations (blocking)
 
-_None._
+*None.*
 
 ## SHOULD violations (advisory)
 
-### SHOULD: none — `walk_body_extent` consumes adopter content when a canonical subsection is appended at the very end
-
-- **File**: `runtime/src/primitives/merge_managed_block.rs:358-388` (`walk_body_extent`)
-- **Rule**: none (correctness — data-loss edge case; maps to no rule ID)
-- **Finding**: When the new canonical **appends** a subsection at the _end_ of the managed block AND the adopter has their own content immediately after the block, the trailing adopter group shares no pattern with the leftover canonical group and there is no _later_ canonical group to realign against, so it falls into the "full rewrite" branch (`ci += 1`) and is consumed into `block_end` — then silently dropped when `merge_line_prefix` replaces the block. The mid-insert direction (what the shipped gitignore template actually does — agents are inserted before the stable `# IDE`/`# OS` trailer) is handled correctly, which is why the regression test passes.
-- **Severity rationale**: Advisory, not blocking, because (a) it is **pre-existing** — the prior line-shape walk had the same behavior; this rewrite neither introduced nor worsened it; (b) it is **documented** as a known edge case in [`scenarios/merge-managed-block-subsection-insertion.md`](scenarios/merge-managed-block-subsection-insertion.md) ("Subsection appended at the end + adopter content follows"); and (c) it is **not reachable through current framework usage** (the template never appends after adopter territory).
-- **Auto-fixable**: no
-- **Suggested fix**: The instinctive fix (break instead of consume when `ci` is the last canonical group and the on-disk group matches nothing) is **unsafe** — it would break the full-replacement case (`line_prefix_updates_in_place_preserving_surrounding_content`: `.old/` → `.claude/`), which is locally indistinguishable from an adopter tail. The sound fix is to give the line-prefix managed block an explicit END sentinel (a valid `#`-comment terminator) so the block is unambiguously bounded regardless of structural change. That is a larger design change requiring a one-time migration for existing adopters and is deferred — tracked as the END-sentinel direction in the subsection-insertion scenario.
+*None.*
 
 ## Low-confidence findings
 
-### quality (confidence 70) — removed middle subsection left as orphan adopter content
+### LOW · BE-INPUT-004 — write-review builds its write path from an unvalidated `feature`
 
-- **File**: `runtime/src/primitives/merge_managed_block.rs:358-388`
-- **Finding**: If a future canonical _removes_ a middle subsection the on-disk block still has, that subsection is left below the managed block as orphan content rather than dropped. Low impact: the shipped template only ever adds agent subsections, never removes. Documented as the "Subsection removed between runs" edge case in the subsection-insertion scenario.
-- **Auto-fixable**: no
+- **File**: `runtime/src/primitives/write_review.rs:46-91`
+- **Finding**: `run()` computes `feature_dir = repo.join(&root).join(&args.feature)`
+  and `write_atomic`s `review.md` / rewrites `spec.md` there with no
+  traversal/containment check on `feature` (the sibling `create_scenario`
+  validates its feature path for exactly this). A `feature` like
+  `../../../elsewhere` would direct writes outside the specs root, gated only by a
+  pre-existing `spec.md` at the target. Low confidence: `feature` is a
+  semi-trusted session/orchestrator routing key (validated to an existing specs
+  dir by `/gov:target`) rather than raw external input, and the pattern is shared
+  with the read-only review primitives. **Auto-fixable**: no. **Suggested fix**:
+  mirror `create_scenario`'s `validate_no_traversal` on `feature`.
 
-### reuse (confidence 55) — residual candidate-list duplication across the two resolution callsites
+### LOW · QUAL-STUB-001 — read_plan_affected parses a bullet list but real plans use tables
 
-- **File**: `runtime/src/main.rs:211-230`, `runtime/src/interpreter/payload.rs:255-270`
-- **Finding**: Both callsites assemble the same 3-segment candidate list (`framework/commands/<name>.md`, then `host.command_file_candidates(...)`, then `framework/bootstrap/<name>.md`), differing only in `PathBuf`/`.exists()` vs `String`/`.is_file()`. The _variable_ middle is correctly centralized in the new helper (the real reuse win); only the two fixed framework segments and the ordering remain duplicated. Not worth the churn unless these callsites are touched again.
-- **Auto-fixable**: no
+- **File**: `runtime/src/primitives/compute_review_scope.rs:130-155`
+- **Finding**: `read_plan_affected` only accepts dash-prefixed bullet items under
+  `## Affected Files`, but the canonical format (the plan template and all real
+  `specs/*/plan.md`) is a Markdown table, which the pre-existing
+  `payload.rs::parse_affected_files` already parses. Every table row is skipped,
+  so `plan_affected` is silently `[]` for every real plan and
+  compute-review-scope's "larger set wins" branch is dead in production — scope
+  always collapses to `modified_since`. Low confidence: maps to QUAL-STUB-001 by
+  symptom (a reachable, work-implying path returning empty with no loud signal)
+  but is arguably a plain correctness/reuse-divergence bug. **This is the same
+  issue tracked under Captured issues below.** **Auto-fixable**: yes — promote
+  `payload::parse_affected_files` to a shared helper and call it here (and switch
+  the misleading bullet-form test fixture to a table).
+
+### LOW · QUAL-STUB-001 — process-waivers `fired` is never populated on the exec path
+
+- **File**: `runtime/src/schema/primitives.rs:116-119`
+- **Finding**: `ProcessWaiversArgs.fired` is read from context key `fired`, but the
+  walker accumulates findings under `findings`, and the `process-waivers` step
+  (review step 3) runs before the five `performReview` passes (steps 4–8) that
+  produce them. So `fired` is always empty on `runtime exec review`: no rule ever
+  "still fires," `applied` is always empty, and every waiver is classified
+  expired. Low confidence: the root cause is the linear-walker step ordering,
+  partly acknowledged as a known exec-path limitation in the `review-exec-wiring`
+  scenario's Edge Cases, and it is partly masked by (now that the key mismatch is
+  fixed) the applied/expired threading. **Auto-fixable**: no — needs walker-level
+  ordering/conditional support (a separate follow-on). The
+  `applied_waiver_threads_from_process_waivers_into_write_review` walker test
+  exercises the threading by seeding `fired` directly.
 
 ## Waived findings
 
-_None._
+*None.*
 
 ## Captured issues (pending /gov:groom)
 
-_None — no additions to `specs/inbox.md` in the review window._
+One issue was logged to `specs/inbox.md` during the work window (informational —
+not a review finding, does not affect the blocking count):
+
+- Latent bug: `compute-review-scope`'s `read_plan_affected`
+  (`runtime/src/primitives/compute_review_scope.rs:133`) parses `## Affected Files`
+  as a bullet list, but every real plan and the `/gov:plan` template emit a
+  Markdown table (which `payload.rs::parse_affected_files` parses correctly), so
+  for real plans `read_plan_affected` returns empty and review scope silently
+  drops the plan-affected half. Surfaced 2026-07-06 during task 46b. Route with
+  `/gov:groom`. (Also recorded as a low-confidence finding above.)
+
+## Resolved this run
+
+The two MUST violations from the 2026-07-07 run were fixed directly (code + tests)
+before this report was regenerated:
+
+- **BE-INPUT-004 — performReview scope reader path traversal**
+  (`runtime/src/interpreter/payload.rs`). Added a shared `classify_contained`
+  helper (canonicalize + repo-root containment) and applied it in
+  `load_scope_files` (the finding) and `load_rule_files` (defensively);
+  refactored `load_plan_relevant_files` to share it, preserving its
+  error-on-escape behavior. An absolute or traversing `scope` entry is now
+  skipped, never read into the review payload. Test:
+  `payload::tests::load_scope_files_confines_reads_to_the_repo_root`.
+- **QUAL-STUB-001 — waiver results silently dropped on the exec path**
+  (`runtime/src/schema/primitives.rs`). Added `#[serde(alias = "applied")]` /
+  `#[serde(alias = "expired")]` to `WriteReviewArgs.applied_waivers` /
+  `expired_waivers`, so `write-review` reads `process-waivers`' bare result keys
+  as the walker threads them (backward-compatible — the kebab-case
+  `applied-waivers` / `expired-waivers` still deserialize). Test:
+  `walker::applied_waiver_threads_from_process_waivers_into_write_review`.
 
 ## Skipped passes
 
-_None — all five passes (security, reuse, quality, efficiency, simplicity) ran._
-
-## Applied during review
-
-- **simplicity (was low-confidence): dead `Default` derives removed.** `SessionHost` (`runtime/src/host.rs`) and `SessionFile` (`runtime/src/primitives/dashboard.rs`) derived `Default` but never used it (both deserialize via `.ok()?` / `map_err`, not `default()`). Removed both derives; `ExistingSession`'s `Default` is genuinely used (`unwrap_or_default`) and was left intact. Build, clippy (`-D warnings`), and the host/dashboard unit tests stay green.
+*None — all five passes ran.*

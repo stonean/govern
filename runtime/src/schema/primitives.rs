@@ -250,13 +250,17 @@ pub struct WriteReviewArgs {
     #[arg(skip)]
     pub findings: Vec<ReviewFinding>,
     /// Applied waivers from `process-waivers`; matching findings are excluded
-    /// from the counts and listed under Waived findings.
-    #[serde(default)]
+    /// from the counts and listed under Waived findings. The `alias` reads
+    /// `process-waivers`' `applied` result key directly, so the waiver set
+    /// threads through the exec walker's context (which merges primitive
+    /// results by their bare key) as well as the MCP/host path.
+    #[serde(default, alias = "applied")]
     #[arg(skip)]
     pub applied_waivers: Vec<WaiverRef>,
     /// Expired waivers from `process-waivers`; dropped from the spec
-    /// frontmatter `review.waivers` list on this write.
-    #[serde(default)]
+    /// frontmatter `review.waivers` list on this write. The `alias` reads
+    /// `process-waivers`' `expired` result key (see `applied_waivers`).
+    #[serde(default, alias = "expired")]
     #[arg(skip)]
     pub expired_waivers: Vec<WaiverRef>,
     /// Inbox additions in the review window from `compute-review-scope`;

@@ -131,16 +131,53 @@ fn build_perform_review_request(context: &Map<String, Value>, repo: &Path) -> Va
     Value::Object(object)
 }
 
+/// Classification of a repo-relative path against the canonicalized repo root
+/// — the BE-INPUT-004 containment primitive shared by the scope, rule, and
+/// plan file readers.
+enum Contained {
+    /// Canonical absolute path that stays inside the repo root.
+    Inside(PathBuf),
+    /// Path does not resolve to an existing file (`canonicalize` failed).
+    Missing,
+    /// Canonical path escapes the repo root — an absolute joinee, a `..`
+    /// traversal, or a symlink whose target lands outside the repo.
+    Outside,
+}
+
+/// Resolve `rel` against the already-canonicalized `canon_repo` and classify
+/// whether its canonical form stays within the repo. Callers decide how to
+/// treat an `Outside` path: the best-effort review readers skip it, while the
+/// writeCode plan reader treats it as an exfiltration attempt and errors.
+fn classify_contained(canon_repo: &Path, rel: &Path) -> Contained {
+    match canon_repo.join(rel).canonicalize() {
+        Ok(abs) if abs.starts_with(canon_repo) => Contained::Inside(abs),
+        Ok(_) => Contained::Outside,
+        Err(_) => Contained::Missing,
+    }
+}
+
 /// Load `scope` paths (from `compute-review-scope`) into `ReviewScopeFile`
-/// records, reading each file's content. Unreadable paths are skipped.
+/// records, reading each file's content.
+///
+/// BE-INPUT-004: `scope` originates from plan-authored `## Affected Files`
+/// entries (via `compute-review-scope`'s `read_plan_affected`), so each path
+/// is canonicalized and confined to the repo root before it is opened — an
+/// absolute or traversing entry is skipped, never read into the review
+/// payload. Missing and unreadable paths are likewise skipped (best-effort).
 fn load_scope_files(context: &Map<String, Value>, repo: &Path) -> Vec<ReviewScopeFile> {
+    let Ok(canon_repo) = repo.canonicalize() else {
+        return Vec::new();
+    };
     string_array(context, "scope")
         .into_iter()
-        .filter_map(|path| {
-            std::fs::read_to_string(repo.join(&path))
-                .ok()
-                .map(|content| ReviewScopeFile { path, content })
-        })
+        .filter_map(
+            |path| match classify_contained(&canon_repo, Path::new(&path)) {
+                Contained::Inside(abs) => std::fs::read_to_string(&abs)
+                    .ok()
+                    .map(|content| ReviewScopeFile { path, content }),
+                Contained::Missing | Contained::Outside => None,
+            },
+        )
         .collect()
 }
 
@@ -152,13 +189,22 @@ fn load_rule_files(context: &Map<String, Value>, repo: &Path) -> Vec<ReviewRuleF
         .get("rules-dir")
         .and_then(Value::as_str)
         .unwrap_or_default();
+    let Ok(canon_repo) = repo.canonicalize() else {
+        return Vec::new();
+    };
+    // `rules-dir` and `selected` come from `discover-rule-files` (a directory
+    // walk of trusted basenames), but the same BE-INPUT-004 containment check
+    // is applied defensively so the reader cannot escape the repo regardless.
     string_array(context, "selected")
         .into_iter()
         .filter_map(|name| {
-            let path = repo.join(rules_dir).join(&name);
-            std::fs::read_to_string(&path)
-                .ok()
-                .map(|content| ReviewRuleFile { name, content })
+            let rel = Path::new(rules_dir).join(&name);
+            match classify_contained(&canon_repo, &rel) {
+                Contained::Inside(abs) => std::fs::read_to_string(&abs)
+                    .ok()
+                    .map(|content| ReviewRuleFile { name, content }),
+                Contained::Missing | Contained::Outside => None,
+            }
         })
         .collect()
 }
@@ -354,23 +400,23 @@ fn load_plan_relevant_files(
                 pattern: ".gitignore".into(),
             });
         }
-        let abs = canon_repo.join(&rel);
-        let Ok(canon_abs) = abs.canonicalize() else {
+        let canon_abs = match classify_contained(&canon_repo, Path::new(&rel)) {
             // Planned-new file or rename target — omit, don't error.
             // (`canonicalize` errors on missing files; existing behavior
             // preserved.)
-            continue;
-        };
-        if !canon_abs.starts_with(&canon_repo) {
+            Contained::Missing => continue,
             // Path traversal: `../foo`, absolute path, or symlink whose
             // canonical target escapes the repo root. BE-INPUT-004
             // defense-in-depth — the basename-only secret-pattern check
             // above doesn't catch this class.
-            return Err(PayloadError::SecretExfiltration {
-                path: rel,
-                pattern: "out-of-repo".into(),
-            });
-        }
+            Contained::Outside => {
+                return Err(PayloadError::SecretExfiltration {
+                    path: rel,
+                    pattern: "out-of-repo".into(),
+                });
+            }
+            Contained::Inside(abs) => abs,
+        };
         let Ok(content) = std::fs::read_to_string(&canon_abs) else {
             continue;
         };
@@ -1166,5 +1212,41 @@ mod tests {
         assert_eq!(value["pass"], "reuse");
         assert!(value["scope-files"].as_array().unwrap().is_empty());
         assert!(value["rule-files"].as_array().unwrap().is_empty());
+    }
+
+    #[test]
+    fn load_scope_files_confines_reads_to_the_repo_root() {
+        // BE-INPUT-004: a `scope` entry that escapes the repo (absolute or
+        // `..` traversal) or does not exist is skipped, never read into the
+        // performReview payload; only the in-repo file is bundled.
+        let outer = tempdir().unwrap();
+        let repo = outer.path().join("repo");
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(repo.join("src/in.rs"), "fn a() {}").unwrap();
+        // A secret file OUTSIDE the repo the traversal/absolute entries target.
+        fs::write(outer.path().join("secret.txt"), "leaked").unwrap();
+        let abs_secret = outer
+            .path()
+            .join("secret.txt")
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .into_owned();
+
+        let mut ctx = Map::new();
+        ctx.insert(
+            "scope".into(),
+            Value::Array(vec![
+                Value::String("src/in.rs".into()),     // in-repo → read
+                Value::String("../secret.txt".into()), // traversal → skipped
+                Value::String(abs_secret),             // absolute → skipped
+                Value::String("src/absent.rs".into()), // missing → skipped
+            ]),
+        );
+
+        let files = load_scope_files(&ctx, &repo);
+        assert_eq!(files.len(), 1, "only the in-repo scope file is read");
+        assert_eq!(files[0].path, "src/in.rs");
+        assert_eq!(files[0].content, "fn a() {}");
     }
 }

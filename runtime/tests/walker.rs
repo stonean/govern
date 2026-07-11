@@ -333,3 +333,95 @@ fn review_primitive_results_thread_into_perform_review_and_write_review() {
         "the MUST finding set blocking in the spec review block:\n{spec_after}"
     );
 }
+
+/// Regression for the review-exec-wiring waiver gap: `process-waivers` emits
+/// `applied`/`expired`, and `write-review` reads them via serde alias, so an
+/// applied waiver threads through the walker context (which merges primitive
+/// results by bare key) and excludes its finding from the blocking count.
+/// Without the alias the waived MUST would re-block on the exec path.
+#[test]
+fn applied_waiver_threads_from_process_waivers_into_write_review() {
+    let tmp = tempfile::tempdir().unwrap();
+    let spec_dir = tmp.path().join("specs/001-x");
+    std::fs::create_dir_all(&spec_dir).unwrap();
+    // Spec carries a waiver anchored at (SEC-BE-001, src/a.rs).
+    std::fs::write(
+        spec_dir.join("spec.md"),
+        "---\nstatus: in-progress\ndependencies: []\nreview:\n  waivers:\n    \
+         - rule: SEC-BE-001\n      file: src/a.rs\n      \
+         reason: \"Internal-only path behind mTLS; rule targets public endpoints\"\n      \
+         waived-at: 2026-07-07T00:00:00Z\n      waived-by: test@example.com\n---\n\n# X\n",
+    )
+    .unwrap();
+    std::fs::create_dir_all(tmp.path().join("src")).unwrap();
+    std::fs::write(tmp.path().join("src/a.rs"), "fn a() {}\n").unwrap();
+
+    let procedure = Procedure {
+        command: "review".into(),
+        steps: vec![
+            Step::Primitive {
+                number: StepNumber(vec![1]),
+                name: "process-waivers".into(),
+                prose: String::new(),
+                location: loc(),
+            },
+            Step::Primitive {
+                number: StepNumber(vec![2]),
+                name: "write-review".into(),
+                prose: String::new(),
+                location: loc(),
+            },
+        ],
+    };
+
+    let mut context = Map::new();
+    context.insert("feature".into(), Value::String("001-x".into()));
+    context.insert(
+        "reviewed-at".into(),
+        Value::String("2026-07-07T00:00:00Z".into()),
+    );
+    context.insert("reviewed-against".into(), Value::String("headsha0".into()));
+    context.insert("diff-base".into(), Value::String("base0000".into()));
+    // The firing finding — in a live exec run the performReview passes supply
+    // it; seeded here so process-waivers can classify the waiver as applied.
+    context.insert(
+        "fired".into(),
+        serde_json::json!([{ "rule": "SEC-BE-001", "file": "src/a.rs" }]),
+    );
+    context.insert(
+        "findings".into(),
+        serde_json::json!([{
+            "rule": "SEC-BE-001", "severity": "must", "file": "src/a.rs",
+            "line-range": "1", "confidence": "high"
+        }]),
+    );
+
+    let mut reader = Cursor::new(String::new());
+    let mut writer: Vec<u8> = Vec::new();
+    let mut walker = Walker::new(
+        &procedure,
+        tmp.path().to_path_buf(),
+        context,
+        &mut reader,
+        &mut writer,
+    );
+    assert_eq!(walker.run().unwrap(), WalkOutcome::Complete);
+
+    let review = std::fs::read_to_string(spec_dir.join("review.md")).unwrap();
+    // The waived MUST is excluded from the blocking count ...
+    assert!(
+        review.contains("must-violations: 0"),
+        "applied waiver excluded the MUST from the count:\n{review}"
+    );
+    // ... and rendered with the waiver reason, which only the applied waiver
+    // carries — proof it threaded from process-waivers via the `applied` alias.
+    assert!(
+        review.contains("Internal-only path behind mTLS"),
+        "applied waiver reason reached write-review:\n{review}"
+    );
+    let spec_after = std::fs::read_to_string(spec_dir.join("spec.md")).unwrap();
+    assert!(
+        spec_after.contains("blocking: false"),
+        "a waived finding does not block:\n{spec_after}"
+    );
+}
