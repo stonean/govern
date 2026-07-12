@@ -58,15 +58,16 @@ use crate::io::{read_envelope, write_envelope};
 use crate::primitives;
 use crate::schema::extensions::{self, ValidationError, WriteCodeResponse};
 use crate::schema::primitives::{
-    AppendInboxArgs, AppendTaskArgs, ApplyManifestArgs, CheckArtifactsArgs, CheckRuleIdsArgs,
-    CheckStuckArgs, ComputeReviewScopeArgs, CreateFeatureArgs, CreatePlanArtifactsArgs,
-    CreateScenarioArgs, DashboardArgs, DeriveBoundaryArgs, DiscoverRuleFilesArgs,
-    EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs,
-    MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs,
-    MergePermissionsArgs, MigrateSessionFileArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs,
-    ReadTasksArgs, RemoveInboxItemArgs, ResolveAnchorArgs, ResolveFeatureArgs,
-    ResolveReferencesArgs, RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs,
-    TraverseDepsArgs, ValidateFrontmatterArgs, WriteReviewArgs, WriteSessionArgs,
+    AppendInboxArgs, AppendTaskArgs, ApplyManifestArgs, CheckArtifactsArgs, CheckReviewGateArgs,
+    CheckRuleIdsArgs, CheckStuckArgs, ComputeReviewScopeArgs, CreateFeatureArgs,
+    CreatePlanArtifactsArgs, CreateScenarioArgs, DashboardArgs, DeriveBoundaryArgs,
+    DiscoverRuleFilesArgs, EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs,
+    GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs,
+    MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs, ProcessWaiversArgs,
+    PruneTasksArgs, ReadSpecArgs, ReadTasksArgs, RemoveInboxItemArgs, ResolveAnchorArgs,
+    ResolveFeatureArgs, ResolveReferencesArgs, RunGeneratorArgs, SetStatusArgs,
+    SubstituteTemplatesArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteReviewArgs,
+    WriteSessionArgs,
 };
 use crate::schema::procedure::{Procedure, Step, StepNumber};
 use crate::schema::protocol::{ErrorLocation, ProtocolMessage};
@@ -666,6 +667,7 @@ fn dispatch_primitive(
         "create-scenario" => call!(CreateScenarioArgs, create_scenario),
         "create-feature" => call!(CreateFeatureArgs, create_feature),
         "create-plan-artifacts" => call!(CreatePlanArtifactsArgs, create_plan_artifacts),
+        "check-review-gate" => call!(CheckReviewGateArgs, check_review_gate),
         "append-task" => call!(AppendTaskArgs, append_task),
         "append-inbox" => call!(AppendInboxArgs, append_inbox),
         "remove-inbox-item" => call!(RemoveInboxItemArgs, remove_inbox_item),

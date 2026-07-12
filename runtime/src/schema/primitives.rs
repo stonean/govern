@@ -1932,6 +1932,61 @@ pub struct CreatePlanArtifactsResult {
     pub artifacts: Vec<PlanArtifact>,
 }
 
+// -- check-review-gate -------------------------------------------------------
+
+/// Args for `check-review-gate`. Evaluates `/gov:implement`'s pre-done
+/// review gate for one feature: the feature directory's markdown lint,
+/// then the spec frontmatter `review:` block, in the completion gate's
+/// documented order (first failing check wins).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct CheckReviewGateArgs {
+    /// Feature directory name under the configured spec root.
+    #[arg(long)]
+    pub feature: String,
+}
+
+/// First failing check of the pre-done review gate.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum ReviewGateBlock {
+    /// The feature directory's markdown files failed `markdownlint-cli2`
+    /// (violations, or a non-zero exit the parser could not attribute).
+    MarkdownLint,
+    /// The spec has no completed review: the `review:` block is absent or
+    /// its `last-run` is null.
+    NotReviewed,
+    /// The last review left blocking MUST violations
+    /// (`review.blocking: true`).
+    MustViolations,
+}
+
+/// Result for `check-review-gate`. A blocked gate is a domain outcome —
+/// the host halts with `message` and does not propose the in-progress →
+/// done transition; it is never an operational error.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct CheckReviewGateResult {
+    /// Whether the gate passes and the transition may be proposed.
+    pub passed: bool,
+    /// First failing check, in gate order; absent on pass.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub blocked_by: Option<ReviewGateBlock>,
+    /// The canonical blocked message for the failing check (the
+    /// `blocked: …` texts documented in `/gov:implement`'s completion
+    /// gate, with the adopter's `[host] project` command namespace
+    /// substituted); absent on pass.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
+    /// Follow-up guidance accompanying the message — the
+    /// resolve-or-waive options on `must-violations`; absent otherwise.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub guidance: Option<String>,
+    /// Markdown-lint violations backing a `markdown-lint` block; empty
+    /// otherwise.
+    pub violations: Vec<MarkdownViolation>,
+}
+
 // -- append-inbox --------------------------------------------------------------
 
 /// Args for `append-inbox`. Appends one `- {text}` bullet to
@@ -3026,6 +3081,49 @@ mod tests {
         let replaced: serde_json::Value =
             serde_json::to_value(PlanArtifactAction::Replaced).unwrap();
         assert_eq!(replaced, "replaced");
+    }
+
+    #[test]
+    fn check_review_gate_round_trip() {
+        use super::{CheckReviewGateArgs, CheckReviewGateResult, ReviewGateBlock};
+        let args = CheckReviewGateArgs {
+            feature: "042-widget".into(),
+        };
+        assert_eq!(round_trip(&args), args);
+
+        let passed = CheckReviewGateResult {
+            passed: true,
+            blocked_by: None,
+            message: None,
+            guidance: None,
+            violations: vec![],
+        };
+        let pv: serde_json::Value = serde_json::to_value(&passed).unwrap();
+        // Options are absent from the JSON on pass, not null.
+        let obj = pv.as_object().unwrap();
+        assert!(!obj.contains_key("blocked-by"));
+        assert!(!obj.contains_key("message"));
+        assert!(!obj.contains_key("guidance"));
+        assert_eq!(round_trip(&passed), passed);
+
+        let blocked = CheckReviewGateResult {
+            passed: false,
+            blocked_by: Some(ReviewGateBlock::MustViolations),
+            message: Some(
+                "blocked: spec has 3 MUST violation(s) — see specs/042-widget/review.md".into(),
+            ),
+            guidance: Some("Resolve the violations and re-run /gov:review".into()),
+            violations: vec![],
+        };
+        let bv: serde_json::Value = serde_json::to_value(&blocked).unwrap();
+        assert_eq!(bv["blocked-by"], "must-violations");
+        assert_eq!(round_trip(&blocked), blocked);
+
+        let lint: serde_json::Value = serde_json::to_value(ReviewGateBlock::MarkdownLint).unwrap();
+        assert_eq!(lint, "markdown-lint");
+        let unreviewed: serde_json::Value =
+            serde_json::to_value(ReviewGateBlock::NotReviewed).unwrap();
+        assert_eq!(unreviewed, "not-reviewed");
     }
 
     #[test]

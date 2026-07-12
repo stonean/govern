@@ -14,6 +14,7 @@ pub mod append_inbox;
 pub mod append_task;
 pub mod apply_manifest;
 pub mod check_artifacts;
+pub mod check_review_gate;
 pub mod check_rule_ids;
 pub mod check_stuck;
 pub mod compute_review_scope;

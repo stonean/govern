@@ -10,15 +10,16 @@ use std::io;
 use gvrn::mcp::server::GovRuntimeServer;
 use gvrn::primitives;
 use gvrn::schema::primitives::{
-    AppendInboxArgs, AppendTaskArgs, ApplyManifestArgs, CheckArtifactsArgs, CheckRuleIdsArgs,
-    CheckStuckArgs, ComputeReviewScopeArgs, CreateFeatureArgs, CreatePlanArtifactsArgs,
-    CreateScenarioArgs, DashboardArgs, DeriveBoundaryArgs, DiscoverRuleFilesArgs,
-    EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs,
-    MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs,
-    MergePermissionsArgs, MigrateSessionFileArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs,
-    ReadTasksArgs, RemoveInboxItemArgs, ResolveAnchorArgs, ResolveFeatureArgs,
-    ResolveReferencesArgs, RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs,
-    TraverseDepsArgs, ValidateFrontmatterArgs, WriteReviewArgs, WriteSessionArgs,
+    AppendInboxArgs, AppendTaskArgs, ApplyManifestArgs, CheckArtifactsArgs, CheckReviewGateArgs,
+    CheckRuleIdsArgs, CheckStuckArgs, ComputeReviewScopeArgs, CreateFeatureArgs,
+    CreatePlanArtifactsArgs, CreateScenarioArgs, DashboardArgs, DeriveBoundaryArgs,
+    DiscoverRuleFilesArgs, EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs,
+    GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs,
+    MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs, ProcessWaiversArgs,
+    PruneTasksArgs, ReadSpecArgs, ReadTasksArgs, RemoveInboxItemArgs, ResolveAnchorArgs,
+    ResolveFeatureArgs, ResolveReferencesArgs, RunGeneratorArgs, SetStatusArgs,
+    SubstituteTemplatesArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteReviewArgs,
+    WriteSessionArgs,
 };
 
 #[derive(Parser, Debug)]
@@ -123,6 +124,8 @@ enum Command {
     CreateFeature(CreateFeatureArgs),
     /// Copy the plan/tasks (and optional data-model) templates into a feature directory.
     CreatePlanArtifacts(CreatePlanArtifactsArgs),
+    /// Evaluate /gov:implement's pre-done review gate (markdown lint + spec review: block).
+    CheckReviewGate(CheckReviewGateArgs),
     /// Append a numbered task block to a feature's tasks.md (atomic rewrite).
     AppendTask(AppendTaskArgs),
     /// Append one bullet to {specs-root}/inbox.md (atomic, optional dedup-by-prefix).
@@ -510,6 +513,9 @@ fn main() -> ExitCode {
         Command::CreateFeature(args) => emit_result(primitives::create_feature::run(&args, &repo)),
         Command::CreatePlanArtifacts(args) => {
             emit_result(primitives::create_plan_artifacts::run(&args, &repo))
+        }
+        Command::CheckReviewGate(args) => {
+            emit_result(primitives::check_review_gate::run(&args, &repo))
         }
         Command::AppendTask(args) => emit_result(primitives::append_task::run(&args, &repo)),
         Command::AppendInbox(args) => emit_result(primitives::append_inbox::run(&args, &repo)),

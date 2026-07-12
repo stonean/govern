@@ -31,11 +31,11 @@ use crate::primitives;
 use crate::primitives::gate_confirm::GatePromptPayload;
 use crate::schema::primitives::{
     AppendInboxArgs, AppendInboxResult, AppendTaskArgs, AppendTaskResult, ApplyManifestArgs,
-    ApplyManifestResult, CheckArtifactsArgs, CheckArtifactsResult, CheckRuleIdsArgs,
-    CheckRuleIdsResult, CheckStuckArgs, CheckStuckResult, CheckboxToggleResult,
-    ComputeReviewScopeArgs, ComputeReviewScopeResult, CreateFeatureArgs, CreateFeatureResult,
-    CreatePlanArtifactsArgs, CreatePlanArtifactsResult, CreateScenarioArgs, CreateScenarioResult,
-    DashboardArgs, DashboardResult, DeriveBoundaryArgs, DeriveBoundaryResult,
+    ApplyManifestResult, CheckArtifactsArgs, CheckArtifactsResult, CheckReviewGateArgs,
+    CheckReviewGateResult, CheckRuleIdsArgs, CheckRuleIdsResult, CheckStuckArgs, CheckStuckResult,
+    CheckboxToggleResult, ComputeReviewScopeArgs, ComputeReviewScopeResult, CreateFeatureArgs,
+    CreateFeatureResult, CreatePlanArtifactsArgs, CreatePlanArtifactsResult, CreateScenarioArgs,
+    CreateScenarioResult, DashboardArgs, DashboardResult, DeriveBoundaryArgs, DeriveBoundaryResult,
     DiscoverRuleFilesArgs, DiscoverRuleFilesResult, EnforceManifestArgs, EnforceManifestResult,
     ExtractArchiveArgs, ExtractArchiveResult, FetchArchiveArgs, FetchArchiveResult,
     GateConfirmArgs, LintMarkdownArgs, LintMarkdownResult, MarkCriterionArgs, MarkTaskArgs,
@@ -640,6 +640,21 @@ impl GovRuntimeServer {
         primitives::create_plan_artifacts::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "check-review-gate",
+        description = "Evaluate /gov:implement's pre-done review gate for one feature: the feature directory's markdown lint (via the lint-markdown machinery), then the spec frontmatter review: block. Returns the verdict plus, when blocked, the first failing check (markdown-lint | not-reviewed | must-violations) and the canonical blocked message; a blocked gate is a domain outcome the host halts on, never an error."
+    )]
+    async fn check_review_gate(
+        &self,
+        params: Parameters<CheckReviewGateArgs>,
+    ) -> Result<Json<CheckReviewGateResult>, String> {
+        // Shells out to `npx markdownlint-cli2` — blocking pool, like
+        // `lint-markdown` itself.
+        let repo = Arc::clone(&self.repo);
+        dispatch_blocking(move || primitives::check_review_gate::run(&params.0, repo.as_path()))
+            .await
     }
 
     #[tool(

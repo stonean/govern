@@ -483,6 +483,28 @@ The plan-side mirror of `create-feature` and the deterministic surface behind `/
 
 Per-artifact `action` is the domain outcome: `created` (was missing, template copied), `kept` (pre-existing, untouched — never an error), or `replaced` (pre-existing, template copied over; only with `overwrite: true`, the confirmed "replace" branch of the prompt). `template` names the copied template and is absent on `kept`. No last-modified stamp accompanies `kept` entries — primitive results carry no wall-clock data (the same rule that keeps `write-session`'s `set-at` in the file, out of the result), so the exec envelope stream stays deterministic; the prompt's timestamp listing stays a markdown-only-path detail. A missing feature directory is an operational error (`create-feature` owns directory creation).
 
+### `check-review-gate` — evaluate implement's pre-done review gate
+
+Args:
+
+```json
+{ "feature": "042-widget" }
+```
+
+Result:
+
+```json
+{
+  "passed": false,
+  "blocked-by": "must-violations",
+  "message": "blocked: spec has 3 MUST violation(s) — see specs/042-widget/review.md",
+  "guidance": "Resolve the violations and re-run /gov:review, or run /gov:review --waive <rule-id> --reason \"...\" for each waivable finding.",
+  "violations": []
+}
+```
+
+The deterministic surface behind `/gov:implement`'s completion-gate step 13, which the host previously walked by hand on every completion attempt. Evaluates the gate's two checks in documented order, first failure wins: the feature directory's markdown lint (recursive `{root}/{feature}/**/*.md` glob through the `lint-markdown` machinery — the raw `npx markdownlint-cli2` invocation the step used to name), then the spec frontmatter `review:` block. `blocked-by` names the first failing check: `markdown-lint` (violations echoed in `violations`, or a non-zero exit the parser could not attribute), `not-reviewed` (`review:` absent or `last-run` null), or `must-violations` (`review.blocking: true`). `message` is the canonical blocked text with the adopter's `[host] project` command namespace substituted into the `/{project}:review` references; `guidance` carries the resolve-or-waive follow-up on the `must-violations` branch only. Every verdict is a domain outcome — the host halts on a blocked gate; the primitive never errors for one.
+
 ### `append-inbox` — append one bullet to the inbox
 
 Args:
