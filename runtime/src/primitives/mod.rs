@@ -37,6 +37,7 @@ pub mod process_waivers;
 pub mod prune_tasks;
 pub mod read_spec;
 pub mod read_tasks;
+pub mod remove_inbox_item;
 pub mod resolve_anchor;
 pub mod resolve_feature;
 pub mod resolve_references;
@@ -682,6 +683,21 @@ pub(crate) fn validate_single_line(primitive: &str, argument: &str, value: &str)
         });
     }
     Ok(())
+}
+
+/// Extract an inbox/list bullet line's text: the trimmed content after the
+/// `- ` marker, with an optional task-list checkbox (`[ ]`/`[x]`/`[X]`)
+/// stripped via the shared [`checkbox::parse_checkbox_line`] grammar so the
+/// plain `- text` and the checkbox `- [ ] text` forms both resolve to their
+/// content. `None` for a non-bullet line. Shared by `append-inbox` (dedup
+/// match) and `remove-inbox-item` (removal match) so the two agree on bullet
+/// identity.
+pub(crate) fn bullet_text(line: &str) -> Option<String> {
+    if let Some((_checked, text)) = checkbox::parse_checkbox_line(line) {
+        return Some(text);
+    }
+    let rest = line.trim_start().strip_prefix("- ")?;
+    Some(rest.trim().to_string())
 }
 
 /// Validate a caller-supplied slug against the framework slug grammar

@@ -42,11 +42,12 @@ use crate::schema::primitives::{
     MergeManagedBlockResult, MergePermissionsArgs, MergePermissionsResult, MigrateSessionFileArgs,
     MigrateSessionFileResult, ProcessWaiversArgs, ProcessWaiversResult, PruneTasksArgs,
     PruneTasksResult, ReadSpecArgs, ReadSpecResult, ReadTasksArgs, ReadTasksResult,
-    ResolveAnchorArgs, ResolveAnchorResult, ResolveFeatureArgs, ResolveFeatureResult,
-    ResolveReferencesArgs, ResolveReferencesResult, RunGeneratorArgs, RunGeneratorResult,
-    SetStatusArgs, SetStatusResult, SubstituteTemplatesArgs, SubstituteTemplatesResult,
-    TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs, ValidateFrontmatterResult,
-    WriteReviewArgs, WriteReviewResult, WriteSessionArgs, WriteSessionResult,
+    RemoveInboxItemArgs, RemoveInboxItemResult, ResolveAnchorArgs, ResolveAnchorResult,
+    ResolveFeatureArgs, ResolveFeatureResult, ResolveReferencesArgs, ResolveReferencesResult,
+    RunGeneratorArgs, RunGeneratorResult, SetStatusArgs, SetStatusResult, SubstituteTemplatesArgs,
+    SubstituteTemplatesResult, TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs,
+    ValidateFrontmatterResult, WriteReviewArgs, WriteReviewResult, WriteSessionArgs,
+    WriteSessionResult,
 };
 
 /// Canonical MCP tool names exposed by the server, in manifest order —
@@ -637,6 +638,19 @@ impl GovRuntimeServer {
         params: Parameters<AppendInboxArgs>,
     ) -> Result<Json<AppendInboxResult>, String> {
         primitives::append_inbox::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "remove-inbox-item",
+        description = "Remove the first bullet from {specs-root}/inbox.md whose text equals `item` (atomic write). The complement of append-inbox; a no-match or missing inbox is a clean outcome (removed: false). Returns the remaining bullet count."
+    )]
+    async fn remove_inbox_item(
+        &self,
+        params: Parameters<RemoveInboxItemArgs>,
+    ) -> Result<Json<RemoveInboxItemResult>, String> {
+        primitives::remove_inbox_item::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
     }

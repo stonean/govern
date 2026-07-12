@@ -21,7 +21,7 @@
 
 use std::path::Path;
 
-use crate::primitives::{PrimitiveError, Result, checkbox, rel_path, write_atomic};
+use crate::primitives::{PrimitiveError, Result, bullet_text, rel_path, write_atomic};
 use crate::schema::paths;
 use crate::schema::primitives::{AppendInboxArgs, AppendInboxResult};
 
@@ -120,20 +120,6 @@ fn validate_text(text: &str) -> Result<()> {
 fn creation_base(repo: &Path) -> String {
     std::fs::read_to_string(repo.join(PROJECT_TEMPLATE))
         .unwrap_or_else(|_| FALLBACK_HEADING.to_string())
-}
-
-/// Extract a line's bullet text: the trimmed content after the `- `
-/// marker. A task-list checkbox (`[ ]` / `[x]` / `[X]`) is recognized via
-/// the shared [`checkbox::parse_checkbox_line`] grammar so dedup matches
-/// the read/mark side exactly — this closes the `- [x]no-space` divergence
-/// the hand-rolled strip admitted. Only the plain `- text` fallback stays
-/// local. `None` for non-bullet lines.
-fn bullet_text(line: &str) -> Option<String> {
-    if let Some((_checked, text)) = checkbox::parse_checkbox_line(line) {
-        return Some(text);
-    }
-    let rest = line.trim_start().strip_prefix("- ")?;
-    Some(rest.trim().to_string())
 }
 
 /// `true` when any bullet line's text starts with `prefix`.

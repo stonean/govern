@@ -50,5 +50,6 @@ pub(crate) const PRIMITIVE_REGISTRY: &[&str] = &[
     "resolve-feature",
     "create-feature",
     "append-inbox",
+    "remove-inbox-item",
     "check-artifacts",
 ];

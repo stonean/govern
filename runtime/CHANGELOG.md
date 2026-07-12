@@ -9,6 +9,7 @@ Follow-up review of the 0.18.0 runtime (see `specs/022-deterministic-runtime/rev
 ### Follow-on scenarios (022 tasks 64–68)
 
 - **Parser nested-list continuation (task 64)** — a recognized primitive named in continuation text after a nested ordered list closes (where the parent step was already finalized) now raises `ParseError::Invalid` naming the primitive, instead of silently dropping the dispatch on the exec path. Guarded on being inside the step list, so a primitive named in the Instructions preamble stays a legitimate reference. `scripts/lint-procedure-parseability.sh` catches the class across `framework/commands/*.md` + `framework/bootstrap/*.md`.
+- **`remove-inbox-item` primitive (task 67, in progress)** — the complement of `append-inbox`: removes the first `{specs-root}/inbox.md` bullet whose text matches `item` (shared bullet grammar, atomic write, double-blank seam collapsed), reporting the remaining count. A no-match or missing inbox is a clean `removed: false` outcome. `/gov:groom` step 8 now invokes it instead of a host `Edit`, closing the review's highest-value coverage gap (groom's per-item hot loop).
 
 ### Security
 

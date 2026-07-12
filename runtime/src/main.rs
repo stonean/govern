@@ -15,8 +15,8 @@ use gvrn::schema::primitives::{
     DeriveBoundaryArgs, DiscoverRuleFilesArgs, EnforceManifestArgs, ExtractArchiveArgs,
     FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs,
     MergeClaudeMdArgs, MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs,
-    ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs,
-    ResolveFeatureArgs, ResolveReferencesArgs, RunGeneratorArgs, SetStatusArgs,
+    ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs, RemoveInboxItemArgs,
+    ResolveAnchorArgs, ResolveFeatureArgs, ResolveReferencesArgs, RunGeneratorArgs, SetStatusArgs,
     SubstituteTemplatesArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteReviewArgs,
     WriteSessionArgs,
 };
@@ -125,6 +125,8 @@ enum Command {
     AppendTask(AppendTaskArgs),
     /// Append one bullet to {specs-root}/inbox.md (atomic, optional dedup-by-prefix).
     AppendInbox(AppendInboxArgs),
+    /// Remove the first bullet matching `item` from {specs-root}/inbox.md (atomic).
+    RemoveInboxItem(RemoveInboxItemArgs),
     /// Run /gov:analyze's residual deterministic artifact-check families for a feature.
     CheckArtifacts(CheckArtifactsArgs),
     /// Reduce a feature's tasks.md — drop spent task sections or reset to template state.
@@ -420,6 +422,10 @@ fn run_mcp_server(repo: PathBuf) -> ExitCode {
     })
 }
 
+// A flat CLI dispatch match with one arm per primitive; it grows by one
+// line with each primitive and is mechanical, so the line-count lint is not
+// meaningful here.
+#[allow(clippy::too_many_lines)]
 fn main() -> ExitCode {
     let cli = Cli::parse();
     let repo = cwd();
@@ -502,6 +508,9 @@ fn main() -> ExitCode {
         Command::CreateFeature(args) => emit_result(primitives::create_feature::run(&args, &repo)),
         Command::AppendTask(args) => emit_result(primitives::append_task::run(&args, &repo)),
         Command::AppendInbox(args) => emit_result(primitives::append_inbox::run(&args, &repo)),
+        Command::RemoveInboxItem(args) => {
+            emit_result(primitives::remove_inbox_item::run(&args, &repo))
+        }
         Command::CheckArtifacts(args) => {
             emit_result(primitives::check_artifacts::run(&args, &repo))
         }

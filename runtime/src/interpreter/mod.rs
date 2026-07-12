@@ -63,8 +63,8 @@ use crate::schema::primitives::{
     DeriveBoundaryArgs, DiscoverRuleFilesArgs, EnforceManifestArgs, ExtractArchiveArgs,
     FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs,
     MergeClaudeMdArgs, MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs,
-    ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs, ResolveAnchorArgs,
-    ResolveFeatureArgs, ResolveReferencesArgs, RunGeneratorArgs, SetStatusArgs,
+    ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs, RemoveInboxItemArgs,
+    ResolveAnchorArgs, ResolveFeatureArgs, ResolveReferencesArgs, RunGeneratorArgs, SetStatusArgs,
     SubstituteTemplatesArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteReviewArgs,
     WriteSessionArgs,
 };
@@ -667,6 +667,7 @@ fn dispatch_primitive(
         "create-feature" => call!(CreateFeatureArgs, create_feature),
         "append-task" => call!(AppendTaskArgs, append_task),
         "append-inbox" => call!(AppendInboxArgs, append_inbox),
+        "remove-inbox-item" => call!(RemoveInboxItemArgs, remove_inbox_item),
         "check-artifacts" => call!(CheckArtifactsArgs, check_artifacts),
         "prune-tasks" => call!(PruneTasksArgs, prune_tasks),
         "dashboard" => call!(DashboardArgs, dashboard),

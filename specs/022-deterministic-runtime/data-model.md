@@ -474,6 +474,22 @@ Result:
 
 Appends `- {text}` atomically to `{specs-root}/inbox.md`, creating the file when missing (from `framework/templates/project/inbox.md` when that file exists on disk — the framework source repo — else a bare `# Inbox` heading). With `dedup-prefix` supplied, an existing bullet whose text starts with the prefix (checkbox bullets included) suppresses the write and the result reports `deduped: true`. Embedded newlines in `text` are rejected as an operational error (structure injection), matching `append-task`'s single-line rule.
 
+### `remove-inbox-item` — remove one bullet from the inbox
+
+Args:
+
+```json
+{ "item": "security: token logged in plaintext — src/auth.rs (captured during 022)" }
+```
+
+Result:
+
+```json
+{ "path": "specs/inbox.md", "removed": true, "remaining-count": 3 }
+```
+
+The complement of `append-inbox` and the deterministic surface behind `/gov:groom`'s per-item removal (step 8). Removes the first bullet from `{specs-root}/inbox.md` whose text — after the `-` bullet marker and an optional `[ ]`/`[x]` checkbox are stripped via the shared bullet grammar — equals the trimmed `item`, writing atomically. A double blank left at the removal seam is collapsed and the file ends in a single newline. A no-match, or a missing inbox file, is a clean domain outcome (`removed: false`), never an operational error; `remaining-count` reports the bullets left after the operation. Embedded newlines in `item` are rejected (single-line rule).
+
 ### `check-artifacts` — deterministic artifact-check families for one feature
 
 Args:

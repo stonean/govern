@@ -54,4 +54,5 @@ write-session
 resolve-feature
 create-feature
 append-inbox
+remove-inbox-item
 check-artifacts

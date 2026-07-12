@@ -1893,6 +1893,36 @@ pub struct AppendInboxResult {
     pub deduped: bool,
 }
 
+// -- remove-inbox-item ---------------------------------------------------------
+
+/// Args for `remove-inbox-item`. Removes the first bullet from
+/// `{specs-root}/inbox.md` whose text matches `item`. The complement of
+/// `append-inbox`; the deterministic surface behind `/gov:groom`'s per-item
+/// inbox removal (step 8), which previously edited the file by hand.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct RemoveInboxItemArgs {
+    /// The bullet text to remove: the first inbox bullet whose text (after
+    /// the `- ` marker and an optional `[ ]`/`[x]` checkbox are stripped),
+    /// trimmed, equals this value is removed. Single-line; embedded newlines
+    /// are rejected.
+    #[arg(long)]
+    pub item: String,
+}
+
+/// Result for `remove-inbox-item`.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct RemoveInboxItemResult {
+    /// Repo-relative path of the inbox file.
+    pub path: String,
+    /// Whether a matching bullet was found and removed. A no-match (or a
+    /// missing inbox file) is a clean domain outcome, not an error.
+    pub removed: bool,
+    /// Number of bullet items remaining in the inbox after the operation.
+    pub remaining_count: u32,
+}
+
 // -- check-artifacts -----------------------------------------------------------
 
 /// Args for `check-artifacts`. Runs the residual deterministic check
