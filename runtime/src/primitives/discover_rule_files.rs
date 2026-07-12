@@ -186,15 +186,24 @@ fn resolve_surfaces(rules: Option<&RulesSection>, detected: &[String]) -> Result
                 // surface and silently drop that surface's rule files from
                 // the review set — fail fast instead.
                 for member in detected {
-                    if !VALID_SURFACES.contains(&member.as_str()) {
-                        return Err(PrimitiveError::InvalidSurfacesMember {
-                            value: member.clone(),
-                        });
-                    }
+                    validate_surface_member(member)?;
                 }
                 Ok(detected.to_vec())
             }
         }
+    }
+}
+
+/// Reject a surface name outside `{backend, frontend}`. Shared by the
+/// `[rules] surfaces` config check and the MCP `detected-surfaces` check so
+/// the two agree on the accepted set.
+fn validate_surface_member(member: &str) -> Result<()> {
+    if VALID_SURFACES.contains(&member) {
+        Ok(())
+    } else {
+        Err(PrimitiveError::InvalidSurfacesMember {
+            value: member.to_string(),
+        })
     }
 }
 
@@ -213,11 +222,7 @@ fn validate_surfaces(value: &toml::Value) -> Result<Vec<String>> {
                 got: format!("a list containing {}", toml_type_name(item)),
             });
         };
-        if !VALID_SURFACES.contains(&member.as_str()) {
-            return Err(PrimitiveError::InvalidSurfacesMember {
-                value: member.clone(),
-            });
-        }
+        validate_surface_member(member)?;
         out.push(member.clone());
     }
     Ok(out)

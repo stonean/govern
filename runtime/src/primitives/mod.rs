@@ -666,15 +666,6 @@ pub(crate) fn validate_no_traversal(path: &str) -> Result<()> {
     Ok(())
 }
 
-/// Validate a caller-supplied slug against the framework slug grammar
-/// `^[a-z0-9]+(?:-[a-z0-9]+)*$`: one or more lowercase-alphanumeric
-/// segments joined by single hyphens — exactly the alphabet
-/// `create_feature::derive_slug` emits. This is an allowlist
-/// (BE-INPUT-002): every slug reaches a written filename
-/// (`scenarios/{slug}.md`) and a rendered heading, so anything outside the
-/// grammar — uppercase, `_`, `.`, path separators, whitespace, newlines,
-/// or other control characters — is rejected before it can inject a path
-/// segment or forge markdown structure.
 /// Reject a text value carrying an embedded newline or carriage return.
 /// Such a value, interpolated verbatim into a markdown or YAML artifact,
 /// would inject document structure (a phantom heading, a new frontmatter
@@ -693,6 +684,15 @@ pub(crate) fn validate_single_line(primitive: &str, argument: &str, value: &str)
     Ok(())
 }
 
+/// Validate a caller-supplied slug against the framework slug grammar
+/// `^[a-z0-9]+(?:-[a-z0-9]+)*$`: one or more lowercase-alphanumeric
+/// segments joined by single hyphens — exactly the alphabet
+/// `create_feature::derive_slug` emits. This is an allowlist
+/// (BE-INPUT-002): every slug reaches a written filename
+/// (`scenarios/{slug}.md`) and a rendered heading, so anything outside the
+/// grammar — uppercase, `_`, `.`, path separators, whitespace, newlines,
+/// or other control characters — is rejected before it can inject a path
+/// segment or forge markdown structure.
 pub(crate) fn validate_slug(slug: &str) -> Result<()> {
     if slug.is_empty() {
         return Err(PrimitiveError::InvalidSlug {
