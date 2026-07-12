@@ -179,6 +179,7 @@ Triggers on PR and push to `main`, with `paths` filter covering `runtime/**` and
 4. `cargo test --release` in `runtime/`.
 5. `cargo clippy -- -D warnings`.
 6. `cargo fmt --check`.
+7. `cargo audit` — dependency vulnerability scan against the RustSec advisory database (`BE-DEPS-001`). Policy on findings: any advisory affecting the resolved `Cargo.lock` graph fails the build; a deliberate exception requires an `[advisories] ignore` entry in `runtime/audit.toml` with a justification comment naming the RUSTSEC id and the revisit condition.
 
 No matrix on OS in the per-PR workflow — Linux only. The release workflow is where cross-platform matters; PR CI is a smoke test.
 
@@ -190,6 +191,7 @@ A separate workflow at `.github/workflows/runtime-release.yml`, triggered on tag
 2. Build via `cargo-zigbuild` for Linux ARM (cross-compilation), native build for macOS targets on macOS runners, and `cargo build` on a Windows runner for the Windows target.
 3. Tarball/zip each binary with a `sha256sum` checksum file.
 4. Upload to a GitHub release created from the tag, using `softprops/action-gh-release`.
+5. Generate a CycloneDX SBOM during the release build (`cargo cyclonedx --format json --override-filename gvrn.cdx`, `BE-DEPS-003`) and upload it with its own sha256 checksum to the same release. The SBOM is derived from the resolved `Cargo.lock` graph, which is identical across the target matrix, so one SBOM covers every artifact; attached to the GitHub release, it shares the artifacts' retention lifetime.
 
 Tag scheme is `runtime-v<MAJOR>.<MINOR>.<PATCH>`, distinct from any framework tag so framework releases and runtime releases evolve in lockstep but are independently traceable.
 
@@ -309,8 +311,8 @@ Considered and rejected:
 | `framework/commands/specify.md` | Edit | Rewrite Instructions to parseable conventions; add `writeSpecBody` extension point marker |
 | `scripts/lint-procedure-parseability.sh` | Create | Bash wrapper that builds runtime and invokes `runtime parse --check` |
 | `.github/workflows/markdown-only-pipeline.yml` | Edit | Add step (f) parseability check; preserve existing checks (a)–(e) |
-| `.github/workflows/runtime.yml` | Create | Per-PR build + test + clippy + fmt |
-| `.github/workflows/runtime-release.yml` | Create | Tag-triggered cross-compile + release upload |
+| `.github/workflows/runtime.yml` | Create | Per-PR build + test + clippy + fmt + `cargo audit` dependency scan |
+| `.github/workflows/runtime-release.yml` | Create | Tag-triggered cross-compile + release upload + CycloneDX SBOM |
 | `framework/bootstrap/govern.md` | Edit | One-line pointer to runtime in completion message (first-run and update-mode blocks) |
 | `README.md` | Edit | New Runtime section: rationale, install, when to install |
 | `specs/022-deterministic-runtime/plan.md` | Create | This file |

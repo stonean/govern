@@ -63,6 +63,35 @@ jobs:
       - name: cargo test --release --locked
         run: cargo test --release --locked
 
+  # Dependency vulnerability scan (BE-DEPS-001). Fails on any RUSTSEC
+  # advisory affecting the resolved Cargo.lock graph; a deliberate
+  # exception requires an `[advisories] ignore` entry in
+  # runtime/audit.toml with a justification comment naming the RUSTSEC
+  # id and the revisit condition.
+  audit:
+    name: cargo audit (ubuntu-latest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: runtime
+    steps:
+      - uses: actions/checkout@v7
+
+      # Pinned — keep in sync with runtime/rust-toolchain.toml (see the
+      # components note on the build-and-test job above).
+      - uses: dtolnay/rust-toolchain@1.97.0
+        with:
+          components: clippy, rustfmt
+
+      # Prebuilt binary — a cargo install would recompile cargo-audit on
+      # every cold cache and dominate the job's wall-clock.
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+
+      - name: cargo audit
+        run: cargo audit
+
   lint:
     name: fmt + clippy (ubuntu-latest)
     runs-on: ubuntu-latest

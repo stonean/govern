@@ -123,6 +123,44 @@ jobs:
             runtime/target/${{ matrix.target }}/release/gvrn-${{ matrix.target }}.zip
             runtime/target/${{ matrix.target }}/release/gvrn-${{ matrix.target }}.zip.sha256
 
+  # CycloneDX SBOM (BE-DEPS-003) — generated during the release build
+  # from the resolved Cargo.lock graph and attached to the same release.
+  # The graph is identical across the target matrix, so one SBOM covers
+  # every artifact; attached to the release, it shares the artifacts'
+  # retention lifetime.
+  sbom:
+    name: SBOM (CycloneDX)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: runtime
+    steps:
+      - uses: actions/checkout@v7
+
+      # Pinned — keep in sync with runtime/rust-toolchain.toml.
+      # `components` must match the toolchain file (see build job above).
+      - uses: dtolnay/rust-toolchain@1.97.0
+        with:
+          components: clippy, rustfmt
+
+      - name: Install cargo-cyclonedx
+        run: cargo install --locked cargo-cyclonedx
+
+      # --override-filename pins the output name (it replaces the whole
+      # stem, so the .cdx convention must be part of the value); the
+      # default naming has varied across cargo-cyclonedx versions.
+      - name: Generate SBOM
+        run: |
+          cargo cyclonedx --format json --override-filename gvrn.cdx
+          shasum -a 256 gvrn.cdx.json > gvrn.cdx.json.sha256
+
+      - name: Upload SBOM to release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            runtime/gvrn.cdx.json
+            runtime/gvrn.cdx.json.sha256
+
   publish:
     name: Publish to crates.io
     needs: [audit, build]
