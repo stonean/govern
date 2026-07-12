@@ -440,6 +440,21 @@ fn stage_fixture(command: &str, fixture: &str) -> tempfile::TempDir {
     // tiny git-init overhead but otherwise are unaffected.
     init_git_repo(tmp.path());
 
+    // The implement fixture needs a two-commit history (scenario
+    // writecode-boundary-derivation): the initial commit above is the
+    // first commit touching the spec dir; this second commit touches
+    // `runtime/src/` so `derive-boundary` yields a non-empty directory
+    // zone (`runtime/src/**`) admitting the canned writeCode edit —
+    // proving the derived boundary, not a session seed, feeds the
+    // enforcement (the fixture session deliberately seeds no
+    // `write-boundary`).
+    if fixture == "implement-basic" {
+        let placeholder = tmp.path().join("runtime/src/placeholder.rs");
+        fs::create_dir_all(placeholder.parent().expect("parent exists")).unwrap();
+        fs::write(&placeholder, "// staged in the fixture's second commit\n").unwrap();
+        commit_staged(tmp.path(), "feat(004): touch runtime");
+    }
+
     tmp
 }
 
@@ -574,6 +589,31 @@ fn init_git_repo(path: &Path) {
     let sig = Signature::new("Parity Test", "parity@example.com", &when).expect("signature");
     repo.commit(Some("HEAD"), &sig, &sig, "chore: fixture", &tree, &[])
         .expect("initial commit");
+}
+
+/// Add-all and commit the staged state on top of HEAD, with a fixed-time
+/// signature one second after [`init_git_repo`]'s — same determinism
+/// rationale (the second commit's sha lands in the writeCode payload as
+/// `current-head`).
+fn commit_staged(path: &Path, message: &str) {
+    use git2::{IndexAddOption, Repository, Signature, Time};
+    let repo = Repository::open(path).expect("git open");
+    let mut index = repo.index().unwrap();
+    index
+        .add_all(["*"], IndexAddOption::DEFAULT, None)
+        .expect("git add");
+    index.write().expect("index write");
+    let tree_id = index.write_tree().expect("write tree");
+    let tree = repo.find_tree(tree_id).unwrap();
+    let when = Time::new(1_704_067_201, 0);
+    let sig = Signature::new("Parity Test", "parity@example.com", &when).expect("signature");
+    let parent = repo
+        .head()
+        .expect("HEAD exists")
+        .peel_to_commit()
+        .expect("HEAD is a commit");
+    repo.commit(Some("HEAD"), &sig, &sig, message, &tree, &[&parent])
+        .expect("second commit");
 }
 
 fn read_parity_spec(command: &str, fixture: &str) -> ParitySpec {

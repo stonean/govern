@@ -230,10 +230,10 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
     /// - Each top-level key of the result is inserted into the context,
     ///   **except** a session-seeded key (one present at construction, such
     ///   as `write-boundary` or `feature`), which is load-bearing and is
-    ///   never overwritten by a primitive result. The one targeted
-    ///   exception: a `create-feature` result with `created: true` overrides
-    ///   the seeded `feature`/`path` so `/gov:specify` retargets the session
-    ///   to the just-created feature (see the body).
+    ///   never overwritten by a primitive result. Targeted exceptions (see
+    ///   the body): `create-feature`/`resolve-feature` retarget the seeded
+    ///   `feature`/`path`, and `derive-boundary` unions its `boundary` into
+    ///   `write-boundary`.
     /// - Among keys first introduced by primitives, last-write-wins.
     ///
     /// Results merge at the top level rather than under a per-primitive
@@ -269,6 +269,36 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
             || (name == "resolve-feature"
                 && self.procedure.command == "target"
                 && map.get("outcome") == Some(&Value::String("resolved".into())));
+        // A third targeted exception (scenario writecode-boundary-derivation):
+        // a `derive-boundary` result must feed the writeCode validator's
+        // `write-boundary` key, which the general policy would leave to the
+        // session seed alone (the result emits under `boundary`, and seeded
+        // keys are never overwritten). The merge is a UNION, never an
+        // overwrite: a seeded boundary is a deliberate host/user grant the
+        // derivation must not revoke — and on a fresh feature, whose
+        // derivation holds only the spec-dir glob, the seed is what admits
+        // the first out-of-spec edit. Sorted for deterministic payloads.
+        if name == "derive-boundary"
+            && let Some(Value::Array(derived)) = map.get("boundary")
+        {
+            let mut merged: std::collections::BTreeSet<String> = self
+                .context
+                .get("write-boundary")
+                .and_then(|v| v.as_array())
+                .into_iter()
+                .flatten()
+                .filter_map(|v| v.as_str().map(str::to_string))
+                .collect();
+            merged.extend(
+                derived
+                    .iter()
+                    .filter_map(|v| v.as_str().map(str::to_string)),
+            );
+            self.context.insert(
+                "write-boundary".into(),
+                Value::Array(merged.into_iter().map(Value::String).collect()),
+            );
+        }
         for (key, value) in map {
             let seeded = self.seeded_keys.contains(&key);
             let overridable_target = retargets_session && (key == "feature" || key == "path");
@@ -1093,6 +1123,89 @@ mod tests {
                 .as_str()
                 .unwrap()
                 .contains("framework/constitution.md")
+        );
+    }
+
+    #[test]
+    fn derive_boundary_result_unions_into_write_boundary() {
+        // Scenario writecode-boundary-derivation: the derived boundary must
+        // feed the enforcement key as a UNION with the seeded grant — the
+        // seed is never revoked, the derived zones are added, and the
+        // result is sorted for deterministic payloads.
+        let procedure = Procedure {
+            command: "implement".into(),
+            steps: vec![],
+        };
+        let mut reader = Cursor::new(String::new());
+        let mut writer: Vec<u8> = Vec::new();
+        let mut context = Map::new();
+        context.insert(
+            "write-boundary".into(),
+            Value::Array(vec![Value::String("scripts/**".into())]),
+        );
+        let mut walker = Walker::new(
+            &procedure,
+            fixture_repo(),
+            context,
+            &mut reader,
+            &mut writer,
+        );
+        walker.merge_primitive_result(
+            "derive-boundary",
+            serde_json::json!({
+                "boundary": ["specs/004-implement/**", "runtime/src/**"],
+                "first-commit": "abc",
+                "current-head": "def",
+            }),
+        );
+        assert_eq!(
+            walker.context.get("write-boundary"),
+            Some(&serde_json::json!([
+                "runtime/src/**",
+                "scripts/**",
+                "specs/004-implement/**"
+            ])),
+            "seeded grant kept, derived zones added, sorted"
+        );
+        // The seeded-key guard still blocks a non-derive-boundary result
+        // from touching the enforcement key.
+        walker.merge_primitive_result(
+            "read-spec",
+            serde_json::json!({ "write-boundary": ["everything/**"] }),
+        );
+        assert_eq!(
+            walker.context.get("write-boundary"),
+            Some(&serde_json::json!([
+                "runtime/src/**",
+                "scripts/**",
+                "specs/004-implement/**"
+            ]))
+        );
+    }
+
+    #[test]
+    fn derive_boundary_result_populates_unseeded_write_boundary() {
+        let procedure = Procedure {
+            command: "implement".into(),
+            steps: vec![],
+        };
+        let mut reader = Cursor::new(String::new());
+        let mut writer: Vec<u8> = Vec::new();
+        let mut walker = Walker::new(
+            &procedure,
+            fixture_repo(),
+            Map::new(),
+            &mut reader,
+            &mut writer,
+        );
+        walker.merge_primitive_result(
+            "derive-boundary",
+            serde_json::json!({ "boundary": ["specs/004-implement/**"] }),
+        );
+        assert_eq!(
+            walker.context.get("write-boundary"),
+            Some(&serde_json::json!(["specs/004-implement/**"])),
+            "with no seed, enforcement runs on the derivation alone"
         );
     }
 

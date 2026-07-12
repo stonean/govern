@@ -55,7 +55,7 @@ Default is unset — without the flag, the user confirms each task as today.
 
 1. Invoke `read-tasks` against the targeted feature to load the ordered task list and the per-task "done when" conditions. The walker also seeds the session target's feature, scenario fields, the writeCode arguments (task-number, subtask-index, checked, write-boundary, threshold), and the completion gate's criterion address (criterion-index) from the runtime context.
 
-2. Invoke `derive-boundary` against the feature to compute the runtime write boundary from `git diff` against the spec dir's first commit; the result emits as a progress envelope and the host stores the boundary in context for the writeCode validator below.
+2. Invoke `derive-boundary` against the feature to compute the runtime write boundary from `git diff` against the spec dir's first commit. The result lists the feature's directory zones — the spec-dir glob plus a `{dir}/**` glob per changed path's parent directory (root-level files stay exact paths) — so writeCode may create new files inside zones the feature already touched. The boundary feeding the writeCode validator below is the **union** of this derivation and any session-seeded write-boundary: a seed is a deliberate grant the derivation never revokes, and on a fresh feature (no non-spec history yet) the seed is what admits the first code edit; with neither, enforcement stays fail-closed and the first out-of-spec edit halts.
 
 3. Invoke `check-stuck` against the feature with a threshold of 3 to detect stuck cycles before starting work. When the result reports stuck, surface the cycle to the user and pause for direction before proceeding — auto mode does not power through cycles.
 

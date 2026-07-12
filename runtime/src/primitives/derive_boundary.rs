@@ -1,5 +1,14 @@
 //! `derive-boundary` — compute the runtime write boundary from
 //! `git diff --name-only <first-commit-on-spec-dir>..HEAD` plus the spec dir.
+//!
+//! The boundary is emitted as **directory-zone globs**, not exact changed
+//! paths (scenario writecode-boundary-derivation): each changed path
+//! contributes its parent directory as `{dir}/**`, because the writeCode
+//! validator that enforces this boundary must admit *new* files — and a
+//! new file can never exact-match a previously-changed path. A root-level
+//! changed file stays an exact path (its "zone glob" would be `**`,
+//! permitting everything). The spec dir's own `{root}/{feature}/**` glob
+//! is always included.
 
 use std::collections::BTreeSet;
 use std::path::Path;
@@ -58,7 +67,7 @@ pub fn run(args: &DeriveBoundaryArgs, repo: &Path) -> Result<DeriveBoundaryResul
                 if s.starts_with(&spec_prefix) {
                     continue;
                 }
-                boundary.insert(s);
+                boundary.insert(zone_glob(&s));
             }
             true
         },
@@ -72,6 +81,17 @@ pub fn run(args: &DeriveBoundaryArgs, repo: &Path) -> Result<DeriveBoundaryResul
         first_commit: first_commit.to_string(),
         current_head: head_oid.to_string(),
     })
+}
+
+/// The boundary entry a changed path contributes: its parent directory as
+/// a `{dir}/**` zone glob, so writeCode may create new files in
+/// directories the feature already touched. A root-level path stays exact
+/// — its zone would be `**`, which permits everything.
+fn zone_glob(path: &str) -> String {
+    match path.rsplit_once('/') {
+        Some((dir, _file)) => format!("{dir}/**"),
+        None => path.to_string(),
+    }
 }
 
 /// Earliest commit (topological, from the root) whose first-parent diff
@@ -194,7 +214,7 @@ mod tests {
             !boundary.iter().any(|b| b.starts_with("specs/")),
             "no specs/ paths in boundary: {boundary:?}"
         );
-        assert!(boundary.contains("runtime/src/main.rs"));
+        assert!(boundary.contains("runtime/src/**"));
     }
 
     #[test]
@@ -227,8 +247,50 @@ mod tests {
         let boundary: std::collections::HashSet<&str> =
             result.boundary.iter().map(String::as_str).collect();
         assert!(boundary.contains("specs/020-demo/**"));
-        assert!(boundary.contains("runtime/src/main.rs"));
-        assert!(boundary.contains("README.md"));
+        assert!(
+            boundary.contains("runtime/src/**"),
+            "changed path contributes its directory zone: {boundary:?}"
+        );
+        assert!(
+            boundary.contains("README.md"),
+            "root-level file stays exact (its zone would be `**`): {boundary:?}"
+        );
+        assert!(
+            !boundary.contains("runtime/src/main.rs"),
+            "exact non-root paths are subsumed by their zone glob: {boundary:?}"
+        );
+    }
+
+    #[test]
+    fn files_in_one_directory_collapse_to_one_zone() {
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = Repository::init(tmp.path()).unwrap();
+        write(
+            &tmp.path().join("specs/020-demo/spec.md"),
+            "---\nstatus: planned\n---\n\n# 020\n",
+        );
+        commit_all(&repo, "feat(020): plan");
+        write(&tmp.path().join("runtime/src/a.rs"), "fn a() {}\n");
+        write(&tmp.path().join("runtime/src/b.rs"), "fn b() {}\n");
+        write(&tmp.path().join("scripts/gen.sh"), "#!/bin/sh\n");
+        commit_all(&repo, "feat(020): work");
+
+        let result = run(
+            &DeriveBoundaryArgs {
+                feature: "020-demo".into(),
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert_eq!(
+            result.boundary,
+            vec![
+                "runtime/src/**".to_string(),
+                "scripts/**".to_string(),
+                "specs/020-demo/**".to_string(),
+            ],
+            "one zone per touched directory, sorted"
+        );
     }
 
     #[test]

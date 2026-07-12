@@ -556,7 +556,7 @@ Follow-on to task 45c: `compute-review-scope`'s `read_plan_affected` parses `## 
 
 ## 66. Implement scenario: [writecode-boundary-derivation](scenarios/writecode-boundary-derivation.md)
 
-- [ ] Implement the behavior described in `scenarios/writecode-boundary-derivation.md`
+- [x] Implement the behavior described in `scenarios/writecode-boundary-derivation.md`
 
 - **Done when**: the derived write boundary populates the writeCode enforcement key, with a seed as the empty-derivation fallback; the `implement-basic` fixture gains a multi-commit history producing a non-empty boundary matching the canned edits; the implement golden is re-blessed; `cargo test` green.
 

@@ -250,16 +250,16 @@ Result:
 ```json
 {
   "boundary": [
-    "specs/022-deterministic-runtime/**",
-    "runtime/**",
-    "framework/commands/status.md"
+    "README.md",
+    "runtime/src/**",
+    "specs/022-deterministic-runtime/**"
   ],
   "first-commit": "<sha>",
   "current-head": "<sha>"
 }
 ```
 
-The boundary is derived from `git diff --name-only <first-commit-on-spec-dir>..HEAD` plus the spec dir itself.
+The boundary is derived from `git diff --name-only <first-commit-on-spec-dir>..HEAD` plus the spec dir itself, emitted as **directory-zone globs** (scenario [writecode-boundary-derivation](scenarios/writecode-boundary-derivation.md)): each changed path contributes its parent directory as `{dir}/**`, because the writeCode validator enforcing this boundary must admit *new* files, which can never exact-match a previously-changed path. A root-level changed file stays an exact path — its zone would be `**`, permitting everything. On the exec path the walker merges the result into the `write-boundary` enforcement key as a **union** with any session-seeded value: a seed is a deliberate host/user grant the derivation never revokes, and on a fresh feature (derivation = spec glob only) the seed is what admits the first out-of-spec edit. With neither seed nor non-spec history, enforcement stays fail-closed — the first out-of-spec writeCode edit halts with `out-of-boundary-edit`.
 
 ### `check-stuck` — count tasks.md commits since `in-progress`
 
@@ -705,7 +705,7 @@ Response payload:
 }
 ```
 
-Every edit path must fall within the `write-boundary`; the runtime rejects out-of-boundary edits and surfaces an `error: out-of-boundary-edit` before applying any edit.
+Every edit path must fall within the `write-boundary`; the runtime rejects out-of-boundary edits and surfaces an `error: out-of-boundary-edit` before applying any edit. On the exec path `write-boundary` is the union of the session-seeded value and `derive-boundary`'s directory-zone globs (see that primitive's entry above); the seeded value alone carries it only until the derivation runs.
 
 ### `writeSpecBody`
 

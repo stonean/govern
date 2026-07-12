@@ -7,5 +7,4 @@ subtask-index = 0
 checked = true
 criterion-index = 0
 threshold = 3
-write-boundary = ["specs/004-implement/**", "runtime/**"]
 set-at = "2026-05-11T00:00:00Z"
