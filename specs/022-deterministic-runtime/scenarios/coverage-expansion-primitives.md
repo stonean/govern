@@ -35,9 +35,9 @@ New primitives, each wired at every site per the AGENTS.md six-site rule (schema
 
 ## Open Questions
 
-- `diff-cross-spec` as its own primitive versus a mode on `derive-boundary` (both diff the spec dir's first commit) — is the shared git walk worth unifying?
-- Scope: do all six land in one pass, or does the interpreter's lack of a loop/conditional construct (which forces several of these to stay prose today) warrant its own scenario first?
+*None — all resolved.*
 
 ## Resolved Questions
 
-*None yet.*
+- `diff-cross-spec` as its own primitive versus a mode on `derive-boundary`? **Own primitive, shared walk.** The two results share only the diff base — boundary globs versus sibling-spec paths + inbox bullet lines — so a mode would be a result-shape union for no gain; the expensive piece (the first-commit revwalk) is shared as the `pub(crate)` `first_commit_for_prefix` helper instead. `/gov:review`'s captured-issues section stays on `compute-review-scope`, whose window starts at the in-progress transition (review wants the current work window, not the feature's whole history); `diff-cross-spec` diffs against the working tree so implement's per-task summary sees uncommitted captures.
+- All six in one pass, or an interpreter loop/conditional scenario first? **Incremental, no new construct needed.** The six landed one primitive per commit (remove-inbox-item, create-plan-artifacts, check-review-gate, append-question, diff-cross-spec, the dashboard `rendered-markdown` field). Per-step conditionals stayed host judgment on primitive results — the `check-stuck` precedent: the walker dispatches and merges; the host halts, prompts, or re-invokes (e.g. `create-plan-artifacts` with `overwrite: true` on the confirmed replace branch). No interpreter loop/conditional construct was required.

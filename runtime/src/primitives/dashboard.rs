@@ -12,21 +12,26 @@
 //! Defined by `specs/022-deterministic-runtime/scenarios/dashboard-primitive.md`.
 
 use std::collections::{BTreeSet, HashMap};
+use std::fmt::Write as _;
 use std::path::Path;
 
 use serde::Deserialize;
 
+use crate::host::Host;
+use crate::primitives::resolve_references::{self, load_services};
 use crate::primitives::write_session::SESSION_FILE;
 use crate::primitives::{
-    PrimitiveError, Result, ScenarioFrontmatter, list_feature_dirs, list_scenario_files, read_text,
-    section_lines, split_frontmatter,
+    PrimitiveError, Result, ScenarioFrontmatter, feature_number, list_feature_dirs,
+    list_scenario_files, read_text, section_lines, split_frontmatter,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{
     DashboardArgs, DashboardConfig, DashboardResult, DashboardScenarioDetail,
-    DashboardSessionTarget, DashboardSpec, Frontmatter,
+    DashboardSessionTarget, DashboardSpec, Frontmatter, ReferenceOutcome, ResolutionRecord,
+    ResolveReferencesArgs,
 };
-use crate::schema::status::UNBLOCKING_STATUSES;
+use crate::schema::services::Services;
+use crate::schema::status::{ALLOWED_STATUSES, UNBLOCKING_STATUSES};
 
 /// Execute the `dashboard` primitive.
 ///
@@ -45,12 +50,306 @@ pub fn run(_args: &DashboardArgs, repo: &Path) -> Result<DashboardResult> {
     let tags_union = compute_tags_union(&specs);
     let config = load_config(repo)?;
     let session_target = load_session_target(repo)?;
+    let rendered_markdown =
+        render_markdown(repo, &specs, &tags_union, &config, session_target.as_ref())?;
     Ok(DashboardResult {
         session_target,
         specs,
         tags_union,
         config,
+        rendered_markdown,
     })
+}
+
+// ---------------------------------------------------------------------------
+// Rendered pipeline view (spec 022, scenario coverage-expansion-primitives)
+//
+// `/gov:status` previously spent five of its six steps on LLM-side
+// rendering of this payload. The runtime pre-renders the same four pieces
+// — preamble, dashboard table, counts/callouts, references readout — as
+// one markdown fragment the host may restyle. Returned data, never stdout
+// printing: user-facing rendering stays with the host (§runtime-boundary).
+// ---------------------------------------------------------------------------
+
+/// Render the full pipeline view. Blocks are joined by blank lines; the
+/// references readout is omitted entirely when no spec declares
+/// references (a single-service adopter sees no change).
+fn render_markdown(
+    repo: &Path,
+    specs: &[DashboardSpec],
+    tags_union: &[String],
+    config: &DashboardConfig,
+    session_target: Option<&DashboardSessionTarget>,
+) -> Result<String> {
+    let project = Host::load(repo).project;
+    let mut blocks = vec![
+        render_preamble(specs, session_target, &project),
+        render_table(specs, session_target, &project),
+        render_callouts(specs, tags_union, config, &project),
+    ];
+    if let Some(readout) = render_references(repo, specs, &project)? {
+        blocks.push(readout);
+    }
+    blocks.retain(|b| !b.is_empty());
+    Ok(blocks.join("\n\n"))
+}
+
+/// The preamble line(s) above the table. With a session target:
+/// `Target: {feature} / {status} / next: {next-action}`, plus a
+/// `Scenario: …` line when a scenario is targeted (a scenario with
+/// unresolved questions overrides the next action). Without one, the
+/// pointer to `/{project}:target`.
+fn render_preamble(
+    specs: &[DashboardSpec],
+    session_target: Option<&DashboardSessionTarget>,
+    project: &str,
+) -> String {
+    let Some(target) = session_target else {
+        return format!("No session target. Run /{project}:target to select one.");
+    };
+    // A target naming a spec that is not on disk degrades to placeholders
+    // rather than failing the whole render.
+    let (status, mut next) = specs.iter().find(|s| s.slug == target.feature).map_or_else(
+        || ("unknown".to_string(), "—".to_string()),
+        |s| (s.status.clone(), next_action(s, project)),
+    );
+    if target
+        .scenario_detail
+        .as_ref()
+        .is_some_and(|d| d.open_question_count >= 1)
+    {
+        // A targeted scenario with unresolved questions owns the next
+        // action regardless of the parent spec's status.
+        next = format!("/{project}:clarify (scenario-targeted)");
+    }
+    let mut out = format!("Target: {} / {status} / next: {next}", target.feature);
+    if let Some(scenario) = &target.scenario {
+        let (section, open) = target
+            .scenario_detail
+            .as_ref()
+            .map(|d| (d.section.clone(), d.open_question_count))
+            .unwrap_or_default();
+        let _ = write!(
+            out,
+            "\nScenario: {scenario} ({section}) — open-questions: {open}"
+        );
+    }
+    out
+}
+
+/// The dashboard table, one row per spec in directory order. The session
+/// target's Feature cell is bold; artifact flags render `✓`/`—`; the
+/// Dependencies column shows sorted three-digit `NNN` prefixes (`—` when
+/// empty).
+fn render_table(
+    specs: &[DashboardSpec],
+    session_target: Option<&DashboardSessionTarget>,
+    project: &str,
+) -> String {
+    let target_slug = session_target.map(|t| t.feature.as_str());
+    let mut rows = vec![
+        "| Feature | Status | Plan | Tasks | Data-model | Scenarios | Dependencies | Next Action |"
+            .to_string(),
+        "| --- | --- | --- | --- | --- | --- | --- | --- |".to_string(),
+    ];
+    for spec in specs {
+        let feature = if Some(spec.slug.as_str()) == target_slug {
+            format!("**{}**", spec.slug)
+        } else {
+            spec.slug.clone()
+        };
+        rows.push(format!(
+            "| {feature} | {} | {} | {} | {} | {} | {} | {} |",
+            spec.status,
+            mark(spec.has_plan),
+            mark(spec.has_tasks),
+            mark(spec.has_data_model),
+            spec.scenarios_count,
+            dependency_prefixes(&spec.dependencies),
+            next_action(spec, project),
+        ));
+    }
+    rows.join("\n")
+}
+
+/// Counts per status plus the conditional callouts (blocked, recovery,
+/// tags, disabled rule files), one line each.
+fn render_callouts(
+    specs: &[DashboardSpec],
+    tags_union: &[String],
+    config: &DashboardConfig,
+    project: &str,
+) -> String {
+    let mut lines: Vec<String> = Vec::new();
+    if !specs.is_empty() {
+        // Lifecycle order; an out-of-set status (a hand-edited
+        // frontmatter) still counts, appended after the known tiers.
+        let mut parts: Vec<String> = Vec::new();
+        let mut counted: Vec<&str> = Vec::new();
+        for status in ALLOWED_STATUSES {
+            let n = specs.iter().filter(|s| s.status == *status).count();
+            if n > 0 {
+                parts.push(format!("{status} {n}"));
+                counted.push(status);
+            }
+        }
+        for spec in specs {
+            if !counted.contains(&spec.status.as_str()) {
+                let n = specs.iter().filter(|s| s.status == spec.status).count();
+                parts.push(format!("{} {n}", spec.status));
+                counted.push(spec.status.as_str());
+            }
+        }
+        lines.push(format!("Counts: {}", parts.join(" · ")));
+    }
+    let blocked: Vec<&str> = specs
+        .iter()
+        .filter(|s| !s.blocked_by.is_empty())
+        .map(|s| s.slug.as_str())
+        .collect();
+    if !blocked.is_empty() {
+        lines.push(format!(
+            "Blocked: {} spec(s) — {}",
+            blocked.len(),
+            blocked.join(", ")
+        ));
+    }
+    let recovery: Vec<&str> = specs
+        .iter()
+        .filter(|s| in_recovery(s))
+        .map(|s| s.slug.as_str())
+        .collect();
+    if !recovery.is_empty() {
+        lines.push(format!(
+            "{} spec(s) in recovery state: {}. Run /{project}:clarify on each to walk the \
+             questions; the spec reverts to draft and advances forward again.",
+            recovery.len(),
+            recovery.join(", ")
+        ));
+    }
+    if !tags_union.is_empty() {
+        lines.push(format!("tags: {}", tags_union.join(", ")));
+    }
+    if config.present && !config.disabled_rule_files.is_empty() {
+        lines.push(format!(
+            "disabled rule files: {} (.govern.toml) — {}",
+            config.disabled_rule_files.len(),
+            config.disabled_rule_files.join(", ")
+        ));
+    }
+    lines.join("\n")
+}
+
+/// The cross-service references readout: one section per spec whose
+/// derived `references:` index is non-empty, resolved through the same
+/// classification `resolve-references` exposes (composed here so one
+/// `dashboard` call renders the whole view). `None` when no spec declares
+/// references.
+fn render_references(
+    repo: &Path,
+    specs: &[DashboardSpec],
+    project: &str,
+) -> Result<Option<String>> {
+    let services = load_services(repo)?;
+    let mut sections: Vec<String> = Vec::new();
+    for spec in specs {
+        let resolved = resolve_references::run(
+            &ResolveReferencesArgs {
+                feature: spec.slug.clone(),
+            },
+            repo,
+        )?;
+        if resolved.references.is_empty() {
+            continue;
+        }
+        let mut lines = vec![format!("**{}**", spec.slug), String::new()];
+        for record in &resolved.references {
+            lines.push(format!("- {}", reference_line(record, &services, project)));
+        }
+        sections.push(lines.join("\n"));
+    }
+    if sections.is_empty() {
+        return Ok(None);
+    }
+    Ok(Some(format!("References:\n\n{}", sections.join("\n\n"))))
+}
+
+/// One readout line per resolution record, with the matched service's
+/// `description` appended for orientation when present.
+fn reference_line(record: &ResolutionRecord, services: &Services, project: &str) -> String {
+    let name = match &record.service {
+        Some(service) => format!("{service}/{}", record.spec),
+        None => record.spec.clone(),
+    };
+    let body = match record.outcome {
+        ReferenceOutcome::Ok => {
+            format!("{name} → {}", record.status.as_deref().unwrap_or("unknown"))
+        }
+        ReferenceOutcome::Unregistered => format!(
+            "{name} — status not attempted (unregistered; run /{project}:link to register the \
+             service)"
+        ),
+        ReferenceOutcome::NotCheckedOut => format!("{name} → unknown (service not checked out)"),
+        ReferenceOutcome::StatusUnreadable => format!("{name} → unknown (status unreadable)"),
+        ReferenceOutcome::Broken => format!(
+            "{name} → broken reference (target spec missing; also reported by /{project}:analyze)"
+        ),
+    };
+    match record
+        .service
+        .as_deref()
+        .and_then(|alias| services.0.get(alias))
+        .and_then(|entry| entry.description.as_deref())
+    {
+        Some(description) if !description.is_empty() => format!("{body} — {description}"),
+        _ => body,
+    }
+}
+
+/// The Status → next action mapping, with the `clarify (recovery)`
+/// override for a non-draft spec that has re-acquired open questions.
+/// An out-of-set status echoes as-is (`validate-frontmatter` owns
+/// flagging it).
+fn next_action(spec: &DashboardSpec, project: &str) -> String {
+    if in_recovery(spec) {
+        return "clarify (recovery)".to_string();
+    }
+    match spec.status.as_str() {
+        "draft" => format!("/{project}:clarify"),
+        "clarified" => format!("/{project}:plan"),
+        "planned" | "in-progress" => format!("/{project}:implement"),
+        "done" => "done (spec is complete)".to_string(),
+        other => other.to_string(),
+    }
+}
+
+/// Recovery state: a spec past clarification whose body has re-acquired
+/// open questions (usually a manual frontmatter edit).
+fn in_recovery(spec: &DashboardSpec) -> bool {
+    matches!(
+        spec.status.as_str(),
+        "clarified" | "planned" | "in-progress"
+    ) && spec.open_question_count >= 1
+}
+
+/// Artifact-existence table mark.
+fn mark(present: bool) -> &'static str {
+    if present { "✓" } else { "—" }
+}
+
+/// The Dependencies column: sorted three-digit `NNN` prefixes from the
+/// dependency slugs (`—` when empty; a slug without an `NNN-` prefix
+/// passes through raw rather than vanishing).
+fn dependency_prefixes(dependencies: &[String]) -> String {
+    if dependencies.is_empty() {
+        return "—".to_string();
+    }
+    let mut prefixes: Vec<String> = dependencies
+        .iter()
+        .map(|dep| feature_number(dep).map_or_else(|| dep.clone(), |n| format!("{n:03}")))
+        .collect();
+    prefixes.sort();
+    prefixes.join(", ")
 }
 
 /// Walk `specs/` and build the per-spec entry list. Non-`NNN-feature`
@@ -719,5 +1018,185 @@ reason = "Deferred until v2 perf budget lands."
         let target = result.session_target.unwrap();
         assert_eq!(target.scenario.as_deref(), Some("bare"));
         assert!(target.scenario_detail.is_none());
+    }
+
+    /// Pin the slash-command namespace so rendered `/{project}:…` texts
+    /// are deterministic (the default falls back to the tempdir's random
+    /// basename).
+    fn pin_project(repo: &Path, extra: &str) {
+        std::fs::write(
+            repo.join(".govern.toml"),
+            format!("[host]\nproject = \"gov\"\n{extra}"),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn rendered_no_target_preamble_table_and_counts() {
+        let tmp = TempDir::new().unwrap();
+        pin_project(tmp.path(), "");
+        write_spec(
+            tmp.path(),
+            "001-alpha",
+            "status: draft\ndependencies: []\n",
+            "- Undecided thing?",
+        );
+        let result = run(&DashboardArgs::default(), tmp.path()).unwrap();
+        let rendered = &result.rendered_markdown;
+        assert!(
+            rendered.starts_with("No session target. Run /gov:target to select one."),
+            "{rendered}"
+        );
+        assert!(
+            rendered.contains(
+                "| Feature | Status | Plan | Tasks | Data-model | Scenarios | Dependencies | Next Action |"
+            ),
+            "{rendered}"
+        );
+        assert!(
+            rendered.contains("| 001-alpha | draft | — | — | — | 0 | — | /gov:clarify |"),
+            "{rendered}"
+        );
+        assert!(rendered.contains("Counts: draft 1"), "{rendered}");
+        assert!(
+            !rendered.contains("References:"),
+            "readout omitted with no references: {rendered}"
+        );
+    }
+
+    #[test]
+    fn rendered_target_bold_row_recovery_blocked_and_config_callouts() {
+        let tmp = TempDir::new().unwrap();
+        pin_project(
+            tmp.path(),
+            "\n[[review.disabled-rule-files]]\nfile = \"security-backend.md\"\nreason = \"n/a\"\n",
+        );
+        write_spec(
+            tmp.path(),
+            "001-alpha",
+            "status: draft\ndependencies: []\n",
+            "*None — all resolved.*",
+        );
+        // planned + open questions → recovery override; depends on the
+        // draft spec → blocked.
+        write_spec(
+            tmp.path(),
+            "002-beta",
+            "status: planned\ndependencies: [001-alpha]\ntags: [pipeline]\n",
+            "- What about Z?",
+        );
+        write_session_toml(
+            tmp.path(),
+            "feature = \"002-beta\"\npath = \"specs/002-beta\"\nset-at = \"2026-05-23T12:34:56Z\"\n",
+        );
+        let result = run(&DashboardArgs::default(), tmp.path()).unwrap();
+        let rendered = &result.rendered_markdown;
+        assert!(
+            rendered.starts_with("Target: 002-beta / planned / next: clarify (recovery)"),
+            "{rendered}"
+        );
+        assert!(
+            rendered.contains("| **002-beta** | planned |"),
+            "target row bolded: {rendered}"
+        );
+        assert!(rendered.contains("| 001-alpha | draft |"), "{rendered}");
+        assert!(
+            rendered.contains("| 001 | clarify (recovery) |"),
+            "NNN dep prefix + recovery next action: {rendered}"
+        );
+        assert!(
+            rendered.contains("Counts: draft 1 · planned 1"),
+            "{rendered}"
+        );
+        assert!(
+            rendered.contains("Blocked: 1 spec(s) — 002-beta"),
+            "{rendered}"
+        );
+        assert!(
+            rendered.contains(
+                "1 spec(s) in recovery state: 002-beta. Run /gov:clarify on each to walk the questions; the spec reverts to draft and advances forward again."
+            ),
+            "{rendered}"
+        );
+        assert!(rendered.contains("tags: pipeline"), "{rendered}");
+        assert!(
+            rendered.contains("disabled rule files: 1 (.govern.toml) — security-backend.md"),
+            "{rendered}"
+        );
+    }
+
+    #[test]
+    fn rendered_scenario_line_and_next_action_override() {
+        let tmp = TempDir::new().unwrap();
+        pin_project(tmp.path(), "");
+        write_spec(
+            tmp.path(),
+            "022-foo",
+            "status: done\ndependencies: []\n",
+            "*None — all resolved.*",
+        );
+        let scenarios = tmp.path().join("specs/022-foo/scenarios");
+        std::fs::create_dir_all(&scenarios).unwrap();
+        std::fs::write(
+            scenarios.join("edge.md"),
+            "---\nsection: \"Core\"\n---\n\n# Edge\n\n## Context\n\nA thing.\n\n## Open Questions\n\n- Unresolved?\n",
+        )
+        .unwrap();
+        write_session_toml(
+            tmp.path(),
+            "feature = \"022-foo\"\npath = \"specs/022-foo\"\nscenario = \"edge\"\nscenario-path = \"specs/022-foo/scenarios/edge.md\"\nset-at = \"2026-05-23T12:34:56Z\"\n",
+        );
+        let result = run(&DashboardArgs::default(), tmp.path()).unwrap();
+        let rendered = &result.rendered_markdown;
+        assert!(
+            rendered.starts_with(
+                "Target: 022-foo / done / next: /gov:clarify (scenario-targeted)\nScenario: edge (Core) — open-questions: 1"
+            ),
+            "scenario with open questions owns the next action: {rendered}"
+        );
+    }
+
+    #[test]
+    fn rendered_references_readout_covers_outcomes_and_descriptions() {
+        let tmp = TempDir::new().unwrap();
+        std::fs::write(
+            tmp.path().join(".govern.toml"),
+            "[host]\nproject = \"gov\"\n\n[services.api]\nrepo = \"https://github.com/acme/api\"\npath = \"checkouts/api\"\ndescription = \"Main API service\"\n",
+        )
+        .unwrap();
+        // Linked checkout with one resolvable spec.
+        let linked = tmp.path().join("checkouts/api/specs/003-user");
+        std::fs::create_dir_all(&linked).unwrap();
+        std::fs::write(
+            linked.join("spec.md"),
+            "---\nstatus: done\ndependencies: []\n---\n\n# 003\n",
+        )
+        .unwrap();
+        write_spec(
+            tmp.path(),
+            "001-consumer",
+            "status: in-progress\ndependencies: []\nreferences:\n  - service: api\n    spec: 003-user\n  - spec: 007-nav\n  - service: api\n    spec: 999-gone\n",
+            "*None — all resolved.*",
+        );
+        let result = run(&DashboardArgs::default(), tmp.path()).unwrap();
+        let rendered = &result.rendered_markdown;
+        assert!(rendered.contains("References:"), "{rendered}");
+        assert!(rendered.contains("**001-consumer**"), "{rendered}");
+        assert!(
+            rendered.contains("- api/003-user → done — Main API service"),
+            "{rendered}"
+        );
+        assert!(
+            rendered.contains(
+                "- 007-nav — status not attempted (unregistered; run /gov:link to register the service)"
+            ),
+            "{rendered}"
+        );
+        assert!(
+            rendered.contains(
+                "- api/999-gone → broken reference (target spec missing; also reported by /gov:analyze) — Main API service"
+            ),
+            "{rendered}"
+        );
     }
 }

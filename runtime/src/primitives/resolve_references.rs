@@ -90,8 +90,10 @@ pub fn run(args: &ResolveReferencesArgs, repo: &Path) -> Result<ResolveReference
 }
 
 /// Read `.govern.toml` `[services]` from the repo root. An absent file is an
-/// empty registry; a malformed one is an operational error.
-fn load_services(repo: &Path) -> Result<Services> {
+/// empty registry; a malformed one is an operational error. `pub(crate)`:
+/// shared with `dashboard`, whose rendered references readout appends the
+/// matched service's `description` from the same registry.
+pub(crate) fn load_services(repo: &Path) -> Result<Services> {
     let toml_path = repo.join(".govern.toml");
     if !toml_path.exists() {
         return Ok(Services::default());

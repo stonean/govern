@@ -562,7 +562,7 @@ Follow-on to task 45c: `compute-review-scope`'s `read_plan_affected` parses `## 
 
 ## 67. Implement scenario: [coverage-expansion-primitives](scenarios/coverage-expansion-primitives.md)
 
-- [ ] Implement the behavior described in `scenarios/coverage-expansion-primitives.md`
+- [x] Implement the behavior described in `scenarios/coverage-expansion-primitives.md`
 
 - **Done when**: `remove-inbox-item`, `diff-cross-spec` (or a `derive-boundary` mode), `check-review-gate`, `append-question`, and `create-plan-artifacts` exist (full six-site wiring + runtime-tools.txt + data-model + configure regen) and their command steps invoke them; `dashboard` returns a rendered-markdown field; implement step 13 uses `lint-markdown` instead of raw `npx`; markdown-only fallbacks preserved; all lints and `cargo test` green.
 

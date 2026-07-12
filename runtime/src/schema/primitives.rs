@@ -764,6 +764,14 @@ pub struct DashboardResult {
     pub tags_union: Vec<String>,
     /// `.govern.toml` review-state summary.
     pub config: DashboardConfig,
+    /// The full pipeline view pre-rendered as one markdown fragment —
+    /// preamble, dashboard table, counts and callouts, and the
+    /// cross-service references readout (the runtime resolves each spec's
+    /// `references:` index internally for the readout). Returned data the
+    /// host may restyle, never printed by the runtime; the structured
+    /// fields above stay authoritative for hosts that render their own
+    /// view.
+    pub rendered_markdown: String,
 }
 
 // -- check-rule-ids ----------------------------------------------------------

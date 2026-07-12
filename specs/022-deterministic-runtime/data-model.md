@@ -403,6 +403,16 @@ Result:
 
 Under the MCP surface, this is the only primitive whose semantics depend on host capability — an MCP host that cannot route a prompt to the user returns `confirmed: false` and the procedure halts at the gate.
 
+### `dashboard` — `rendered-markdown` field (addendum)
+
+The dashboard payload's full shape is canonical in [scenarios/dashboard-primitive.md](scenarios/dashboard-primitive.md); the coverage-expansion-primitives scenario adds one field:
+
+```json
+{ "rendered-markdown": "Target: 042-widget / planned / next: /gov:implement\n\n| Feature | Status | … |\n…" }
+```
+
+The full pipeline view pre-rendered as one markdown fragment, in `/gov:status`'s documented order: preamble, dashboard table, counts and callouts, and the cross-service references readout (blocks separated by blank lines; the readout omitted when no spec declares references). The runtime resolves each spec's `references:` index internally for the readout — the same classification `resolve-references` exposes, with the matched service's `description` appended from the `[services]` registry — so one `dashboard` call covers the whole view on the runtime path. `/{project}:…` next actions and callout texts substitute the adopter's `[host] project` namespace. Returned data the host may restyle, never stdout printing (§runtime-boundary: no user-facing rendering owned by the runtime); the structured fields stay authoritative for hosts that render their own view. The canonical piece-by-piece formats live in `/gov:status`'s Rendering reference, which is also the markdown-only path.
+
 ### `resolve-feature` — resolve an identifier to a feature directory
 
 Args:
