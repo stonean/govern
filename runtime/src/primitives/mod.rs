@@ -869,6 +869,11 @@ fn inline_code_spans(line: &str) -> Vec<std::ops::Range<usize>> {
 /// A delimiter mentioned inside backticks is skipped over. `needle` is
 /// ASCII (`<!--` / `-->`), so each match starts on a char boundary.
 fn find_outside_code(line: &str, needle: &str) -> Option<usize> {
+    // Cheap pre-check: a line with no delimiter at all (the common case)
+    // needs no inline-code-span computation.
+    if !line.contains(needle) {
+        return None;
+    }
     let spans = inline_code_spans(line);
     let mut from = 0;
     while let Some(rel) = line[from..].find(needle) {
