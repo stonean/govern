@@ -85,7 +85,9 @@ pub fn run(args: &SetStatusArgs, repo: &Path) -> Result<SetStatusResult> {
 /// Find the `status:` line inside the frontmatter text. Returns
 /// `(current_value, value_range_within_fm)`; the caller adds the
 /// frontmatter's offset within the full file to splice the replacement.
-fn locate_status_field(
+/// `pub(crate)`: shared with `append-question`, whose status back-edge
+/// must splice the same field in the same way (same-write atomicity).
+pub(crate) fn locate_status_field(
     fm_text: &str,
     root: &str,
     feature: &str,

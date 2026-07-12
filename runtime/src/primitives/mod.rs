@@ -11,6 +11,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 pub mod append_inbox;
+pub mod append_question;
 pub mod append_task;
 pub mod apply_manifest;
 pub mod check_artifacts;

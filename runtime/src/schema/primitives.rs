@@ -1987,6 +1987,55 @@ pub struct CheckReviewGateResult {
     pub violations: Vec<MarkdownViolation>,
 }
 
+// -- append-question ---------------------------------------------------------
+
+/// Args for `append-question`. Appends one question bullet to the target
+/// artifact's `## Open Questions` section — `/gov:amend`'s question-route
+/// write, including the same-write status back-edge on spec targets.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct AppendQuestionArgs {
+    /// Feature directory name under the configured spec root.
+    #[arg(long)]
+    pub feature: String,
+    /// Refined question text, appended as a `- {question}` bullet.
+    /// Single-line; embedded newlines are rejected (structure injection).
+    #[arg(long)]
+    pub question: String,
+    /// Optional scenario slug: the target artifact becomes
+    /// `scenarios/{slug}.md` instead of `spec.md`, and no status
+    /// back-edge applies (scenarios have no status field).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[arg(long)]
+    pub scenario: Option<String>,
+}
+
+/// Result for `append-question`.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct AppendQuestionResult {
+    /// Repo-relative path of the target artifact.
+    pub path: String,
+    /// Whether the question was appended. `false` is the dedup domain
+    /// outcome: an equivalent entry already exists and nothing was
+    /// written.
+    pub appended: bool,
+    /// The existing entry that suppressed the append (normalized-
+    /// whitespace, case-insensitive match); present only when deduped.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub duplicate_of: Option<String>,
+    /// Whether the `## Open Questions` section had to be created.
+    pub section_created: bool,
+    /// Whether the same-write status back-edge fired: a spec target
+    /// whose status was `clarified`, `planned`, `in-progress`, or `done`
+    /// reverts to `draft` in the same atomic write as the append.
+    pub status_reverted: bool,
+    /// The status the back-edge reverted from; present only when
+    /// `status-reverted` is `true`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub previous_status: Option<String>,
+}
+
 // -- append-inbox --------------------------------------------------------------
 
 /// Args for `append-inbox`. Appends one `- {text}` bullet to
@@ -3124,6 +3173,58 @@ mod tests {
         let unreviewed: serde_json::Value =
             serde_json::to_value(ReviewGateBlock::NotReviewed).unwrap();
         assert_eq!(unreviewed, "not-reviewed");
+    }
+
+    #[test]
+    fn append_question_round_trip() {
+        use super::{AppendQuestionArgs, AppendQuestionResult};
+        let args = AppendQuestionArgs {
+            feature: "042-widget".into(),
+            question: "Should rate limits be configurable per tenant?".into(),
+            scenario: None,
+        };
+        let av: serde_json::Value = serde_json::to_value(&args).unwrap();
+        // Absent scenario is omitted from the JSON, not null.
+        assert!(!av.as_object().unwrap().contains_key("scenario"));
+        assert_eq!(round_trip(&args), args);
+
+        let scenario_target = AppendQuestionArgs {
+            scenario: Some("retry-on-timeout".into()),
+            ..args
+        };
+        let sv: serde_json::Value = serde_json::to_value(&scenario_target).unwrap();
+        assert_eq!(sv["scenario"], "retry-on-timeout");
+        assert_eq!(round_trip(&scenario_target), scenario_target);
+
+        let appended = AppendQuestionResult {
+            path: "specs/042-widget/spec.md".into(),
+            appended: true,
+            duplicate_of: None,
+            section_created: false,
+            status_reverted: true,
+            previous_status: Some("planned".into()),
+        };
+        let rv: serde_json::Value = serde_json::to_value(&appended).unwrap();
+        assert_eq!(rv["status-reverted"], true);
+        assert_eq!(rv["previous-status"], "planned");
+        assert!(!rv.as_object().unwrap().contains_key("duplicate-of"));
+        assert_eq!(round_trip(&appended), appended);
+
+        let deduped = AppendQuestionResult {
+            path: "specs/042-widget/spec.md".into(),
+            appended: false,
+            duplicate_of: Some("Should rate limits be configurable per tenant?".into()),
+            section_created: false,
+            status_reverted: false,
+            previous_status: None,
+        };
+        let dv: serde_json::Value = serde_json::to_value(&deduped).unwrap();
+        assert_eq!(
+            dv["duplicate-of"],
+            "Should rate limits be configurable per tenant?"
+        );
+        assert!(!dv.as_object().unwrap().contains_key("previous-status"));
+        assert_eq!(round_trip(&deduped), deduped);
     }
 
     #[test]

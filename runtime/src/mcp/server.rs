@@ -30,12 +30,13 @@ use serde_json::Value;
 use crate::primitives;
 use crate::primitives::gate_confirm::GatePromptPayload;
 use crate::schema::primitives::{
-    AppendInboxArgs, AppendInboxResult, AppendTaskArgs, AppendTaskResult, ApplyManifestArgs,
-    ApplyManifestResult, CheckArtifactsArgs, CheckArtifactsResult, CheckReviewGateArgs,
-    CheckReviewGateResult, CheckRuleIdsArgs, CheckRuleIdsResult, CheckStuckArgs, CheckStuckResult,
-    CheckboxToggleResult, ComputeReviewScopeArgs, ComputeReviewScopeResult, CreateFeatureArgs,
-    CreateFeatureResult, CreatePlanArtifactsArgs, CreatePlanArtifactsResult, CreateScenarioArgs,
-    CreateScenarioResult, DashboardArgs, DashboardResult, DeriveBoundaryArgs, DeriveBoundaryResult,
+    AppendInboxArgs, AppendInboxResult, AppendQuestionArgs, AppendQuestionResult, AppendTaskArgs,
+    AppendTaskResult, ApplyManifestArgs, ApplyManifestResult, CheckArtifactsArgs,
+    CheckArtifactsResult, CheckReviewGateArgs, CheckReviewGateResult, CheckRuleIdsArgs,
+    CheckRuleIdsResult, CheckStuckArgs, CheckStuckResult, CheckboxToggleResult,
+    ComputeReviewScopeArgs, ComputeReviewScopeResult, CreateFeatureArgs, CreateFeatureResult,
+    CreatePlanArtifactsArgs, CreatePlanArtifactsResult, CreateScenarioArgs, CreateScenarioResult,
+    DashboardArgs, DashboardResult, DeriveBoundaryArgs, DeriveBoundaryResult,
     DiscoverRuleFilesArgs, DiscoverRuleFilesResult, EnforceManifestArgs, EnforceManifestResult,
     ExtractArchiveArgs, ExtractArchiveResult, FetchArchiveArgs, FetchArchiveResult,
     GateConfirmArgs, LintMarkdownArgs, LintMarkdownResult, MarkCriterionArgs, MarkTaskArgs,
@@ -638,6 +639,19 @@ impl GovRuntimeServer {
         params: Parameters<CreatePlanArtifactsArgs>,
     ) -> Result<Json<CreatePlanArtifactsResult>, String> {
         primitives::create_plan_artifacts::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "append-question",
+        description = "Append one `- {question}` bullet to the target artifact's ## Open Questions section — /gov:amend's question-route write. Targets the feature's spec.md, or scenarios/{slug}.md when `scenario` is passed. Dedup is normalized-whitespace + case-insensitive (a match is a clean appended: false outcome reporting the existing entry); a missing section is created per template order; on a spec target whose status is clarified/planned/in-progress/done the status reverts to draft in the same atomic write (the back-edge)."
+    )]
+    async fn append_question(
+        &self,
+        params: Parameters<AppendQuestionArgs>,
+    ) -> Result<Json<AppendQuestionResult>, String> {
+        primitives::append_question::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
     }

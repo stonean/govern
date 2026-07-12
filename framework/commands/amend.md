@@ -155,9 +155,8 @@ Informational; no separate confirmation prompt.
 
 **Question route:**
 
-1. Append the accepted question to the `## Open Questions` section of the target artifact. If the section does not exist, create it in the appropriate location per the template.
-2. If the target is a spec and its `status` is `clarified`, `planned`, or `in-progress`, update the frontmatter `status` field to `draft` in the same write (the back-edge). (For `draft` specs and scenario targets, no status mutation occurs.) Use the `set-status` primitive when the runtime is registered; otherwise edit the frontmatter directly.
-3. Run `npx markdownlint-cli2` on the modified file (primitive: `lint-markdown`, MCP: `lint-markdown`).
+1. Invoke `append-question` with the accepted question against the targeted feature — pass the scenario slug when a scenario is the session target. The primitive appends the `- {question}` bullet to the target artifact's `## Open Questions` section (creating a missing section per template order, replacing a `*None …*` scaffold placeholder), re-checks the normalized-whitespace dedup as a final guard (an equivalent existing entry suppresses the write and is reported back as `duplicate-of`), and on a spec target whose status is `clarified`, `planned`, or `in-progress` performs the `→ draft` back-edge in the same atomic write. Scenario targets never mutate status. On the markdown-only path, apply the same rules with the host's file tools: append the question to `## Open Questions` (creating the section in the appropriate location per the template if absent), and — if the target is a spec with status `clarified`, `planned`, or `in-progress` — update the frontmatter `status` field to `draft` in the same write.
+2. Run `npx markdownlint-cli2` on the modified file (primitive: `lint-markdown`, MCP: `lint-markdown`).
 
 **Scenario route:**
 

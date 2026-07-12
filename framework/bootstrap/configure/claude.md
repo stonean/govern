@@ -119,6 +119,7 @@ Configure `{cli-config-dir}/settings.local.json` with the permissions needed for
    - `mcp__gvrn__create-feature`
    - `mcp__gvrn__create-plan-artifacts`
    - `mcp__gvrn__check-review-gate`
+   - `mcp__gvrn__append-question`
    - `mcp__gvrn__append-inbox`
    - `mcp__gvrn__remove-inbox-item`
    - `mcp__gvrn__check-artifacts`

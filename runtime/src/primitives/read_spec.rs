@@ -134,7 +134,11 @@ fn parse_checkboxes(body: &str, section_heading: &str) -> Vec<AcceptanceCriterio
     out
 }
 
-fn parse_open_questions(body: &str, section_heading: &str) -> Vec<OpenQuestion> {
+/// Parse the `- ` bullet entries of the named questions section
+/// (continuation lines fold in; the `*None — all resolved.*` placeholder
+/// is skipped). `pub(crate)`: shared with `append-question`, whose dedup
+/// must see exactly the entries this reader reports.
+pub(crate) fn parse_open_questions(body: &str, section_heading: &str) -> Vec<OpenQuestion> {
     let mut out = Vec::new();
     let mut current: Option<String> = None;
     for line in section_lines(body, section_heading) {

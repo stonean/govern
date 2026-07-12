@@ -505,6 +505,29 @@ Result:
 
 The deterministic surface behind `/gov:implement`'s completion-gate step 13, which the host previously walked by hand on every completion attempt. Evaluates the gate's two checks in documented order, first failure wins: the feature directory's markdown lint (recursive `{root}/{feature}/**/*.md` glob through the `lint-markdown` machinery — the raw `npx markdownlint-cli2` invocation the step used to name), then the spec frontmatter `review:` block. `blocked-by` names the first failing check: `markdown-lint` (violations echoed in `violations`, or a non-zero exit the parser could not attribute), `not-reviewed` (`review:` absent or `last-run` null), or `must-violations` (`review.blocking: true`). `message` is the canonical blocked text with the adopter's `[host] project` command namespace substituted into the `/{project}:review` references; `guidance` carries the resolve-or-waive follow-up on the `must-violations` branch only. Every verdict is a domain outcome — the host halts on a blocked gate; the primitive never errors for one.
 
+### `append-question` — append one bullet to Open Questions
+
+Args:
+
+```json
+{ "feature": "042-widget", "question": "Should rate limits be configurable per tenant?", "scenario": "retry-on-timeout" }
+```
+
+Result:
+
+```json
+{
+  "path": "specs/042-widget/scenarios/retry-on-timeout.md",
+  "appended": true,
+  "section-created": false,
+  "status-reverted": false
+}
+```
+
+The deterministic surface behind `/gov:amend`'s question-route write, previously the only record-path with no primitive (asymmetric with the scenario route's `create-scenario` + `append-task`). Appends `- {question}` to the target artifact's `## Open Questions` section — the feature's `spec.md` by default, `scenarios/{slug}.md` when `scenario` is passed (slug validated against the framework slug grammar; `question` is single-line, embedded newlines rejected).
+
+Dedup uses amend's normalized-whitespace comparison (collapse whitespace runs, trim, case-insensitive) against exactly the entries `read-spec`'s question parser reports (continuation lines folded, placeholders skipped), so the runtime and markdown-only paths agree on question identity; a match is the `appended: false` domain outcome with the existing entry echoed verbatim in `duplicate-of`, nothing written. A missing section is created per template order — immediately before `## Resolved Questions` when present (the scenario scaffold), else at end of file (the spec template) — and a `*None …*` scaffold placeholder is replaced by the first real entry. On a spec target whose status is `clarified`, `planned`, `in-progress`, or `done`, the frontmatter status reverts to `draft` in the same atomic write (`status-reverted` + `previous-status` report it) — never a window where the body holds an unresolved question while the status claims otherwise. Scenario targets have no status field and never back-edge; a status value outside the lifecycle set is left alone (`validate-frontmatter` owns flagging it).
+
 ### `append-inbox` — append one bullet to the inbox
 
 Args:
