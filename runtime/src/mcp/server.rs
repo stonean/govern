@@ -34,20 +34,20 @@ use crate::schema::primitives::{
     ApplyManifestResult, CheckArtifactsArgs, CheckArtifactsResult, CheckRuleIdsArgs,
     CheckRuleIdsResult, CheckStuckArgs, CheckStuckResult, CheckboxToggleResult,
     ComputeReviewScopeArgs, ComputeReviewScopeResult, CreateFeatureArgs, CreateFeatureResult,
-    CreateScenarioArgs, CreateScenarioResult, DashboardArgs, DashboardResult, DeriveBoundaryArgs,
-    DeriveBoundaryResult, DiscoverRuleFilesArgs, DiscoverRuleFilesResult, EnforceManifestArgs,
-    EnforceManifestResult, ExtractArchiveArgs, ExtractArchiveResult, FetchArchiveArgs,
-    FetchArchiveResult, GateConfirmArgs, LintMarkdownArgs, LintMarkdownResult, MarkCriterionArgs,
-    MarkTaskArgs, MergeClaudeMdArgs, MergeClaudeMdResult, MergeManagedBlockArgs,
-    MergeManagedBlockResult, MergePermissionsArgs, MergePermissionsResult, MigrateSessionFileArgs,
-    MigrateSessionFileResult, ProcessWaiversArgs, ProcessWaiversResult, PruneTasksArgs,
-    PruneTasksResult, ReadSpecArgs, ReadSpecResult, ReadTasksArgs, ReadTasksResult,
-    RemoveInboxItemArgs, RemoveInboxItemResult, ResolveAnchorArgs, ResolveAnchorResult,
-    ResolveFeatureArgs, ResolveFeatureResult, ResolveReferencesArgs, ResolveReferencesResult,
-    RunGeneratorArgs, RunGeneratorResult, SetStatusArgs, SetStatusResult, SubstituteTemplatesArgs,
-    SubstituteTemplatesResult, TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs,
-    ValidateFrontmatterResult, WriteReviewArgs, WriteReviewResult, WriteSessionArgs,
-    WriteSessionResult,
+    CreatePlanArtifactsArgs, CreatePlanArtifactsResult, CreateScenarioArgs, CreateScenarioResult,
+    DashboardArgs, DashboardResult, DeriveBoundaryArgs, DeriveBoundaryResult,
+    DiscoverRuleFilesArgs, DiscoverRuleFilesResult, EnforceManifestArgs, EnforceManifestResult,
+    ExtractArchiveArgs, ExtractArchiveResult, FetchArchiveArgs, FetchArchiveResult,
+    GateConfirmArgs, LintMarkdownArgs, LintMarkdownResult, MarkCriterionArgs, MarkTaskArgs,
+    MergeClaudeMdArgs, MergeClaudeMdResult, MergeManagedBlockArgs, MergeManagedBlockResult,
+    MergePermissionsArgs, MergePermissionsResult, MigrateSessionFileArgs, MigrateSessionFileResult,
+    ProcessWaiversArgs, ProcessWaiversResult, PruneTasksArgs, PruneTasksResult, ReadSpecArgs,
+    ReadSpecResult, ReadTasksArgs, ReadTasksResult, RemoveInboxItemArgs, RemoveInboxItemResult,
+    ResolveAnchorArgs, ResolveAnchorResult, ResolveFeatureArgs, ResolveFeatureResult,
+    ResolveReferencesArgs, ResolveReferencesResult, RunGeneratorArgs, RunGeneratorResult,
+    SetStatusArgs, SetStatusResult, SubstituteTemplatesArgs, SubstituteTemplatesResult,
+    TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs, ValidateFrontmatterResult,
+    WriteReviewArgs, WriteReviewResult, WriteSessionArgs, WriteSessionResult,
 };
 
 /// Canonical MCP tool names exposed by the server, in manifest order —
@@ -625,6 +625,19 @@ impl GovRuntimeServer {
         params: Parameters<CreateFeatureArgs>,
     ) -> Result<Json<CreateFeatureResult>, String> {
         primitives::create_feature::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "create-plan-artifacts",
+        description = "Copy the plan/tasks (and, with include-data-model, data-model) templates into an existing feature directory (atomic, mode-preserving) — /gov:plan's template-copy and existing-artifact-detection step. Pre-existing artifacts are never touched by default: each is reported kept with its last-modified timestamp for the keep-or-replace prompt; only overwrite: true (the confirmed replace branch) copies fresh templates over them."
+    )]
+    async fn create_plan_artifacts(
+        &self,
+        params: Parameters<CreatePlanArtifactsArgs>,
+    ) -> Result<Json<CreatePlanArtifactsResult>, String> {
+        primitives::create_plan_artifacts::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
     }

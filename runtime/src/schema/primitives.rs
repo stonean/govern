@@ -1859,6 +1859,79 @@ pub struct CreateFeatureResult {
     pub template: Option<String>,
 }
 
+// -- create-plan-artifacts -------------------------------------------------
+
+/// Args for `create-plan-artifacts`. Copies the plan/tasks (and, on
+/// request, data-model) templates into an existing feature directory —
+/// the deterministic template-copy and existing-artifact-detection step
+/// of `/gov:plan` (the plan-side mirror of `create-feature`).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct CreatePlanArtifactsArgs {
+    /// Feature directory name under the configured spec root.
+    #[arg(long)]
+    pub feature: String,
+    /// Also copy the data-model template. Whether the feature introduces
+    /// or modifies domain entities is the host's judgment, so
+    /// `data-model.md` joins the copy set only on request. A pre-existing
+    /// `data-model.md` is reported (`kept`) regardless, so the
+    /// existing-artifact prompt always sees the full set.
+    #[serde(default)]
+    #[arg(long)]
+    pub include_data_model: bool,
+    /// Copy fresh templates over pre-existing artifacts — the "replace"
+    /// branch of the existing-artifact prompt, passed only after the user
+    /// confirms. Default `false`: pre-existing artifacts are never
+    /// touched (`kept`).
+    #[serde(default)]
+    #[arg(long)]
+    pub overwrite: bool,
+}
+
+/// Outcome for one plan artifact.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum PlanArtifactAction {
+    /// The artifact was missing; the template was copied in.
+    Created,
+    /// The artifact pre-existed and was left untouched.
+    Kept,
+    /// The artifact pre-existed and the template was copied over it
+    /// (`overwrite: true`).
+    Replaced,
+}
+
+/// Per-artifact report entry for `create-plan-artifacts`.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct PlanArtifact {
+    /// Artifact file name: `plan.md`, `tasks.md`, or `data-model.md`.
+    pub file: String,
+    /// Repo-relative artifact path.
+    pub path: String,
+    /// What happened to the artifact this call.
+    pub action: PlanArtifactAction,
+    /// Repo-relative path of the template copied in; absent on `kept`.
+    /// No last-modified stamp accompanies `kept` entries — primitive
+    /// results carry no wall-clock data (same rule as `write-session`,
+    /// whose `set-at` goes into the file, never the result), so the
+    /// envelope stream stays deterministic.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub template: Option<String>,
+}
+
+/// Result for `create-plan-artifacts`.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct CreatePlanArtifactsResult {
+    /// Repo-relative feature directory path.
+    pub path: String,
+    /// Per-artifact outcomes in canonical order (`plan.md`, `tasks.md`,
+    /// `data-model.md`). A `data-model.md` that is neither requested nor
+    /// on disk is omitted.
+    pub artifacts: Vec<PlanArtifact>,
+}
+
 // -- append-inbox --------------------------------------------------------------
 
 /// Args for `append-inbox`. Appends one `- {text}` bullet to
@@ -2901,6 +2974,58 @@ mod tests {
         let fv: serde_json::Value = serde_json::to_value(&refused).unwrap();
         assert!(!fv.as_object().unwrap().contains_key("template"));
         assert_eq!(round_trip(&refused), refused);
+    }
+
+    #[test]
+    fn create_plan_artifacts_round_trip() {
+        use super::{
+            CreatePlanArtifactsArgs, CreatePlanArtifactsResult, PlanArtifact, PlanArtifactAction,
+        };
+        let args = CreatePlanArtifactsArgs {
+            feature: "042-widget".into(),
+            include_data_model: true,
+            overwrite: false,
+        };
+        let value: serde_json::Value = serde_json::to_value(&args).unwrap();
+        assert_eq!(value["feature"], "042-widget");
+        assert_eq!(value["include-data-model"], true);
+        assert_eq!(value["overwrite"], false);
+        assert_eq!(round_trip(&args), args);
+
+        // Booleans default false when omitted (host sends only `feature`).
+        let minimal: CreatePlanArtifactsArgs =
+            serde_json::from_value(serde_json::json!({"feature": "042-widget"})).unwrap();
+        assert!(!minimal.include_data_model);
+        assert!(!minimal.overwrite);
+
+        let result = CreatePlanArtifactsResult {
+            path: "specs/042-widget".into(),
+            artifacts: vec![
+                PlanArtifact {
+                    file: "plan.md".into(),
+                    path: "specs/042-widget/plan.md".into(),
+                    action: PlanArtifactAction::Created,
+                    template: Some("specs/templates/plan.md".into()),
+                },
+                PlanArtifact {
+                    file: "tasks.md".into(),
+                    path: "specs/042-widget/tasks.md".into(),
+                    action: PlanArtifactAction::Kept,
+                    template: None,
+                },
+            ],
+        };
+        let rv: serde_json::Value = serde_json::to_value(&result).unwrap();
+        assert_eq!(rv["artifacts"][0]["action"], "created");
+        assert_eq!(rv["artifacts"][1]["action"], "kept");
+        // `template` is absent from the JSON on kept, not null.
+        let kept = rv["artifacts"][1].as_object().unwrap();
+        assert!(!kept.contains_key("template"));
+        assert_eq!(round_trip(&result), result);
+
+        let replaced: serde_json::Value =
+            serde_json::to_value(PlanArtifactAction::Replaced).unwrap();
+        assert_eq!(replaced, "replaced");
     }
 
     #[test]

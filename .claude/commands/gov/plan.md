@@ -45,17 +45,19 @@ Read the spec's `status` field from the YAML frontmatter at the top of the file.
 
 2. Invoke `lint-markdown` against the feature directory's markdown files. Pre-plan violations are surfaced as advisory findings; the procedure continues regardless.
 
-3. <!-- llm:writeSpecBody --> Fill the Technical Decisions section of the plan. The host returns the markdown body for the section; the walker forwards the response through the context.
+3. Invoke `create-plan-artifacts` against the targeted feature to copy the plan and tasks templates into the feature directory — pass `include-data-model` when the feature introduces or modifies domain entities or data structures. Missing artifacts are created (atomic, mode-preserving); pre-existing ones are never touched and report back `kept`. When any artifact is `kept`, run the **Detect existing artifacts** prompt below: on **keep** (the default), proceed with the files as they stand; on **replace**, re-invoke with `overwrite: true` to copy fresh templates over them.
 
-4. <!-- llm:writeSpecBody --> Fill the Affected Files section of the plan. The host returns a table listing files this feature creates or modifies, alongside an action and purpose for each row. The runtime write boundary used by `/gov:implement` is derived from git history; this section is a planning aid, not authoritative. Otherwise, fall back to the markdown-only path.
+4. <!-- llm:writeSpecBody --> Fill the Technical Decisions section of the plan. The host returns the markdown body for the section; the walker forwards the response through the context.
 
-5. <!-- llm:writeSpecBody --> Fill the Trade-offs section of the plan. The host enumerates the considered-and-rejected alternatives plus known limitations. Otherwise, fall back to the markdown-only path.
+5. <!-- llm:writeSpecBody --> Fill the Affected Files section of the plan. The host returns a table listing files this feature creates or modifies, alongside an action and purpose for each row. The runtime write boundary used by `/gov:implement` is derived from git history; this section is a planning aid, not authoritative. Otherwise, fall back to the markdown-only path.
 
-6. Invoke `gate-confirm` with a prompt that presents a summary of the plan body and the task breakdown and asks the user to approve the transition from clarified to planned. On confirmation, continue to step 7; on denial, the walker exits cleanly without modifying the spec.
+6. <!-- llm:writeSpecBody --> Fill the Trade-offs section of the plan. The host enumerates the considered-and-rejected alternatives plus known limitations. Otherwise, fall back to the markdown-only path.
 
-7. Invoke `set-status` to flip the spec frontmatter's status from clarified to planned; the primitive guards against a stale "from" value so concurrent edits surface as an operational error rather than a silent overwrite.
+7. Invoke `gate-confirm` with a prompt that presents a summary of the plan body and the task breakdown and asks the user to approve the transition from clarified to planned. On confirmation, continue to step 8; on denial, the walker exits cleanly without modifying the spec.
 
-8. Invoke `lint-markdown` a second time as the readiness gate's final check. Any violations surface as advisory findings the user resolves before running `/gov:implement`.
+8. Invoke `set-status` to flip the spec frontmatter's status from clarified to planned; the primitive guards against a stale "from" value so concurrent edits surface as an operational error rather than a silent overwrite.
+
+9. Invoke `lint-markdown` a second time as the readiness gate's final check. Any violations surface as advisory findings the user resolves before running `/gov:implement`.
 
 ## Markdown-only reference
 

@@ -53,6 +53,7 @@ dashboard
 write-session
 resolve-feature
 create-feature
+create-plan-artifacts
 append-inbox
 remove-inbox-item
 check-artifacts

@@ -11,14 +11,14 @@ use gvrn::mcp::server::GovRuntimeServer;
 use gvrn::primitives;
 use gvrn::schema::primitives::{
     AppendInboxArgs, AppendTaskArgs, ApplyManifestArgs, CheckArtifactsArgs, CheckRuleIdsArgs,
-    CheckStuckArgs, ComputeReviewScopeArgs, CreateFeatureArgs, CreateScenarioArgs, DashboardArgs,
-    DeriveBoundaryArgs, DiscoverRuleFilesArgs, EnforceManifestArgs, ExtractArchiveArgs,
-    FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs,
-    MergeClaudeMdArgs, MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs,
-    ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs, RemoveInboxItemArgs,
-    ResolveAnchorArgs, ResolveFeatureArgs, ResolveReferencesArgs, RunGeneratorArgs, SetStatusArgs,
-    SubstituteTemplatesArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteReviewArgs,
-    WriteSessionArgs,
+    CheckStuckArgs, ComputeReviewScopeArgs, CreateFeatureArgs, CreatePlanArtifactsArgs,
+    CreateScenarioArgs, DashboardArgs, DeriveBoundaryArgs, DiscoverRuleFilesArgs,
+    EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs,
+    MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs,
+    MergePermissionsArgs, MigrateSessionFileArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs,
+    ReadTasksArgs, RemoveInboxItemArgs, ResolveAnchorArgs, ResolveFeatureArgs,
+    ResolveReferencesArgs, RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs,
+    TraverseDepsArgs, ValidateFrontmatterArgs, WriteReviewArgs, WriteSessionArgs,
 };
 
 #[derive(Parser, Debug)]
@@ -121,6 +121,8 @@ enum Command {
     CreateScenario(CreateScenarioArgs),
     /// Scaffold the next {specs-root}/{NNN-slug}/ directory with a spec-template copy.
     CreateFeature(CreateFeatureArgs),
+    /// Copy the plan/tasks (and optional data-model) templates into a feature directory.
+    CreatePlanArtifacts(CreatePlanArtifactsArgs),
     /// Append a numbered task block to a feature's tasks.md (atomic rewrite).
     AppendTask(AppendTaskArgs),
     /// Append one bullet to {specs-root}/inbox.md (atomic, optional dedup-by-prefix).
@@ -506,6 +508,9 @@ fn main() -> ExitCode {
             emit_result(primitives::create_scenario::run(&args, &repo))
         }
         Command::CreateFeature(args) => emit_result(primitives::create_feature::run(&args, &repo)),
+        Command::CreatePlanArtifacts(args) => {
+            emit_result(primitives::create_plan_artifacts::run(&args, &repo))
+        }
         Command::AppendTask(args) => emit_result(primitives::append_task::run(&args, &repo)),
         Command::AppendInbox(args) => emit_result(primitives::append_inbox::run(&args, &repo)),
         Command::RemoveInboxItem(args) => {

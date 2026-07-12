@@ -18,6 +18,7 @@ pub mod check_rule_ids;
 pub mod check_stuck;
 pub mod compute_review_scope;
 pub mod create_feature;
+pub mod create_plan_artifacts;
 pub mod create_scenario;
 pub mod dashboard;
 pub mod derive_boundary;
@@ -1116,6 +1117,28 @@ pub(crate) fn template_candidates(specs_root: &str, file: &str) -> [String; 2] {
         format!("{specs_root}/templates/{file}"),
         format!("framework/templates/spec/{file}"),
     ]
+}
+
+/// Resolve a spec-pipeline template through [`template_candidates`],
+/// returning `(repo-relative path, absolute path)` of the first candidate
+/// on disk, or [`PrimitiveError::TemplateNotFound`] naming every location
+/// tried. Shared by `create-feature` (spec template) and
+/// `create-plan-artifacts` (plan/tasks/data-model templates).
+pub(crate) fn resolve_template(
+    repo: &Path,
+    specs_root: &str,
+    file: &str,
+) -> Result<(String, PathBuf)> {
+    let candidates = template_candidates(specs_root, file);
+    for rel in &candidates {
+        let abs = repo.join(rel);
+        if abs.is_file() {
+            return Ok((rel.clone(), abs));
+        }
+    }
+    Err(PrimitiveError::TemplateNotFound {
+        tried: candidates.join(", "),
+    })
 }
 
 /// Parse the `## Affected Files` markdown table in a plan body and return

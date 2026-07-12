@@ -59,14 +59,14 @@ use crate::primitives;
 use crate::schema::extensions::{self, ValidationError, WriteCodeResponse};
 use crate::schema::primitives::{
     AppendInboxArgs, AppendTaskArgs, ApplyManifestArgs, CheckArtifactsArgs, CheckRuleIdsArgs,
-    CheckStuckArgs, ComputeReviewScopeArgs, CreateFeatureArgs, CreateScenarioArgs, DashboardArgs,
-    DeriveBoundaryArgs, DiscoverRuleFilesArgs, EnforceManifestArgs, ExtractArchiveArgs,
-    FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs,
-    MergeClaudeMdArgs, MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs,
-    ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs, RemoveInboxItemArgs,
-    ResolveAnchorArgs, ResolveFeatureArgs, ResolveReferencesArgs, RunGeneratorArgs, SetStatusArgs,
-    SubstituteTemplatesArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteReviewArgs,
-    WriteSessionArgs,
+    CheckStuckArgs, ComputeReviewScopeArgs, CreateFeatureArgs, CreatePlanArtifactsArgs,
+    CreateScenarioArgs, DashboardArgs, DeriveBoundaryArgs, DiscoverRuleFilesArgs,
+    EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs,
+    MarkCriterionArgs, MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs,
+    MergePermissionsArgs, MigrateSessionFileArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs,
+    ReadTasksArgs, RemoveInboxItemArgs, ResolveAnchorArgs, ResolveFeatureArgs,
+    ResolveReferencesArgs, RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs,
+    TraverseDepsArgs, ValidateFrontmatterArgs, WriteReviewArgs, WriteSessionArgs,
 };
 use crate::schema::procedure::{Procedure, Step, StepNumber};
 use crate::schema::protocol::{ErrorLocation, ProtocolMessage};
@@ -665,6 +665,7 @@ fn dispatch_primitive(
         "migrate-session-file" => call!(MigrateSessionFileArgs, migrate_session_file),
         "create-scenario" => call!(CreateScenarioArgs, create_scenario),
         "create-feature" => call!(CreateFeatureArgs, create_feature),
+        "create-plan-artifacts" => call!(CreatePlanArtifactsArgs, create_plan_artifacts),
         "append-task" => call!(AppendTaskArgs, append_task),
         "append-inbox" => call!(AppendInboxArgs, append_inbox),
         "remove-inbox-item" => call!(RemoveInboxItemArgs, remove_inbox_item),

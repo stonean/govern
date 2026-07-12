@@ -458,6 +458,31 @@ Result:
 
 The number is `max(existing three-digit prefix) + 1`, zero-padded; the slug is the lowercased title with non-alphanumeric runs collapsed to single hyphens and trimmed. The spec template is resolved in `writeSpecBody`'s candidate order — `{specs-root}/templates/spec.md`, then `framework/templates/spec/spec.md` — and copied atomically with the source file's mode mirrored. An already-existing target directory is the `created: false` domain outcome (`template` absent, nothing written); a missing template is an operational error raised before the directory is created.
 
+### `create-plan-artifacts` — copy the plan/tasks/data-model templates into a feature directory
+
+Args:
+
+```json
+{ "feature": "042-widget", "include-data-model": true, "overwrite": false }
+```
+
+Result:
+
+```json
+{
+  "path": "specs/042-widget",
+  "artifacts": [
+    { "file": "plan.md", "path": "specs/042-widget/plan.md", "action": "created", "template": "specs/templates/plan.md" },
+    { "file": "tasks.md", "path": "specs/042-widget/tasks.md", "action": "kept" },
+    { "file": "data-model.md", "path": "specs/042-widget/data-model.md", "action": "created", "template": "specs/templates/data-model.md" }
+  ]
+}
+```
+
+The plan-side mirror of `create-feature` and the deterministic surface behind `/gov:plan`'s template-copy and existing-artifact detection (step 3). Copies each missing artifact's template into the existing feature directory using the same candidate order and atomic, mode-mirroring write as `create-feature`; every needed template is resolved before the first write, so a missing template is one operational error with nothing half-copied. `data-model.md` joins the copy set only when `include-data-model` is passed (whether the feature has domain entities is the host's judgment), but a pre-existing `data-model.md` is always reported so the existing-artifact prompt sees the full set; when it is neither requested nor on disk it is omitted from `artifacts`.
+
+Per-artifact `action` is the domain outcome: `created` (was missing, template copied), `kept` (pre-existing, untouched — never an error), or `replaced` (pre-existing, template copied over; only with `overwrite: true`, the confirmed "replace" branch of the prompt). `template` names the copied template and is absent on `kept`. No last-modified stamp accompanies `kept` entries — primitive results carry no wall-clock data (the same rule that keeps `write-session`'s `set-at` in the file, out of the result), so the exec envelope stream stays deterministic; the prompt's timestamp listing stays a markdown-only-path detail. A missing feature directory is an operational error (`create-feature` owns directory creation).
+
 ### `append-inbox` — append one bullet to the inbox
 
 Args:

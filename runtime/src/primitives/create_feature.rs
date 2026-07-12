@@ -21,8 +21,7 @@ use std::path::Path;
 
 use crate::primitives::apply_manifest::mirror_source_mode;
 use crate::primitives::{
-    PrimitiveError, Result, feature_number, list_feature_dirs, template_candidates,
-    write_atomic_bytes,
+    PrimitiveError, Result, feature_number, list_feature_dirs, resolve_template, write_atomic_bytes,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{CreateFeatureArgs, CreateFeatureResult};
@@ -68,7 +67,7 @@ pub fn run(args: &CreateFeatureArgs, repo: &Path) -> Result<CreateFeatureResult>
 
     // Resolve the template before creating anything, so a missing
     // template leaves no half-scaffolded directory behind.
-    let (template_rel, template_abs) = resolve_template(repo, &root)?;
+    let (template_rel, template_abs) = resolve_template(repo, &root, "spec.md")?;
     let template_bytes = std::fs::read(&template_abs).map_err(|source| PrimitiveError::Io {
         path: template_abs.clone(),
         source,
@@ -122,24 +121,6 @@ fn next_feature_number(specs_dir: &Path) -> u32 {
         .max()
         .unwrap_or(0)
         + 1
-}
-
-/// Resolve the spec template, mirroring `payload::load_template`'s
-/// candidate order: `{specs-root}/templates/spec.md` (installed adopter
-/// layout), then `framework/templates/spec/spec.md` (framework source
-/// layout). Returns `(repo-relative path, absolute path)` of the first
-/// candidate on disk.
-fn resolve_template(repo: &Path, root: &str) -> Result<(String, std::path::PathBuf)> {
-    let candidates = template_candidates(root, "spec.md");
-    for rel in &candidates {
-        let abs = repo.join(rel);
-        if abs.is_file() {
-            return Ok((rel.clone(), abs));
-        }
-    }
-    Err(PrimitiveError::TemplateNotFound {
-        tried: candidates.join(", "),
-    })
 }
 
 #[cfg(test)]
