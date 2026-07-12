@@ -18,10 +18,10 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 - [x] Implement the behavior described in `scenarios/append-inbox-comment-aware-write.md`
 
-- **Done when**: `append-inbox`'s write side is comment/fence-aware like its read side: a bullet appended to an `inbox.md` that ends inside an unclosed `<!--` comment (or fence) lands in a position `count_inbox_bullets` counts, never inside the comment; well-formed inboxes append unchanged; a test covers the unclosed-comment case; `cargo test` green.
+- **Done when**: `append-inbox`'s write side is comment/fence-aware like its read side: a bullet appended to an `inbox.md` that ends inside an unclosed HTML comment (or code fence) lands in a position `count_inbox_bullets` counts, never inside the comment; well-formed inboxes append unchanged; a test covers the unclosed-comment case; `cargo test` green.
 
 ## 68. Implement scenario: [write-review-known-field-quoting](scenarios/write-review-known-field-quoting.md)
 
-- [ ] Implement the behavior described in `scenarios/write-review-known-field-quoting.md`
+- [x] Implement the behavior described in `scenarios/write-review-known-field-quoting.md`
 
 - **Done when**: `write-review` renders known waiver fields through the same `yaml_string` quoting as the extra fields, so a bare-numeric/bool/null-like known-field value is quoted and round-trips through `RawWaiver`; timestamp-shaped values (`waived-at`) produce no golden-fixture churn (verified before landing); a test covers a bool-like `reason`; `cargo test` green.

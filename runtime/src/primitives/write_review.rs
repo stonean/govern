@@ -49,7 +49,7 @@ pub fn run(args: &WriteReviewArgs, repo: &Path) -> Result<WriteReviewResult> {
     // inject a top-level frontmatter key (e.g. a spoofed `status:`) into the
     // spec and corrupt pipeline state. Multi-line prose fields (summary,
     // finding bodies, captured issues) are markdown body content and are not
-    // screened here. Waiver reasons are separately `yaml_scalar`-quoted.
+    // screened here. Waiver fields are separately quoted via `yaml_string`.
     let single_line =
         |argument: &str, value: &str| super::validate_single_line("write-review", argument, value);
     single_line("feature", &args.feature)?;
@@ -454,7 +454,7 @@ fn render_review_yaml(
             for (key, value) in fields {
                 if let Some(value) = value {
                     let indent = if first { "    - " } else { "      " };
-                    let _ = writeln!(block, "{indent}{key}: {}", yaml_scalar(value));
+                    let _ = writeln!(block, "{indent}{key}: {}", yaml_string(value));
                     first = false;
                 }
             }
@@ -546,27 +546,23 @@ fn is_new_top_level(line: &str) -> bool {
     !line.is_empty() && !line.starts_with([' ', '\t'])
 }
 
-/// Emit a YAML scalar, double-quoting only when a plain scalar would be
-/// ambiguous (empty, surrounding whitespace, an indicator lead, a `: ` / ` #`
-/// sequence, a trailing colon, or an embedded quote/newline). Simple
-/// timestamps, shas, rule IDs, and paths stay unquoted.
-fn yaml_scalar(value: &str) -> String {
-    if needs_quote(value) {
-        serde_json::to_string(value).unwrap_or_else(|_| format!("\"{value}\""))
-    } else {
-        value.to_string()
-    }
-}
-
-/// Emit a YAML scalar for text that MUST round-trip as a string — quotes when
-/// `yaml_scalar` would (syntax) OR when the plain form would re-parse as a
-/// non-string (a bare `1234` / `true` / `null` / `~`). Used for
-/// adopter-authored waiver extras: an extra **key** like `@owner` or
-/// `weird: key` would otherwise render unquoted and corrupt the frontmatter
-/// (it is written to `spec.md` without re-parsing), and an extra string
-/// **value** like `"1234"` would round-trip to a number. Known waiver fields
-/// use plain `yaml_scalar` — their keys are fixed and their values are opaque
-/// text, so the tighter rule is reserved for the open-schema extras.
+/// Emit a YAML scalar for text that MUST round-trip as a string — double-quotes
+/// when a plain scalar would be syntactically ambiguous (empty, surrounding
+/// whitespace, an indicator lead, a `: ` / ` #` sequence, a trailing colon, or
+/// an embedded quote/newline) OR when the plain form would re-parse as a
+/// non-string (a bare `1234` / `true` / `null` / `~`).
+///
+/// Used for every value in the rendered `review:` block — both the known
+/// waiver fields (`rule` / `file` / `reason` / `waived-at` / `waived-by`) and
+/// the open-schema adopter extras — because both are written straight to
+/// `spec.md` and read back by the next `RawWaiver` parse. An extra **key**
+/// like `@owner` or `weird: key`, an extra string **value** like `"1234"`, or a
+/// known `reason` that happened to read `true` or `1234` would otherwise render
+/// unquoted and either corrupt the frontmatter or retype the value. Simple
+/// timestamps (`waived-at`), shas, rule IDs, emails, and paths stay unquoted:
+/// they parse back as strings (`serde_norway` has no timestamp type) and a
+/// mid-value colon does not trip `needs_quote`, so quoting them here would be
+/// no-op churn.
 fn yaml_string(value: &str) -> String {
     if needs_quote(value) || reparses_as_nonstring(value) {
         serde_json::to_string(value).unwrap_or_else(|_| format!("\"{value}\""))
@@ -980,6 +976,31 @@ mod tests {
     }
 
     #[test]
+    fn quotes_bool_like_known_waiver_field_for_round_trip() {
+        // scenarios/write-review-known-field-quoting.md: a known waiver field
+        // (here `reason`) whose value would re-parse as a non-string must be
+        // quoted like the extras, so it round-trips through the spec
+        // frontmatter as a string instead of a bool/number and does not break
+        // the next RawWaiver parse.
+        let frontmatter = "status: in-progress\ndependencies: []\nreview:\n  last-run: 2026-01-01T00:00:00Z\n  must-violations: 0\n  blocking: false\n  waivers:\n    - rule: SEC-BE-020\n      file: src/keep.ts\n      reason: \"true\"\n      waived-at: 2026-01-02T00:00:00Z\n      waived-by: dev@example.com";
+        let tmp = spec_repo("001-x", frontmatter);
+        run(&base_args("001-x"), tmp.path()).unwrap();
+        let spec = spec_md(&tmp, "001-x");
+        // Bool-like known value is quoted, not rendered as a bare `reason: true`.
+        assert!(
+            spec.contains("reason: \"true\""),
+            "bool-like known waiver field must be quoted:\n{spec}"
+        );
+        // Timestamp-shaped known field is unchanged — no golden churn.
+        assert!(spec.contains("waived-at: 2026-01-02T00:00:00Z"));
+        // The rewritten block still parses (a bare `reason: true` would not
+        // round-trip into the string-typed field).
+        let (fm, _) = split_frontmatter(&spec, Path::new("spec.md")).unwrap();
+        let parsed: SpecReviewFm = serde_norway::from_str(fm).unwrap();
+        assert_eq!(parsed.review.unwrap().waivers.len(), 1);
+    }
+
+    #[test]
     fn preserves_string_typed_waiver_extra_values_across_rewrite() {
         // A string value that looks like a number/bool/null must round-trip as
         // a string, not silently change type.
@@ -1097,15 +1118,26 @@ mod tests {
     }
 
     #[test]
-    fn yaml_scalar_quotes_only_when_needed() {
-        assert_eq!(yaml_scalar("2026-07-02T12:00:00Z"), "2026-07-02T12:00:00Z");
-        assert_eq!(yaml_scalar("SEC-BE-014"), "SEC-BE-014");
-        assert_eq!(yaml_scalar("src/api/internal.ts"), "src/api/internal.ts");
+    fn yaml_string_quotes_syntax_and_reparse_hazards() {
+        // Opaque string values stay unquoted — including timestamps, so the
+        // switch from `yaml_scalar` to `yaml_string` for known waiver fields
+        // is no-op churn on `waived-at` (scenarios/write-review-known-field-
+        // quoting.md).
+        assert_eq!(yaml_string("2026-07-02T12:00:00Z"), "2026-07-02T12:00:00Z");
+        assert_eq!(yaml_string("SEC-BE-014"), "SEC-BE-014");
+        assert_eq!(yaml_string("src/api/internal.ts"), "src/api/internal.ts");
+        assert_eq!(yaml_string("dev@example.com"), "dev@example.com");
         assert_eq!(
-            yaml_scalar("Endpoint is internal-only."),
+            yaml_string("Endpoint is internal-only."),
             "Endpoint is internal-only."
         );
-        assert_eq!(yaml_scalar("see: this"), "\"see: this\"");
-        assert_eq!(yaml_scalar(""), "\"\"");
+        // Syntactic hazards quote.
+        assert_eq!(yaml_string("see: this"), "\"see: this\"");
+        assert_eq!(yaml_string(""), "\"\"");
+        // Values that would re-parse as a non-string quote, keeping their
+        // string identity across the round-trip.
+        assert_eq!(yaml_string("true"), "\"true\"");
+        assert_eq!(yaml_string("1234"), "\"1234\"");
+        assert_eq!(yaml_string("null"), "\"null\"");
     }
 }
