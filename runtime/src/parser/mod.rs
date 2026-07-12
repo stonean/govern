@@ -156,6 +156,12 @@ struct Walker {
     /// dispatches exactly one primitive, so a second name would be
     /// silently dropped on the exec path — reject the parse instead.
     conflicting_steps: Vec<(StepNumber, Vec<String>, SourceRange)>,
+    /// Recognized primitive names encountered inside Instructions with no
+    /// open step — e.g. in continuation text after a nested ordered list
+    /// closes (the parent step was finalized when the nested list opened).
+    /// Such a primitive would be silently dropped on the exec path, so the
+    /// parse fails naming it rather than losing the dispatch.
+    orphan_primitives: Vec<(String, SourceRange)>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -212,6 +218,7 @@ impl Walker {
             found_any: false,
             suspicious_spans: Vec::new(),
             conflicting_steps: Vec::new(),
+            orphan_primitives: Vec::new(),
         }
     }
 
@@ -256,6 +263,19 @@ impl Walker {
                      one — split it into one primitive per step",
                     format_step_number(number),
                     names.len(),
+                ),
+                location: Some(*range),
+            });
+        }
+        // A recognized primitive named outside any numbered step (e.g. in
+        // continuation text after a nested list) would be dropped on the exec
+        // path. Reject it — move it into its own numbered step.
+        if let Some((name, range)) = self.orphan_primitives.first() {
+            return Err(ParseError::Invalid {
+                message: format!(
+                    "primitive `{name}` is named outside any numbered step (e.g. in \
+                     continuation text after a nested list) — move it into its own \
+                     numbered step so its dispatch is not dropped"
                 ),
                 location: Some(*range),
             });
@@ -337,6 +357,17 @@ impl Walker {
                     step.prose.push('`');
                     step.prose.push_str(code.as_ref());
                     step.prose.push('`');
+                } else if !self.list_stack.is_empty() && PRIMITIVE_NAMES.contains(&code.as_ref()) {
+                    // A recognized primitive named inside the step list with no
+                    // open step — continuation text after a nested ordered list
+                    // closes (the parent step was finalized when the nested list
+                    // opened). It would be silently dropped on the exec path, so
+                    // record it and fail the parse naming it. The `list_stack`
+                    // guard excludes the Instructions preamble (blockquote notes
+                    // before the first step), where a primitive named in prose
+                    // is a legitimate reference, not a dispatch.
+                    self.orphan_primitives
+                        .push((code.as_ref().into(), source_range));
                 }
             }
             (State::InInstructions, Event::Html(html) | Event::InlineHtml(html)) => {
@@ -733,6 +764,40 @@ mod tests {
                 assert_eq!(identifier, "writeCode");
             }
             other => panic!("expected extension writeCode, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn primitive_after_nested_ordered_list_is_rejected() {
+        // A primitive named in continuation text after a nested ordered list
+        // closes has no open step (the parent was finalized when the nested
+        // list opened), so on the exec path its dispatch would be silently
+        // dropped. The parse must fail naming it rather than lose the call.
+        let source = "# Cmd\n\n## Instructions\n\n1. Do the following:\n   1. First sub-step.\n   2. Second sub-step.\n\n   Then invoke `mark-task`.\n\n2. Invoke `read-spec` on the target.\n";
+        let err = parse_str(source).unwrap_err();
+        match err {
+            ParseError::Invalid { message, .. } => {
+                assert!(message.contains("mark-task"), "got: {message}");
+                assert!(
+                    message.contains("outside any numbered step"),
+                    "got: {message}"
+                );
+            }
+            ParseError::LegacyProse => panic!("expected Invalid, got LegacyProse"),
+        }
+    }
+
+    #[test]
+    fn primitive_in_instructions_preamble_is_not_an_orphan() {
+        // A primitive named in prose *before* the first numbered step (the
+        // Instructions preamble / agent-runtime note) is a legitimate
+        // reference, not a dispatch — it must not trigger the orphan error.
+        let source = "# Cmd\n\n## Instructions\n\nThis command's deterministic tool is `dashboard`; call it below.\n\n1. Invoke `dashboard` to load state.\n";
+        let procedure = parse_str(source).unwrap();
+        assert_eq!(procedure.steps.len(), 1);
+        match &procedure.steps[0] {
+            Step::Primitive { name, .. } => assert_eq!(name, "dashboard"),
+            other => panic!("expected dashboard primitive, got {other:?}"),
         }
     }
 

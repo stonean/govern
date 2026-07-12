@@ -544,7 +544,7 @@ Follow-on to task 45c: `compute-review-scope`'s `read_plan_affected` parses `## 
 
 ## 64. Implement scenario: [parser-nested-list-continuation](scenarios/parser-nested-list-continuation.md)
 
-- [ ] Implement the behavior described in `scenarios/parser-nested-list-continuation.md`
+- [x] Implement the behavior described in `scenarios/parser-nested-list-continuation.md`
 
 - **Done when**: a primitive named in continuation text after a nested ordered list is attributed to the enclosing step or raises a parse diagnostic (never silently dropped); unordered-nested and plain-prose continuation behavior is unchanged; a parser test covers the ordered-nested case; `cargo test` green.
 

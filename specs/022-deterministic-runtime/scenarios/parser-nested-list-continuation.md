@@ -23,8 +23,8 @@ A primitive named in a step's continuation content following a nested ordered li
 
 ## Open Questions
 
-- Attribute-to-parent versus hard-error: which is the less surprising default for an adopter, given the existing two-primitive hard-error precedent?
+*None — resolved during implementation.*
 
 ## Resolved Questions
 
-*None yet.*
+- **Attribute-to-parent versus hard-error.** Resolved to **hard-error**, matching the existing two-primitive-per-step precedent. Attribution is genuinely ambiguous (a primitive after a nested list could belong to the enclosing step or read as a mis-indented next step), and re-opening an already-finalized parent step would reorder emission and destabilize the goldens. The parser now raises `ParseError::Invalid` naming the primitive, guarded on `list_stack` being non-empty so a primitive named in the Instructions preamble (a legitimate reference, not a dispatch) does not false-trigger.

@@ -4,7 +4,11 @@ All notable changes to the `govern` deterministic runtime are recorded here. The
 
 ## [0.19.0] — 2026-07-11
 
-Follow-up review of the 0.18.0 runtime (see `specs/022-deterministic-runtime/review.md`). Closes a partially-resolved SSRF finding, a bootstrap parse regression the 0.18.0 parser change introduced, and a set of newly-surfaced input-validation and correctness gaps.
+Follow-up review of the 0.18.0 runtime (see `specs/022-deterministic-runtime/review.md`). Closes a partially-resolved SSRF finding, a bootstrap parse regression the 0.18.0 parser change introduced, and a set of newly-surfaced input-validation and correctness gaps. Unreleased; the deferred items captured as scenarios during the review are being implemented into this same version (see Follow-on scenarios below).
+
+### Follow-on scenarios (022 tasks 64–68)
+
+- **Parser nested-list continuation (task 64)** — a recognized primitive named in continuation text after a nested ordered list closes (where the parent step was already finalized) now raises `ParseError::Invalid` naming the primitive, instead of silently dropping the dispatch on the exec path. Guarded on being inside the step list, so a primitive named in the Instructions preamble stays a legitimate reference. `scripts/lint-procedure-parseability.sh` catches the class across `framework/commands/*.md` + `framework/bootstrap/*.md`.
 
 ### Security
 
@@ -32,7 +36,6 @@ Follow-up review of the 0.18.0 runtime (see `specs/022-deterministic-runtime/rev
 
 ### Not fixed (documented)
 
-- A primitive named in continuation text *after* a nested ordered list is still dropped by the parser — the fix is entangled with list-item finalization and deferred rather than shipped fragile. No shipped command file triggers it.
 - The `fetch-archive` DNS-rebinding TOCTOU (guard resolves, reqwest re-resolves) remains as logged in `specs/inbox.md`; the redirect fix above is orthogonal to it.
 - On the `/gov:implement` exec path, `derive-boundary`'s computed boundary does not auto-populate the `write-boundary` key the writeCode validator enforces on (that key is a seeded input); enforcement is fail-closed without a seed. Auto-binding it is a design decision (seed-vs-derived precedence) that also needs a multi-commit `implement-basic` fixture, so it is deferred rather than changed here.
 - `deny_unknown_fields` was not added to the primitive `Args` structs: the exec interpreter binds every primitive's args from a clone of the *entire* walker context (a deliberate superset), so rejecting unknown fields would break all primitives on the exec path. A misspelled kebab-case field still silently defaults; closing this needs a per-primitive field allowlist, not a blanket attribute.
