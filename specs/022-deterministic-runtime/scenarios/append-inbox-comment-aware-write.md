@@ -17,7 +17,7 @@ If `inbox.md` ends inside an *unclosed* `<!--` HTML comment (no closing `-->` â€
 
 ## Edge Cases
 
-- `inbox.md` ending inside an unclosed `<!--` comment: the bullet lands in a position `count_inbox_bullets` counts (before the unterminated region), never inside the comment where it would be skipped.
+- `inbox.md` ending inside an unclosed HTML comment: the bullet lands in a position `count_inbox_bullets` counts (before the unterminated region), never inside the comment where it would be skipped.
 - A trailing unterminated code fence is handled the same way as an unterminated comment.
 - An empty or comment-only inbox still receives the appended bullet in a counted position.
 
