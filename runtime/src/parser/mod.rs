@@ -138,6 +138,17 @@ struct Walker {
     top_index: u32,
     sub_index: u32,
     current_step: Option<StepBuilder>,
+    /// Whether the candidate `## …` heading emitted the exact text
+    /// `Instructions`. A heading that emits no text (empty, or a code-span
+    /// only, e.g. `` ## `gvrn` ``) must NOT open the Instructions section,
+    /// or the parser would treat the following section as the procedure and
+    /// drop the real steps.
+    instructions_heading_matched: bool,
+    /// An extension marker (`<!-- llm:<id> -->`) seen on its own line
+    /// between steps, when no step is open. Attached to the next step that
+    /// opens rather than silently dropped (markers annotate the step they
+    /// precede).
+    pending_extension: Option<String>,
     steps: Vec<Step>,
     found_any: bool,
     suspicious_spans: Vec<(String, SourceRange)>,
@@ -165,6 +176,12 @@ struct StepBuilder {
     number: StepNumber,
     range: SourceRange,
     prose: String,
+    /// Prose with inline code-span content excluded, used only for the
+    /// extension-marker fallback scan. A marker *quoted* in a code span
+    /// (e.g. documenting `` `<!-- llm:writeCode -->` ``) must not be
+    /// mistaken for a live marker; scanning this copy avoids that while
+    /// `prose` keeps full fidelity.
+    prose_scannable: String,
     /// Every recognized primitive span seen in the step, in document
     /// order. The last one binds; two or more *distinct* names is a
     /// conflict (rejected in [`Walker::finalize_step`]).
@@ -189,6 +206,8 @@ impl Walker {
             top_index: 0,
             sub_index: 0,
             current_step: None,
+            instructions_heading_matched: false,
+            pending_extension: None,
             steps: Vec::new(),
             found_any: false,
             suspicious_spans: Vec::new(),
@@ -257,16 +276,26 @@ impl Walker {
         match (&self.state, event) {
             (State::BeforeInstructions, Event::Start(Tag::Heading { .. })) => {
                 self.state = State::InInstructionsHeading;
+                self.instructions_heading_matched = false;
             }
             (State::InInstructionsHeading, Event::Text(text)) => {
                 if text.as_ref() == "Instructions" {
-                    // Stay in heading state until End fires; then enter list mode.
+                    // Mark the match; the section opens only when End fires.
+                    self.instructions_heading_matched = true;
                 } else {
                     self.state = State::BeforeInstructions;
                 }
             }
             (State::InInstructionsHeading, Event::End(TagEnd::Heading(_))) => {
-                self.state = State::InInstructions;
+                // Only a heading that actually said `Instructions` opens the
+                // section. A heading that emitted no matching text (empty, or
+                // a code-span like `` ## `gvrn` ``) returns to the scan state
+                // so the real `## Instructions` is still found.
+                self.state = if self.instructions_heading_matched {
+                    State::InInstructions
+                } else {
+                    State::BeforeInstructions
+                };
             }
             (State::InInstructions, Event::Start(Tag::Heading { level, .. }))
                 if *level <= HeadingLevel::H2
@@ -316,16 +345,25 @@ impl Walker {
                         step.extension_id = Some(id);
                     }
                     step.prose.push_str(html.as_ref());
+                    step.prose_scannable.push_str(html.as_ref());
+                } else if let Some(id) = parse_extension_marker(html.as_ref()) {
+                    // Marker on its own line between steps (pulldown emits it
+                    // as a block that splits the list, so no step is open):
+                    // buffer it for the next step instead of dropping the
+                    // semantic seam.
+                    self.pending_extension = Some(id);
                 }
             }
             (State::InInstructions, Event::Text(text)) => {
                 if let Some(step) = self.current_step.as_mut() {
                     step.prose.push_str(text.as_ref());
+                    step.prose_scannable.push_str(text.as_ref());
                 }
             }
             (State::InInstructions, Event::SoftBreak | Event::HardBreak) => {
                 if let Some(step) = self.current_step.as_mut() {
                     step.prose.push(' ');
+                    step.prose_scannable.push(' ');
                 }
             }
             _ => {}
@@ -389,6 +427,13 @@ impl Walker {
                         self.byte_range_to_source_range(range),
                     ));
                 }
+                // Attach a marker buffered from between steps to this newly
+                // opened step (it annotates the step it precedes).
+                if let Some(id) = self.pending_extension.take()
+                    && let Some(step) = self.current_step.as_mut()
+                {
+                    step.extension_id.get_or_insert(id);
+                }
             }
             Some(ListKind::Unordered) => {
                 // A bullet nested in a numbered step stays part of that
@@ -409,15 +454,18 @@ impl Walker {
             number,
             range,
             prose,
+            prose_scannable,
             primitive_names,
             mut extension_id,
         } = builder;
         let prose = prose.trim().to_string();
         // pulldown-cmark sometimes emits HTML comments inside paragraphs
         // as raw text rather than InlineHtml events. Scan the assembled
-        // prose for `<!-- llm:<id> -->` markers as a fallback.
+        // prose for `<!-- llm:<id> -->` markers as a fallback — but from the
+        // code-span-free copy, so a marker merely *quoted* in a code span is
+        // not mistaken for a live one.
         if extension_id.is_none() {
-            extension_id = find_inline_extension_marker(&prose);
+            extension_id = find_inline_extension_marker(&prose_scannable);
         }
         let step = if let Some(id) = extension_id {
             // Extension wins over any primitive spans: an extension step
@@ -606,6 +654,7 @@ impl StepBuilder {
             number,
             range,
             prose: String::new(),
+            prose_scannable: String::new(),
             primitive_names: Vec::new(),
             extension_id: None,
         }
@@ -652,6 +701,52 @@ mod tests {
         let source = "# Header\n\n## Instructions\n\n1. Read the spec.\n2. Walk the tasks.\n";
         let err = parse_str(source).unwrap_err();
         assert_eq!(err, ParseError::LegacyProse);
+    }
+
+    #[test]
+    fn code_span_only_heading_does_not_open_instructions() {
+        // A `` ## `gvrn` `` heading emits no text, so it must not be mistaken
+        // for the Instructions section; the real `## Instructions` below is
+        // the procedure. Before the fix the notes-section `read-spec` was
+        // parsed and the real `mark-task` was dropped.
+        let source = "# Cmd\n\n## `gvrn`\n\n1. Invoke `read-spec` in notes.\n\n## Instructions\n\n1. Invoke `mark-task` on the target.\n";
+        let procedure = parse_str(source).unwrap();
+        assert_eq!(procedure.steps.len(), 1);
+        match &procedure.steps[0] {
+            Step::Primitive { name, .. } => assert_eq!(name, "mark-task"),
+            other => panic!("expected mark-task primitive, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn extension_marker_on_own_line_attaches_to_next_step() {
+        // A marker between steps (its own line) must not be silently dropped;
+        // it annotates the step it precedes.
+        let source = "# Cmd\n\n## Instructions\n\n1. Invoke `read-spec` first.\n\n<!-- llm:writeCode -->\n\n2. Write the code for the task.\n";
+        let procedure = parse_str(source).unwrap();
+        assert_eq!(procedure.steps.len(), 2);
+        match &procedure.steps[1] {
+            Step::Extension {
+                number, identifier, ..
+            } => {
+                assert_eq!(number.0, vec![2]);
+                assert_eq!(identifier, "writeCode");
+            }
+            other => panic!("expected extension writeCode, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn marker_quoted_in_code_span_is_not_an_extension() {
+        // A marker merely quoted in a code span is documentation, not a live
+        // seam; the step still dispatches its primitive.
+        let source = "# Cmd\n\n## Instructions\n\n1. Invoke `read-spec`; markers look like `<!-- llm:writeCode -->` in the file.\n2. Invoke `mark-task`.\n";
+        let procedure = parse_str(source).unwrap();
+        assert_eq!(procedure.steps.len(), 2);
+        match &procedure.steps[0] {
+            Step::Primitive { name, .. } => assert_eq!(name, "read-spec"),
+            other => panic!("expected read-spec primitive, got {other:?}"),
+        }
     }
 
     #[test]

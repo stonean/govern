@@ -75,9 +75,14 @@ is_allowed() {
 }
 
 shopt -s nullglob
-command_files=("$repo_root"/framework/commands/*.md)
+# Slash commands plus the bootstrap procedures: `framework/bootstrap/*.md`
+# (currently `govern.md`) is exec-reachable — `gvrn exec govern` resolves it
+# via the govern-bootstrap scenario — so a parse regression there breaks the
+# runtime bootstrap path exactly as one in framework/commands/ would. Both
+# trees are held to the same parseability contract.
+command_files=("$repo_root"/framework/commands/*.md "$repo_root"/framework/bootstrap/*.md)
 if [[ ${#command_files[@]} -eq 0 ]]; then
-  echo "::error::no framework/commands/*.md files found" >&2
+  echo "::error::no framework/commands/*.md or framework/bootstrap/*.md files found" >&2
   exit 2
 fi
 

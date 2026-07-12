@@ -268,6 +268,29 @@ fn emit_exec_parse_error(path: &std::path::Path, err: &gvrn::parser::ParseError)
     ExitCode::from(2)
 }
 
+/// Emit a terminal `error` protocol message on stdout for an operational
+/// error, honoring the 1–127 clean-band contract: a non-crash exit is always
+/// preceded by a terminal `error` carrying the runtime version, so a host can
+/// distinguish a clean operational error from a signal-killed crash (128+,
+/// no terminal message). Used by the pre-walk and walker-I/O exit paths;
+/// parse errors use [`emit_exec_parse_error`], which also carries a location.
+fn emit_exec_error(code: &str, message: &str) {
+    use gvrn::io::write_envelope;
+    use gvrn::schema::protocol::ProtocolMessage;
+
+    let envelope = ProtocolMessage::Error {
+        code: code.into(),
+        message: message.into(),
+        runtime_version: env!("CARGO_PKG_VERSION").into(),
+        location: None,
+    };
+    let stdout = io::stdout();
+    let mut writer = stdout.lock();
+    if let Err(io_err) = write_envelope(&mut writer, &envelope) {
+        eprintln!("runtime exec: failed to emit error envelope: {io_err}");
+    }
+}
+
 fn run_exec(command: &str, args: &[String], repo: &std::path::Path) -> ExitCode {
     use gvrn::host::Host;
     use gvrn::interpreter::{WalkOutcome, Walker};
@@ -296,21 +319,23 @@ fn run_exec(command: &str, args: &[String], repo: &std::path::Path) -> ExitCode 
             .join(format!("{command}.md")),
     );
     let Some(path) = candidates.iter().find(|p| p.exists()) else {
-        eprintln!(
-            "runtime exec: command file not found (tried {})",
-            candidates
-                .iter()
-                .map(|p| p.display().to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
-        );
+        let tried = candidates
+            .iter()
+            .map(|p| p.display().to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
+        let message = format!("command file not found (tried {tried})");
+        emit_exec_error("command-not-found", &message);
+        eprintln!("runtime exec: {message}");
         return ExitCode::from(1);
     };
 
     let source = match std::fs::read_to_string(path) {
         Ok(s) => s,
         Err(err) => {
-            eprintln!("failed to read {}: {err}", path.display());
+            let message = format!("failed to read {}: {err}", path.display());
+            emit_exec_error("file-unreadable", &message);
+            eprintln!("{message}");
             return ExitCode::from(1);
         }
     };
@@ -355,7 +380,9 @@ fn run_exec(command: &str, args: &[String], repo: &std::path::Path) -> ExitCode 
         Ok(WalkOutcome::Complete) => ExitCode::SUCCESS,
         Ok(WalkOutcome::Errored { .. }) => ExitCode::from(1),
         Err(err) => {
-            eprintln!("runtime exec: I/O error: {err}");
+            let message = format!("I/O error: {err}");
+            emit_exec_error("io-error", &message);
+            eprintln!("runtime exec: {message}");
             ExitCode::from(74) // EX_IOERR
         }
     }

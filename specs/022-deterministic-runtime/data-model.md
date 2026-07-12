@@ -42,7 +42,7 @@ struct SourceRange {
 }
 ```
 
-The parser additionally returns a `ParseDiagnostics` value containing warnings (unrecognized primitive name, ambiguous step numbering) — non-fatal signals surfaced by `runtime parse --check` for review but not blocking CI.
+The parser rejects a malformed procedure with a hard `ParseError::Invalid` — an unrecognized primitive name, or a single step naming two or more *distinct* primitives (only one can dispatch, so a second would be silently dropped on the exec path). `runtime parse --check` reports these, and `scripts/lint-procedure-parseability.sh` fails CI on them (for every `framework/commands/*.md` and `framework/bootstrap/*.md` file). A file that has no procedure-shaped Instructions section returns `ParseError::LegacyProse`, tolerated only for the files on the parseability allowlist.
 
 ## JSON-over-stdio protocol
 

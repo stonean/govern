@@ -8,7 +8,7 @@
 use std::path::Path;
 use std::process::Command;
 
-use crate::primitives::{PrimitiveError, Result, resolve_path};
+use crate::primitives::{PrimitiveError, Result, resolve_path, validate_no_traversal};
 use crate::schema::primitives::{RunGeneratorArgs, RunGeneratorResult};
 
 /// Execute the `run-generator` primitive.
@@ -22,6 +22,12 @@ use crate::schema::primitives::{RunGeneratorArgs, RunGeneratorResult};
 /// Returns [`PrimitiveError::Io`] when `bash` cannot be spawned or the
 /// script path does not exist.
 pub fn run(args: &RunGeneratorArgs, repo: &Path) -> Result<RunGeneratorResult> {
+    // The script is passed straight to `bash`, so a caller who allowlists
+    // this primitive (mental model: "runs the repo's generator scripts")
+    // would otherwise be granting "run any bash script at any path". Bound
+    // it to the repo — absolute paths and `..` escapes are refused — so the
+    // permission means what its name implies.
+    validate_no_traversal(&args.script)?;
     let script_path = resolve_path(repo, &args.script);
     if !script_path.exists() {
         return Err(PrimitiveError::Io {

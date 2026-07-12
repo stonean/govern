@@ -535,3 +535,39 @@ Follow-on to task 45c: `compute-review-scope`'s `read_plan_affected` parses `## 
 - [x] Implement the behavior described in `scenarios/analyze-artifact-checks.md`
 
 - **Done when**: check-artifacts exists (full wiring + runtime-tools.txt + data-model + configure regen) reporting artifact-completeness, task-consistency, scenario→task-mapping (prune-aware per §tasks-phase), and review-state-drift findings with the reference's severity tiers; analyze.md invokes it in a numbered step; analyze golden re-blessed; `cargo test` green.
+
+## 63. Implement scenario: [runtime-review-019-hardening](scenarios/runtime-review-019-hardening.md)
+
+- [x] Implement the behavior described in `scenarios/runtime-review-019-hardening.md`
+
+- **Done when**: `fetch-archive` re-validates every redirect hop; `feature`-arg traversal, `write-review` frontmatter injection, `run-generator`/`lint-markdown` containment, `discover-rule-files` surfaces, numbered-heading dot grammar, and the writeCode content contract are all enforced; `gvrn exec target` retargets; `framework/bootstrap/govern.md` parses and the parseability lint covers `framework/bootstrap/*.md`; operational-error exits emit terminal `error` envelopes; the three parser silent-failure classes and the CRLF churn are fixed; `write_atomic` preserves mode; version bumped to 0.19.0 with CHANGELOG; all lints, self-audit, and `cargo test` green. (Shipped in gvrn 0.19.0.)
+
+## 64. Implement scenario: [parser-nested-list-continuation](scenarios/parser-nested-list-continuation.md)
+
+- [ ] Implement the behavior described in `scenarios/parser-nested-list-continuation.md`
+
+- **Done when**: a primitive named in continuation text after a nested ordered list is attributed to the enclosing step or raises a parse diagnostic (never silently dropped); unordered-nested and plain-prose continuation behavior is unchanged; a parser test covers the ordered-nested case; `cargo test` green.
+
+## 65. Implement scenario: [mcp-arg-unknown-field-strictness](scenarios/mcp-arg-unknown-field-strictness.md)
+
+- [ ] Implement the behavior described in `scenarios/mcp-arg-unknown-field-strictness.md`
+
+- **Done when**: an unknown field in an MCP tool call is rejected with a naming error via a derived per-primitive field allowlist; the exec path's superset-context binding is unaffected; a test covers a misspelled kebab arg on both surfaces; `cargo test` green.
+
+## 66. Implement scenario: [writecode-boundary-derivation](scenarios/writecode-boundary-derivation.md)
+
+- [ ] Implement the behavior described in `scenarios/writecode-boundary-derivation.md`
+
+- **Done when**: the derived write boundary populates the writeCode enforcement key, with a seed as the empty-derivation fallback; the `implement-basic` fixture gains a multi-commit history producing a non-empty boundary matching the canned edits; the implement golden is re-blessed; `cargo test` green.
+
+## 67. Implement scenario: [coverage-expansion-primitives](scenarios/coverage-expansion-primitives.md)
+
+- [ ] Implement the behavior described in `scenarios/coverage-expansion-primitives.md`
+
+- **Done when**: `remove-inbox-item`, `diff-cross-spec` (or a `derive-boundary` mode), `check-review-gate`, `append-question`, and `create-plan-artifacts` exist (full six-site wiring + runtime-tools.txt + data-model + configure regen) and their command steps invoke them; `dashboard` returns a rendered-markdown field; implement step 13 uses `lint-markdown` instead of raw `npx`; markdown-only fallbacks preserved; all lints and `cargo test` green.
+
+## 68. Implement scenario: [coverage-residue-cleanup](scenarios/coverage-residue-cleanup.md)
+
+- [ ] Implement the behavior described in `scenarios/coverage-residue-cleanup.md`
+
+- **Done when**: `substitute-templates` and `merge-claude-md` are each wired into a real caller or fully retired (six-site removal + lint-tool-coverage green); clarify.md steps 7–8 either gain `llm:` markers or their exec-path scope reduction is documented in the command and data-model; `cargo test` and all lints green.

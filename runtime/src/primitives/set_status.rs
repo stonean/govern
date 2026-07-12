@@ -28,6 +28,7 @@ use crate::schema::status::ALLOWED_STATUSES;
 /// when `args.from` does not match disk, or [`PrimitiveError::Io`] for
 /// filesystem failures.
 pub fn run(args: &SetStatusArgs, repo: &Path) -> Result<SetStatusResult> {
+    super::validate_no_traversal(&args.feature)?;
     for (argument, value) in [("from", args.from.as_str()), ("to", args.to.as_str())] {
         if !ALLOWED_STATUSES.contains(&value) {
             return Err(PrimitiveError::InvalidStatus {

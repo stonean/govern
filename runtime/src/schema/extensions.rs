@@ -436,6 +436,19 @@ pub enum ValidationError {
         /// before matching.
         reason: String,
     },
+    /// A `writeCode` edit violated the content contract documented on
+    /// [`WriteCodeEdit`]: a `create` edit carrying no `content`, or an
+    /// `edit` edit carrying neither `patch` nor `content`. Caught here so
+    /// the host never applies an undefined edit the schema alone admits.
+    #[error("invalid-edit: `{action}` edit for `{path}` {reason}")]
+    EditContent {
+        /// Offending edit path.
+        path: String,
+        /// The edit action (`create` / `edit`).
+        action: String,
+        /// What was missing.
+        reason: String,
+    },
 }
 
 /// Deserialize `response` into the response type for `identifier`. Returns
@@ -462,7 +475,16 @@ pub fn validate_response(identifier: &str, response: &Value) -> Result<(), Valid
     }
     match identifier {
         "assessSpecQuality" => check!(AssessSpecQualityResponse),
-        "writeCode" => check!(WriteCodeResponse),
+        "writeCode" => {
+            let parsed: WriteCodeResponse =
+                serde_json::from_value(response.clone()).map_err(|source| {
+                    ValidationError::Schema {
+                        identifier: identifier.into(),
+                        source,
+                    }
+                })?;
+            validate_write_code_edits(&parsed)
+        }
         "writeSpecBody" => check!(WriteSpecBodyResponse),
         "performReview" => check!(PerformReviewResponse),
         "askClarifyQuestion" => check!(AskClarifyQuestionResponse),
@@ -470,6 +492,33 @@ pub fn validate_response(identifier: &str, response: &Value) -> Result<(), Valid
         "verifyCriteria" => check!(VerifyCriteriaResponse),
         other => Err(ValidationError::UnknownExtension(other.into())),
     }
+}
+
+/// Enforce the per-edit content contract documented on [`WriteCodeEdit`]:
+/// a `create` edit must carry `content`, and an `edit` edit must carry
+/// `patch` or `content`. `delete` needs neither. serde admits both fields
+/// as independently optional, so this cross-field check is what makes the
+/// promised schema-mismatch halt actually fire.
+fn validate_write_code_edits(response: &WriteCodeResponse) -> Result<(), ValidationError> {
+    for edit in &response.edits {
+        let missing = match edit.action {
+            WriteCodeAction::Create if edit.content.is_none() => {
+                Some(("create", "requires `content`"))
+            }
+            WriteCodeAction::Edit if edit.content.is_none() && edit.patch.is_none() => {
+                Some(("edit", "requires `patch` or `content`"))
+            }
+            _ => None,
+        };
+        if let Some((action, reason)) = missing {
+            return Err(ValidationError::EditContent {
+                path: edit.path.clone(),
+                action: action.into(),
+                reason: reason.into(),
+            });
+        }
+    }
+    Ok(())
 }
 
 /// Check every edit path in a parsed `writeCode` response against the
@@ -735,6 +784,34 @@ mod tests {
             }
             other => panic!("expected Schema, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn validate_response_rejects_create_edit_without_content() {
+        use super::{ValidationError, validate_response};
+        let response = serde_json::json!({
+            "edits": [ { "path": "runtime/src/foo.rs", "action": "create" } ],
+            "summary": "create a file"
+        });
+        let err = validate_response("writeCode", &response).unwrap_err();
+        assert!(
+            matches!(&err, ValidationError::EditContent { action, .. } if action == "create"),
+            "expected EditContent(create), got {err:?}"
+        );
+    }
+
+    #[test]
+    fn validate_response_rejects_edit_without_patch_or_content() {
+        use super::{ValidationError, validate_response};
+        let response = serde_json::json!({
+            "edits": [ { "path": "runtime/src/foo.rs", "action": "edit" } ],
+            "summary": "edit a file"
+        });
+        let err = validate_response("writeCode", &response).unwrap_err();
+        assert!(
+            matches!(&err, ValidationError::EditContent { action, .. } if action == "edit"),
+            "expected EditContent(edit), got {err:?}"
+        );
     }
 
     #[test]

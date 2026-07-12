@@ -103,16 +103,7 @@ pub fn run(args: &AppendTaskArgs, repo: &Path) -> Result<AppendTaskResult> {
 /// (`\n` or `\r`). The renderer interpolates these values into one-line
 /// templates; a newline injects task structure.
 fn validate_single_line(argument: &str, value: &str) -> Result<()> {
-    if value.contains('\n') || value.contains('\r') {
-        return Err(PrimitiveError::InvalidArgument {
-            primitive: "append-task".into(),
-            argument: argument.into(),
-            reason: "embedded newlines would inject markdown structure into tasks.md; \
-                     supply single-line text"
-                .into(),
-        });
-    }
-    Ok(())
+    super::validate_single_line("append-task", argument, value)
 }
 
 /// Return `max(existing-task-number) + 1` across both flat (`## N.`) and

@@ -57,6 +57,7 @@ struct IndexEntry {
 /// [`PrimitiveError::Toml`] when `.govern.toml` is present but malformed.
 /// Per-reference resolution failures are outcomes, not errors.
 pub fn run(args: &ResolveReferencesArgs, repo: &Path) -> Result<ResolveReferencesResult> {
+    super::validate_no_traversal(&args.feature)?;
     let spec_path = paths::specs_dir(repo).join(&args.feature).join("spec.md");
     let content = read_text(&spec_path)?;
     let (fm_text, _body) = split_frontmatter(&content, &spec_path)?;

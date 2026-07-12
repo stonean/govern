@@ -77,6 +77,19 @@ pub fn run(args: &MergeManagedBlockArgs, repo: &Path) -> Result<MergeManagedBloc
         .marker
         .as_deref()
         .map_or_else(|| DEFAULT_MARKER.to_string(), str::to_string);
+    // The marker is interpolated into the managed-region delimiters
+    // (`<!-- BEGIN {marker} -->` / `# {marker}`). A newline would split the
+    // delimiter across lines, and a `-->` would close the HTML comment early —
+    // either corrupts the region boundaries. Refuse both.
+    super::validate_single_line("merge-managed-block", "marker", &marker)?;
+    if marker.contains("-->") {
+        return Err(PrimitiveError::InvalidArgument {
+            primitive: "merge-managed-block".into(),
+            argument: "marker".into(),
+            reason: "must not contain `-->`, which would terminate the HTML-comment marker early"
+                .into(),
+        });
+    }
     let style_str = args
         .marker_style
         .as_deref()
@@ -203,7 +216,13 @@ fn merge_html_comment(
             let inner_start = b_idx + begin.len();
             let inner = text[inner_start..e_idx].trim_matches('\n');
             let after = &text[e_idx + end.len()..];
-            if inner == block {
+            // Normalize CRLF before the unchanged-compare: on a CRLF checkout
+            // `inner` retains a trailing `\r` per line, so a byte-for-byte
+            // compare against the LF-normalized `block` would never match and
+            // the region would be rewritten (with LF markers) on every run —
+            // mtime thrash and CRLF→LF corruption. The `line-prefix` path was
+            // hardened for CRLF the same way; this mirrors it.
+            if inner.replace('\r', "") == block.replace('\r', "") {
                 return Ok((None, "unchanged"));
             }
             Ok((

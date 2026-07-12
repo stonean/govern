@@ -40,6 +40,7 @@ use crate::schema::status::COMPATIBLE_STATUSES;
 /// likewise the cycle walker tolerates missing or malformed downstream
 /// nodes by treating them as sinks (no outgoing edges).
 pub fn run(args: &TraverseDepsArgs, repo: &Path) -> Result<TraverseDepsResult> {
+    super::validate_no_traversal(&args.feature)?;
     let root = paths::Paths::load(repo).specs_root;
     let specs_dir = repo.join(&root);
     let feature_dir = specs_dir.join(&args.feature);

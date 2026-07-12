@@ -43,6 +43,25 @@ use crate::schema::primitives::{ReviewFinding, WriteReviewArgs, WriteReviewResul
 /// frontmatter block, [`PrimitiveError::Yaml`] when the frontmatter fails to
 /// parse, or [`PrimitiveError::Io`] on read/write failure.
 pub fn run(args: &WriteReviewArgs, repo: &Path) -> Result<WriteReviewResult> {
+    super::validate_no_traversal(&args.feature)?;
+    // Scalar fields spliced verbatim into review.md frontmatter and the
+    // spec.md `review:` block must be single-line: an embedded newline would
+    // inject a top-level frontmatter key (e.g. a spoofed `status:`) into the
+    // spec and corrupt pipeline state. Multi-line prose fields (summary,
+    // finding bodies, captured issues) are markdown body content and are not
+    // screened here. Waiver reasons are separately `yaml_scalar`-quoted.
+    let single_line =
+        |argument: &str, value: &str| super::validate_single_line("write-review", argument, value);
+    single_line("feature", &args.feature)?;
+    single_line("reviewed-at", &args.reviewed_at)?;
+    single_line("reviewed-against", &args.reviewed_against)?;
+    single_line("diff-base", &args.diff_base)?;
+    if let Some(scenario) = args.scenario.as_deref() {
+        single_line("scenario", scenario)?;
+    }
+    for (idx, pass) in args.skipped_passes.iter().enumerate() {
+        single_line(&format!("skipped-passes[{idx}]"), pass)?;
+    }
     let root = paths::Paths::load(repo).specs_root;
     let feature_dir = repo.join(&root).join(&args.feature);
     let spec_path = feature_dir.join("spec.md");
@@ -636,6 +655,28 @@ mod tests {
         assert!(report.contains("must-violations: 0"));
         assert!(report.contains("Review scope is empty"));
         assert!(report.contains("## MUST violations (blocking)\n\n*None.*"));
+    }
+
+    #[test]
+    fn rejects_frontmatter_injection_via_reviewed_against_newline() {
+        // A newline in a frontmatter scalar would splice a spoofed top-level
+        // key (here `status: done`) into the spec's frontmatter. It must be
+        // refused before any write, leaving spec.md untouched.
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        let before = spec_md(&tmp, "001-x");
+        let mut args = base_args("001-x");
+        args.reviewed_against = "abc1234\nstatus: done".into();
+        let err = run(&args, tmp.path()).unwrap_err();
+        assert!(
+            matches!(&err, PrimitiveError::InvalidArgument { primitive, argument, .. }
+                if primitive == "write-review" && argument == "reviewed-against"),
+            "expected InvalidArgument for reviewed-against, got {err:?}"
+        );
+        assert_eq!(spec_md(&tmp, "001-x"), before, "spec.md must be untouched");
+        assert!(
+            !tmp.path().join("specs/001-x/review.md").exists(),
+            "review.md must not be written"
+        );
     }
 
     #[test]

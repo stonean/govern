@@ -255,8 +255,20 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
         // seed. A `created: true` create-feature result therefore overrides
         // exactly `feature` and `path`; no other primitive and no other key
         // escapes the seeded-key guard.
-        let retargets_session =
-            name == "create-feature" && map.get("created") == Some(&Value::Bool(true));
+        // A second retarget exception, symmetric with create-feature: on
+        // `/gov:target` against a repo whose session already targets a
+        // feature, switching the target is the entire point of the command.
+        // Step 3's `resolve-feature` returns the resolved `feature`/`path`,
+        // which the seeded-key guard would otherwise block from reaching the
+        // later `write-session` step — leaving it to rewrite the stale seed.
+        // Scoped to the `target` command and a `resolved` outcome so no other
+        // command's `resolve-feature` call (e.g. `/gov:analyze`'s identifier
+        // resolution) escapes the guard.
+        let retargets_session = (name == "create-feature"
+            && map.get("created") == Some(&Value::Bool(true)))
+            || (name == "resolve-feature"
+                && self.procedure.command == "target"
+                && map.get("outcome") == Some(&Value::String("resolved".into())));
         for (key, value) in map {
             let seeded = self.seeded_keys.contains(&key);
             let overridable_target = retargets_session && (key == "feature" || key == "path");
@@ -498,6 +510,9 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
                     // Reachable only through validate_write_code_boundary;
                     // validate_response never produces it.
                     ("out-of-boundary-edit".to_string(), err.to_string())
+                }
+                ValidationError::EditContent { .. } => {
+                    ("invalid-edit".to_string(), err.to_string())
                 }
             };
             self.emit_error(code.clone(), message.clone(), None)?;
@@ -1256,6 +1271,51 @@ mod tests {
         assert_eq!(walker.context["path"], "specs/006-specify");
         // A non-seeded key from the same result still merges.
         assert_eq!(walker.context["outcome"], "resolved");
+    }
+
+    #[test]
+    fn target_resolve_feature_overrides_seeded_target() {
+        // `/gov:target <feature>` against a repo whose session already names
+        // a different feature: resolve-feature's resolved `feature`/`path`
+        // must override the seed so write-session persists the NEW target,
+        // not the stale one.
+        let procedure = Procedure {
+            command: "target".into(),
+            steps: vec![],
+        };
+        let mut reader = Cursor::new(String::new());
+        let mut writer: Vec<u8> = Vec::new();
+        let mut walker = seeded_target_walker(&procedure, &mut reader, &mut writer);
+        walker.merge_primitive_result(
+            "resolve-feature",
+            serde_json::json!({
+                "outcome": "resolved",
+                "feature": "999-other",
+                "path": "specs/999-other",
+            }),
+        );
+        assert_eq!(walker.context["feature"], "999-other");
+        assert_eq!(walker.context["path"], "specs/999-other");
+    }
+
+    #[test]
+    fn target_resolve_feature_ambiguous_keeps_seeded_target() {
+        // Only a `resolved` outcome retargets; an `ambiguous`/`not-found`
+        // resolve-feature result carries no feature/path and must not disturb
+        // the seeded target.
+        let procedure = Procedure {
+            command: "target".into(),
+            steps: vec![],
+        };
+        let mut reader = Cursor::new(String::new());
+        let mut writer: Vec<u8> = Vec::new();
+        let mut walker = seeded_target_walker(&procedure, &mut reader, &mut writer);
+        walker.merge_primitive_result(
+            "resolve-feature",
+            serde_json::json!({ "outcome": "ambiguous", "candidates": ["006-a", "006-b"] }),
+        );
+        assert_eq!(walker.context["feature"], "006-specify");
+        assert_eq!(walker.context["path"], "specs/006-specify");
     }
 
     // --- FIX 2: verifyCriteria verdict gates the mark-criterion flip --------

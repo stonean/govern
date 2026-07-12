@@ -111,10 +111,32 @@ pub fn run(args: &FetchArchiveArgs, repo: &Path) -> Result<FetchArchiveResult> {
 
 fn fetch_bytes(url: &str) -> Result<Vec<u8>> {
     validate_fetch_url(url)?;
-    let response = reqwest::blocking::get(url).map_err(|source| PrimitiveError::Http {
-        url: url.into(),
-        source,
-    })?;
+    // The default reqwest client follows up to 10 redirects with no
+    // re-validation, so a `302 Location:` pointing at `http://` or an
+    // internal address would defeat the guard applied to the initial URL.
+    // A custom policy re-runs `validate_fetch_url` on every hop's target
+    // (and re-caps the redirect count the custom policy would otherwise
+    // uncap). Redirects are still followed — GitHub release assets redirect
+    // to codeload/S3 — but only to targets that pass the same screen.
+    let client = reqwest::blocking::Client::builder()
+        .redirect(reqwest::redirect::Policy::custom(
+            |attempt| match redirect_verdict(attempt.url().as_str(), attempt.previous().len()) {
+                RedirectVerdict::Follow => attempt.follow(),
+                RedirectVerdict::Refuse(reason) => attempt.error(reason),
+            },
+        ))
+        .build()
+        .map_err(|source| PrimitiveError::Http {
+            url: url.into(),
+            source,
+        })?;
+    let response = client
+        .get(url)
+        .send()
+        .map_err(|source| PrimitiveError::Http {
+            url: url.into(),
+            source,
+        })?;
     let status = response.status();
     if !status.is_success() {
         return Err(PrimitiveError::HttpStatus {
@@ -123,6 +145,27 @@ fn fetch_bytes(url: &str) -> Result<Vec<u8>> {
         });
     }
     read_capped(response, MAX_FETCH_BYTES, url)
+}
+
+/// Outcome of screening one redirect hop's target URL.
+enum RedirectVerdict {
+    Follow,
+    Refuse(String),
+}
+
+/// Decide whether a redirect hop may be followed. Rejects once the hop
+/// count reaches [`MAX_FETCH_REDIRECTS`], then re-applies the full
+/// [`validate_fetch_url`] SSRF/scheme screen to the hop's target — so a
+/// `3xx` pointing at `http://` or an internal address is refused mid-chain,
+/// not just at the initial URL.
+fn redirect_verdict(url: &str, prior_hops: usize) -> RedirectVerdict {
+    if prior_hops >= MAX_FETCH_REDIRECTS {
+        return RedirectVerdict::Refuse(format!("exceeded {MAX_FETCH_REDIRECTS} redirects"));
+    }
+    match validate_fetch_url(url) {
+        Ok(()) => RedirectVerdict::Follow,
+        Err(err) => RedirectVerdict::Refuse(err.to_string()),
+    }
 }
 
 /// SSRF/transport guard applied to every outbound fetch before a socket is
@@ -233,11 +276,16 @@ fn is_internal_ip(ip: IpAddr) -> bool {
 /// endpoint), RFC-1918 private (`10/8`, `172.16/12`, `192.168/16`),
 /// broadcast, and the unspecified `0.0.0.0`.
 fn is_internal_v4(ip: Ipv4Addr) -> bool {
+    let [a, b, ..] = ip.octets();
     ip.is_loopback()
         || ip.is_private()
         || ip.is_link_local()
         || ip.is_broadcast()
         || ip.is_unspecified()
+        // 0.0.0.0/8 "this network" (`is_unspecified` covers only 0.0.0.0).
+        || a == 0
+        // 100.64.0.0/10 carrier-grade NAT (`Ipv4Addr::is_shared` is unstable).
+        || (a == 100 && (64..=127).contains(&b))
 }
 
 /// Internal-range test for IPv6: loopback `::1`, unspecified `::`,
@@ -349,6 +397,11 @@ fn sha256_hex(bytes: &[u8]) -> String {
 /// an operational error (see [`read_capped`]), never a silent truncation.
 const MAX_FETCH_BYTES: u64 = 256 * 1024 * 1024;
 
+/// Upper bound on HTTP redirects followed by [`fetch_bytes`]. Matches
+/// reqwest's default limit; a custom redirect policy replaces the default,
+/// so the cap is re-declared here alongside the per-hop SSRF re-validation.
+const MAX_FETCH_REDIRECTS: usize = 10;
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
@@ -357,8 +410,9 @@ mod tests {
     use std::net::IpAddr;
 
     use super::{
-        host_is_insecure_allowed, is_internal_ip, is_sha256_hex, parse_sidecar_hex, read_capped,
-        sha256_hex, validate_fetch_url,
+        MAX_FETCH_REDIRECTS, RedirectVerdict, host_is_insecure_allowed, is_internal_ip,
+        is_sha256_hex, parse_sidecar_hex, read_capped, redirect_verdict, sha256_hex,
+        validate_fetch_url,
     };
 
     fn ip(s: &str) -> IpAddr {
@@ -467,6 +521,34 @@ mod tests {
     }
 
     #[test]
+    fn redirect_verdict_refuses_downgrade_and_internal_hops() {
+        // A 3xx Location pointing at an http:// target is refused mid-chain
+        // by the same scheme screen as the initial URL — the SSRF bypass a
+        // default redirect-following client would allow. IP literals keep the
+        // check offline (scheme is rejected before any DNS).
+        match redirect_verdict("http://10.0.0.1/next.tar.gz", 1) {
+            RedirectVerdict::Refuse(msg) => assert!(msg.contains("only https is allowed"), "{msg}"),
+            RedirectVerdict::Follow => panic!("http redirect target must be refused"),
+        }
+        // An https redirect to a loopback/metadata literal is refused as an
+        // internal target.
+        match redirect_verdict("https://169.254.169.254/latest/meta-data/", 1) {
+            RedirectVerdict::Refuse(msg) => assert!(msg.contains("internal address"), "{msg}"),
+            RedirectVerdict::Follow => panic!("internal redirect target must be refused"),
+        }
+    }
+
+    #[test]
+    fn redirect_verdict_caps_hop_count() {
+        // At the hop limit the redirect chain is refused before the target is
+        // even screened (so no DNS is attempted).
+        match redirect_verdict("https://example.com/loop.tar.gz", MAX_FETCH_REDIRECTS) {
+            RedirectVerdict::Refuse(msg) => assert!(msg.contains("redirects"), "{msg}"),
+            RedirectVerdict::Follow => panic!("hop-count cap must refuse"),
+        }
+    }
+
+    #[test]
     fn insecure_host_allowlist_is_empty_by_default() {
         // With the env var unset (the ambient state for the test process),
         // nothing is exempted — the secure default holds. The allow path is
@@ -518,6 +600,10 @@ mod tests {
         assert!(is_internal_ip(ip("169.254.0.1")));
         assert!(is_internal_ip(ip("169.254.169.254")));
         assert!(is_internal_ip(ip("0.0.0.0")));
+        // 0.0.0.0/8 "this network" (a non-zero host) and 100.64/10 CGNAT.
+        assert!(is_internal_ip(ip("0.1.2.3")));
+        assert!(is_internal_ip(ip("100.64.0.1")));
+        assert!(is_internal_ip(ip("100.127.255.255")));
         // IPv6: loopback, unspecified, unique-local fc00::/7, link-local
         // fe80::/10, and an IPv4-mapped loopback.
         assert!(is_internal_ip(ip("::1")));

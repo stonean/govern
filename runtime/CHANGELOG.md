@@ -2,6 +2,41 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.19.0] — 2026-07-11
+
+Follow-up review of the 0.18.0 runtime (see `specs/022-deterministic-runtime/review.md`). Closes a partially-resolved SSRF finding, a bootstrap parse regression the 0.18.0 parser change introduced, and a set of newly-surfaced input-validation and correctness gaps.
+
+### Security
+
+- **Redirect SSRF (BE-INPUT-007 completion)** — `fetch-archive` now re-runs the full scheme/internal-range screen on **every** redirect hop via a custom `reqwest` redirect policy (capped at 10 hops). Previously the default client followed up to 10 redirects with no re-validation, so a single `302` to `http://169.254.169.254/…` defeated both the https-only rule and the internal-range denial.
+- **Path traversal via `feature` (BE-INPUT-001 sibling)** — `set-status`, `mark-task`, `mark-criterion`, `prune-tasks`, `write-review`, and the read-only feature primitives (`read-spec`, `read-tasks`, `check-artifacts`, `check-stuck`, `compute-review-scope`, `traverse-deps`, `derive-boundary`, `process-waivers`, `resolve-references`) now validate the MCP-supplied `feature` argument with `validate_no_traversal`, closing an out-of-repo write/read escape (`feature: "../../other/specs/001-x"`).
+- **`write-review` frontmatter injection** — `reviewed-at`, `reviewed-against`, `diff-base`, `feature`, `scenario`, and `skipped-passes` are single-line-validated before being spliced into `review.md` and the spec's `review:` frontmatter block, so a newline can no longer inject a spoofed top-level key (e.g. `status: done`) into the spec.
+- **`run-generator` / `lint-markdown` containment** — `run-generator` bounds its `script` argument to the repo (`validate_no_traversal`), and `lint-markdown` rejects a `paths` entry beginning with `-` (which markdownlint-cli2 would parse as a flag such as `--config`, loading arbitrary `customRules` JS).
+
+### Fixed
+
+- **`gvrn exec govern` parse regression** — `framework/bootstrap/govern.md` step 6 (which named two primitives, `merge-managed-block` + `write-session`) is split into two steps, so the bootstrap procedure parses again under the 0.18.0 two-primitive hard-error. `scripts/lint-procedure-parseability.sh` now also parses `framework/bootstrap/*.md`, so this class can no longer slip through CI.
+- **`gvrn exec target <feature>` retarget** — a `resolve-feature` `resolved` result now overrides the session-seeded `feature`/`path` on the `target` command, so switching the target actually writes the new feature instead of rewriting the stale one with a fresh timestamp.
+- **Numbered-heading grammar** — `mark-task` and `read-tasks` now require the trailing `.` on a task heading (`## N.`), matching `append-task`/`prune-tasks`, so a prose heading like `## 3 quick wins` is no longer treated as task 3.
+- **`writeCode` edit contract** — `validate_response` now rejects a `create` edit with no `content` and an `edit` edit with neither `patch` nor `content` (`ValidationError::EditContent`), instead of admitting an undefined edit the schema alone allowed.
+- **`discover-rule-files` surfaces** — the MCP-boundary `detected-surfaces` argument is validated like a `[rules] surfaces` config value; an unrecognized member (e.g. `"Backend"`) fails fast instead of silently loading only `-cross.md` rules.
+- **Exec operational-error envelopes** — the command-not-found, unreadable-file, and walker-I/O exit paths now emit a terminal `error` protocol message on stdout (with the runtime version), honoring the 1–127 clean-band contract that lets a host distinguish a clean operational error from a signal-killed crash.
+- **Parser robustness** — a heading that emits no text (empty, or a code-span only like `` ## `gvrn` ``) no longer opens the Instructions section over the real one; an extension marker on its own line between steps is attached to the next step rather than dropped; and a marker merely quoted in a code span is no longer mistaken for a live seam.
+- **CRLF idempotency** — `merge-managed-block`'s `html-comment` style normalizes `\r` before its unchanged-compare, so `merge-claude-md` no longer rewrites `CLAUDE.md` on every run on a CRLF checkout.
+- **`merge-managed-block` marker** — the `marker` argument is rejected when it contains a newline or `-->`, which would corrupt the managed-region delimiters.
+
+### Changed
+
+- **`write_atomic` mode preservation (Unix)** — an in-place rewrite now re-applies the destination file's prior permissions after the tempfile rename, so `set-status` / `mark-task` / `write-review` / etc. no longer narrow an existing `0644` file to `0600`.
+- Four no-op `matches!(…)` statement tests are wrapped in `assert!(…)`; stale doc comments (`dashboard` `session-path`, `prune-tasks` `size-after`, the `ParseDiagnostics` data-model note) are corrected.
+
+### Not fixed (documented)
+
+- A primitive named in continuation text *after* a nested ordered list is still dropped by the parser — the fix is entangled with list-item finalization and deferred rather than shipped fragile. No shipped command file triggers it.
+- The `fetch-archive` DNS-rebinding TOCTOU (guard resolves, reqwest re-resolves) remains as logged in `specs/inbox.md`; the redirect fix above is orthogonal to it.
+- On the `/gov:implement` exec path, `derive-boundary`'s computed boundary does not auto-populate the `write-boundary` key the writeCode validator enforces on (that key is a seeded input); enforcement is fail-closed without a seed. Auto-binding it is a design decision (seed-vs-derived precedence) that also needs a multi-commit `implement-basic` fixture, so it is deferred rather than changed here.
+- `deny_unknown_fields` was not added to the primitive `Args` structs: the exec interpreter binds every primitive's args from a clone of the *entire* walker context (a deliberate superset), so rejecting unknown fields would break all primitives on the exec path. A misspelled kebab-case field still silently defaults; closing this needs a per-primitive field allowlist, not a blanket attribute.
+
 ## [0.18.0] — 2026-07-11
 
 Remediation of the nine MUST and twenty-one SHOULD findings from the 0.17.0 `/gov:review` (see `specs/022-deterministic-runtime/review.md`).

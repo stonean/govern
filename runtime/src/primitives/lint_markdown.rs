@@ -25,6 +25,21 @@ use crate::schema::primitives::{LintMarkdownArgs, LintMarkdownResult, MarkdownVi
 pub fn run(args: &LintMarkdownArgs, repo: &Path) -> Result<LintMarkdownResult> {
     // Windows ships npx as a `.cmd` shim, which `Command::new("npx")`
     // cannot resolve (CreateProcess needs the explicit extension).
+    // A path beginning with `-` would be parsed by markdownlint-cli2 as an
+    // option, not a file — `--config=evil.json` can load a `customRules` JS
+    // module, i.e. arbitrary code under this primitive's permission. Reject
+    // it so `paths` names files only.
+    for path in &args.paths {
+        if path.starts_with('-') {
+            return Err(PrimitiveError::InvalidArgument {
+                primitive: "lint-markdown".into(),
+                argument: "paths".into(),
+                reason: "a path beginning with '-' would be parsed as a markdownlint-cli2 \
+                         flag (e.g. --config loads arbitrary JS); pass file paths only"
+                    .into(),
+            });
+        }
+    }
     let npx = if cfg!(windows) { "npx.cmd" } else { "npx" };
     let mut cmd = Command::new(npx);
     cmd.arg("markdownlint-cli2");

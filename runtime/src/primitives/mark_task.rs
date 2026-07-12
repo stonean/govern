@@ -38,6 +38,7 @@ use super::checkbox::{find_checkbox_line, flip_checkbox_at};
 /// exceeds the number of subtasks found, or [`PrimitiveError::Io`] for any
 /// filesystem failure.
 pub fn run(args: &MarkTaskArgs, repo: &Path) -> Result<CheckboxToggleResult> {
+    super::validate_no_traversal(&args.feature)?;
     let root = paths::Paths::load(repo).specs_root;
     let feature_dir = repo.join(&root).join(&args.feature);
     if !feature_dir.is_dir() {
@@ -132,14 +133,20 @@ fn locate_task_range(
 
 fn heading_task_number(heading: &str) -> Option<String> {
     let mut digits = String::new();
-    for ch in heading.chars() {
+    let mut rest = "";
+    for (idx, ch) in heading.char_indices() {
         if ch.is_ascii_digit() {
             digits.push(ch);
             continue;
         }
+        rest = &heading[idx..];
         break;
     }
-    if digits.is_empty() {
+    // Require the trailing `.` that marks a real task heading (`## N. Title`),
+    // matching the number grammar in `read-tasks`/`append-task`/`prune-tasks`.
+    // A prose heading like `## 3 quick wins` is not a task and must not match,
+    // or `mark-task --task-number 3` would flip checkboxes inside it.
+    if digits.is_empty() || !rest.starts_with('.') {
         None
     } else {
         Some(digits)
@@ -183,6 +190,15 @@ mod tests {
     use crate::primitives::PrimitiveError;
     use std::fs;
     use tempfile::tempdir;
+
+    #[test]
+    fn heading_task_number_requires_trailing_dot() {
+        assert_eq!(heading_task_number("3. Real task"), Some("3".into()));
+        assert_eq!(heading_task_number("12. Another"), Some("12".into()));
+        // A prose heading whose digits are not followed by `.` is not a task.
+        assert_eq!(heading_task_number("3 quick wins"), None);
+        assert_eq!(heading_task_number("No number"), None);
+    }
 
     fn write_fixture(tmp: &std::path::Path) {
         let feature_dir = tmp.join("specs/feat");

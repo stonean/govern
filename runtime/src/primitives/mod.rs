@@ -481,6 +481,19 @@ pub(crate) fn write_atomic(path: &Path, content: &str) -> Result<()> {
 /// pattern as [`write_atomic`]; used by primitives that produce binary
 /// payloads (e.g., `fetch-archive` writing a downloaded tarball).
 pub(crate) fn write_atomic_bytes(path: &Path, content: &[u8]) -> Result<()> {
+    // Capture the destination's existing mode (Unix) so an in-place rewrite
+    // preserves it. `NamedTempFile` is created 0600 and `persist` renames it
+    // over the target, so without this every rewrite would narrow an existing
+    // 0644 file to owner-only. New files keep the tempfile default; a
+    // primitive that writes an *executable* re-applies its mode after this
+    // returns (see `apply-manifest`'s `mirror_source_mode`).
+    #[cfg(unix)]
+    let prior_mode = {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::metadata(path)
+            .ok()
+            .map(|meta| meta.permissions().mode())
+    };
     if let Some(parent) = path.parent()
         && !parent.as_os_str().is_empty()
     {
@@ -510,6 +523,16 @@ pub(crate) fn write_atomic_bytes(path: &Path, content: &[u8]) -> Result<()> {
         path: path.into(),
         source: err.error,
     })?;
+    #[cfg(unix)]
+    if let Some(mode) = prior_mode {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(path, std::fs::Permissions::from_mode(mode)).map_err(
+            |source| PrimitiveError::Io {
+                path: path.into(),
+                source,
+            },
+        )?;
+    }
     Ok(())
 }
 
@@ -652,6 +675,24 @@ pub(crate) fn validate_no_traversal(path: &str) -> Result<()> {
 /// grammar — uppercase, `_`, `.`, path separators, whitespace, newlines,
 /// or other control characters — is rejected before it can inject a path
 /// segment or forge markdown structure.
+/// Reject a text value carrying an embedded newline or carriage return.
+/// Such a value, interpolated verbatim into a markdown or YAML artifact,
+/// would inject document structure (a phantom heading, a new frontmatter
+/// key); `primitive`/`argument` name the offending field. Shared by every
+/// primitive that splices caller-supplied text into a file it writes.
+pub(crate) fn validate_single_line(primitive: &str, argument: &str, value: &str) -> Result<()> {
+    if value.contains('\n') || value.contains('\r') {
+        return Err(PrimitiveError::InvalidArgument {
+            primitive: primitive.into(),
+            argument: argument.into(),
+            reason: "embedded newlines would inject document structure; \
+                     supply single-line text"
+                .into(),
+        });
+    }
+    Ok(())
+}
+
 pub(crate) fn validate_slug(slug: &str) -> Result<()> {
     if slug.is_empty() {
         return Err(PrimitiveError::InvalidSlug {
@@ -1126,6 +1167,23 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
 
     use super::*;
+
+    #[cfg(unix)]
+    #[test]
+    fn write_atomic_preserves_existing_file_mode() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("spec.md");
+        std::fs::write(&path, "old").unwrap();
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644)).unwrap();
+        write_atomic(&path, "new").unwrap();
+        let mode = std::fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+        assert_eq!(
+            mode, 0o644,
+            "in-place rewrite must not narrow the file mode"
+        );
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "new");
+    }
 
     #[test]
     fn validate_slug_accepts_normal_slugs() {

@@ -33,6 +33,7 @@ const DONE_WHEN_PREFIX: &str = "**Done when**";
 /// Returns [`PrimitiveError::FeatureNotFound`] when `specs/<feature>/` does
 /// not exist, or [`PrimitiveError::Io`] when `tasks.md` cannot be read.
 pub fn run(args: &ReadTasksArgs, repo: &Path) -> Result<ReadTasksResult> {
+    super::validate_no_traversal(&args.feature)?;
     let root = paths::Paths::load(repo).specs_root;
     let feature_dir = repo.join(&root).join(&args.feature);
     if !feature_dir.is_dir() {
@@ -163,7 +164,10 @@ fn split_numbered_heading(heading: &str) -> Option<(String, String)> {
     }
     let end_num = end_num.unwrap_or(heading.len());
     let (number, after) = heading.split_at(end_num);
-    let after = after.strip_prefix('.').unwrap_or(after);
+    // Require the `.` that marks a task heading (`## N. Title`); a prose
+    // heading like `## 3 quick wins` is not a task, so it must not parse as
+    // one (matching append-task/prune-tasks number grammar).
+    let after = after.strip_prefix('.')?;
     Some((number.to_string(), after.trim_start().to_string()))
 }
 
@@ -229,6 +233,8 @@ mod tests {
             Some(("3".into(), "Wire CLI".into()))
         );
         assert_eq!(split_numbered_heading("Not numbered"), None);
+        // A prose heading whose digits are not followed by `.` is not a task.
+        assert_eq!(split_numbered_heading("3 quick wins"), None);
     }
 
     // --- phased-structure tests -----------------------------------------------

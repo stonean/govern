@@ -460,21 +460,21 @@ mod tests {
             tmp.path(),
         )
         .unwrap_err();
-        matches!(err, PrimitiveError::UnknownArchiveFormat { .. });
+        assert!(matches!(err, PrimitiveError::UnknownArchiveFormat { .. }));
     }
 
     #[test]
     fn safe_join_rejects_parent_dir() {
         let dest = Path::new("/tmp/out");
         let err = safe_join(dest, Path::new("../etc/passwd")).unwrap_err();
-        matches!(err, PrimitiveError::UnsafeArchivePath { .. });
+        assert!(matches!(err, PrimitiveError::UnsafeArchivePath { .. }));
     }
 
     #[test]
     fn safe_join_rejects_absolute() {
         let dest = Path::new("/tmp/out");
         let err = safe_join(dest, Path::new("/etc/passwd")).unwrap_err();
-        matches!(err, PrimitiveError::UnsafeArchivePath { .. });
+        assert!(matches!(err, PrimitiveError::UnsafeArchivePath { .. }));
     }
 
     #[test]

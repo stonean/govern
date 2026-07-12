@@ -107,6 +107,7 @@ impl Block {
 /// - [`PrimitiveError::Io`] / [`PrimitiveError::Yaml`] on filesystem or
 ///   frontmatter failure.
 pub fn run(args: &PruneTasksArgs, repo: &Path) -> Result<PruneTasksResult> {
+    super::validate_no_traversal(&args.feature)?;
     let root = paths::Paths::load(repo).specs_root;
     let feature_dir = repo.join(&root).join(&args.feature);
     if !feature_dir.is_dir() {

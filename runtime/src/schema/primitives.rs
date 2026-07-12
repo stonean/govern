@@ -727,8 +727,8 @@ pub struct DashboardScenarioDetail {
     pub open_question_count: u32,
 }
 
-/// Session-target summary returned when `session-path` is supplied and the
-/// file at that path exists. The `feature` field always names the targeted
+/// Session-target summary returned when the repo-root `.govern.session.toml`
+/// exists and names a target. The `feature` field always names the targeted
 /// feature; `scenario` is populated when a scenario is targeted;
 /// `scenario-detail` is populated alongside `scenario` to spare callers an
 /// extra read.
@@ -753,8 +753,8 @@ pub struct DashboardSessionTarget {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct DashboardResult {
-    /// Session target when `session-path` is supplied and the file exists;
-    /// `None` otherwise.
+    /// Session target when the repo-root `.govern.session.toml` exists and
+    /// names a target; `None` otherwise.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub session_target: Option<DashboardSessionTarget>,
     /// Per-spec entries in directory-name order.
@@ -1535,7 +1535,9 @@ pub struct PruneTasksResult {
     pub kept_count: u32,
     /// Size before pruning.
     pub size_before: SizeSummary,
-    /// Size after pruning (equal to before on preview / no-op).
+    /// Size the tasks file would have after pruning (reported even on a
+    /// preview, which computes but does not write it); equal to
+    /// `size_before` only on a no-op (nothing to prune).
     pub size_after: SizeSummary,
     /// Per-section classification records.
     pub sections: Vec<PruneSection>,

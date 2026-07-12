@@ -60,6 +60,7 @@ use crate::schema::status::COMPATIBLE_STATUSES;
 /// primitive needs a readable `status` to classify tiers at all), or
 /// [`PrimitiveError::Io`] on filesystem failures.
 pub fn run(args: &CheckArtifactsArgs, repo: &Path) -> Result<CheckArtifactsResult> {
+    super::validate_no_traversal(&args.feature)?;
     let root = paths::Paths::load(repo).specs_root;
     let feature_dir = repo.join(&root).join(&args.feature);
     if !feature_dir.is_dir() {

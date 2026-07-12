@@ -38,6 +38,7 @@ const REQUIRED_FIELDS: &[&str] = &["rule", "file", "reason", "waived-at", "waive
 /// frontmatter block, [`PrimitiveError::Yaml`] when the frontmatter fails to
 /// parse, or [`PrimitiveError::Io`] on read failure.
 pub fn run(args: &ProcessWaiversArgs, repo: &Path) -> Result<ProcessWaiversResult> {
+    super::validate_no_traversal(&args.feature)?;
     let layout = paths::Paths::load(repo);
     let spec_path = repo
         .join(&layout.specs_root)

@@ -179,6 +179,19 @@ fn resolve_surfaces(rules: Option<&RulesSection>, detected: &[String]) -> Result
             if detected.is_empty() {
                 Ok(VALID_SURFACES.iter().map(|s| (*s).to_string()).collect())
             } else {
+                // The `detected-surfaces` arg crosses the MCP boundary, so
+                // validate its members the same way a `[rules] surfaces`
+                // config value is validated. An unrecognized member (e.g.
+                // "Backend" or "back-end") would otherwise select neither
+                // surface and silently drop that surface's rule files from
+                // the review set — fail fast instead.
+                for member in detected {
+                    if !VALID_SURFACES.contains(&member.as_str()) {
+                        return Err(PrimitiveError::InvalidSurfacesMember {
+                            value: member.clone(),
+                        });
+                    }
+                }
                 Ok(detected.to_vec())
             }
         }
@@ -384,6 +397,19 @@ mod tests {
         "accessibility-frontend.md",
         "quality-cross.md",
     ];
+
+    #[test]
+    fn rejects_unrecognized_detected_surface_member() {
+        // The MCP-boundary `detected-surfaces` arg is validated like a config
+        // value: an unrecognized member fails fast rather than silently
+        // selecting neither surface and dropping that surface's rule files.
+        let tmp = setup(THREE, None);
+        let err = run(&args(&["Backend"]), tmp.path()).unwrap_err();
+        assert!(
+            matches!(&err, PrimitiveError::InvalidSurfacesMember { value } if value == "Backend"),
+            "expected InvalidSurfacesMember, got {err:?}"
+        );
+    }
 
     #[test]
     fn unset_surfaces_no_detection_loads_all_recognized() {

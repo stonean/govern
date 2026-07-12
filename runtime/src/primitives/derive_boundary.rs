@@ -18,6 +18,7 @@ use crate::schema::primitives::{DeriveBoundaryArgs, DeriveBoundaryResult};
 /// is absent, [`PrimitiveError::NoSpecHistory`] when no commit touches the
 /// spec dir, and [`PrimitiveError::Git`] for any libgit2 failure.
 pub fn run(args: &DeriveBoundaryArgs, repo: &Path) -> Result<DeriveBoundaryResult> {
+    super::validate_no_traversal(&args.feature)?;
     let layout = paths::Paths::load(repo);
     let feature_dir = repo.join(&layout.specs_root).join(&args.feature);
     if !feature_dir.is_dir() {
