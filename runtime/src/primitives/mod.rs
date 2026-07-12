@@ -782,6 +782,9 @@ impl SkipScanner {
     /// themselves skipped, matching the pre-existing fenced-block handling.
     /// A comment that opens and closes on the same line is inline — its
     /// surrounding content is real markdown and the line is not skipped.
+    /// A comment delimiter inside a backtick inline-code span is inert (it
+    /// neither opens nor closes a region), so prose that merely mentions
+    /// `<!--` in code font is not mistaken for a comment opener.
     pub(crate) fn skip(&mut self, line: &str) -> bool {
         if self.in_fence {
             if line.trim_start().starts_with("```") {
@@ -799,8 +802,13 @@ impl SkipScanner {
             self.in_fence = true;
             return true;
         }
-        if let Some(open) = line.find("<!--") {
-            if line[open + 4..].contains("-->") {
+        // Comment delimiters inside a backtick inline-code span are inert —
+        // prose that merely mentions `<!--` in code font must not open a skip
+        // region (scenarios/skipscanner-inline-code-exemption.md). Fence
+        // delimiters are already line-anchored (a fence opens only when a line
+        // *starts* with the run), so a mid-prose fence mention is inert too.
+        if let Some(open) = find_outside_code(line, "<!--") {
+            if find_outside_code(&line[open + 4..], "-->").is_some() {
                 return false;
             }
             self.in_comment = true;
@@ -816,6 +824,61 @@ impl SkipScanner {
     pub(crate) fn in_region(&self) -> bool {
         self.in_fence || self.in_comment
     }
+}
+
+/// Byte ranges of `line` that sit inside a markdown inline-code span — the
+/// content between a matched pair of equal-length backtick runs, per the
+/// `CommonMark` code-span rule. A backtick run with no later equal-length run
+/// is a literal backtick and opens no span; runs of a different length
+/// between a matched pair are ordinary span content.
+fn inline_code_spans(line: &str) -> Vec<std::ops::Range<usize>> {
+    let bytes = line.as_bytes();
+    // Backtick runs as (start, len), left to right.
+    let mut runs: Vec<(usize, usize)> = Vec::new();
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'`' {
+            let start = i;
+            while i < bytes.len() && bytes[i] == b'`' {
+                i += 1;
+            }
+            runs.push((start, i - start));
+        } else {
+            i += 1;
+        }
+    }
+    // Match each opening run to the next run of equal length; the content
+    // between them is a code span, and the closing run cannot re-open one.
+    let mut spans = Vec::new();
+    let mut idx = 0;
+    while idx < runs.len() {
+        let (open_start, open_len) = runs[idx];
+        if let Some(offset) = runs[idx + 1..].iter().position(|&(_, len)| len == open_len) {
+            let close_idx = idx + 1 + offset;
+            spans.push(open_start + open_len..runs[close_idx].0);
+            idx = close_idx + 1;
+        } else {
+            idx += 1;
+        }
+    }
+    spans
+}
+
+/// First byte offset of `needle` in `line` that does not fall inside an
+/// inline-code span — the occurrence a comment/fence-aware scanner acts on.
+/// A delimiter mentioned inside backticks is skipped over. `needle` is
+/// ASCII (`<!--` / `-->`), so each match starts on a char boundary.
+fn find_outside_code(line: &str, needle: &str) -> Option<usize> {
+    let spans = inline_code_spans(line);
+    let mut from = 0;
+    while let Some(rel) = line[from..].find(needle) {
+        let pos = from + rel;
+        if !spans.iter().any(|span| span.contains(&pos)) {
+            return Some(pos);
+        }
+        from = pos + 1;
+    }
+    None
 }
 
 /// Walk `content` line by line, yielding the numeric prefix of every ATX
@@ -1705,5 +1768,42 @@ mod tests {
         let inline = "## 3. Real <!-- note -->\n\n- [ ] x\n";
         let inline_nums: Vec<u32> = iter_task_numbers_at_levels(inline, &[2, 3]).collect();
         assert_eq!(inline_nums, vec![3]);
+    }
+
+    #[test]
+    fn backticked_comment_delimiter_in_prose_does_not_hide_following_structure() {
+        // scenarios/skipscanner-inline-code-exemption.md: a task's done-when
+        // that mentions a comment-open delimiter inside backticks must not
+        // open a skip region and hide the next task heading — the exact bug
+        // task 67's done-when hit.
+        let content = "## 1. First\n\n- **Done when**: handles a backticked `<!--` in prose.\n\n## 2. Second\n\n- [ ] x\n";
+        let nums: Vec<u32> = iter_task_numbers_at_levels(content, &[2]).collect();
+        assert_eq!(
+            nums,
+            vec![1, 2],
+            "a backticked comment-open delimiter must not hide the following `## 2.`"
+        );
+
+        // Balanced backticked delimiters on one line are inert too.
+        let balanced = "## 1. First\n\nMentions `<!--` and `-->` in code font.\n\n## 2. Second\n";
+        let bnums: Vec<u32> = iter_task_numbers_at_levels(balanced, &[2]).collect();
+        assert_eq!(bnums, vec![1, 2]);
+
+        // A genuine (unbackticked) comment still hides its contents.
+        let real = "## 1. First\n\n<!-- comment\n## 9. hidden\n-->\n\n## 2. Second\n";
+        let rnums: Vec<u32> = iter_task_numbers_at_levels(real, &[2]).collect();
+        assert_eq!(rnums, vec![1, 2], "the real comment still hides `## 9.`");
+    }
+
+    #[test]
+    fn find_outside_code_ignores_delimiters_inside_backticks() {
+        // Inside a single-backtick span → not found.
+        assert_eq!(find_outside_code("a `<!--` b", "<!--"), None);
+        // In ordinary text → found at its offset.
+        assert_eq!(find_outside_code("a <!-- b", "<!--"), Some(2));
+        // Double-backtick span containing the token still shields it.
+        assert_eq!(find_outside_code("x ``<!--`` y", "<!--"), None);
+        // A delimiter outside any span is found even when another sits inside one.
+        assert_eq!(find_outside_code("`<!--` then <!--", "<!--"), Some(12));
     }
 }
