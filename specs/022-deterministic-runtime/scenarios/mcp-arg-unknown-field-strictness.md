@@ -26,6 +26,8 @@ The mechanism is a per-primitive field allowlist applied at the MCP surface (e.g
 
 - Derive the allowlist from the `Args` type (e.g. via the schema `schemars` already produces) versus a second strict wrapper type — which avoids a hand-maintained list while keeping the exec path lenient?
 
+**Implementation note (2026-07-12):** the MCP tools take `Parameters<Args>` and rmcp deserializes leniently into the typed struct before the tool body runs, so the unknown-field information is already gone at the method boundary, and the `Args` types are shared with the exec path (so `deny_unknown_fields` on them is out). Strict rejection needs a custom `Parameters`-style wrapper that validates the raw incoming object's keys against the schema before deserializing while still advertising the tool's input schema — which is precisely the rmcp param layer the inbox's **rmcp 1.x → 2.x migration** reworks. Building this wrapper against 1.x would be discarded at that migration, so this scenario should land **with** the rmcp 2.x port rather than before it.
+
 ## Resolved Questions
 
 *None yet.*

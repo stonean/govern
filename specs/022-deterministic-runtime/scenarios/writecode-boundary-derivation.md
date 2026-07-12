@@ -26,6 +26,10 @@ The `implement-basic` parity fixture gains a multi-commit history (an initial co
 
 - Precedence when both a non-empty derivation and a seed are present: does the derivation always win, or only when the two disagree in a way worth surfacing?
 
+**Implementation finding (2026-07-12) — boundary-format mismatch, reframes this scenario.** `derive-boundary` emits the **exact paths** of files changed since the spec dir's first commit (`derive_boundary.rs:61`, e.g. `runtime/src/main.rs`), plus the single `specs/{feature}/**` glob. But the writeCode enforcement treats a non-glob boundary entry as an **exact-path match** (`/**` = any descendant, `/*` = direct children, otherwise exact). writeCode's job is to **create/edit files**, including *new* files not yet in git history — and a new file (`runtime/src/foo.rs`) does not exact-match any previously-changed path. That is precisely why the `implement-basic` fixture seeds the broad glob `runtime/**` rather than relying on the derivation. So binding the derived boundary to `write-boundary` as-is would reject every new-file `create` edit — the derivation is the wrong *shape* for enforcement, not just absent. Also note the derivation is never empty (it always contains the spec glob), so the "empty fallback" framing above does not apply.
+
+Resolving this needs a design decision, not a fixture tweak: either (a) `derive-boundary` emits **directory globs** for changed paths (`runtime/src/foo.rs` → `runtime/**` or `runtime/src/**`) so new files in touched directories are permitted — which changes `derive-boundary`'s contract and its exact-path tests and any other consumer; or (b) writeCode enforcement treats an exact-path boundary entry as permitting its containing directory — a `path_in_boundary` semantic change. This is deferred pending that decision rather than shipped with the wrong shape. It also means the current exec-path writeCode flow depends on a seeded `write-boundary` that nothing writes, so a real `/gov:implement` exec run without a seed is fail-closed on new files — the deeper gap this scenario should ultimately close.
+
 ## Resolved Questions
 
 *None yet.*
