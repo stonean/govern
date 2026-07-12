@@ -74,7 +74,14 @@ pub fn run(args: &DeriveBoundaryArgs, repo: &Path) -> Result<DeriveBoundaryResul
     })
 }
 
-fn first_commit_for_prefix(repo: &Repository, prefix: &str) -> Result<Option<git2::Oid>> {
+/// Earliest commit (topological, from the root) whose first-parent diff
+/// touches a path under `prefix` — the feature's spec-history diff base.
+/// `pub(crate)`: shared with `diff-cross-spec`, whose window must start
+/// at exactly the commit the boundary derivation starts at.
+pub(crate) fn first_commit_for_prefix(
+    repo: &Repository,
+    prefix: &str,
+) -> Result<Option<git2::Oid>> {
     let mut walk = repo.revwalk()?;
     walk.push_head()?;
     walk.set_sorting(Sort::TOPOLOGICAL | Sort::REVERSE)?;

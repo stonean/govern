@@ -13,13 +13,13 @@ use gvrn::schema::primitives::{
     AppendInboxArgs, AppendQuestionArgs, AppendTaskArgs, ApplyManifestArgs, CheckArtifactsArgs,
     CheckReviewGateArgs, CheckRuleIdsArgs, CheckStuckArgs, ComputeReviewScopeArgs,
     CreateFeatureArgs, CreatePlanArtifactsArgs, CreateScenarioArgs, DashboardArgs,
-    DeriveBoundaryArgs, DiscoverRuleFilesArgs, EnforceManifestArgs, ExtractArchiveArgs,
-    FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs,
-    MergeClaudeMdArgs, MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs,
-    ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs, RemoveInboxItemArgs,
-    ResolveAnchorArgs, ResolveFeatureArgs, ResolveReferencesArgs, RunGeneratorArgs, SetStatusArgs,
-    SubstituteTemplatesArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteReviewArgs,
-    WriteSessionArgs,
+    DeriveBoundaryArgs, DiffCrossSpecArgs, DiscoverRuleFilesArgs, EnforceManifestArgs,
+    ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs,
+    MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs, MergePermissionsArgs,
+    MigrateSessionFileArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs,
+    RemoveInboxItemArgs, ResolveAnchorArgs, ResolveFeatureArgs, ResolveReferencesArgs,
+    RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs,
+    ValidateFrontmatterArgs, WriteReviewArgs, WriteSessionArgs,
 };
 
 #[derive(Parser, Debug)]
@@ -82,6 +82,8 @@ enum Command {
     CheckStuck(CheckStuckArgs),
     /// Derive the runtime write boundary from git history.
     DeriveBoundary(DeriveBoundaryArgs),
+    /// Diff the feature's first spec-dir commit against the working tree, filtered to sibling-spec paths + inbox additions.
+    DiffCrossSpec(DiffCrossSpecArgs),
     /// Select rule files for /gov:review (suffix, [rules] surfaces, disabled-rule-files).
     DiscoverRuleFiles(DiscoverRuleFilesArgs),
     /// Classify a spec's review.waivers against currently-firing findings.
@@ -473,6 +475,7 @@ fn main() -> ExitCode {
         Command::DeriveBoundary(args) => {
             emit_result(primitives::derive_boundary::run(&args, &repo))
         }
+        Command::DiffCrossSpec(args) => emit_result(primitives::diff_cross_spec::run(&args, &repo)),
         Command::DiscoverRuleFiles(args) => {
             emit_result(primitives::discover_rule_files::run(&args, &repo))
         }

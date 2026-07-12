@@ -2036,6 +2036,46 @@ pub struct AppendQuestionResult {
     pub previous_status: Option<String>,
 }
 
+// -- diff-cross-spec ---------------------------------------------------------
+
+/// Args for `diff-cross-spec`. Computes `/gov:implement`'s cross-spec
+/// impact surface: the diff from the feature's first spec-dir commit to
+/// the working tree, scoped to the spec root and filtered to paths
+/// outside the feature's own directory, plus the lines added to
+/// `{specs-root}/inbox.md` in the same window.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct DiffCrossSpecArgs {
+    /// Feature directory name under the configured spec root.
+    #[arg(long)]
+    pub feature: String,
+}
+
+/// Result for `diff-cross-spec`. Read-only; both lists empty is the
+/// no-impact domain outcome.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct DiffCrossSpecResult {
+    /// First commit touching the feature's spec dir (the diff base;
+    /// shared derivation with `derive-boundary`).
+    pub first_commit: String,
+    /// Current HEAD commit.
+    pub current_head: String,
+    /// Changed paths under the spec root but outside the feature's own
+    /// directory (sorted; `{specs-root}/inbox.md` is excluded — its
+    /// additions report separately below). The diff runs against the
+    /// working tree (index + untracked included), so uncommitted sibling
+    /// edits surface at the per-task summary; on a clean tree this equals
+    /// the documented `git diff <first-commit>..HEAD -- {specs-root}/`.
+    pub cross_spec_paths: Vec<String>,
+    /// Bullet lines added to `{specs-root}/inbox.md` in the window — the
+    /// issues captured during the feature's work (§brownfield-inbox).
+    /// Filtered through the shared bullet grammar, so structural
+    /// additions (the heading, blanks when the whole file is new) never
+    /// report as captured items.
+    pub inbox_additions: Vec<String>,
+}
+
 // -- append-inbox --------------------------------------------------------------
 
 /// Args for `append-inbox`. Appends one `- {text}` bullet to
@@ -3225,6 +3265,29 @@ mod tests {
         );
         assert!(!dv.as_object().unwrap().contains_key("previous-status"));
         assert_eq!(round_trip(&deduped), deduped);
+    }
+
+    #[test]
+    fn diff_cross_spec_round_trip() {
+        use super::{DiffCrossSpecArgs, DiffCrossSpecResult};
+        let args = DiffCrossSpecArgs {
+            feature: "042-widget".into(),
+        };
+        assert_eq!(round_trip(&args), args);
+
+        let result = DiffCrossSpecResult {
+            first_commit: "abc123".into(),
+            current_head: "def456".into(),
+            cross_spec_paths: vec!["specs/007-sibling/spec.md".into()],
+            inbox_additions: vec!["- security: token logged in plaintext".into()],
+        };
+        let rv: serde_json::Value = serde_json::to_value(&result).unwrap();
+        assert_eq!(rv["cross-spec-paths"][0], "specs/007-sibling/spec.md");
+        assert_eq!(
+            rv["inbox-additions"][0],
+            "- security: token logged in plaintext"
+        );
+        assert_eq!(round_trip(&result), result);
     }
 
     #[test]

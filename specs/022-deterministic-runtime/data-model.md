@@ -528,6 +528,29 @@ The deterministic surface behind `/gov:amend`'s question-route write, previously
 
 Dedup uses amend's normalized-whitespace comparison (collapse whitespace runs, trim, case-insensitive) against exactly the entries `read-spec`'s question parser reports (continuation lines folded, placeholders skipped), so the runtime and markdown-only paths agree on question identity; a match is the `appended: false` domain outcome with the existing entry echoed verbatim in `duplicate-of`, nothing written. A missing section is created per template order — immediately before `## Resolved Questions` when present (the scenario scaffold), else at end of file (the spec template) — and a `*None …*` scaffold placeholder is replaced by the first real entry. On a spec target whose status is `clarified`, `planned`, `in-progress`, or `done`, the frontmatter status reverts to `draft` in the same atomic write (`status-reverted` + `previous-status` report it) — never a window where the body holds an unresolved question while the status claims otherwise. Scenario targets have no status field and never back-edge; a status value outside the lifecycle set is left alone (`validate-frontmatter` owns flagging it).
 
+### `diff-cross-spec` — implement's cross-spec impact surface
+
+Args:
+
+```json
+{ "feature": "042-widget" }
+```
+
+Result:
+
+```json
+{
+  "first-commit": "b39f2727dc6939ad145ede1830205e0d122075d3",
+  "current-head": "550c8ddc33e6895da0ce6c81fa6f6e2c42049e9f",
+  "cross-spec-paths": ["specs/007-sibling/spec.md"],
+  "inbox-additions": ["- security: token logged in plaintext — src/auth.rs (captured during 042)"]
+}
+```
+
+The deterministic filter `/gov:implement` steps 7 and 12 previously re-derived by hand per task (step 12's prose self-declared "no primitive owns this filter yet"). Diffs the feature's first spec-dir commit — the same base `derive-boundary` computes, through the shared revwalk helper — against the **working tree** (index and untracked files included), scoped to the spec root: `cross-spec-paths` lists changed paths outside the feature's own directory (sorted; `{specs-root}/inbox.md` excluded), and `inbox-additions` lists the bullet lines added to the inbox in the window (shared bullet grammar, so structural additions — heading, blanks on a brand-new file — never report as captured items). The working-tree diff is why the per-task summary (step 7, which fires before the task's commit) sees the run's uncommitted captures and sibling edits; on a clean tree the result equals the documented `git diff <first-commit>..HEAD -- {specs-root}/` form (step 12). Read-only; both lists empty is the no-impact domain outcome.
+
+Resolved fork (scenario open question): a separate primitive rather than a mode on `derive-boundary` — the two results share only the diff base (boundary globs versus sibling-paths + inbox lines), so they share the `first_commit_for_prefix` walk as a `pub(crate)` helper instead of a result-shape union. `/gov:review`'s captured-issues section stays on `compute-review-scope`, whose window starts at the in-progress transition — review wants the current work window, not the feature's whole history.
+
 ### `append-inbox` — append one bullet to the inbox
 
 Args:

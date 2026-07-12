@@ -36,19 +36,20 @@ use crate::schema::primitives::{
     CheckRuleIdsResult, CheckStuckArgs, CheckStuckResult, CheckboxToggleResult,
     ComputeReviewScopeArgs, ComputeReviewScopeResult, CreateFeatureArgs, CreateFeatureResult,
     CreatePlanArtifactsArgs, CreatePlanArtifactsResult, CreateScenarioArgs, CreateScenarioResult,
-    DashboardArgs, DashboardResult, DeriveBoundaryArgs, DeriveBoundaryResult,
-    DiscoverRuleFilesArgs, DiscoverRuleFilesResult, EnforceManifestArgs, EnforceManifestResult,
-    ExtractArchiveArgs, ExtractArchiveResult, FetchArchiveArgs, FetchArchiveResult,
-    GateConfirmArgs, LintMarkdownArgs, LintMarkdownResult, MarkCriterionArgs, MarkTaskArgs,
-    MergeClaudeMdArgs, MergeClaudeMdResult, MergeManagedBlockArgs, MergeManagedBlockResult,
-    MergePermissionsArgs, MergePermissionsResult, MigrateSessionFileArgs, MigrateSessionFileResult,
-    ProcessWaiversArgs, ProcessWaiversResult, PruneTasksArgs, PruneTasksResult, ReadSpecArgs,
-    ReadSpecResult, ReadTasksArgs, ReadTasksResult, RemoveInboxItemArgs, RemoveInboxItemResult,
-    ResolveAnchorArgs, ResolveAnchorResult, ResolveFeatureArgs, ResolveFeatureResult,
-    ResolveReferencesArgs, ResolveReferencesResult, RunGeneratorArgs, RunGeneratorResult,
-    SetStatusArgs, SetStatusResult, SubstituteTemplatesArgs, SubstituteTemplatesResult,
-    TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs, ValidateFrontmatterResult,
-    WriteReviewArgs, WriteReviewResult, WriteSessionArgs, WriteSessionResult,
+    DashboardArgs, DashboardResult, DeriveBoundaryArgs, DeriveBoundaryResult, DiffCrossSpecArgs,
+    DiffCrossSpecResult, DiscoverRuleFilesArgs, DiscoverRuleFilesResult, EnforceManifestArgs,
+    EnforceManifestResult, ExtractArchiveArgs, ExtractArchiveResult, FetchArchiveArgs,
+    FetchArchiveResult, GateConfirmArgs, LintMarkdownArgs, LintMarkdownResult, MarkCriterionArgs,
+    MarkTaskArgs, MergeClaudeMdArgs, MergeClaudeMdResult, MergeManagedBlockArgs,
+    MergeManagedBlockResult, MergePermissionsArgs, MergePermissionsResult, MigrateSessionFileArgs,
+    MigrateSessionFileResult, ProcessWaiversArgs, ProcessWaiversResult, PruneTasksArgs,
+    PruneTasksResult, ReadSpecArgs, ReadSpecResult, ReadTasksArgs, ReadTasksResult,
+    RemoveInboxItemArgs, RemoveInboxItemResult, ResolveAnchorArgs, ResolveAnchorResult,
+    ResolveFeatureArgs, ResolveFeatureResult, ResolveReferencesArgs, ResolveReferencesResult,
+    RunGeneratorArgs, RunGeneratorResult, SetStatusArgs, SetStatusResult, SubstituteTemplatesArgs,
+    SubstituteTemplatesResult, TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs,
+    ValidateFrontmatterResult, WriteReviewArgs, WriteReviewResult, WriteSessionArgs,
+    WriteSessionResult,
 };
 
 /// Canonical MCP tool names exposed by the server, in manifest order —
@@ -254,6 +255,19 @@ impl GovRuntimeServer {
     ) -> Result<Json<DeriveBoundaryResult>, String> {
         let repo = Arc::clone(&self.repo);
         dispatch_blocking(move || primitives::derive_boundary::run(&params.0, repo.as_path())).await
+    }
+
+    #[tool(
+        name = "diff-cross-spec",
+        description = "Compute /gov:implement's cross-spec impact surface: diff the feature's first spec-dir commit against the working tree, scoped to the spec root and filtered to paths outside the feature's own directory, plus the lines added to {specs-root}/inbox.md in the window (the captured issues). Read-only; empty lists are the no-impact outcome."
+    )]
+    async fn diff_cross_spec(
+        &self,
+        params: Parameters<DiffCrossSpecArgs>,
+    ) -> Result<Json<DiffCrossSpecResult>, String> {
+        // Full-history revwalk — blocking pool, like derive-boundary.
+        let repo = Arc::clone(&self.repo);
+        dispatch_blocking(move || primitives::diff_cross_spec::run(&params.0, repo.as_path())).await
     }
 
     #[tool(

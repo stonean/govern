@@ -61,13 +61,13 @@ use crate::schema::primitives::{
     AppendInboxArgs, AppendQuestionArgs, AppendTaskArgs, ApplyManifestArgs, CheckArtifactsArgs,
     CheckReviewGateArgs, CheckRuleIdsArgs, CheckStuckArgs, ComputeReviewScopeArgs,
     CreateFeatureArgs, CreatePlanArtifactsArgs, CreateScenarioArgs, DashboardArgs,
-    DeriveBoundaryArgs, DiscoverRuleFilesArgs, EnforceManifestArgs, ExtractArchiveArgs,
-    FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs,
-    MergeClaudeMdArgs, MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs,
-    ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs, RemoveInboxItemArgs,
-    ResolveAnchorArgs, ResolveFeatureArgs, ResolveReferencesArgs, RunGeneratorArgs, SetStatusArgs,
-    SubstituteTemplatesArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteReviewArgs,
-    WriteSessionArgs,
+    DeriveBoundaryArgs, DiffCrossSpecArgs, DiscoverRuleFilesArgs, EnforceManifestArgs,
+    ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs,
+    MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs, MergePermissionsArgs,
+    MigrateSessionFileArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs,
+    RemoveInboxItemArgs, ResolveAnchorArgs, ResolveFeatureArgs, ResolveReferencesArgs,
+    RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs,
+    ValidateFrontmatterArgs, WriteReviewArgs, WriteSessionArgs,
 };
 use crate::schema::procedure::{Procedure, Step, StepNumber};
 use crate::schema::protocol::{ErrorLocation, ProtocolMessage};
@@ -642,6 +642,7 @@ fn dispatch_primitive(
         "mark-criterion" => call!(MarkCriterionArgs, mark_criterion),
         "set-status" => call!(SetStatusArgs, set_status),
         "derive-boundary" => call!(DeriveBoundaryArgs, derive_boundary),
+        "diff-cross-spec" => call!(DiffCrossSpecArgs, diff_cross_spec),
         "discover-rule-files" => call!(DiscoverRuleFilesArgs, discover_rule_files),
         "process-waivers" => call!(ProcessWaiversArgs, process_waivers),
         "compute-review-scope" => call!(ComputeReviewScopeArgs, compute_review_scope),

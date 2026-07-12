@@ -24,6 +24,7 @@ pub mod create_plan_artifacts;
 pub mod create_scenario;
 pub mod dashboard;
 pub mod derive_boundary;
+pub mod diff_cross_spec;
 pub mod discover_rule_files;
 pub mod enforce_manifest;
 pub mod extract_archive;

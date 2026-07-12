@@ -103,6 +103,7 @@ Configure `{cli-config-dir}/settings.local.json` with the tool permissions neede
    - `{ "toolName": "mcp:gvrn:create-plan-artifacts", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gvrn:check-review-gate", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gvrn:append-question", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:gvrn:diff-cross-spec", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gvrn:append-inbox", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gvrn:remove-inbox-item", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gvrn:check-artifacts", "permission": { "type": "allow" } }`
