@@ -6,6 +6,15 @@ description: Display an overview of the pipeline and its slash commands.
 
 Display an overview of the pipeline and how to use its slash commands.
 
+## Purpose
+
+A static, at-a-glance guide to the pipeline: the states a spec moves through, the command for each transition, and the key concepts (session target, inbox, rules). Printed verbatim — it scans no files and runs no commands.
+
+## Scope Boundaries
+
+- Prints a fixed guide. Do NOT read spec files, list directories, run generators, or invoke any primitive — this command has no runtime path and no side effects.
+- The command tables in the guide are generated from each command's frontmatter `description:` by `scripts/gen-help-tables.sh` (kept in sync by the pre-commit hook and `/{project}:audit`), not assembled at print time.
+
 ## Instructions
 
 Print the following guide exactly (do not scan files or run commands):
@@ -42,7 +51,7 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 | `/{project}:plan` | clarified → planned | Create a technical plan and task breakdown for a clarified spec. |
 | `/{project}:implement` | planned → in-progress → done | Execute implementation tasks for the targeted feature. |
 | `/{project}:review` | blocks `done` (MUST violations) | Audit code against rules — security, reuse, quality, efficiency, simplicity. Writes review.md; blocks done on MUST violations. |
-| `/{project}:analyze` | — | Audit artifacts against each other — spec, plan, tasks, scenarios, frontmatter, dependencies, rule IDs. Read-only. |
+| `/{project}:analyze` | — | Audit artifacts against each other — spec, plan, tasks, scenarios, frontmatter, dependencies, rule IDs. Read-only by default; --fix reverts a drifted done spec. |
 
 <!-- generated:commands-pipeline:end -->
 

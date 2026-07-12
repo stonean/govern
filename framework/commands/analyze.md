@@ -1,5 +1,5 @@
 ---
-description: Audit artifacts against each other — spec, plan, tasks, scenarios, frontmatter, dependencies, rule IDs. Read-only.
+description: Audit artifacts against each other — spec, plan, tasks, scenarios, frontmatter, dependencies, rule IDs. Read-only by default; --fix reverts a drifted done spec.
 argument-hint: "[--all] [--fix] [feature]"
 parity:
   semantic-fields:
@@ -15,7 +15,7 @@ Audit a feature's artifacts against each other and against the framework's rule 
 
 ## Purpose
 
-Audit a feature's spec, plan, tasks, and data model for consistency. Read-only; reports issues without modifying files. Use this to catch problems before the next pipeline gate fires.
+Audit a feature's spec, plan, tasks, and data model for consistency. Read-only by default — reports issues without modifying files. Use this to catch problems before the next pipeline gate fires. The one exception is the `--fix` flag, which reverts a status-`done` spec whose review block has drifted back to `in-progress` (the sole write this command performs; see Review state drift).
 
 Renamed from `/validate` in spec 023 to align with the emerging spec-driven-development standard (GitHub Spec Kit uses `/analyze` for the same artifact-vs-artifact audit role). Complementary to `/{project}:review`, which audits **code** against rules.
 
@@ -30,7 +30,7 @@ If `--all` is not present, use the feature identifier if provided, otherwise fal
 
 ## Scope Boundaries
 
-- This is a read-only command. Do NOT modify any files.
+- Read-only by default — do NOT modify any files. The sole exception is `--fix`, which reverts a drifted `done` spec from `done` to `in-progress` via `set-status` (see Review state drift below); without `--fix`, no file is written.
 - Read only files within the target feature's directory, the cross-spec files needed for reference checks (`specs/system.md`, `specs/events.md`, `specs/errors.md`, dependency spec files), and the project's installed command-source frontmatter for the project-level consistency section below (`{cli-config-dir}/commands/{project}/*.md` frontmatter only, plus `{cli-config-dir}/commands/govern.md` frontmatter for the bootstrap installer **if that file exists**). May invoke `scripts/gen-help-tables.sh --dry-run` and `scripts/gen-spec-deps.sh --dry-run` to surface generator drift. Do NOT read source code or test files.
 - Resolving the target spec's cross-service `references:` index additionally reads `.govern.toml` (the `[services]` registry) and the registered local checkouts' linked `spec.md` files — and nothing else; the canonical repo URL is **never fetched**. On the runtime path the host calls the resolve-references primitive per referencing spec; on the markdown-only path it reads those files with host file tools (see **Cross-service references** in the markdown-only reference below). This stays read-only.
 - Reference: §spec-requirements, §plan-phase, §tasks-phase, §readiness-check, §scenarios, §cross-spec-impact, §text-first-artifacts, §markdown-standards, §drift-prevention (constitution loaded by `/{project}:target` — do not re-read). See [030 — Cross-Service References](../../specs/030-cross-service-references/spec.md) for the reference semantics surfaced here.
@@ -39,13 +39,13 @@ If `--all` is not present, use the feature identifier if provided, otherwise fal
 
 > **For agent runtimes**: the Invoke steps below call the MCP tools of the optional gvrn runtime; the host-integration contract — bare↔prefixed tool names, lazy ToolSearch schema fetch, the no-shell-utilities rule, and the two-paths guarantee — lives once in the constitution, §runtime-host-integration. With no gvrn MCP server registered, walk the same prose using the host file-reading tools (Read, Edit, Write).
 
-1. Invoke `read-spec` against the targeted feature to load frontmatter, sections, and the open-question count from the body. The result drives subsequent steps' tier classification (status governs which artifact-completeness checks apply).
+1. Invoke `read-spec` (with `include-body`) against the targeted feature to load frontmatter, sections, and the open-question count from the body. The result drives subsequent steps' tier classification (status governs which artifact-completeness checks apply); its parsed `sections` also feed step 12's `## Applicable Rules` scan, so no separate re-read of the body is needed.
 
-2. Invoke `validate-frontmatter` against the spec path to check that the YAML block parses and that the required fields (status, dependencies) are present with valid values. Frontmatter findings are hard-fail tier; the rest of the procedure still runs to surface every issue in a single pass.
+2. Invoke `validate-frontmatter` against the spec path to check that the YAML block parses and that the required fields (status, dependencies) are present with valid values. `validate-frontmatter` emits each finding with `severity: blocking`; the host renders frontmatter findings in the report's hard-fail tier (the highest). The rest of the procedure still runs to surface every issue in a single pass.
 
-3. Invoke `traverse-deps` against the feature to verify each dependency directory exists, carries a compatible status, and that the reachable dep subgraph is acyclic. Missing dependencies are blocking; incompatible statuses are blocking when this spec is at clarified or later; any non-empty `cycles` entry — multi-node SCC or self-loop — is blocking. The cycle check is defense-in-depth that fires when the upstream `gen-spec-deps.sh` generator check (spec 017) was bypassed or stale frontmatter re-introduces an edge.
+3. Invoke `traverse-deps` against the feature to verify each dependency directory exists, carries a compatible status, and that the reachable dep subgraph is acyclic. Missing dependencies are blocking; an incompatible status (the edge's `compatible: false` — the dependency is below `planned`) is blocking when this spec is at `clarified` or later. `traverse-deps` reports per-edge `compatible` and `status` **unconditionally** (it never reads the consumer's own status), so apply that consumer-status conditioning host-side from the returned data rather than mapping the top-level `compatible` flag straight to a blocking finding. Any non-empty `cycles` entry — multi-node SCC or self-loop — is blocking. The cycle check is defense-in-depth that fires when the upstream `gen-spec-deps.sh` generator check (spec 017) was bypassed or stale frontmatter re-introduces an edge.
 
-4. Invoke `resolve-anchor` against the spec path to confirm every section reference of the form `§<name>` resolves to a corresponding marker comment. Unresolved anchors are advisory — they usually indicate the constitution was renamed or restructured without updating callers. Otherwise, fall back to the markdown-only path.
+4. Invoke `resolve-anchor` against the spec path **with `markers-path` set to the constitution file** (`framework/constitution.md` in govern's own repo; `constitution.md` at the adopter repo root) to confirm every `§<name>` reference in the spec resolves to a `<!-- §name -->` marker in the constitution. The `markers-path` is essential: a spec carries no markers of its own, so resolving against the spec itself would flag *every* reference as unresolved; resolving against the constitution flags only a reference to a section that was renamed or restructured without updating callers. Unresolved anchors are advisory. With no gvrn runtime, walk the markdown-only path.
 
 5. Invoke `check-rule-ids` against the spec path with the project's rule files. Cited rule IDs that are missing are blocking; cited rule IDs marked deprecated are advisory.
 
@@ -53,7 +53,7 @@ If `--all` is not present, use the feature identifier if provided, otherwise fal
 
 7. Invoke `lint-markdown` against the markdown files in the feature directory. Each returned violation is surfaced as an advisory finding.
 
-8. Invoke `check-artifacts` against the feature to run the four residual deterministic check families: artifact completeness per status tier, task numbering and done-when consistency, scenario→task mapping (a spent task pruned per §tasks-phase never counts against its scenario), and review-state drift on done specs. Each returned finding carries its family, severity tier, and location; the families and tiers mirror the markdown-only reference's Artifact completeness, Task consistency, Scenario consistency, and Review state drift sections below exactly — the primitive mechanizes that documented policy and introduces none. Command-frontmatter completeness stays in the markdown-only reference's Project-level consistency section: it reads the host's command directory, which the runtime does not own.
+8. Invoke `check-artifacts` against the feature to run the four residual deterministic check families: artifact completeness per status tier (plan.md/tasks.md required at planned+ — the *conditional* data-model.md requirement is a semantic judgment and stays on the markdown-only path), task numbering and done-when consistency (the "tasks reference the plan" link is a semantic judgment and stays on the markdown-only path), scenario→task mapping (a spent task pruned per §tasks-phase never counts against its scenario, and the family is **skipped entirely on a `done` spec**, whose tasks may already be pruned), and review-state drift on done specs. Each returned finding carries its family, severity tier, and location. The primitive mechanizes the **deterministic subset** of the markdown-only reference's Artifact completeness, Task consistency, Scenario consistency, and Review state drift sections; the semantic items noted above (data-model necessity, tasks-reference-plan, and a scenario's own Context/Behavior sections) stay on the markdown-only path, as does Command-frontmatter completeness (Project-level consistency), which reads the host's command directory the runtime does not own.
 
 9. <!-- llm:assessSpecQuality --> For every loaded MUST-tier rule whose Verification trigger fires against the spec, request a semantic assessment via the extension point. The host responds with a structured finding carrying severity, rule-id, location, and message. MUST-tier findings join the Blocking tier in the rendered report. Otherwise, fall back to the markdown-only path.
 
@@ -66,7 +66,7 @@ If `--all` is not present, use the feature identifier if provided, otherwise fal
 12. Parse the spec body for a `## Applicable Rules` section and collect every rule ID cited there. For each cited ID that did **not** appear in the set of rules whose Verification triggers fired in steps 9 or 10, emit an advisory finding: `Applicable Rules citation does not fire: {rule-id} is listed under ## Applicable Rules, but the rule's Verification trigger did not fire against any spec artifact. Either remove the citation, or extend the spec to bring the cited surface into scope.` Skip this step when the spec has no `## Applicable Rules` section. Citations whose IDs do not resolve to any loaded rule are handled earlier in step 5 and not reprocessed here. See **Applicable Rules citation consistency** in the markdown-only reference for the full semantics and the promotion criterion that governs when this check graduates from advisory to blocking.
 
 <!-- audit:ignore-promotion -->
-13. Render the report (host responsibility): list hard-fail and blocking findings first, advisory findings next, then informational. For each finding, include what failed, what was expected, what was found, and a suggested fix. With `--fix` set, additionally revert any status-done spec whose review block has drifted to blocking — see the Review state drift section in the markdown-only reference below.
+13. Render the report (host responsibility): list hard-fail and blocking findings first, advisory findings next, then informational. For each finding, include what failed, what was expected, what was found, and a suggested fix. With `--fix` set, additionally revert any status-done spec whose review block has drifted to blocking — the guarded set-status revert (`from: done`, `to: in-progress`), detailed in the Review state drift section in the markdown-only reference below.
 
 ## Markdown-only reference
 
@@ -152,7 +152,7 @@ For each spec at `status: done`, read the spec's frontmatter `review:` block:
 
 Specs not at `status: done` are silently exempt — the `review:` block is populated lazily on first `/{project}:review` run, so its absence on `draft` / `clarified` / `planned` / `in-progress` specs is normal.
 
-When `--fix` is set, this check additionally reverts affected specs from `done` to `in-progress` and emits a one-line notice for each (`reverted: specs/{feature}/{file} from done to in-progress — re-run /{project}:review`). The revert is never silent; the notice is the point of the action. Re-running `/{project}:review` on each reverted spec is left to the operator — auto-running it during `--fix` is out of scope. The grandfather rule applies under `--fix` too: pre-feature `done` specs with no `review:` block are never reverted.
+When `--fix` is set, this check additionally reverts affected specs from `done` to `in-progress` — via `set-status` (`from: done`, `to: in-progress`) on the runtime path, a direct frontmatter edit on the markdown-only path — and emits a one-line notice for each (`reverted: specs/{feature}/{file} from done to in-progress — re-run /{project}:review`). The revert is never silent; the notice is the point of the action. Re-running `/{project}:review` on each reverted spec is left to the operator — auto-running it during `--fix` is out of scope. The grandfather rule applies under `--fix` too: pre-feature `done` specs with no `review:` block are never reverted.
 
 ### Rules (blocking and advisory)
 
@@ -205,7 +205,7 @@ Read inputs:
 
 Checks:
 
-- **Generator drift** — run `scripts/gen-help-tables.sh --dry-run` (when the script exists in the project). Non-empty diff means the help.md command tables are out of sync with their sources. Report it as `Generator out of sync: {script}; the next commit will resolve.`
+- **Generator drift** — run `scripts/gen-help-tables.sh --dry-run` (via the `run-generator` primitive on the runtime path, the same way step 6 runs `gen-spec-deps.sh`; when the script exists in the project). Non-empty diff means the help.md command tables are out of sync with their sources. Report it as `Generator out of sync: {script}; the next commit will resolve.`
 - **Anchor resolution** — every `§<name>` reference in any installed command file (typically in `Reference: §<first>, §<second>` Scope-Boundaries lines) resolves to a corresponding marker in `constitution.md`.
 - **Command frontmatter completeness** — every `.md` file in the installed commands directory has a `description:` frontmatter field; the same check applies to `{cli-config-dir}/commands/govern.md` when that file exists. Files whose body documents an `$ARGUMENTS` parameter additionally have `argument-hint:`. Report missing fields; do not check value content.
 

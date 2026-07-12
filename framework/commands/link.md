@@ -68,7 +68,7 @@ Per field, as entered:
 ### Additive write
 
 - Read `.govern.toml` (create it with just the new block if it is absent).
-- Add a `[services.<alias>]` table with `repo`, `path`, and `description` (omit `description` when skipped). Preserve every other table — `[host]`, `[project]`, `[pinned]`, `[migrations]`, `[workflows]`, `[review]`, and any sibling `[services.*]` entries — byte-for-byte. This is the additive discipline already used for `.mcp.json` and permission merges.
+- Add a `[services.<alias>]` table with `repo`, `path`, and `description` (omit `description` when skipped). Preserve every other table — `[host]`, `[project]`, `[paths]`, `[rules]`, `[pinned]`, `[migrations]`, `[workflows]`, `[review]`, and any sibling `[services.*]` entries — byte-for-byte. (The operative rule is "preserve every table other than the one being added"; the list is illustrative, not exhaustive.) This is the additive discipline already used for `.mcp.json` and permission merges.
 - Write atomically (tempfile + rename).
 
 ### List the registry

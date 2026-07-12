@@ -15,7 +15,7 @@ Read-only overview of every feature's progress through the pipeline. Shows which
 ## Scope Boundaries
 
 - This is a read-only command. Do NOT modify any files.
-- The pipeline view is acquired through the single `dashboard` primitive — one runtime call returns the structured payload plus the pre-rendered pipeline view. The procedure does not read individual spec files, list directories, or shell out for that view.
+- The pipeline view is acquired through the single `dashboard` primitive — one runtime call returns the structured payload plus the pre-rendered pipeline view. On the runtime path the procedure does not read individual spec files, list directories, or shell out for that view; the markdown-only fallback (below) necessarily reads the artifacts on disk, but still without shell-pipeline substitution.
 - Cross-service reference resolution is read-only and, on the runtime path, folded into that same call: the runtime resolves each spec's `references:` index internally (the same classification the resolve-references primitive exposes) to render the readout. On the markdown-only path the host reads `.govern.toml` and the linked specs with host file tools (see the Resolving cross-service references section below). Both paths read only `.govern.toml` and the registered local checkouts — the canonical repo URL is never fetched.
 - Reference: §text-first-artifacts (the schema is the authoritative source for which fields appear in the payload); [030 — Cross-Service References](../../specs/030-cross-service-references/spec.md) for the reference semantics surfaced here.
 
@@ -69,7 +69,7 @@ For each `{service, spec}` entry, in index order, decide the outcome by what can
 1. **`unregistered`** — the entry's `service` is null, or names an alias absent from `.govern.toml` `[services]`. Status not attempted; a plain navigational link, not an error. (Surface it with a pointer to `/{project}:link` to register the service.)
 2. Otherwise read the matched `[services.<alias>]` entry's local `path` (relative to the repo root, or absolute):
    - **`not-checked-out`** — `path` is missing or is not a directory. Status `unknown`; informational, never reported as broken — nothing can be proven without a checkout.
-   - Otherwise resolve the target spec at `{path}/specs/{spec}/spec.md`:
+   - Otherwise resolve the target spec at `{path}/{linked-specs-root}/{spec}/spec.md`, where `{linked-specs-root}` is the **linked service's own** `[paths] specs-root` (default `specs`) read from the checkout's `.govern.toml` — each service may configure its own spec root, and `resolve-references` honors the linked repo's setting, so the markdown-only path must read it too rather than assuming `specs/`:
      - **`broken`** — the target file does not exist (renamed, moved, deleted, or mistyped upstream). A provable defect, surfaced by `/{project}:analyze`.
      - Otherwise read the target's frontmatter `status`:
        - **`status-unreadable`** — the file has no frontmatter, its frontmatter is not valid YAML, or `status` is missing or not one of `draft` / `clarified` / `planned` / `in-progress` / `done`. Status `unknown`; surfaced, the defect is upstream's.

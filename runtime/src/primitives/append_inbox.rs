@@ -12,16 +12,26 @@
 //! `framework/templates/project/` — their `inbox.md` was scaffolded at
 //! adoption — so the heading fallback is the common adopter-side create.
 //!
+//! Form: entries are written as checkboxes — `- [ ] {text}` — matching the
+//! inbox template's documented forms (manual `/gov:log` entries, auto-captured
+//! findings, and audit findings are all `- [ ]`) and the constitution's
+//! §bug-handling ("tracked as a checkbox … resolved by being done, then
+//! removed"). Dedup and removal strip the checkbox marker, so both forms
+//! still compare by content.
+//!
 //! Dedup: with `dedup-prefix` supplied, an existing bullet whose text
 //! starts with the prefix suppresses the append and the result reports
-//! `deduped: true`. Bullet text is read after stripping the `- ` marker
-//! and an optional checkbox (`[ ]` / `[x]`), so the prefix matches both
-//! the plain `- {text}` form this primitive writes and the checkbox form
-//! `/gov:log` documents.
+//! `deduped: true`. Bullet scanning is comment/fence-aware (the inbox
+//! template's `<!-- Rules: … -->` guidance embeds `- ` lines that are not
+//! items), and text is read after stripping the `- ` marker and an optional
+//! checkbox (`[ ]` / `[x]`), so the prefix matches both the checkbox form
+//! this primitive writes and any legacy plain `- {text}` bullet.
 
 use std::path::Path;
 
-use crate::primitives::{PrimitiveError, Result, bullet_text, rel_path, write_atomic};
+use crate::primitives::{
+    PrimitiveError, Result, bullet_text, count_inbox_bullets, iter_bullets, rel_path, write_atomic,
+};
 use crate::schema::paths;
 use crate::schema::primitives::{AppendInboxArgs, AppendInboxResult};
 
@@ -79,6 +89,7 @@ pub fn run(args: &AppendInboxArgs, repo: &Path) -> Result<AppendInboxResult> {
             path: rel_path(&inbox_path, repo),
             created: false,
             deduped: true,
+            item_count: count_inbox_bullets(&existing),
         });
     }
 
@@ -89,11 +100,12 @@ pub fn run(args: &AppendInboxArgs, repo: &Path) -> Result<AppendInboxResult> {
         path: rel_path(&inbox_path, repo),
         created,
         deduped: false,
+        item_count: count_inbox_bullets(&new_content),
     })
 }
 
 /// Reject empty or multi-line bullet text. The bullet renders as a
-/// one-line `- {text}` entry; an embedded newline would smuggle extra
+/// one-line `- [ ] {text}` entry; an embedded newline would smuggle extra
 /// markdown structure into `inbox.md` (same rule as `append-task`).
 fn validate_text(text: &str) -> Result<()> {
     if text.trim().is_empty() {
@@ -122,22 +134,21 @@ fn creation_base(repo: &Path) -> String {
         .unwrap_or_else(|_| FALLBACK_HEADING.to_string())
 }
 
-/// `true` when any bullet line's text starts with `prefix`.
+/// `true` when any real (comment/fence-aware) bullet's text starts with
+/// `prefix`.
 fn has_bullet_with_prefix(content: &str, prefix: &str) -> bool {
-    content
-        .lines()
-        .filter_map(bullet_text)
-        .any(|text| text.starts_with(prefix))
+    iter_bullets(content).any(|(_, text)| text.starts_with(prefix))
 }
 
-/// Append `- {text}` to `content`. A single newline joins onto an
-/// existing bullet run; a blank line separates the bullet from any other
-/// trailing content (markdownlint's lists-surrounded-by-blanks rule).
-/// Output ends with exactly one trailing newline.
+/// Append `- [ ] {text}` to `content` (the checkbox inbox form). A single
+/// newline joins onto an existing bullet run; a blank line separates the
+/// bullet from any other trailing content (markdownlint's
+/// lists-surrounded-by-blanks rule). Output ends with exactly one trailing
+/// newline.
 fn append_bullet(content: &str, text: &str) -> String {
     let trimmed = content.trim_end_matches(['\n', '\r']);
     if trimmed.is_empty() {
-        return format!("- {text}\n");
+        return format!("- [ ] {text}\n");
     }
     let last_line = trimmed.lines().last().unwrap_or("");
     let sep = if bullet_text(last_line).is_some() {
@@ -145,7 +156,7 @@ fn append_bullet(content: &str, text: &str) -> String {
     } else {
         "\n\n"
     };
-    format!("{trimmed}{sep}- {text}\n")
+    format!("{trimmed}{sep}- [ ] {text}\n")
 }
 
 #[cfg(test)]
@@ -180,9 +191,10 @@ mod tests {
         assert_eq!(result.path, "specs/inbox.md");
         assert!(!result.created);
         assert!(!result.deduped);
+        assert_eq!(result.item_count, 2);
         assert_eq!(
             read_inbox(tmp.path()),
-            "# Inbox\n\n- [ ] first item\n- second item\n"
+            "# Inbox\n\n- [ ] first item\n- [ ] second item\n"
         );
     }
 
@@ -192,7 +204,8 @@ mod tests {
         let result = run(&args("first item", None), tmp.path()).unwrap();
         assert!(result.created);
         assert!(!result.deduped);
-        assert_eq!(read_inbox(tmp.path()), "# Inbox\n\n- first item\n");
+        assert_eq!(result.item_count, 1);
+        assert_eq!(read_inbox(tmp.path()), "# Inbox\n\n- [ ] first item\n");
     }
 
     #[test]
@@ -208,8 +221,24 @@ mod tests {
         assert!(result.created);
         assert_eq!(
             read_inbox(tmp.path()),
-            "# Inbox\n\nCapture queue prose.\n\n<!-- Rules -->\n\n- first item\n"
+            "# Inbox\n\nCapture queue prose.\n\n<!-- Rules -->\n\n- [ ] first item\n"
         );
+    }
+
+    #[test]
+    fn item_count_ignores_bullets_inside_comment_regions() {
+        // The inbox template embeds `- ` lines inside a multi-line
+        // `<!-- Rules: … -->` comment; those are not real items. Only the
+        // one real appended bullet is counted.
+        let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join("specs")).unwrap();
+        fs::write(
+            tmp.path().join("specs/inbox.md"),
+            "# Inbox\n\n<!-- Rules:\n     - not an item\n     - also not an item\n-->\n",
+        )
+        .unwrap();
+        let result = run(&args("real item", None), tmp.path()).unwrap();
+        assert_eq!(result.item_count, 1, "comment bullets must not be counted");
     }
 
     #[test]
@@ -218,7 +247,7 @@ mod tests {
         fs::create_dir_all(tmp.path().join("specs")).unwrap();
         fs::write(tmp.path().join("specs/inbox.md"), "# Inbox\n").unwrap();
         run(&args("item", None), tmp.path()).unwrap();
-        assert_eq!(read_inbox(tmp.path()), "# Inbox\n\n- item\n");
+        assert_eq!(read_inbox(tmp.path()), "# Inbox\n\n- [ ] item\n");
     }
 
     #[test]
@@ -264,7 +293,7 @@ mod tests {
         .unwrap();
         let result = run(&args("new item", Some("new item")), tmp.path()).unwrap();
         assert!(!result.deduped);
-        assert!(read_inbox(tmp.path()).contains("- new item\n"));
+        assert!(read_inbox(tmp.path()).contains("- [ ] new item\n"));
     }
 
     #[test]
@@ -320,7 +349,7 @@ mod tests {
         let result = run(&args("{Brief item}", Some("{Brief")), tmp.path()).unwrap();
         assert!(result.created);
         assert!(!result.deduped);
-        assert!(read_inbox(tmp.path()).contains("- {Brief item}\n"));
+        assert!(read_inbox(tmp.path()).contains("- [ ] {Brief item}\n"));
     }
 
     #[test]

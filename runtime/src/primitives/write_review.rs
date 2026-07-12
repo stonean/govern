@@ -458,9 +458,55 @@ fn render_review_yaml(
                     first = false;
                 }
             }
+            for (key, value) in &waiver.extra {
+                let indent = if first { "    - " } else { "      " };
+                render_extra_field(&mut block, indent, key, value);
+                first = false;
+            }
         }
     }
     block.trim_end_matches('\n').to_string()
+}
+
+/// Append one adopter-authored waiver field, preserving it across the
+/// re-render. Scalars render inline (matching the known-field style); a
+/// nested value is serialized as a YAML block indented under the key. Extras
+/// always follow the required scalar fields, so the continuation indent
+/// (`      `) is the normal case.
+fn render_extra_field(block: &mut String, indent: &str, key: &str, value: &serde_norway::Value) {
+    use serde_norway::Value;
+    // Adopter-controlled key: quote it so a key like `@owner`, `weird: key`, or
+    // a bare-numeric string key survives the round-trip instead of corrupting
+    // the frontmatter.
+    let key = yaml_string(key);
+    match value {
+        Value::Null => {
+            let _ = writeln!(block, "{indent}{key}: null");
+        }
+        Value::Bool(b) => {
+            let _ = writeln!(block, "{indent}{key}: {b}");
+        }
+        Value::Number(n) => {
+            let _ = writeln!(block, "{indent}{key}: {n}");
+        }
+        Value::String(s) => {
+            let _ = writeln!(block, "{indent}{key}: {}", yaml_string(s));
+        }
+        other => {
+            // Non-scalar (sequence/mapping) — serialize and re-indent each
+            // line under the key. The key sits at column 6 (both `    - ` and
+            // `      ` are 6 columns wide before the key), so children must
+            // start at column 8 to nest *under* the key rather than becoming
+            // its siblings. serde_norway preserves the value's internal
+            // relative indentation, so a constant 8-space base offset keeps
+            // the whole structure correctly nested. The common case is scalars.
+            let _ = writeln!(block, "{indent}{key}:");
+            let serialized = serde_norway::to_string(other).unwrap_or_default();
+            for line in serialized.lines() {
+                let _ = writeln!(block, "        {line}");
+            }
+        }
+    }
 }
 
 /// Replace the `review:` block region of a frontmatter body with `block`,
@@ -512,6 +558,30 @@ fn yaml_scalar(value: &str) -> String {
     }
 }
 
+/// Emit a YAML scalar for text that MUST round-trip as a string — quotes when
+/// `yaml_scalar` would (syntax) OR when the plain form would re-parse as a
+/// non-string (a bare `1234` / `true` / `null` / `~`). Used for
+/// adopter-authored waiver extras: an extra **key** like `@owner` or
+/// `weird: key` would otherwise render unquoted and corrupt the frontmatter
+/// (it is written to `spec.md` without re-parsing), and an extra string
+/// **value** like `"1234"` would round-trip to a number. Known waiver fields
+/// use plain `yaml_scalar` — their keys are fixed and their values are opaque
+/// text, so the tighter rule is reserved for the open-schema extras.
+fn yaml_string(value: &str) -> String {
+    if needs_quote(value) || reparses_as_nonstring(value) {
+        serde_json::to_string(value).unwrap_or_else(|_| format!("\"{value}\""))
+    } else {
+        value.to_string()
+    }
+}
+
+/// Whether the plain scalar `value` re-parses (via the same YAML reader that
+/// reads the spec back) as a non-string — an integer, float, bool, or null —
+/// so it must be quoted to keep its string identity across the round-trip.
+fn reparses_as_nonstring(value: &str) -> bool {
+    serde_norway::from_str::<serde_norway::Value>(value).is_ok_and(|parsed| !parsed.is_string())
+}
+
 /// YAML plain-scalar indicator characters: a value leading with one of these
 /// must be quoted.
 const YAML_INDICATORS: &[u8] = b"!&*?|>@%#{}[],\"'`:-";
@@ -548,7 +618,11 @@ struct RawReviewBlock {
 }
 
 /// One waiver entry with every field optional, so pruning preserves the full
-/// record (`waived-at` / `waived-by` included) that `WaiverRef` drops.
+/// record (`waived-at` / `waived-by` included) that `WaiverRef` drops. Unknown
+/// adopter-authored fields (`ticket`, `co-waived-by`, …) are captured by
+/// `extra` and re-emitted verbatim on the write, so the §text-first-artifacts
+/// open-schema rule holds across a re-render — an org-specific policy field is
+/// never silently dropped. `BTreeMap` keeps the extras in deterministic order.
 #[derive(Deserialize)]
 struct RawWaiverFull {
     #[serde(default)]
@@ -561,6 +635,8 @@ struct RawWaiverFull {
     waived_at: Option<String>,
     #[serde(default, rename = "waived-by")]
     waived_by: Option<String>,
+    #[serde(flatten)]
+    extra: std::collections::BTreeMap<String, serde_norway::Value>,
 }
 
 #[cfg(test)]
@@ -855,6 +931,102 @@ mod tests {
         let (fm, _) = split_frontmatter(&spec, Path::new("spec.md")).unwrap();
         let parsed: SpecReviewFm = serde_norway::from_str(fm).unwrap();
         assert_eq!(parsed.review.unwrap().waivers.len(), 1);
+    }
+
+    #[test]
+    fn preserves_adopter_authored_waiver_fields_across_rewrite() {
+        // §text-first-artifacts open schema: an org-specific policy field on a
+        // surviving waiver must round-trip, not vanish on the re-render.
+        let frontmatter = "status: in-progress\ndependencies: []\nreview:\n  last-run: 2026-01-01T00:00:00Z\n  must-violations: 0\n  blocking: false\n  waivers:\n    - rule: SEC-BE-020\n      file: src/keep.ts\n      reason: Still valid.\n      waived-at: 2026-01-02T00:00:00Z\n      waived-by: dev@example.com\n      ticket: SEC-1234\n      approved-by-team: platform-security";
+        let tmp = spec_repo("001-x", frontmatter);
+        run(&base_args("001-x"), tmp.path()).unwrap();
+        let spec = spec_md(&tmp, "001-x");
+        assert!(spec.contains("ticket: SEC-1234"), "{spec}");
+        assert!(
+            spec.contains("approved-by-team: platform-security"),
+            "{spec}"
+        );
+        // Still parses and the extras survive a round-trip parse.
+        let (fm, _) = split_frontmatter(&spec, Path::new("spec.md")).unwrap();
+        let parsed: SpecReviewFm = serde_norway::from_str(fm).unwrap();
+        let waivers = parsed.review.unwrap().waivers;
+        assert_eq!(waivers.len(), 1);
+        assert_eq!(
+            waivers[0].extra.get("ticket").and_then(|v| v.as_str()),
+            Some("SEC-1234")
+        );
+    }
+
+    #[test]
+    fn quotes_adopter_waiver_keys_that_would_corrupt_frontmatter() {
+        // A quoted adopter key that needs quoting (`@owner`, a colon-bearing
+        // key, a bare-numeric key) must re-emit quoted, so the frontmatter
+        // stays valid and the key keeps its identity — not silently corrupt
+        // spec.md (which is written without a re-parse).
+        let frontmatter = "status: in-progress\ndependencies: []\nreview:\n  last-run: 2026-01-01T00:00:00Z\n  must-violations: 0\n  blocking: false\n  waivers:\n    - rule: SEC-BE-020\n      file: src/keep.ts\n      reason: Still valid.\n      waived-at: 2026-01-02T00:00:00Z\n      waived-by: dev@example.com\n      \"@owner\": alice\n      \"weird: key\": v\n      \"1234\": numeric-key";
+        let tmp = spec_repo("001-x", frontmatter);
+        run(&base_args("001-x"), tmp.path()).unwrap();
+        let spec = spec_md(&tmp, "001-x");
+        // The rewritten frontmatter still parses (no corruption/injection)...
+        let (fm, _) = split_frontmatter(&spec, Path::new("spec.md")).unwrap();
+        let parsed: SpecReviewFm = serde_norway::from_str(fm).unwrap();
+        let waivers = parsed.review.unwrap().waivers;
+        assert_eq!(waivers.len(), 1);
+        // ...and the exotic keys survived under the waiver entry, not as
+        // leaked siblings or an injected top-level key.
+        assert!(waivers[0].extra.contains_key("@owner"));
+        assert!(waivers[0].extra.contains_key("weird: key"));
+        assert!(waivers[0].extra.contains_key("1234"));
+    }
+
+    #[test]
+    fn preserves_string_typed_waiver_extra_values_across_rewrite() {
+        // A string value that looks like a number/bool/null must round-trip as
+        // a string, not silently change type.
+        let frontmatter = "status: in-progress\ndependencies: []\nreview:\n  last-run: 2026-01-01T00:00:00Z\n  must-violations: 0\n  blocking: false\n  waivers:\n    - rule: SEC-BE-020\n      file: src/keep.ts\n      reason: Still valid.\n      waived-at: 2026-01-02T00:00:00Z\n      waived-by: dev@example.com\n      ticket: \"1234\"\n      flagged: \"true\"";
+        let tmp = spec_repo("001-x", frontmatter);
+        run(&base_args("001-x"), tmp.path()).unwrap();
+        let spec = spec_md(&tmp, "001-x");
+        let (fm, _) = split_frontmatter(&spec, Path::new("spec.md")).unwrap();
+        let parsed: SpecReviewFm = serde_norway::from_str(fm).unwrap();
+        let extra = &parsed.review.unwrap().waivers[0].extra;
+        assert_eq!(extra.get("ticket").and_then(|v| v.as_str()), Some("1234"));
+        assert_eq!(extra.get("flagged").and_then(|v| v.as_str()), Some("true"));
+    }
+
+    #[test]
+    fn preserves_nested_waiver_extra_field_with_correct_nesting() {
+        // A non-scalar adopter field (nested mapping) must round-trip nested,
+        // not flattened into sibling keys of the waiver entry.
+        let frontmatter = "status: in-progress\ndependencies: []\nreview:\n  last-run: 2026-01-01T00:00:00Z\n  must-violations: 0\n  blocking: false\n  waivers:\n    - rule: SEC-BE-020\n      file: src/keep.ts\n      reason: Still valid.\n      waived-at: 2026-01-02T00:00:00Z\n      waived-by: dev@example.com\n      approvals:\n        security: alice\n        lead: bob";
+        let tmp = spec_repo("001-x", frontmatter);
+        run(&base_args("001-x"), tmp.path()).unwrap();
+        let spec = spec_md(&tmp, "001-x");
+        // Re-parse and confirm `approvals` survived as a nested mapping, not
+        // as flattened sibling keys.
+        let (fm, _) = split_frontmatter(&spec, Path::new("spec.md")).unwrap();
+        let parsed: SpecReviewFm = serde_norway::from_str(fm).unwrap();
+        let waivers = parsed.review.unwrap().waivers;
+        assert_eq!(waivers.len(), 1);
+        let approvals = waivers[0]
+            .extra
+            .get("approvals")
+            .expect("approvals preserved");
+        let mapping = approvals.as_mapping().expect("approvals is a mapping");
+        assert_eq!(
+            mapping
+                .get(serde_norway::Value::String("security".into()))
+                .and_then(|v| v.as_str()),
+            Some("alice")
+        );
+        assert_eq!(
+            mapping
+                .get(serde_norway::Value::String("lead".into()))
+                .and_then(|v| v.as_str()),
+            Some("bob")
+        );
+        // And no stray top-level `security` / `lead` keys leaked onto the waiver.
+        assert!(!waivers[0].extra.contains_key("security"));
     }
 
     #[test]

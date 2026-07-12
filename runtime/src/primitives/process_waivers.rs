@@ -7,6 +7,11 @@
 //! - **expire** — the file is gone OR the rule no longer fires there. The
 //!   entry drops on the next frontmatter write (write-review's job); this
 //!   primitive emits the `waiver expired: …` notice and reports the anchor.
+//! - **retain** — a non-firing waiver on a **dimension-restricted** run
+//!   (`skipped-passes` non-empty). The run lacks the full-review picture, so
+//!   the waiver is left untouched (never expired/pruned) — this honors the
+//!   contract that waivers anchored to skipped dimensions apply unchanged.
+//!   Only an unrestricted run can expire a waiver.
 //! - **malformed** — a field is missing/empty; warn and skip, never prune.
 //! - **duplicate** — a repeated `(rule, file)` pair; only the first applies.
 //!
@@ -62,8 +67,21 @@ pub fn run(args: &ProcessWaiversArgs, repo: &Path) -> Result<ProcessWaiversResul
         .map(|review| review.waivers)
         .unwrap_or_default();
 
+    // A dimension-restricted run (any pass skipped) cannot see the full set
+    // of findings, so it must not expire a waiver on the strength of "the
+    // rule didn't fire" — the rule's dimension may simply not have run. This
+    // is deliberately the *coarse* invariant: a restricted run defers ALL
+    // waiver garbage-collection to the next unrestricted run, including a
+    // waiver whose anchored file is gone (which is dimension-independent and
+    // could in principle expire safely). Retaining it too keeps the rule
+    // simple — a scoped review never mutates the durable `review.waivers`
+    // list — and the only cost is a provably-dead waiver lingering until the
+    // next full run, which then prunes it.
+    let restricted = !args.skipped_passes.is_empty();
+
     let mut applied: Vec<WaiverRef> = Vec::new();
     let mut expired: Vec<WaiverRef> = Vec::new();
+    let mut retained: Vec<WaiverRef> = Vec::new();
     let mut notices: Vec<String> = Vec::new();
     let mut seen: Vec<(String, String)> = Vec::new();
 
@@ -96,6 +114,11 @@ pub fn run(args: &ProcessWaiversArgs, repo: &Path) -> Result<ProcessWaiversResul
 
         if file_exists && rule_fires {
             applied.push(WaiverRef { rule, file, reason });
+        } else if restricted {
+            notices.push(format!(
+                "waiver retained: rule {rule} at {file} — dimension not evaluated this run ({reason})"
+            ));
+            retained.push(WaiverRef { rule, file, reason });
         } else {
             notices.push(format!("waiver expired: rule {rule} at {file} ({reason})"));
             expired.push(WaiverRef { rule, file, reason });
@@ -105,6 +128,7 @@ pub fn run(args: &ProcessWaiversArgs, repo: &Path) -> Result<ProcessWaiversResul
     Ok(ProcessWaiversResult {
         applied,
         expired,
+        retained,
         notices,
     })
 }
@@ -197,6 +221,19 @@ mod tests {
         ProcessWaiversArgs {
             feature: feature.to_string(),
             fired: fired(fired_pairs),
+            skipped_passes: Vec::new(),
+        }
+    }
+
+    fn restricted_args(
+        feature: &str,
+        fired_pairs: &[(&str, &str)],
+        skipped: &[&str],
+    ) -> ProcessWaiversArgs {
+        ProcessWaiversArgs {
+            feature: feature.to_string(),
+            fired: fired(fired_pairs),
+            skipped_passes: skipped.iter().map(|s| (*s).to_string()).collect(),
         }
     }
 
@@ -244,6 +281,42 @@ mod tests {
         assert!(result.applied.is_empty());
         assert_eq!(result.expired.len(), 1);
         assert!(result.notices[0].starts_with("waiver expired: rule SEC-BE-014"));
+    }
+
+    #[test]
+    fn restricted_run_retains_non_firing_waiver_instead_of_expiring() {
+        // A dimension-restricted run (a pass was skipped) must not expire a
+        // waiver just because its rule did not fire — that dimension may not
+        // have run. The waiver is retained (kept in frontmatter), not pruned.
+        let tmp = setup("001-x", ONE_WAIVER, &["src/api/internal.ts"]);
+        let result = run(
+            &restricted_args("001-x", &[], &["simplicity", "reuse"]),
+            tmp.path(),
+        )
+        .unwrap();
+        assert!(result.applied.is_empty());
+        assert!(result.expired.is_empty(), "restricted runs never expire");
+        assert_eq!(result.retained.len(), 1);
+        assert!(result.notices[0].starts_with("waiver retained: rule SEC-BE-014"));
+    }
+
+    #[test]
+    fn restricted_run_still_applies_a_firing_waiver() {
+        // Retention only affects non-firing waivers; one whose rule fires in
+        // the passes that DID run still applies (suppresses the finding).
+        let tmp = setup("001-x", ONE_WAIVER, &["src/api/internal.ts"]);
+        let result = run(
+            &restricted_args(
+                "001-x",
+                &[("SEC-BE-014", "src/api/internal.ts")],
+                &["simplicity"],
+            ),
+            tmp.path(),
+        )
+        .unwrap();
+        assert_eq!(result.applied.len(), 1);
+        assert!(result.expired.is_empty());
+        assert!(result.retained.is_empty());
     }
 
     #[test]

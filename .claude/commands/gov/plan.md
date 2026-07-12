@@ -29,7 +29,8 @@ Read `spec.md`. If it does not exist, stop and report: "Spec does not exist. Run
 Read the spec's `status` field from the YAML frontmatter at the top of the file. If `status` is not `clarified`, stop and report:
 
 - `draft` → "Spec has unresolved open questions. Run `/gov:clarify` first."
-- `planned` or later → "Spec is already planned. Run `/gov:implement` to begin implementation."
+- `planned` / `in-progress` → "Spec is already planned. Run `/gov:implement` to begin implementation."
+- `done` → "Spec is `done`. Run `/gov:amend` to capture new work as a scenario."
 
 ## Scope Boundaries
 
@@ -41,6 +42,8 @@ Read the spec's `status` field from the YAML frontmatter at the top of the file.
 
 > **For agent runtimes**: the Invoke steps below call the MCP tools of the optional gvrn runtime; the host-integration contract — bare↔prefixed tool names, lazy ToolSearch schema fetch, the no-shell-utilities rule, and the two-paths guarantee — lives once in the constitution, §runtime-host-integration. With no gvrn MCP server registered, walk the same prose using the host file-reading tools (Read, Edit, Write).
 
+**Exec-path scope** (`gvrn exec plan`): steps 4–6 cross the boundary at the `writeSpecBody` extension point, but the task breakdown (step 7) and the substantive readiness checks (the **Validation gate** reference below) are spec-wide semantic host work with no extension marker, so the subprocess walker no-ops them by design — the runtime owns no primitive for the task breakdown or the criteria/consistency judgments. A host driving `gvrn exec` (and the markdown-only path) performs them itself before accepting the step-8 gate. `markdownlint` (steps 2, 10) is advisory on every path — it never blocks the clarified → planned transition. This scope reduction mirrors clarify's and is not a silent gap.
+
 1. Invoke `read-spec` against the targeted feature to load the spec's frontmatter, sections, acceptance criteria, and open-question count. The result drives downstream prompts; the procedure refuses to proceed when the spec's status is not clarified.
 
 2. Invoke `lint-markdown` against the feature directory's markdown files. Pre-plan violations are surfaced as advisory findings; the procedure continues regardless.
@@ -49,15 +52,18 @@ Read the spec's `status` field from the YAML frontmatter at the top of the file.
 
 4. <!-- llm:writeSpecBody --> Fill the Technical Decisions section of the plan. The host returns the markdown body for the section; the walker forwards the response through the context.
 
-5. <!-- llm:writeSpecBody --> Fill the Affected Files section of the plan. The host returns a table listing files this feature creates or modifies, alongside an action and purpose for each row. The runtime write boundary used by `/gov:implement` is derived from git history; this section is a planning aid, not authoritative. Otherwise, fall back to the markdown-only path.
+5. <!-- llm:writeSpecBody --> Fill the Affected Files section of the plan. The host returns a table listing files this feature creates or modifies, alongside an action and purpose for each row. The runtime write boundary used by `/gov:implement` is derived from git history; this section is a planning aid, not authoritative.
 
-6. <!-- llm:writeSpecBody --> Fill the Trade-offs section of the plan. The host enumerates the considered-and-rejected alternatives plus known limitations. Otherwise, fall back to the markdown-only path.
+6. <!-- llm:writeSpecBody --> Fill the Trade-offs section of the plan. The host enumerates the considered-and-rejected alternatives plus known limitations.
 
-7. Invoke `gate-confirm` with a prompt that presents a summary of the plan body and the task breakdown and asks the user to approve the transition from clarified to planned. On confirmation, continue to step 8; on denial, the walker exits cleanly without modifying the spec.
+<!-- audit:ignore-promotion -->
+7. **Author the task breakdown.** Break the plan into discrete, ordered work items in `tasks.md`, following the **Create the task breakdown** reference below. Step 3 copied the `tasks.md` template; this step fills it. This is spec-wide semantic host work with no extension marker (see the exec-path scope note above) — the runtime provides no primitive for the breakdown itself, so it is authored the same way on the MCP and markdown-only paths.
 
-8. Invoke `set-status` to flip the spec frontmatter's status from clarified to planned; the primitive guards against a stale "from" value so concurrent edits surface as an operational error rather than a silent overwrite.
+8. Invoke `gate-confirm` with a prompt that presents a summary of the plan body and the task breakdown and asks the user to approve the transition from clarified to planned. On confirmation, continue to step 9; on denial, the walker exits cleanly without modifying the spec.
 
-9. Invoke `lint-markdown` a second time as the readiness gate's final check. Any violations surface as advisory findings the user resolves before running `/gov:implement`.
+9. Invoke `set-status` to flip the spec frontmatter's status from clarified to planned; the primitive guards against a stale "from" value so concurrent edits surface as an operational error rather than a silent overwrite.
+
+10. Invoke `lint-markdown` a second time. Any violations surface as advisory findings the user resolves before running `/gov:implement` — markdownlint is advisory on both paths, never a transition blocker.
 
 ## Markdown-only reference
 
@@ -65,7 +71,7 @@ The full plan-creation procedure (existing-artifact protection, cross-spec conte
 
 ### Recompute dependencies (safety net)
 
-Run `scripts/gen-spec-deps.sh --dry-run` against the target spec (primitive: `run-generator`). If it reports a diff, run it for real to sync `dependencies:` from body inline links before evaluating cross-spec context. The pre-commit hook normally keeps this in sync; this step catches uncommitted body edits.
+Run `scripts/gen-spec-deps.sh --dry-run` (via the `run-generator` primitive; the generator walks every spec — there is no per-spec mode). If it reports a diff, the `dependencies:` frontmatter is stale from uncommitted body edits; surface that and recommend committing (the pre-commit hook syncs it) or running the generator manually, then evaluate cross-spec context against the current frontmatter. Do not run the generator for real from this command.
 
 ### Detect existing artifacts
 
@@ -73,7 +79,7 @@ Before generating any artifacts, check the feature directory for existing plan f
 
 1. Check the feature directory for `plan.md`, `tasks.md`, and `data-model.md`.
 2. If none of those files exist, skip this section and proceed to the cross-spec context checklist with the standard template-copy flow unchanged.
-3. If any of those files exists, list each one that exists with its last-modified timestamp, then prompt: "Plan artifacts exist from a prior `/gov:plan` run. Keep them and run the readiness check, or replace with fresh templates?" The default is **keep**.
+3. If any of those files exists, list each one that exists with its last-modified timestamp (stat the file for the mtime — `create-plan-artifacts` reports each pre-existing artifact as `kept` but carries no wall-clock data), then prompt: "Plan artifacts exist from a prior `/gov:plan` run. Keep them and run the readiness check, or replace with fresh templates?" The default is **keep**.
 4. **Keep** — skip the template copy entirely. Do not overwrite or modify the existing artifacts during this step. Proceed to the cross-spec context checklist; in **Create the plan** and **Create the task breakdown**, skip the "copy template" steps and treat the existing files as the working artifacts. Then run the validation gate. Advance status to planned only if all readiness checks pass; on failure, report the specific failures and exit without advancing.
 5. **Replace** — copy fresh templates over the existing files. The user is responsible for re-applying any kept content.
 
@@ -112,7 +118,7 @@ Before creating the plan, load only the cross-spec context this feature actually
 
 ### Validation gate
 
-Before proposing the status transition, run the readiness check. All checks must pass — failures block the transition.
+Before proposing the status transition, run the readiness check. The substantive checks must pass — failures block the transition:
 
 - Acceptance criteria are concrete and testable
 - All open questions are resolved
@@ -121,9 +127,10 @@ Before proposing the status transition, run the readiness check. All checks must
 - Data model is consistent with related specs
 - Event types align with `events.md`
 - Tasks are ordered and each has a clear definition of done
-- All `.md` files in the feature directory pass `npx markdownlint-cli2`
 
-If any check fails, report the specific failures and do not propose the transition. The user fixes the issues and re-runs the command.
+Markdownlint (`npx markdownlint-cli2` over the feature directory's `.md` files) runs as an **advisory** check on both paths — surface any violations for the user to resolve before `/gov:implement`, but do not block the transition on them (this matches runtime step 10).
+
+If any substantive check fails, report the specific failures and do not propose the transition. The user fixes the issues and re-runs the command.
 
 ### Cross-spec impact check
 

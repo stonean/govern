@@ -299,7 +299,7 @@ Result:
 Args:
 
 ```json
-{ "path": "framework/constitution.md" }
+{ "path": "framework/constitution.md", "markers-path": null }
 ```
 
 Result:
@@ -312,6 +312,8 @@ Result:
   "unresolved": []
 }
 ```
+
+Scans `path` for `§<anchor>` references and resolves each against `<!-- §anchor -->` markers. The markers come from `path` itself when `markers-path` is omitted (the constitution self-consistency check); supply `markers-path` to resolve one file's references against a *different* file's markers — `/gov:analyze` passes the constitution as `markers-path` so a spec's `§` references resolve against the constitution's sections (a spec carries no markers of its own, so resolving against itself would flag every reference as unresolved noise).
 
 ### `traverse-deps` — verify spec dependencies and status compatibility
 
@@ -536,7 +538,7 @@ Result:
 
 The deterministic surface behind `/gov:amend`'s question-route write, previously the only record-path with no primitive (asymmetric with the scenario route's `create-scenario` + `append-task`). Appends `- {question}` to the target artifact's `## Open Questions` section — the feature's `spec.md` by default, `scenarios/{slug}.md` when `scenario` is passed (slug validated against the framework slug grammar; `question` is single-line, embedded newlines rejected).
 
-Dedup uses amend's normalized-whitespace comparison (collapse whitespace runs, trim, case-insensitive) against exactly the entries `read-spec`'s question parser reports (continuation lines folded, placeholders skipped), so the runtime and markdown-only paths agree on question identity; a match is the `appended: false` domain outcome with the existing entry echoed verbatim in `duplicate-of`, nothing written. A missing section is created per template order — immediately before `## Resolved Questions` when present (the scenario scaffold), else at end of file (the spec template) — and a `*None …*` scaffold placeholder is replaced by the first real entry. On a spec target whose status is `clarified`, `planned`, `in-progress`, or `done`, the frontmatter status reverts to `draft` in the same atomic write (`status-reverted` + `previous-status` report it) — never a window where the body holds an unresolved question while the status claims otherwise. Scenario targets have no status field and never back-edge; a status value outside the lifecycle set is left alone (`validate-frontmatter` owns flagging it).
+Dedup uses amend's normalized-whitespace comparison (collapse whitespace runs, trim, case-insensitive) against exactly the entries `read-spec`'s question parser reports (continuation lines folded, placeholders skipped), so the runtime and markdown-only paths agree on question identity; a match is the `appended: false` domain outcome with the existing entry echoed verbatim in `duplicate-of`, nothing written. A missing section is created per template order — immediately before `## Resolved Questions` when present (the scenario scaffold), else at end of file (the spec template) — and a `*None …*` scaffold placeholder is replaced by the first real entry. On a spec target whose status is `clarified`, `planned`, or `in-progress`, the frontmatter status reverts to `draft` in the same atomic write (`status-reverted` + `previous-status` report it) — never a window where the body holds an unresolved question while the status claims otherwise. `done` is **excluded** from the back-edge (§spec-lifecycle, spec 014): a `done` spec reopens only via the scenario route (`done → in-progress`), so a question appended to a `done` spec is recorded but leaves the status at `done` — the command layer never routes a question there. Scenario targets have no status field and never back-edge; a status value outside the lifecycle set is left alone (`validate-frontmatter` owns flagging it).
 
 ### `diff-cross-spec` — implement's cross-spec impact surface
 
@@ -572,10 +574,10 @@ Args:
 Result:
 
 ```json
-{ "path": "specs/inbox.md", "created": false, "deduped": false }
+{ "path": "specs/inbox.md", "created": false, "deduped": false, "item-count": 4 }
 ```
 
-Appends `- {text}` atomically to `{specs-root}/inbox.md`, creating the file when missing (from `framework/templates/project/inbox.md` when that file exists on disk — the framework source repo — else a bare `# Inbox` heading). With `dedup-prefix` supplied, an existing bullet whose text starts with the prefix (checkbox bullets included) suppresses the write and the result reports `deduped: true`. Embedded newlines in `text` are rejected as an operational error (structure injection), matching `append-task`'s single-line rule.
+Appends `- [ ] {text}` (the checkbox inbox form the inbox template and constitution §bug-handling document) atomically to `{specs-root}/inbox.md`, creating the file when missing (from `framework/templates/project/inbox.md` when that file exists on disk — the framework source repo — else a bare `# Inbox` heading). Bullet scanning (dedup and counting) is comment/fence-aware — a `-` line inside the template's `<!-- Rules: … -->` guidance is not an item. With `dedup-prefix` supplied, an existing bullet whose text starts with the prefix (checkbox bullets included) suppresses the write and the result reports `deduped: true`. `item-count` reports the total inbox bullets after the call (the pre-existing total on a `deduped` no-op). Embedded newlines in `text` are rejected as an operational error (structure injection), matching `append-task`'s single-line rule.
 
 ### `remove-inbox-item` — remove one bullet from the inbox
 
@@ -591,7 +593,7 @@ Result:
 { "path": "specs/inbox.md", "removed": true, "remaining-count": 3 }
 ```
 
-The complement of `append-inbox` and the deterministic surface behind `/gov:groom`'s per-item removal (step 8). Removes the first bullet from `{specs-root}/inbox.md` whose text — after the `-` bullet marker and an optional `[ ]`/`[x]` checkbox are stripped via the shared bullet grammar — equals the trimmed `item`, writing atomically. A double blank left at the removal seam is collapsed and the file ends in a single newline. A no-match, or a missing inbox file, is a clean domain outcome (`removed: false`), never an operational error; `remaining-count` reports the bullets left after the operation. Embedded newlines in `item` are rejected (single-line rule).
+The complement of `append-inbox` and the deterministic surface behind `/gov:groom`'s per-item removal (step 8). Removes the first bullet from `{specs-root}/inbox.md` whose text — after the `-` bullet marker and an optional `[ ]`/`[x]` checkbox are stripped via the shared bullet grammar — equals the trimmed `item`, writing atomically. Bullet scanning is comment/fence-aware (shared with `append-inbox`), so a `-` line inside an HTML comment is neither counted nor removable. A double blank left at the removal seam is collapsed and the file ends in a single newline. A no-match, or a missing inbox file, is a clean domain outcome (`removed: false`), never an operational error; `remaining-count` reports the bullets left after the operation. Embedded newlines in `item` are rejected (single-line rule).
 
 ### `check-artifacts` — deterministic artifact-check families for one feature
 

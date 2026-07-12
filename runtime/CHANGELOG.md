@@ -2,6 +2,28 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.20.0] — 2026-07-12
+
+Command-runtime alignment pass: an audit of every `framework/commands/*.md` against the primitives it invokes surfaced a set of divergences where the deterministic runtime and the command prose (and its markdown-only fallback) disagreed. These fix the runtime side so the two paths share one contract again; the prose side is corrected in the same change.
+
+### Fixed
+
+- **`append-question` no longer back-edges a `done` spec** — `BACK_EDGE_STATUSES` dropped `done`, so a question appended to a `done` spec is recorded without silently reverting its status to `draft`. Per constitution §spec-lifecycle and spec 014 a `done` spec reopens via the scenario route (`done → in-progress`), never via a question; the primitive now matches the command, the markdown-only path, and the constitution, closing a two-paths divergence reachable through amend's `flip` override.
+- **`process-waivers` retains waivers on a dimension-restricted run** — a new `skipped-passes` argument marks the run as partial (`--security` / `--simplicity` / `--quality`). When set, a waiver whose rule did not fire is **retained** (a new result bucket) rather than expired, so `write-review` never prunes a waiver anchored to a dimension the run didn't evaluate. Previously a `--security`-only run classified every non-security waiver as expired and deleted it from the spec frontmatter — silent data loss the command explicitly promised not to cause. Only an unrestricted run expires waivers.
+- **`append-inbox` / `remove-inbox-item` are comment-aware** — inbox bullet scanning (dedup, removal, counting) now skips fenced-code and HTML-comment regions via the shared `SkipScanner`, so the `-` lines inside the inbox template's `<!-- Rules: … -->` guidance are no longer miscounted as items or matchable for removal.
+- **`write-review` preserves adopter-authored waiver fields** — unknown keys on a `review.waivers` entry (`ticket`, `co-waived-by`, org policy fields) are captured and re-emitted verbatim on the frontmatter rewrite, honoring the §text-first-artifacts open-schema rule across a re-render instead of silently dropping them on the next review run.
+
+### Changed
+
+- **Inbox entries are written as checkboxes** — `append-inbox` now writes `- [ ] {text}` rather than a plain `- {text}` bullet, matching the inbox template's documented forms and the constitution's §bug-handling ("tracked as a checkbox … resolved by being done, then removed"). Dedup and removal strip the checkbox marker, so both forms still match by content.
+- **`append-inbox` reports `item-count`** — the result gains the total inbox bullet count (comment/fence-aware) after the call, so `/gov:log` reports it without hand-counting, mirroring `remove-inbox-item`'s `remaining-count`.
+- **`resolve-anchor` accepts an optional `markers-path`** — references in one file can now be resolved against a *different* file's `<!-- §anchor -->` markers (e.g. a spec's `§` references against the constitution). Omitted, it keeps the same-file self-consistency behavior. `/gov:analyze` uses it to verify spec references resolve against the constitution instead of firing every reference as unresolved noise.
+
+### Documentation
+
+- **`create-plan-artifacts` MCP description** dropped its claim that a kept artifact is reported "with its last-modified timestamp" — the result carries no wall-clock data; the keep-or-replace prompt stats the file itself.
+- Stale in-code references corrected: `check-artifacts`'s family notes no longer cite drifting `analyze.md` line numbers, and `discover-rule-files` drops the retired "review Behavior step 5" phrasing.
+
 ## [0.19.0] — 2026-07-12
 
 Follow-up review of the 0.18.0 runtime (see `specs/022-deterministic-runtime/review.md`). Closes a partially-resolved SSRF finding, a bootstrap parse regression the 0.18.0 parser change introduced, and a set of newly-surfaced input-validation and correctness gaps — plus the full follow-on scenario set the review captured (tasks 64–68 below): six new coverage primitives, the dashboard's rendered pipeline view, the derived writeCode boundary, two retired primitives, and the documented clarify exec scope. One review item is deliberately excluded: MCP unknown-field strictness (022 task 65) rides the rmcp 1.x → 2.x port tracked in `specs/inbox.md` and ships as the next minor, because its strict-params wrapper builds on exactly the rmcp layer that migration reworks.

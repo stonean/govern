@@ -7,7 +7,7 @@
 //! primitive introduces no policy of its own:
 //!
 //! - **artifact-completeness** (blocking) — reference §"Artifact
-//!   completeness (blocking)" (analyze.md lines 97–101): `plan.md` and
+//!   completeness (blocking)": `plan.md` and
 //!   `tasks.md` are required when status is `planned` or later
 //!   (`planned` / `in-progress` / `done`). `data-model.md` is **never**
 //!   required here: the reference conditions it on "feature introduces or
@@ -15,20 +15,20 @@
 //!   make deterministically, so it stays optional (and with the prose
 //!   check on the markdown-only path).
 //! - **task-consistency** (blocking) — reference §"Task consistency
-//!   (blocking if tasks exist)" (analyze.md lines 110–114): task numbers
+//!   (blocking if tasks exist)": task numbers
 //!   are strictly increasing in declaration order, and every task section
 //!   carries a `Done when` clause. The reference's "tasks reference the
 //!   plan" item is a semantic-link judgment and stays in the
 //!   markdown-only reference. Runs only when `tasks.md` exists.
 //! - **scenario-consistency** (advisory) — reference §"Scenario
-//!   consistency (advisory)" (analyze.md lines 116–120): every
+//!   consistency (advisory)": every
 //!   `scenarios/*.md` has a referencing task in `tasks.md` *only while
 //!   that task is still pending*. Never flags a scenario under a `done`
-//!   spec, and never requires a pruned spent task to persist
-//!   (constitution §tasks-phase — `tasks.md` is ephemeral; see
-//!   [`pruning_evidence`] for the documented heuristic).
+//!   spec (a done feature's tasks may have been pruned), and never requires
+//!   a pruned spent task to persist (constitution §tasks-phase — `tasks.md`
+//!   is ephemeral; see [`pruning_evidence`] for the documented heuristic).
 //! - **review-state-drift** (blocking) — reference §"Review state drift
-//!   (blocking)" (analyze.md lines 142–153): a `done` spec with
+//!   (blocking)": a `done` spec with
 //!   `review.last-run` unset, or `review.blocking: true`, drifted. The
 //!   grandfather rule applies: a `done` spec with no `review:` block at
 //!   all predates `/gov:review` and is exempt.

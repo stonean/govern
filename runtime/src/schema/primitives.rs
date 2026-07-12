@@ -117,6 +117,15 @@ pub struct ProcessWaiversArgs {
     #[serde(default)]
     #[arg(skip)]
     pub fired: Vec<FiredFinding>,
+    /// Dimensions skipped this run (via `--security` / `--simplicity` /
+    /// `--quality`). When non-empty, the run is dimension-restricted and
+    /// lacks the full-review picture, so a non-firing waiver is **retained**
+    /// (left untouched) rather than expired — a waiver anchored to a skipped
+    /// dimension must not be pruned on the strength of a partial run. Only an
+    /// unrestricted run (this list empty) expires waivers.
+    #[serde(default)]
+    #[arg(long = "skipped-pass")]
+    pub skipped_passes: Vec<String>,
 }
 
 /// Result for `process-waivers`.
@@ -126,10 +135,15 @@ pub struct ProcessWaiversResult {
     /// Waivers that apply this run (anchor exists and the rule still fires).
     pub applied: Vec<WaiverRef>,
     /// Waivers that expired this run (anchor gone or rule no longer fires);
-    /// `write-review` drops these on the next frontmatter write.
+    /// `write-review` drops these on the next frontmatter write. Always empty
+    /// on a dimension-restricted run (see `skipped-passes`).
     pub expired: Vec<WaiverRef>,
-    /// Ordered notice lines: `waiver expired: …`, `malformed waiver …`, and
-    /// `duplicate waiver: …`, in entry order.
+    /// Waivers left untouched this run because it was dimension-restricted and
+    /// they did not fire against the passes that ran — neither applied nor
+    /// expired, so `write-review` keeps them in the spec frontmatter.
+    pub retained: Vec<WaiverRef>,
+    /// Ordered notice lines: `waiver expired: …`, `waiver retained: …`,
+    /// `malformed waiver …`, and `duplicate waiver: …`, in entry order.
     pub notices: Vec<String>,
 }
 
@@ -577,9 +591,18 @@ pub struct ValidateFrontmatterResult {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct ResolveAnchorArgs {
-    /// Repo-relative path to the markdown file to scan.
+    /// Repo-relative path to the markdown file whose `§<anchor>` references
+    /// are scanned.
     #[arg(long)]
     pub path: String,
+    /// Optional repo-relative path to the file supplying the
+    /// `<!-- §anchor -->` markers to resolve against. Omit to resolve
+    /// against markers in `path` itself (the same-file self-consistency
+    /// check). Supply a different file — e.g. the constitution — to verify
+    /// that a spec's cross-file `§` references still name real sections.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[arg(long)]
+    pub markers_path: Option<String>,
 }
 
 /// One anchor reference.
@@ -2037,6 +2060,10 @@ pub struct AppendInboxResult {
     /// `true` when `dedup-prefix` matched an existing bullet and no write
     /// happened.
     pub deduped: bool,
+    /// Total real (comment/fence-aware) inbox bullets after this call — the
+    /// count `/gov:log` reports without hand-counting. On a `deduped` no-op
+    /// this is the pre-existing total.
+    pub item_count: u32,
 }
 
 // -- remove-inbox-item ---------------------------------------------------------
@@ -2405,6 +2432,7 @@ mod tests {
     fn resolve_anchor_round_trip() {
         let args = ResolveAnchorArgs {
             path: "framework/constitution.md".into(),
+            markers_path: None,
         };
         assert_eq!(round_trip(&args), args);
         let result = ResolveAnchorResult {
@@ -3180,9 +3208,11 @@ mod tests {
             path: "specs/inbox.md".into(),
             created: false,
             deduped: true,
+            item_count: 3,
         };
         let rv: serde_json::Value = serde_json::to_value(&result).unwrap();
         assert_eq!(rv["deduped"], true);
+        assert_eq!(rv["item-count"], 3);
         assert_eq!(round_trip(&result), result);
     }
 

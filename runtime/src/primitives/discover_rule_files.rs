@@ -1,6 +1,7 @@
 //! `discover-rule-files` — deterministic rule-file selection for `/gov:review`.
 //!
-//! Owns review Behavior step 5 end-to-end: list the rule-file directory
+//! Owns `/gov:review`'s rule-file selection end-to-end: list the rule-file
+//! directory
 //! (`framework/rules/` in govern's own repo, `{specs-root}/rules/` in
 //! adopters), classify each file by basename suffix, apply the
 //! `[rules] surfaces` selection, then the `[[review.disabled-rule-files]]`

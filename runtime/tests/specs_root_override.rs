@@ -308,7 +308,7 @@ fn append_inbox_writes_under_configured_root() {
     assert_eq!(result.path, "governance/inbox.md");
     assert!(result.created);
     let body = fs::read_to_string(tmp.path().join("governance/inbox.md")).unwrap();
-    assert!(body.contains("- rooted item"));
+    assert!(body.contains("- [ ] rooted item"));
     assert!(!tmp.path().join("specs/inbox.md").exists());
 }
 

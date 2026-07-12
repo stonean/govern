@@ -9,7 +9,9 @@
 
 use std::path::Path;
 
-use crate::primitives::{PrimitiveError, Result, bullet_text, rel_path, write_atomic};
+use crate::primitives::{
+    PrimitiveError, Result, count_inbox_bullets, iter_bullets, rel_path, write_atomic,
+};
 use crate::schema::paths;
 use crate::schema::primitives::{RemoveInboxItemArgs, RemoveInboxItemResult};
 
@@ -54,7 +56,7 @@ pub fn run(args: &RemoveInboxItemArgs, repo: &Path) -> Result<RemoveInboxItemRes
 
     match remove_bullet(&existing, target) {
         Some(new_content) => {
-            let remaining = count_bullets(&new_content);
+            let remaining = count_inbox_bullets(&new_content);
             write_atomic(&inbox_path, &new_content)?;
             Ok(RemoveInboxItemResult {
                 path: rel_path(&inbox_path, repo),
@@ -65,18 +67,18 @@ pub fn run(args: &RemoveInboxItemArgs, repo: &Path) -> Result<RemoveInboxItemRes
         None => Ok(RemoveInboxItemResult {
             path: rel_path(&inbox_path, repo),
             removed: false,
-            remaining_count: count_bullets(&existing),
+            remaining_count: count_inbox_bullets(&existing),
         }),
     }
 }
 
-/// Remove the first bullet line whose text equals `target`, returning the
-/// rewritten content, or `None` when no bullet matches.
+/// Remove the first real (comment/fence-aware) bullet line whose text equals
+/// `target`, returning the rewritten content, or `None` when no bullet
+/// matches. A `- ` line inside the template's `<!-- Rules: … -->` guidance is
+/// never a match, so it can never be removed by content collision.
 fn remove_bullet(content: &str, target: &str) -> Option<String> {
     let lines: Vec<&str> = content.lines().collect();
-    let idx = lines
-        .iter()
-        .position(|line| bullet_text(line).as_deref() == Some(target))?;
+    let idx = iter_bullets(content).find_map(|(idx, text)| (text == target).then_some(idx))?;
     let mut kept: Vec<&str> = Vec::with_capacity(lines.len().saturating_sub(1));
     kept.extend_from_slice(&lines[..idx]);
     kept.extend_from_slice(&lines[idx + 1..]);
@@ -105,11 +107,6 @@ fn normalize(lines: &[&str]) -> String {
         out.pop();
     }
     format!("{}\n", out.join("\n"))
-}
-
-/// Count the bullet items in `content`.
-fn count_bullets(content: &str) -> u32 {
-    u32::try_from(content.lines().filter(|l| bullet_text(l).is_some()).count()).unwrap_or(u32::MAX)
 }
 
 #[cfg(test)]
@@ -221,6 +218,29 @@ mod tests {
                 "expected InvalidArgument for {bad:?}"
             );
         }
+    }
+
+    #[test]
+    fn comment_embedded_bullets_are_not_counted_or_removed() {
+        // The template guidance comment holds `- ` lines that are not items.
+        // They must not be counted, and a content collision with one must not
+        // remove it.
+        let tmp = tempdir().unwrap();
+        write_inbox(
+            tmp.path(),
+            "# Inbox\n\n<!-- Rules:\n     - do not frontfill bugs\n-->\n\n- [ ] real item\n",
+        );
+        // Count excludes the comment bullet.
+        let noop = run(&args("absent"), tmp.path()).unwrap();
+        assert_eq!(noop.remaining_count, 1);
+        // Attempting to remove the comment-interior text is a clean no-op.
+        let comment_hit = run(&args("do not frontfill bugs"), tmp.path()).unwrap();
+        assert!(!comment_hit.removed, "comment bullets are not removable");
+        assert_eq!(comment_hit.remaining_count, 1);
+        // The real item still removes normally.
+        let real = run(&args("real item"), tmp.path()).unwrap();
+        assert!(real.removed);
+        assert_eq!(real.remaining_count, 0);
     }
 
     #[test]

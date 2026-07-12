@@ -16,11 +16,13 @@
 //!   `appended: false` domain outcome (nothing written) reporting the
 //!   existing entry.
 //! - **Same-write back-edge**: on a spec target whose status is
-//!   `clarified`, `planned`, `in-progress`, or `done`, the frontmatter
-//!   status reverts to `draft` in the same atomic write as the append —
-//!   never a window where the body holds an unresolved question but the
-//!   status still claims otherwise. Scenario targets have no status field
-//!   and never back-edge.
+//!   `clarified`, `planned`, or `in-progress`, the frontmatter status
+//!   reverts to `draft` in the same atomic write as the append — never a
+//!   window where the body holds an unresolved question but the status
+//!   still claims otherwise. `done` is excluded (§spec-lifecycle, spec
+//!   014): a `done` spec reopens via the scenario route, not a question,
+//!   so a question appended to a `done` spec leaves its status untouched.
+//!   Scenario targets have no status field and never back-edge.
 //! - **Section creation**: a missing `## Open Questions` section is
 //!   created per the template order — immediately before
 //!   `## Resolved Questions` when that section exists (the scenario
@@ -47,8 +49,13 @@ const RESOLVED_HEADING: &str = "## Resolved Questions";
 
 /// Statuses the same-write back-edge reverts to `draft`. `draft` itself
 /// is a no-op; a value outside the lifecycle set is left alone
-/// (`validate-frontmatter` owns flagging corrupt statuses).
-const BACK_EDGE_STATUSES: [&str; 4] = ["clarified", "planned", "in-progress", "done"];
+/// (`validate-frontmatter` owns flagging corrupt statuses). `done` is
+/// deliberately **excluded**: per the constitution §spec-lifecycle and
+/// spec 014, a new question is not a sanctioned back-edge out of `done` —
+/// a `done` spec reopens only via the scenario route (`done → in-progress`,
+/// owned by `/gov:amend`). Appending a question to a `done` spec leaves the
+/// status at `done` (the command layer never routes a question there).
+const BACK_EDGE_STATUSES: [&str; 3] = ["clarified", "planned", "in-progress"];
 
 /// Execute the `append-question` primitive against the given repo root.
 ///
@@ -298,7 +305,7 @@ mod tests {
     #[test]
     fn back_edges_non_draft_spec_in_the_same_write() {
         let tmp = tempdir().unwrap();
-        for prior in ["clarified", "planned", "in-progress", "done"] {
+        for prior in ["clarified", "planned", "in-progress"] {
             seed_spec(
                 tmp.path(),
                 &format!(
@@ -313,6 +320,28 @@ mod tests {
             assert!(content.contains("status: draft"), "{content}");
             assert!(content.contains("- New wrinkle?"), "{content}");
         }
+    }
+
+    #[test]
+    fn done_spec_appends_question_without_back_edge() {
+        // §spec-lifecycle / spec 014: a question is not a back-edge out of
+        // `done` (that route is the scenario reopen). The question is
+        // recorded but the status stays `done`.
+        let tmp = tempdir().unwrap();
+        seed_spec(
+            tmp.path(),
+            "---\nstatus: done\ndependencies: []\n---\n\n# 009\n\n## Open Questions\n",
+        );
+        let result = run(&args("Late wrinkle?"), tmp.path()).unwrap();
+        assert!(result.appended);
+        assert!(
+            !result.status_reverted,
+            "done never back-edges on a question"
+        );
+        assert_eq!(result.previous_status, None);
+        let content = read_spec_file(tmp.path());
+        assert!(content.contains("status: done"), "{content}");
+        assert!(content.contains("- Late wrinkle?"), "{content}");
     }
 
     #[test]

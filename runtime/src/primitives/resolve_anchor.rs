@@ -1,5 +1,10 @@
-//! `resolve-anchor` — verify every `§<anchor>` reference resolves to a
-//! `<!-- §anchor -->` marker within the same file.
+//! `resolve-anchor` — verify every `§<anchor>` reference in a file resolves
+//! to a `<!-- §anchor -->` marker. By default the markers are collected from
+//! the same file (the constitution self-consistency check); pass
+//! `markers-path` to resolve a file's references against a *different* file's
+//! markers — e.g. a spec's `§` references against the constitution — so a
+//! renamed constitution section surfaces as an unresolved reference instead
+//! of every reference firing as unresolved noise.
 
 #![allow(clippy::expect_used)]
 
@@ -22,7 +27,15 @@ pub fn run(args: &ResolveAnchorArgs, repo: &Path) -> Result<ResolveAnchorResult>
     let path = resolve_path(repo, &args.path);
     let content = read_text(&path)?;
 
-    let markers = collect_markers(&content);
+    // Markers come from `markers-path` when supplied, else from the scanned
+    // file itself (same-file self-consistency check).
+    let markers = match &args.markers_path {
+        Some(markers_path) => {
+            let marker_content = read_text(&resolve_path(repo, markers_path))?;
+            collect_markers(&marker_content)
+        }
+        None => collect_markers(&content),
+    };
     let mut references: Vec<AnchorReference> = Vec::new();
     let mut unresolved: HashSet<String> = HashSet::new();
     for (line_no, line) in content.lines().enumerate() {
@@ -94,6 +107,7 @@ mod tests {
         let result = run(
             &ResolveAnchorArgs {
                 path: "framework/constitution.md".into(),
+                markers_path: None,
             },
             &repo,
         )
@@ -119,11 +133,46 @@ mod tests {
         let result = run(
             &ResolveAnchorArgs {
                 path: path.to_string_lossy().into(),
+                markers_path: None,
             },
             tmp.path(),
         )
         .unwrap();
         assert!(result.references.is_empty());
         assert!(result.unresolved.is_empty());
+    }
+
+    #[test]
+    fn resolves_references_against_a_separate_markers_file() {
+        // A spec cites `§known` and `§renamed`; markers live only in a
+        // separate constitution file. With `markers-path` pointed at it,
+        // `§known` resolves and `§renamed` is the only unresolved one —
+        // rather than every reference firing as unresolved noise.
+        let tmp = tempfile::tempdir().unwrap();
+        std::fs::write(
+            tmp.path().join("spec.md"),
+            "# Spec\n\nSee [§known](constitution.md#known) and [§renamed](constitution.md#renamed).\n",
+        )
+        .unwrap();
+        std::fs::write(
+            tmp.path().join("constitution.md"),
+            "# Constitution\n\n<!-- §known -->\n## Known\n",
+        )
+        .unwrap();
+        let result = run(
+            &ResolveAnchorArgs {
+                path: "spec.md".into(),
+                markers_path: Some("constitution.md".into()),
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert_eq!(result.unresolved, vec!["renamed".to_string()]);
+        assert!(
+            result
+                .references
+                .iter()
+                .any(|r| r.anchor == "known" && r.resolved)
+        );
     }
 }

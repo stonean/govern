@@ -4,7 +4,7 @@
 # Invokes every generator (in --dry-run) and every lint script the
 # framework ships. Any non-zero exit produces a `check-zero` finding to
 # stdout pointing at the failing script. When this script exits non-zero,
-# /audit halts before running the eight family checks — running them
+# /audit halts before running the family checks — running them
 # against known-stale generator output produces misleading findings (per
 # spec 026's bootstrap-order resolution).
 #

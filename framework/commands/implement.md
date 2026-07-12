@@ -20,7 +20,7 @@ Pipeline gate: planned → in-progress → done. Walks through `tasks.md` step b
 
 ## Context
 
-Use the session target from `.govern.session.toml`. If `$ARGUMENTS` is provided, use it to override the session target. If no session target is set and no arguments provided, stop and tell the user to run `/{project}:target` first.
+Use the session target from `.govern.session.toml`. If `$ARGUMENTS` is provided, use it to override the session target — resolve that override through `resolve-feature` (exact directory name, feature number, or unique partial slug; `ambiguous` and `not-found` are domain outcomes to surface). If no session target is set and no arguments provided, stop and tell the user to run `/{project}:target` first.
 
 ### Flags
 
@@ -53,13 +53,13 @@ Default is unset — without the flag, the user confirms each task as today.
 
 > **For agent runtimes**: the Invoke steps below call the MCP tools of the optional gvrn runtime; the host-integration contract — bare↔prefixed tool names, lazy ToolSearch schema fetch, the no-shell-utilities rule, and the two-paths guarantee — lives once in the constitution, §runtime-host-integration. With no gvrn MCP server registered, walk the same prose using the host file-reading tools (Read, Edit, Write).
 
-1. Invoke `read-tasks` against the targeted feature to load the ordered task list and the per-task "done when" conditions. The walker also seeds the session target's feature, scenario fields, the writeCode arguments (task-number, subtask-index, checked, write-boundary, threshold), and the completion gate's criterion address (criterion-index) from the runtime context.
+1. Invoke `read-tasks` against the targeted feature to load the ordered task list and the per-task "done when" conditions. The host threads the per-primitive addressing arguments (task-number, subtask-index, checked, write-boundary, threshold, criterion-index) as **typed** context to the calls that consume them — these are per-call inputs supplied by the driving host, not session-file state, and (on `gvrn exec`) not string CLI overrides, since the primitives type them as integers/booleans.
 
 2. Invoke `derive-boundary` against the feature to compute the runtime write boundary from `git diff` against the spec dir's first commit. The result lists the feature's directory zones — the spec-dir glob plus a `{dir}/**` glob per changed path's parent directory (root-level files stay exact paths) — so writeCode may create new files inside zones the feature already touched. The boundary feeding the writeCode validator below is the **union** of this derivation and any session-seeded write-boundary: a seed is a deliberate grant the derivation never revokes, and on a fresh feature (no non-spec history yet) the seed is what admits the first code edit; with neither, enforcement stays fail-closed and the first out-of-spec edit halts.
 
 3. Invoke `check-stuck` against the feature with a threshold of 3 to detect stuck cycles before starting work. When the result reports stuck, surface the cycle to the user and pause for direction before proceeding — auto mode does not power through cycles.
 
-4. Invoke `set-status` to flip the spec frontmatter's status from planned to in-progress. Invoking `/{project}:implement` is itself the user's approval to begin work, so this transition is not separately gated — no confirmation is prompted, with or without `--auto`. The primitive guards against a stale "from" value so concurrent edits surface as an operational error rather than a silent overwrite.
+4. **When the spec is still `planned`**, invoke `set-status` to flip its status from planned to in-progress. Invoking `/{project}:implement` is itself the user's approval to begin work, so this transition is not separately gated — no confirmation is prompted, with or without `--auto`. The primitive guards against a stale "from" value so concurrent edits surface as an operational error rather than a silent overwrite. **Skip this step when the spec is already `in-progress`** — per-task runs and the completion gate re-invoke `/{project}:implement` on an in-progress spec (see steps 7–8 and the stuck-detection details), and calling `set-status` with `from: planned` on an in-progress spec would halt on the stale-`from` guard. Read the current status (from step 1's context, which already loaded the task list and target) and only transition on the planned → in-progress edge.
 
 5. <!-- llm:writeCode --> Implement the first incomplete task. The host receives the task description, plan-relevant files, the derived write boundary, and constitution excerpts; it returns an edits array plus a one-line summary. The walker validates every edit's path against the write boundary and emits an `out-of-boundary-edit` error envelope (halting the procedure) when any edit escapes the boundary.
 
@@ -95,7 +95,7 @@ The full setup, walk-through, completion gate, and stuck-detection details are d
 - Read `specs/{feature}/plan.md` for technical decisions and affected files.
 - Read the spec file for acceptance criteria and contracts.
 - If a scenario is targeted, read the scenario file for scenario-specific context, behavior, and edge cases. The scenario scopes which part of the feature is the primary focus for this implementation session.
-- **Recompute dependencies (safety net).** Run `scripts/gen-spec-deps.sh --dry-run` against the target spec; if it reports a diff, run it for real to sync `dependencies:` from body inline links.
+- **Recompute dependencies (safety net).** Run `scripts/gen-spec-deps.sh --dry-run` (via the `run-generator` primitive; the generator walks every spec — there is no per-spec mode). If it reports a diff, the `dependencies:` frontmatter is stale from uncommitted body edits; surface that and recommend committing (the pre-commit hook syncs it) or running the generator manually. Do not run it for real from this command.
 
 ### Stuck-detection details
 

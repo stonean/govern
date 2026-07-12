@@ -295,7 +295,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "resolve-anchor",
-        description = "Verify `§anchor` references resolve to `<!-- §anchor -->` markers."
+        description = "Verify `§anchor` references resolve to `<!-- §anchor -->` markers. Markers come from `path` itself by default (self-consistency); pass `markers-path` to resolve one file's references against another file's markers (e.g. a spec's references against the constitution)."
     )]
     async fn resolve_anchor(
         &self,
@@ -488,7 +488,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "process-waivers",
-        description = "Classify a spec's review.waivers against currently-firing findings (apply/expire/dedup)."
+        description = "Classify a spec's review.waivers against currently-firing findings (apply/expire/retain/dedup). Pass skipped-pass for each dimension not run this pass: on a dimension-restricted run a non-firing waiver is retained (kept in frontmatter), never expired, so a partial run cannot prune a waiver anchored to a skipped dimension."
     )]
     async fn process_waivers(
         &self,
@@ -618,7 +618,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "create-plan-artifacts",
-        description = "Copy the plan/tasks (and, with include-data-model, data-model) templates into an existing feature directory (atomic, mode-preserving) — /gov:plan's template-copy and existing-artifact-detection step. Pre-existing artifacts are never touched by default: each is reported kept with its last-modified timestamp for the keep-or-replace prompt; only overwrite: true (the confirmed replace branch) copies fresh templates over them."
+        description = "Copy the plan/tasks (and, with include-data-model, data-model) templates into an existing feature directory (atomic, mode-preserving) — /gov:plan's template-copy and existing-artifact-detection step. Pre-existing artifacts are never touched by default: each is reported kept (file, path, action, template — primitive results carry no wall-clock data, so the keep-or-replace prompt stats the file itself for any timestamp); only overwrite: true (the confirmed replace branch) copies fresh templates over them."
     )]
     async fn create_plan_artifacts(
         &self,
@@ -631,7 +631,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "append-question",
-        description = "Append one `- {question}` bullet to the target artifact's ## Open Questions section — /gov:amend's question-route write. Targets the feature's spec.md, or scenarios/{slug}.md when `scenario` is passed. Dedup is normalized-whitespace + case-insensitive (a match is a clean appended: false outcome reporting the existing entry); a missing section is created per template order; on a spec target whose status is clarified/planned/in-progress/done the status reverts to draft in the same atomic write (the back-edge)."
+        description = "Append one `- {question}` bullet to the target artifact's ## Open Questions section — /gov:amend's question-route write. Targets the feature's spec.md, or scenarios/{slug}.md when `scenario` is passed. Dedup is normalized-whitespace + case-insensitive (a match is a clean appended: false outcome reporting the existing entry); a missing section is created per template order; on a spec target whose status is clarified/planned/in-progress the status reverts to draft in the same atomic write (the back-edge). A `done` spec is excluded (§spec-lifecycle): the question is appended but status stays done, since done reopens via the scenario route, not a question."
     )]
     async fn append_question(
         &self,
@@ -659,7 +659,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "append-inbox",
-        description = "Append one `- {text}` bullet to {specs-root}/inbox.md (atomic write), creating the file when missing. With `dedup-prefix` supplied, an existing bullet starting with the prefix suppresses the append and the result reports deduped: true."
+        description = "Append one `- [ ] {text}` checkbox bullet to {specs-root}/inbox.md (atomic write), creating the file when missing. With `dedup-prefix` supplied, an existing bullet starting with the prefix suppresses the append and the result reports deduped: true. Returns item-count, the total inbox bullets (comment/fence-aware) after the call."
     )]
     async fn append_inbox(
         &self,

@@ -702,6 +702,28 @@ pub(crate) fn bullet_text(line: &str) -> Option<String> {
     Some(rest.trim().to_string())
 }
 
+/// Iterate the real inbox/list bullets of `content` as `(line_index, text)`,
+/// skipping fenced code blocks and HTML-comment regions via [`SkipScanner`].
+/// The inbox template embeds `- ` lines inside its `<!-- Rules: … -->`
+/// guidance comment; without comment-awareness those would be miscounted as
+/// items and could even be matched for removal. Shared by `append-inbox`
+/// (dedup + count) and `remove-inbox-item` (removal + count) so both agree
+/// on which lines are real bullets.
+pub(crate) fn iter_bullets(content: &str) -> impl Iterator<Item = (usize, String)> + '_ {
+    let mut skip = SkipScanner::default();
+    content.lines().enumerate().filter_map(move |(idx, line)| {
+        if skip.skip(line) {
+            return None;
+        }
+        bullet_text(line).map(|text| (idx, text))
+    })
+}
+
+/// Count the real (comment/fence-aware) inbox/list bullets in `content`.
+pub(crate) fn count_inbox_bullets(content: &str) -> u32 {
+    u32::try_from(iter_bullets(content).count()).unwrap_or(u32::MAX)
+}
+
 /// Validate a caller-supplied slug against the framework slug grammar
 /// `^[a-z0-9]+(?:-[a-z0-9]+)*$`: one or more lowercase-alphanumeric
 /// segments joined by single hyphens — exactly the alphabet

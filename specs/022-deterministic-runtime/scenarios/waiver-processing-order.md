@@ -15,7 +15,7 @@ section: "Follow-on scenarios"
 ## Edge Cases
 
 - When `compute-review-scope` reports an empty scope and the procedure jumps straight to `write-review`, waivers are left untouched — no passes ran, so no expiry judgment is possible.
-- A dimension-restricted run (`--security` etc.) classifies waivers against only the findings of the passes that ran; waivers anchored to skipped dimensions apply unchanged rather than expiring.
+- A dimension-restricted run (`--security` etc.) passes the skipped dimensions to `process-waivers` as `skipped-passes`. The run cannot see the dimensions it did not run, so a waiver whose rule did not fire is **retained** (a `retained` result bucket, left untouched in the spec frontmatter) rather than expired — waivers anchored to skipped dimensions apply unchanged. `write-review` prunes only the `expired` set, so a retained waiver survives. Only an unrestricted run (`skipped-passes` empty) can expire a waiver.
 
 ## Open Questions
 

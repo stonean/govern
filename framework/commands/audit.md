@@ -16,7 +16,7 @@ Audit `govern`'s own framework artifacts for the kinds of drift `/gov:analyze` i
 
 `/audit` fills that gap. It loads no rule files — its checks are about *framework consistency*, not spec quality. Each check family produces structured findings on stdout. Exit code is binary: `0` when no findings, `1` when any finding is present. CI uses the exit code as a release gate.
 
-See [spec 026](../../specs/026-framework-self-audit/spec.md) for the design and the [026 plan](../../specs/026-framework-self-audit/plan.md) for the eight family check families and the check-zero precondition pass.
+See [spec 026](../../specs/026-framework-self-audit/spec.md) for the design and the [026 plan](../../specs/026-framework-self-audit/plan.md) for the check families and the check-zero precondition pass. The family set has grown since the original design — `scripts/audit/run-all.sh` runs the fifteen families enumerated in the markdown-only reference below.
 
 ## Scope Boundaries
 
