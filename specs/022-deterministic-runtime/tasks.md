@@ -10,7 +10,7 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 66. Implement scenario: [fetch-archive-dns-rebinding](scenarios/fetch-archive-dns-rebinding.md)
 
-- [ ] Implement the behavior described in `scenarios/fetch-archive-dns-rebinding.md`
+- [x] Implement the behavior described in `scenarios/fetch-archive-dns-rebinding.md`
 
 - **Done when**: `fetch-archive` connects only to the address `validate_fetch_url` screened (pinned `SocketAddr` or a connect-time re-check against the internal-address predicate), so a host that rebinds between validation and connect cannot reach an internal address; a connect-time internal address is a naming error, not a silent connect; a test covers the rebind case; `cargo test` green.
 

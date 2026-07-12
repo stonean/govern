@@ -51,7 +51,7 @@
 //! filename column is informational.
 
 use std::io::Read;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, ToSocketAddrs};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, ToSocketAddrs};
 use std::path::{Path, PathBuf};
 
 use sha2::{Digest, Sha256};
@@ -110,7 +110,7 @@ pub fn run(args: &FetchArchiveArgs, repo: &Path) -> Result<FetchArchiveResult> {
 }
 
 fn fetch_bytes(url: &str) -> Result<Vec<u8>> {
-    validate_fetch_url(url)?;
+    let screen = validate_fetch_url(url)?;
     // The default reqwest client follows up to 10 redirects with no
     // re-validation, so a `302 Location:` pointing at `http://` or an
     // internal address would defeat the guard applied to the initial URL.
@@ -118,18 +118,27 @@ fn fetch_bytes(url: &str) -> Result<Vec<u8>> {
     // (and re-caps the redirect count the custom policy would otherwise
     // uncap). Redirects are still followed — GitHub release assets redirect
     // to codeload/S3 — but only to targets that pass the same screen.
-    let client = reqwest::blocking::Client::builder()
-        .redirect(reqwest::redirect::Policy::custom(
+    let mut builder =
+        reqwest::blocking::Client::builder().redirect(reqwest::redirect::Policy::custom(
             |attempt| match redirect_verdict(attempt.url().as_str(), attempt.previous().len()) {
                 RedirectVerdict::Follow => attempt.follow(),
                 RedirectVerdict::Refuse(reason) => attempt.error(reason),
             },
-        ))
-        .build()
-        .map_err(|source| PrimitiveError::Http {
-            url: url.into(),
-            source,
-        })?;
+        ));
+    // Pin the connection to the exact addresses `validate_fetch_url` already
+    // screened, so reqwest connects to one of those rather than re-resolving
+    // the host independently at connect time. Without the pin, a host that
+    // resolved to a public address during validation and an internal one at
+    // connect (DNS rebinding) would slip past the SSRF screen — the TOCTOU
+    // between resolve-then-block and connect. An operator-allowlisted insecure
+    // host is left to resolve normally.
+    if let FetchScreen::Pinned { host, addrs } = &screen {
+        builder = builder.resolve_to_addrs(host, addrs);
+    }
+    let client = builder.build().map_err(|source| PrimitiveError::Http {
+        url: url.into(),
+        source,
+    })?;
     let response = client
         .get(url)
         .send()
@@ -163,9 +172,29 @@ fn redirect_verdict(url: &str, prior_hops: usize) -> RedirectVerdict {
         return RedirectVerdict::Refuse(format!("exceeded {MAX_FETCH_REDIRECTS} redirects"));
     }
     match validate_fetch_url(url) {
-        Ok(()) => RedirectVerdict::Follow,
+        Ok(_) => RedirectVerdict::Follow,
         Err(err) => RedirectVerdict::Refuse(err.to_string()),
     }
+}
+
+/// The screened connection target for a validated fetch URL.
+///
+/// A screened host carries the resolved, internal-range-screened socket
+/// addresses so the caller can *pin* the connection to them — closing the
+/// DNS-rebinding TOCTOU between [`validate_fetch_url`]'s resolution and
+/// reqwest's own connect-time resolution.
+#[derive(Debug)]
+enum FetchScreen {
+    /// An operator-allowlisted insecure host (`GVRN_FETCH_ALLOW_INSECURE_HOSTS`):
+    /// resolve and connect normally, no pinning.
+    Unpinned,
+    /// A screened host: pin the connection to `addrs`. Every address already
+    /// passed the internal-range screen, so a re-resolution to an internal
+    /// address cannot occur.
+    Pinned {
+        host: String,
+        addrs: Vec<SocketAddr>,
+    },
 }
 
 /// SSRF/transport guard applied to every outbound fetch before a socket is
@@ -177,7 +206,12 @@ fn redirect_verdict(url: &str, prior_hops: usize) -> RedirectVerdict {
 /// unspecified (covering the `169.254.169.254` cloud-metadata endpoint,
 /// which is link-local). A rejection is an operational error naming the
 /// reason; no request is made.
-fn validate_fetch_url(url: &str) -> Result<()> {
+///
+/// On success it returns the [`FetchScreen`] the caller pins the connection
+/// to: the resolve-then-block screen and the actual connect must agree on the
+/// address, or a host that rebinds (public at validation, internal at connect)
+/// would slip past. The screened addresses are exactly those pinned.
+fn validate_fetch_url(url: &str) -> Result<FetchScreen> {
     let parsed = reqwest::Url::parse(url)
         .map_err(|err| fetch_refused(url, &format!("is not a valid URL: {err}")))?;
     // Explicit opt-in escape hatch for internal mirrors and local testing.
@@ -190,7 +224,7 @@ fn validate_fetch_url(url: &str) -> Result<()> {
     if let Some(host) = parsed.host_str()
         && host_is_insecure_allowed(host)
     {
-        return Ok(());
+        return Ok(FetchScreen::Unpinned);
     }
     if parsed.scheme() != "https" {
         return Err(fetch_refused(
@@ -214,9 +248,8 @@ fn validate_fetch_url(url: &str) -> Result<()> {
     let resolved = (host, port)
         .to_socket_addrs()
         .map_err(|err| fetch_refused(url, &format!("host `{host}` did not resolve: {err}")))?;
-    let mut saw_address = false;
+    let mut addrs = Vec::new();
     for addr in resolved {
-        saw_address = true;
         if is_internal_ip(addr.ip()) {
             return Err(fetch_refused(
                 url,
@@ -226,14 +259,18 @@ fn validate_fetch_url(url: &str) -> Result<()> {
                 ),
             ));
         }
+        addrs.push(addr);
     }
-    if !saw_address {
+    if addrs.is_empty() {
         return Err(fetch_refused(
             url,
             &format!("host `{host}` resolved to no addresses"),
         ));
     }
-    Ok(())
+    Ok(FetchScreen::Pinned {
+        host: host.to_string(),
+        addrs,
+    })
 }
 
 /// Name of the environment variable holding the comma-separated
@@ -410,9 +447,9 @@ mod tests {
     use std::net::IpAddr;
 
     use super::{
-        MAX_FETCH_REDIRECTS, RedirectVerdict, host_is_insecure_allowed, is_internal_ip,
-        is_sha256_hex, parse_sidecar_hex, read_capped, redirect_verdict, sha256_hex,
-        validate_fetch_url,
+        FetchScreen, MAX_FETCH_REDIRECTS, RedirectVerdict, host_is_insecure_allowed,
+        is_internal_ip, is_sha256_hex, parse_sidecar_hex, read_capped, redirect_verdict,
+        sha256_hex, validate_fetch_url,
     };
 
     fn ip(s: &str) -> IpAddr {
@@ -580,6 +617,34 @@ mod tests {
                 .to_string()
                 .contains("internal address")
         );
+    }
+
+    #[test]
+    fn validate_fetch_url_pins_the_screened_public_address() {
+        // scenarios/fetch-archive-dns-rebinding.md: a validated URL yields the
+        // exact screened address(es) the connection is then pinned to, so
+        // reqwest connects to a screened address instead of re-resolving the
+        // host to a possibly-internal one between validation and connect. A
+        // public IP literal resolves offline to itself.
+        match validate_fetch_url("https://93.184.216.34/main.tar.gz").unwrap() {
+            FetchScreen::Pinned { host, addrs } => {
+                assert_eq!(host, "93.184.216.34");
+                assert!(
+                    !addrs.is_empty(),
+                    "a screened host must carry pin addresses"
+                );
+                assert!(
+                    addrs.iter().all(|a| a.port() == 443),
+                    "the https default port is pinned"
+                );
+                assert!(
+                    addrs.iter().all(|a| !is_internal_ip(a.ip())),
+                    "every pinned address must have passed the internal-range screen"
+                );
+                assert!(addrs.iter().any(|a| a.ip() == ip("93.184.216.34")));
+            }
+            FetchScreen::Unpinned => panic!("a non-allowlisted https host must be pinned"),
+        }
     }
 
     #[test]
