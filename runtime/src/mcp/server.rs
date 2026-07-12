@@ -40,16 +40,14 @@ use crate::schema::primitives::{
     DiffCrossSpecResult, DiscoverRuleFilesArgs, DiscoverRuleFilesResult, EnforceManifestArgs,
     EnforceManifestResult, ExtractArchiveArgs, ExtractArchiveResult, FetchArchiveArgs,
     FetchArchiveResult, GateConfirmArgs, LintMarkdownArgs, LintMarkdownResult, MarkCriterionArgs,
-    MarkTaskArgs, MergeClaudeMdArgs, MergeClaudeMdResult, MergeManagedBlockArgs,
-    MergeManagedBlockResult, MergePermissionsArgs, MergePermissionsResult, MigrateSessionFileArgs,
-    MigrateSessionFileResult, ProcessWaiversArgs, ProcessWaiversResult, PruneTasksArgs,
-    PruneTasksResult, ReadSpecArgs, ReadSpecResult, ReadTasksArgs, ReadTasksResult,
-    RemoveInboxItemArgs, RemoveInboxItemResult, ResolveAnchorArgs, ResolveAnchorResult,
-    ResolveFeatureArgs, ResolveFeatureResult, ResolveReferencesArgs, ResolveReferencesResult,
-    RunGeneratorArgs, RunGeneratorResult, SetStatusArgs, SetStatusResult, SubstituteTemplatesArgs,
-    SubstituteTemplatesResult, TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs,
-    ValidateFrontmatterResult, WriteReviewArgs, WriteReviewResult, WriteSessionArgs,
-    WriteSessionResult,
+    MarkTaskArgs, MergeManagedBlockArgs, MergeManagedBlockResult, MergePermissionsArgs,
+    MergePermissionsResult, MigrateSessionFileArgs, MigrateSessionFileResult, ProcessWaiversArgs,
+    ProcessWaiversResult, PruneTasksArgs, PruneTasksResult, ReadSpecArgs, ReadSpecResult,
+    ReadTasksArgs, ReadTasksResult, RemoveInboxItemArgs, RemoveInboxItemResult, ResolveAnchorArgs,
+    ResolveAnchorResult, ResolveFeatureArgs, ResolveFeatureResult, ResolveReferencesArgs,
+    ResolveReferencesResult, RunGeneratorArgs, RunGeneratorResult, SetStatusArgs, SetStatusResult,
+    TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs, ValidateFrontmatterResult,
+    WriteReviewArgs, WriteReviewResult, WriteSessionArgs, WriteSessionResult,
 };
 
 /// Canonical MCP tool names exposed by the server, in manifest order —
@@ -395,32 +393,6 @@ impl GovRuntimeServer {
     ) -> Result<Json<ExtractArchiveResult>, String> {
         let repo = Arc::clone(&self.repo);
         dispatch_blocking(move || primitives::extract_archive::run(&params.0, repo.as_path())).await
-    }
-
-    #[tool(
-        name = "substitute-templates",
-        description = "Walk a source tree, apply `{key}` substitutions, and write to a destination."
-    )]
-    async fn substitute_templates(
-        &self,
-        params: Parameters<SubstituteTemplatesArgs>,
-    ) -> Result<Json<SubstituteTemplatesResult>, String> {
-        primitives::substitute_templates::run(&params.0, self.repo())
-            .map(Json)
-            .map_err(|e| e.to_string())
-    }
-
-    #[tool(
-        name = "merge-claude-md",
-        description = "Idempotently merge a framework-managed block into the adopter's CLAUDE.md."
-    )]
-    async fn merge_claude_md(
-        &self,
-        params: Parameters<MergeClaudeMdArgs>,
-    ) -> Result<Json<MergeClaudeMdResult>, String> {
-        primitives::merge_claude_md::run(&params.0, self.repo())
-            .map(Json)
-            .map_err(|e| e.to_string())
     }
 
     #[tool(

@@ -15,11 +15,10 @@ use gvrn::schema::primitives::{
     CreateFeatureArgs, CreatePlanArtifactsArgs, CreateScenarioArgs, DashboardArgs,
     DeriveBoundaryArgs, DiffCrossSpecArgs, DiscoverRuleFilesArgs, EnforceManifestArgs,
     ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs,
-    MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs, MergePermissionsArgs,
-    MigrateSessionFileArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs,
-    RemoveInboxItemArgs, ResolveAnchorArgs, ResolveFeatureArgs, ResolveReferencesArgs,
-    RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs,
-    ValidateFrontmatterArgs, WriteReviewArgs, WriteSessionArgs,
+    MarkTaskArgs, MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs,
+    ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs, RemoveInboxItemArgs,
+    ResolveAnchorArgs, ResolveFeatureArgs, ResolveReferencesArgs, RunGeneratorArgs, SetStatusArgs,
+    TraverseDepsArgs, ValidateFrontmatterArgs, WriteReviewArgs, WriteSessionArgs,
 };
 
 #[derive(Parser, Debug)]
@@ -106,14 +105,10 @@ enum Command {
     FetchArchive(FetchArchiveArgs),
     /// Extract a local `.tar.gz` / `.zip` archive into a destination directory.
     ExtractArchive(ExtractArchiveArgs),
-    /// Walk a source tree, apply `{key}` substitutions, and write to a destination.
-    SubstituteTemplates(SubstituteTemplatesArgs),
     /// Strategy-aware bulk substitute + write driven by a manifest.
     ApplyManifest(ApplyManifestArgs),
     /// Remove files in a directory that are not in the expected manifest.
     EnforceManifest(EnforceManifestArgs),
-    /// Idempotently merge a framework-managed block into the adopter's CLAUDE.md.
-    MergeClaudeMd(MergeClaudeMdArgs),
     /// Idempotently merge a framework-managed block with configurable marker shape.
     MergeManagedBlock(MergeManagedBlockArgs),
     /// Idempotently merge a canonical permission allow/deny set into a JSON file with dedup.
@@ -495,14 +490,10 @@ fn main() -> ExitCode {
         Command::ExtractArchive(args) => {
             emit_result(primitives::extract_archive::run(&args, &repo))
         }
-        Command::SubstituteTemplates(args) => {
-            emit_result(primitives::substitute_templates::run(&args, &repo))
-        }
         Command::ApplyManifest(args) => emit_result(primitives::apply_manifest::run(&args, &repo)),
         Command::EnforceManifest(args) => {
             emit_result(primitives::enforce_manifest::run(&args, &repo))
         }
-        Command::MergeClaudeMd(args) => emit_result(primitives::merge_claude_md::run(&args, &repo)),
         Command::MergeManagedBlock(args) => {
             emit_result(primitives::merge_managed_block::run(&args, &repo))
         }

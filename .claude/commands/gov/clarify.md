@@ -56,6 +56,8 @@ Scenario-targeted:
 
 Steps 1–11 are the feature-targeted walk; a scenario-targeted session runs steps 1, 6, and 12. The detailed walk — the question-resolution sub-procedure, the recovery prompt wording, and the scenario-targeted variant — lives under the Markdown-only reference below.
 
+**Exec-path scope** (`gvrn exec clarify`): steps 7–8 are semantic host work with no extension marker, so the subprocess walker no-ops them by design — they cannot fold into the `askClarifyQuestion` round trip, which is one question per trip, because they are spec-wide passes that must run even when the question loop has nothing to walk (the zero-questions short-circuit in step 2). A host walking this command file directly (the MCP path) and the markdown-only path both perform steps 7–8 in full; a host driving exec performs them itself before accepting the step-10 gate. This scope reduction is deliberate and recorded in the spec 022 data-model's exec-path note — not a silent gap.
+
 <!-- audit:ignore-promotion -->
 1. Resolve the target from `.govern.session.toml`; `$ARGUMENTS` overrides the session target. If no session target is set and no arguments are provided, stop and tell the user to run `/gov:target` first. When the session includes a `scenario` and `scenario-path`, this is a **scenario-targeted** run: read the scenario file, run the question loop (step 6) against it, then wrap up at step 12 — steps 2–5 and 7–11 are feature-spec work and do not apply.
 

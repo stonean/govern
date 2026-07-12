@@ -86,8 +86,6 @@ Configure `{cli-config-dir}/settings.local.json` with the tool permissions neede
    - `{ "toolName": "mcp:gvrn:gate-confirm", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gvrn:fetch-archive", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gvrn:extract-archive", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gvrn:substitute-templates", "permission": { "type": "allow" } }`
-   - `{ "toolName": "mcp:gvrn:merge-claude-md", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gvrn:apply-manifest", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gvrn:enforce-manifest", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:gvrn:merge-managed-block", "permission": { "type": "allow" } }`

@@ -568,6 +568,6 @@ Follow-on to task 45c: `compute-review-scope`'s `read_plan_affected` parses `## 
 
 ## 68. Implement scenario: [coverage-residue-cleanup](scenarios/coverage-residue-cleanup.md)
 
-- [ ] Implement the behavior described in `scenarios/coverage-residue-cleanup.md`
+- [x] Implement the behavior described in `scenarios/coverage-residue-cleanup.md`
 
 - **Done when**: `substitute-templates` and `merge-claude-md` are each wired into a real caller or fully retired (six-site removal + lint-tool-coverage green); clarify.md steps 7–8 either gain `llm:` markers or their exec-path scope reduction is documented in the command and data-model; `cargo test` and all lints green.

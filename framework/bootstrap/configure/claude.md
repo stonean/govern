@@ -103,8 +103,6 @@ Configure `{cli-config-dir}/settings.local.json` with the permissions needed for
    - `mcp__gvrn__gate-confirm`
    - `mcp__gvrn__fetch-archive`
    - `mcp__gvrn__extract-archive`
-   - `mcp__gvrn__substitute-templates`
-   - `mcp__gvrn__merge-claude-md`
    - `mcp__gvrn__apply-manifest`
    - `mcp__gvrn__enforce-manifest`
    - `mcp__gvrn__merge-managed-block`

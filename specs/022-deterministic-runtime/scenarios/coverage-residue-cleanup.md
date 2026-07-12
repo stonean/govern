@@ -26,9 +26,9 @@ Two smaller findings from the 2026-07-11 coverage review, distinct from the new-
 
 ## Open Questions
 
-- Wire or retire `substitute-templates` / `merge-claude-md`: is there a near-term command that would use either, or are they genuinely subsumed by `apply-manifest`?
-- Markers versus documented reduction for clarify steps 7–8: does folding them into `askClarifyQuestion` fit the single-round-trip ABI, or is a documented scope reduction the honest answer?
+*None — all resolved.*
 
 ## Resolved Questions
 
-*None yet.*
+- Wire or retire `substitute-templates` / `merge-claude-md`? **Retired, both.** No command step in `framework/commands/`, `framework/bootstrap/`, or the generated mirrors invokes either — the only live references were the manifest, the generated permission blocks, and an example enumeration in `bootstrap/govern.md`. `merge-claude-md` was already a compat shim over `merge-managed-block` self-documented as slated for removal; `substitute-templates`' tree-copy is genuinely subsumed by `apply-manifest`, which absorbed the shared `apply_substitutions` helper (and its unit tests) on retirement. The exec bootstrap-chain test re-targets the surviving equivalents (`extract-archive` → `apply-manifest` → `merge-managed-block`), preserving its chain coverage. The removal lands inside the unreleased 0.19.0, so no released MCP surface breaks.
+- Markers versus documented reduction for clarify steps 7–8? **Documented reduction.** Folding into `askClarifyQuestion` does not fit its ABI: the point is one question per round trip, while steps 7–8 are spec-wide passes that must run even on the zero-questions short-circuit — when the loop performs no round trips at all. A new spec-review extension point would fit but is not built speculatively (recorded as future work in the data-model note, mirroring this scenario's own `merge-permissions` posture). The reduction is stated in `clarify.md`'s Instructions preamble and the data-model's exec-path note; the markdown-only path keeps performing both steps in full.

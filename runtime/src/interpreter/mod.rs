@@ -63,11 +63,10 @@ use crate::schema::primitives::{
     CreateFeatureArgs, CreatePlanArtifactsArgs, CreateScenarioArgs, DashboardArgs,
     DeriveBoundaryArgs, DiffCrossSpecArgs, DiscoverRuleFilesArgs, EnforceManifestArgs,
     ExtractArchiveArgs, FetchArchiveArgs, GateConfirmArgs, LintMarkdownArgs, MarkCriterionArgs,
-    MarkTaskArgs, MergeClaudeMdArgs, MergeManagedBlockArgs, MergePermissionsArgs,
-    MigrateSessionFileArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs,
-    RemoveInboxItemArgs, ResolveAnchorArgs, ResolveFeatureArgs, ResolveReferencesArgs,
-    RunGeneratorArgs, SetStatusArgs, SubstituteTemplatesArgs, TraverseDepsArgs,
-    ValidateFrontmatterArgs, WriteReviewArgs, WriteSessionArgs,
+    MarkTaskArgs, MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs,
+    ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs, RemoveInboxItemArgs,
+    ResolveAnchorArgs, ResolveFeatureArgs, ResolveReferencesArgs, RunGeneratorArgs, SetStatusArgs,
+    TraverseDepsArgs, ValidateFrontmatterArgs, WriteReviewArgs, WriteSessionArgs,
 };
 use crate::schema::procedure::{Procedure, Step, StepNumber};
 use crate::schema::protocol::{ErrorLocation, ProtocolMessage};
@@ -658,8 +657,6 @@ fn dispatch_primitive(
         "lint-markdown" => call!(LintMarkdownArgs, lint_markdown),
         "fetch-archive" => call!(FetchArchiveArgs, fetch_archive),
         "extract-archive" => call!(ExtractArchiveArgs, extract_archive),
-        "substitute-templates" => call!(SubstituteTemplatesArgs, substitute_templates),
-        "merge-claude-md" => call!(MergeClaudeMdArgs, merge_claude_md),
         "apply-manifest" => call!(ApplyManifestArgs, apply_manifest),
         "enforce-manifest" => call!(EnforceManifestArgs, enforce_manifest),
         "merge-managed-block" => call!(MergeManagedBlockArgs, merge_managed_block),

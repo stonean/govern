@@ -2,8 +2,9 @@
 //! framework-managed block in an arbitrary text file using a
 //! configurable marker shape.
 //!
-//! Generalizes [`crate::primitives::merge_claude_md`] to support two
-//! marker styles:
+//! Generalizes the retired `merge-claude-md` primitive (a thin wrapper
+//! removed by scenario coverage-residue-cleanup once no command invoked
+//! it) to support two marker styles:
 //!
 //! - **`html-comment`** (default, the legacy `merge-claude-md`
 //!   behavior): paired `<!-- BEGIN {marker} -->` / `<!-- END {marker}

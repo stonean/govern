@@ -164,12 +164,14 @@ fn exec_reads_extension_response_from_stdin() {
 }
 
 #[test]
-fn exec_chains_bootstrap_primitives_extract_substitute_merge() {
+fn exec_chains_bootstrap_primitives_extract_apply_merge() {
     ensure_binary_built();
     // Walks the back half of the bootstrap procedure end-to-end:
     // a synthetic gvrn-exec target invokes extract-archive on a
-    // committed-shape (test-built) tarball, then substitute-templates
-    // over the staged tree, then merge-claude-md against CLAUDE.md.
+    // committed-shape (test-built) tarball, then apply-manifest over
+    // the staged tree, then merge-managed-block against CLAUDE.md
+    // (the chain substitute-templates → merge-claude-md ran before
+    // those two shims were retired by coverage-residue-cleanup).
     // The full procedure also includes fetch-archive (HTTP); that
     // first step needs a mock server and is deferred — its unit tests
     // cover hash-verification independently.
@@ -197,29 +199,34 @@ fn exec_chains_bootstrap_primitives_extract_substitute_merge() {
     fs::create_dir_all(&bootstrap_dir).unwrap();
     fs::write(
         bootstrap_dir.join("install.md"),
-        "# /install\n\n## Instructions\n\n1. Invoke `extract-archive` against the staged tarball.\n2. Invoke `substitute-templates` to materialize the project files.\n3. Invoke `merge-claude-md` to install the managed block.\n",
+        "# /install\n\n## Instructions\n\n1. Invoke `extract-archive` against the staged tarball.\n2. Invoke `apply-manifest` to materialize the project files.\n3. Invoke `merge-managed-block` to install the managed block.\n",
     )
     .unwrap();
 
     // Seed `.govern.session.toml` with every arg the three primitives
     // need. Post-consolidation, the walker reads this single repo-root
     // file regardless of AI CLI / project name. `path` is repo-relative:
-    // merge-claude-md rejects absolute paths (BE-INPUT-004) and resolves
-    // against the repo root — the exec cwd, i.e. this tempdir.
+    // merge-managed-block rejects absolute paths (BE-INPUT-004) and
+    // resolves against the repo root — the exec cwd, i.e. this tempdir.
     let session_toml = format!(
         "archive = {archive:?}\n\
          dest = {dest:?}\n\
-         source-dir = {source_dir:?}\n\
-         target-dir = {target_dir:?}\n\
+         source-root = {source_root:?}\n\
+         target-root = {target_root:?}\n\
          path = \"CLAUDE.md\"\n\
          block = \"framework managed block\\nproject = anvil\"\n\
          \n\
          [substitutions]\n\
-         project = \"anvil\"\n",
+         project = \"anvil\"\n\
+         \n\
+         [[entries]]\n\
+         source = \"README.md\"\n\
+         dest = \"README.md\"\n\
+         strategy = \"update\"\n",
         archive = tarball_path.to_string_lossy().to_string(),
         dest = tmp.path().join("staging").to_string_lossy().to_string(),
-        source_dir = tmp.path().join("staging").to_string_lossy().to_string(),
-        target_dir = tmp.path().join("project").to_string_lossy().to_string(),
+        source_root = tmp.path().join("staging").to_string_lossy().to_string(),
+        target_root = tmp.path().join("project").to_string_lossy().to_string(),
     );
     let session_path = tmp.path().join(".govern.session.toml");
     let mut sf = fs::File::create(&session_path).unwrap();
@@ -244,8 +251,9 @@ fn exec_chains_bootstrap_primitives_extract_substitute_merge() {
 
     // Verify the chain's observable effects:
     // - extract-archive wrote README.md into the staging dir
-    // - substitute-templates wrote a substituted copy into the project dir
-    // - merge-claude-md created CLAUDE.md with the managed block
+    // - apply-manifest wrote a substituted copy into the project dir
+    // - merge-managed-block created CLAUDE.md with the managed block
+    //   (html-comment style, `govern-managed` marker — the defaults)
     assert!(tmp.path().join("staging/README.md").exists());
     let written = fs::read_to_string(tmp.path().join("project/README.md")).unwrap();
     assert!(

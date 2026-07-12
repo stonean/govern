@@ -878,41 +878,6 @@ pub struct LintMarkdownResult {
     pub exit_code: i32,
 }
 
-// -- merge-claude-md ---------------------------------------------------------
-
-/// Args for `merge-claude-md`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
-#[serde(rename_all = "kebab-case")]
-pub struct MergeClaudeMdArgs {
-    /// Local path to the adopter's `CLAUDE.md` (relative paths resolve
-    /// against the runtime's `repo`).
-    #[arg(long)]
-    pub path: String,
-    /// Markdown block the framework wants to install (between the BEGIN /
-    /// END marker pair). Trailing whitespace is normalized to a single
-    /// newline before write.
-    #[arg(long)]
-    pub block: String,
-    /// Marker name used to delimit the framework-managed region.
-    /// Defaults to `govern-managed`. Multiple frameworks can coexist in
-    /// the same CLAUDE.md by using different marker names.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[arg(long)]
-    pub marker: Option<String>,
-}
-
-/// Result for `merge-claude-md`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "kebab-case")]
-pub struct MergeClaudeMdResult {
-    /// Repo-relative or absolute path of the merged file.
-    pub path: String,
-    /// One of `created`, `inserted`, `updated`, `unchanged`.
-    pub action: String,
-    /// Marker name actually applied (echoes the arg's value or the default).
-    pub marker: String,
-}
-
 // -- apply-manifest ----------------------------------------------------------
 
 /// One entry in an `apply-manifest` request.
@@ -1090,11 +1055,11 @@ pub struct MergeManagedBlockArgs {
     pub marker_style: Option<String>,
 }
 
-/// Result for `merge-managed-block`. Extends [`MergeClaudeMdResult`]'s
-/// shape with two `line-prefix`-only fields for the cross-boundary
-/// dedup pass (`dedup-removed` count, `dedup-removed-lines` listing).
-/// Both fields are absent for `html-comment` invocations (the
-/// `merge-claude-md` compat shim ends up here too).
+/// Result for `merge-managed-block`. Extends the retired
+/// `merge-claude-md` shim's result shape (`path` / `action` / `marker`)
+/// with two `line-prefix`-only fields for the cross-boundary dedup pass
+/// (`dedup-removed` count, `dedup-removed-lines` listing). Both fields
+/// are absent for `html-comment` invocations.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct MergeManagedBlockResult {
@@ -1166,50 +1131,6 @@ pub struct MergePermissionsResult {
     pub deny_added: u32,
     /// Count of duplicate `deny` entries removed.
     pub deny_deduped: u32,
-}
-
-// -- substitute-templates ----------------------------------------------------
-
-/// Args for `substitute-templates`.
-///
-/// The source/target fields use the `-dir` suffix (rather than the
-/// shorter `source`/`dest`) so they don't collide with
-/// [`ExtractArchiveArgs::dest`] when both primitives share a single
-/// context map in a procedure walk (the bootstrap chains
-/// extract → substitute and needs both primitives' destinations to
-/// resolve to distinct context keys).
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
-#[serde(rename_all = "kebab-case")]
-pub struct SubstituteTemplatesArgs {
-    /// Local path to the source tree (typically the staging directory a
-    /// prior `extract-archive` step produced).
-    #[arg(long)]
-    pub source_dir: String,
-    /// Local path to the destination tree; created if missing.
-    #[arg(long)]
-    pub target_dir: String,
-    /// Key→value substitution map. Each text file in the source tree has
-    /// every literal `{key}` replaced with `value` before being written
-    /// to the destination. Binary files are copied unchanged. Set via
-    /// JSON context — not exposed as CLI flags.
-    #[serde(default)]
-    #[arg(skip)]
-    pub substitutions: std::collections::BTreeMap<String, String>,
-}
-
-/// Result for `substitute-templates`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "kebab-case")]
-pub struct SubstituteTemplatesResult {
-    /// Repo-relative or absolute path of the destination tree.
-    pub target_dir: String,
-    /// Count of regular files written to the destination.
-    pub files_written: u32,
-    /// Total count of substitution replacements applied across all files.
-    pub substitutions_applied: u32,
-    /// Repo-relative paths (under `target-dir`) of every file written,
-    /// in directory-walk order.
-    pub files: Vec<String>,
 }
 
 // -- extract-archive ---------------------------------------------------------
@@ -2601,68 +2522,6 @@ mod tests {
         };
         assert_eq!(round_trip(&args), args);
         let result = GateConfirmResult { confirmed: true };
-        assert_eq!(round_trip(&result), result);
-    }
-
-    #[test]
-    fn merge_claude_md_round_trip() {
-        use super::{MergeClaudeMdArgs, MergeClaudeMdResult};
-        let args = MergeClaudeMdArgs {
-            path: "CLAUDE.md".into(),
-            block: "framework block body".into(),
-            marker: Some("govern-managed".into()),
-        };
-        let value: serde_json::Value = serde_json::to_value(&args).unwrap();
-        assert_eq!(value["block"], "framework block body");
-        assert_eq!(value["marker"], "govern-managed");
-        assert_eq!(round_trip(&args), args);
-
-        let result = MergeClaudeMdResult {
-            path: "CLAUDE.md".into(),
-            action: "created".into(),
-            marker: "govern-managed".into(),
-        };
-        let r_value: serde_json::Value = serde_json::to_value(&result).unwrap();
-        assert_eq!(r_value["action"], "created");
-        assert_eq!(round_trip(&result), result);
-
-        // marker omitted serializes without the field
-        let args_no_marker = MergeClaudeMdArgs {
-            path: "CLAUDE.md".into(),
-            block: "x".into(),
-            marker: None,
-        };
-        let v: serde_json::Value = serde_json::to_value(&args_no_marker).unwrap();
-        assert!(!v.as_object().unwrap().contains_key("marker"));
-    }
-
-    #[test]
-    fn substitute_templates_round_trip() {
-        use super::{SubstituteTemplatesArgs, SubstituteTemplatesResult};
-        use std::collections::BTreeMap;
-        let mut subs = BTreeMap::new();
-        subs.insert("project".into(), "anvil".into());
-        let args = SubstituteTemplatesArgs {
-            source_dir: "/tmp/staging".into(),
-            target_dir: "/tmp/project".into(),
-            substitutions: subs,
-        };
-        let value: serde_json::Value = serde_json::to_value(&args).unwrap();
-        assert_eq!(value["substitutions"]["project"], "anvil");
-        assert_eq!(value["source-dir"], "/tmp/staging");
-        assert_eq!(value["target-dir"], "/tmp/project");
-        assert_eq!(round_trip(&args), args);
-
-        let result = SubstituteTemplatesResult {
-            target_dir: "/tmp/project".into(),
-            files_written: 5,
-            substitutions_applied: 12,
-            files: vec!["README.md".into()],
-        };
-        let r_value: serde_json::Value = serde_json::to_value(&result).unwrap();
-        assert_eq!(r_value["files-written"], 5);
-        assert_eq!(r_value["substitutions-applied"], 12);
-        assert_eq!(r_value["target-dir"], "/tmp/project");
         assert_eq!(round_trip(&result), result);
     }
 

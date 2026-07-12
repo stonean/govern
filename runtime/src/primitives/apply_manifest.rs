@@ -44,7 +44,6 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
-use crate::primitives::substitute_templates::apply_substitutions;
 use crate::primitives::{
     PrimitiveError, Result, resolve_path, validate_no_traversal, write_atomic_bytes,
 };
@@ -248,8 +247,9 @@ fn apply_skip_if_conflict(source: &Path, dest: &Path, dest_exists: bool) -> Resu
 /// `unchanged` path never touches the destination, so its mode — already
 /// correct from the write that created it — is preserved untouched.
 ///
-/// `pub(crate)` because `substitute-templates` shares the same
-/// tempfile-mode problem and mirrors modes through this one helper.
+/// `pub(crate)` because the template-copying primitives (`create-feature`,
+/// `create-plan-artifacts`) share the same tempfile-mode problem and
+/// mirror modes through this one helper.
 pub(crate) fn mirror_source_mode(source: &Path, dest: &Path) -> Result<()> {
     let perms = fs::metadata(source)
         .map_err(|src| PrimitiveError::Io {
@@ -305,6 +305,28 @@ fn effective_substitutions(
     }
 }
 
+/// Apply `{key}` → value replacements to `text`. Returns the substituted
+/// string and the total count of replacements applied across all keys.
+///
+/// Substitution is non-recursive: a value that itself contains a `{key}`
+/// token is not re-substituted. Keys are processed in `BTreeMap` order
+/// (lexicographic) for deterministic output across runs. (Moved in from
+/// the retired `substitute-templates` primitive, whose tree-copy `run`
+/// this manifest walk subsumed — scenario coverage-residue-cleanup.)
+fn apply_substitutions(text: &str, substitutions: &BTreeMap<String, String>) -> (String, u32) {
+    let mut out = text.to_string();
+    let mut total: u32 = 0;
+    for (key, value) in substitutions {
+        let placeholder = format!("{{{key}}}");
+        let count = u32::try_from(out.matches(&placeholder).count()).unwrap_or(u32::MAX);
+        if count > 0 {
+            out = out.replace(&placeholder, value);
+            total = total.saturating_add(count);
+        }
+    }
+    (out, total)
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
@@ -318,6 +340,36 @@ mod tests {
             .iter()
             .map(|(k, v)| ((*k).to_string(), (*v).to_string()))
             .collect()
+    }
+
+    #[test]
+    fn apply_substitutions_replaces_known_placeholders() {
+        let map = subs(&[("project", "anvil"), ("cli-config-dir", ".claude")]);
+        let (out, count) = apply_substitutions(
+            "Project {project} lives at {cli-config-dir}/{project}-session.json.",
+            &map,
+        );
+        assert_eq!(out, "Project anvil lives at .claude/anvil-session.json.");
+        assert_eq!(count, 3);
+    }
+
+    #[test]
+    fn apply_substitutions_leaves_unknown_placeholders_intact() {
+        let map = subs(&[("project", "anvil")]);
+        let (out, count) = apply_substitutions("{project} and {unknown}", &map);
+        assert_eq!(out, "anvil and {unknown}");
+        assert_eq!(count, 1);
+    }
+
+    #[test]
+    fn apply_substitutions_is_non_recursive() {
+        let map = subs(&[("a", "{b}"), ("b", "BEE")]);
+        let (out, _) = apply_substitutions("{a}", &map);
+        // `a` resolves to `{b}` first; `b` is then processed against the
+        // updated string, so the chained value DOES get substituted. Pin
+        // the observed behavior so future refactors don't quietly change
+        // it.
+        assert_eq!(out, "BEE");
     }
 
     fn entry(source: &str, dest: &str, strategy: &str) -> ManifestEntry {

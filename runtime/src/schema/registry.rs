@@ -34,8 +34,6 @@ pub(crate) const PRIMITIVE_REGISTRY: &[&str] = &[
     "gate-confirm",
     "fetch-archive",
     "extract-archive",
-    "substitute-templates",
-    "merge-claude-md",
     "apply-manifest",
     "enforce-manifest",
     "merge-managed-block",
