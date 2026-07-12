@@ -2,9 +2,9 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
-## [0.19.0] — 2026-07-11
+## [0.19.0] — 2026-07-12
 
-Follow-up review of the 0.18.0 runtime (see `specs/022-deterministic-runtime/review.md`). Closes a partially-resolved SSRF finding, a bootstrap parse regression the 0.18.0 parser change introduced, and a set of newly-surfaced input-validation and correctness gaps. Unreleased; the deferred items captured as scenarios during the review are being implemented into this same version (see Follow-on scenarios below).
+Follow-up review of the 0.18.0 runtime (see `specs/022-deterministic-runtime/review.md`). Closes a partially-resolved SSRF finding, a bootstrap parse regression the 0.18.0 parser change introduced, and a set of newly-surfaced input-validation and correctness gaps — plus the full follow-on scenario set the review captured (tasks 64–68 below): six new coverage primitives, the dashboard's rendered pipeline view, the derived writeCode boundary, two retired primitives, and the documented clarify exec scope. One review item is deliberately excluded: MCP unknown-field strictness (022 task 65) rides the rmcp 1.x → 2.x port tracked in `specs/inbox.md` and ships as the next minor, because its strict-params wrapper builds on exactly the rmcp layer that migration reworks.
 
 ### Follow-on scenarios (022 tasks 64–68)
 
