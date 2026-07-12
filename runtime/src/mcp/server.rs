@@ -18,12 +18,17 @@
 //! subprocess-interpreter surface (CLI `runtime gate-confirm`) handles
 //! the blocking handshake via [`crate::primitives::gate_confirm::run_blocking`].
 
+use std::collections::HashSet;
+use std::future::Future;
 use std::path::PathBuf;
+use std::pin::Pin;
 use std::sync::Arc;
 
+use rmcp::ErrorData;
 use rmcp::handler::server::router::tool::ToolRouter;
+use rmcp::handler::server::tool::ToolCallContext;
 use rmcp::handler::server::wrapper::{Json, Parameters};
-use rmcp::model::{JsonObject, ServerCapabilities, ServerInfo};
+use rmcp::model::{CallToolResult, JsonObject, ServerCapabilities, ServerInfo};
 use rmcp::{ServerHandler, tool, tool_handler, tool_router};
 use serde_json::Value;
 
@@ -80,6 +85,7 @@ impl GovRuntimeServer {
     pub fn new(repo: PathBuf) -> Self {
         let mut tool_router = Self::tool_router();
         strip_nonstandard_formats(&mut tool_router);
+        reject_unknown_fields(&mut tool_router);
         Self {
             repo: Arc::new(repo),
             tool_router,
@@ -107,6 +113,72 @@ fn strip_nonstandard_formats(router: &mut ToolRouter<GovRuntimeServer>) {
             route.attr.output_schema = Some(sanitized_schema(output));
         }
     }
+}
+
+/// Reject MCP tool calls carrying an argument key outside the target
+/// primitive's known field set.
+///
+/// No primitive `Args` struct sets `#[serde(deny_unknown_fields)]`, and it
+/// cannot: the subprocess interpreter binds every primitive's args from a
+/// clone of the whole walker context (a deliberate superset — see
+/// [`crate::interpreter`]'s `dispatch_primitive`), so the shared `Args`
+/// structs must stay lenient or every exec-path call would be rejected.
+/// Strictness therefore lives at the MCP boundary only. This pass derives
+/// each tool's allowlist from the field names already present in its input
+/// schema (`route.attr.input_schema["properties"]` — the schema `schemars`
+/// produces, so the list can never drift from the `Args` type) and wraps the
+/// route's call so an unknown key becomes a clear `invalid_params` rejection
+/// naming the field, before the macro's lenient `Parameters` deserialize
+/// would silently default it. The exec path never constructs this router, so
+/// its superset-context binding is unaffected.
+///
+/// No `Args` struct uses `#[serde(flatten)]`, so `properties` enumerates
+/// every known field; a schema with no `properties` object (none today) is
+/// left unwrapped rather than rejecting all keys.
+fn reject_unknown_fields(router: &mut ToolRouter<GovRuntimeServer>) {
+    for route in router.map.values_mut() {
+        let Some(allowed) = known_field_names(&route.attr) else {
+            continue;
+        };
+        let allowed = Arc::new(allowed);
+        let inner = Arc::clone(&route.call);
+        route.call = Arc::new(
+            move |ctx: ToolCallContext<'_, GovRuntimeServer>| -> Pin<
+                Box<dyn Future<Output = Result<CallToolResult, ErrorData>> + Send + '_>,
+            > {
+                if let Some(arguments) = ctx.arguments.as_ref()
+                    && let Some(unknown) =
+                        arguments.keys().find(|key| !allowed.contains(key.as_str()))
+                {
+                    let error = unknown_field_error(ctx.name(), unknown, &allowed);
+                    return Box::pin(std::future::ready(Err(error)));
+                }
+                (inner)(ctx)
+            },
+        );
+    }
+}
+
+/// The set of wire field names a primitive accepts, read from its input
+/// schema's `properties`. `None` when the schema carries no `properties`
+/// object.
+fn known_field_names(tool: &rmcp::model::Tool) -> Option<HashSet<String>> {
+    let properties = tool.input_schema.get("properties")?.as_object()?;
+    Some(properties.keys().cloned().collect())
+}
+
+/// Build the `invalid_params` rejection naming the unknown field and listing
+/// the known ones (sorted, for a deterministic message).
+fn unknown_field_error(tool: &str, field: &str, allowed: &HashSet<String>) -> ErrorData {
+    let mut known: Vec<&str> = allowed.iter().map(String::as_str).collect();
+    known.sort_unstable();
+    ErrorData::invalid_params(
+        format!(
+            "unknown field `{field}` for tool `{tool}`; known fields: {}",
+            known.join(", ")
+        ),
+        None,
+    )
 }
 
 /// Clone a tool schema, drop each numeric node's `format`, and re-wrap it.

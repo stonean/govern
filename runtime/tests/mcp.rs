@@ -177,6 +177,32 @@ async fn read_spec_returns_structured_frontmatter() {
     assert_eq!(obj["path"], "specs/001-basic/spec.md");
 }
 
+/// Task 65 (scenarios/mcp-arg-unknown-field-strictness.md), MCP surface: an
+/// argument key outside the primitive's known field set — here the
+/// `snake_case` misspelling `include_body` for the kebab `include-body` — is
+/// rejected with an error naming the unknown field, rather than silently
+/// dropped and run with that field's default. The exec-surface half of the
+/// contract (the subprocess interpreter's superset-context binding stays
+/// lenient) is asserted by
+/// `interpreter::tests::exec_path_ignores_unknown_argument_key`.
+#[tokio::test]
+async fn mcp_surface_rejects_unknown_argument_field() {
+    let client = start_pair(fixture_repo()).await;
+    let args = json!({"feature": "001-basic", "include_body": false})
+        .as_object()
+        .cloned()
+        .unwrap();
+    let err = client
+        .call_tool(CallToolRequestParams::new("read-spec".to_string()).with_arguments(args))
+        .await
+        .expect_err("a misspelled kebab field must be rejected, not silently dropped");
+    let rendered = format!("{err:?}");
+    assert!(
+        rendered.contains("include_body"),
+        "rejection should name the unknown field, got: {rendered}"
+    );
+}
+
 #[tokio::test]
 async fn read_tasks_returns_task_list() {
     let client = start_pair(fixture_repo()).await;

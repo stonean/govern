@@ -787,6 +787,25 @@ mod tests {
         }
     }
 
+    /// Task 65 (scenarios/mcp-arg-unknown-field-strictness.md), exec surface:
+    /// the interpreter binds each primitive's args from a clone of the whole
+    /// walker context (a deliberate superset), so an unknown key — here the
+    /// `snake_case` misspelling `include_body` alongside the real `feature` —
+    /// is ignored, not rejected. Counterpart to the MCP-surface rejection in
+    /// `tests/mcp.rs`: strictness lives only at the MCP boundary, so the exec
+    /// path's superset-context binding keeps working.
+    #[test]
+    fn exec_path_ignores_unknown_argument_key() {
+        let mut context = ctx_with_feature("001-basic");
+        context.insert("include_body".into(), Value::Bool(false));
+        let repo = fixture_repo();
+        let result = dispatch_primitive("read-spec", &context, &repo);
+        assert!(
+            result.is_ok(),
+            "exec path must ignore an unknown context key, got: {result:?}"
+        );
+    }
+
     #[test]
     fn empty_procedure_emits_complete_only() {
         let procedure = Procedure {
