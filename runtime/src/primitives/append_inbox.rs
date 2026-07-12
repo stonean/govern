@@ -30,7 +30,8 @@
 use std::path::Path;
 
 use crate::primitives::{
-    PrimitiveError, Result, bullet_text, count_inbox_bullets, iter_bullets, rel_path, write_atomic,
+    PrimitiveError, Result, SkipScanner, bullet_text, count_inbox_bullets, iter_bullets, rel_path,
+    write_atomic,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{AppendInboxArgs, AppendInboxResult};
@@ -140,15 +141,41 @@ fn has_bullet_with_prefix(content: &str, prefix: &str) -> bool {
     iter_bullets(content).any(|(_, text)| text.starts_with(prefix))
 }
 
-/// Append `- [ ] {text}` to `content` (the checkbox inbox form). A single
-/// newline joins onto an existing bullet run; a blank line separates the
-/// bullet from any other trailing content (markdownlint's
-/// lists-surrounded-by-blanks rule). Output ends with exactly one trailing
-/// newline.
+/// Append `- [ ] {text}` (the checkbox inbox form) to `content` at a
+/// position the comment/fence-aware read side ([`iter_bullets`] /
+/// [`count_inbox_bullets`]) will count.
+///
+/// The write side must agree with the read side about what counts as inbox
+/// content: were the bullet appended blindly at EOF and `inbox.md` ended
+/// inside an *unterminated* `<!--` comment or ` ``` ` fence, the new bullet
+/// would land inside that skipped region — invisible to the reader and
+/// undercounted. So a trailing unterminated region is split off first and the
+/// bullet is inserted before it; the region is preserved after. A well-formed
+/// inbox (every comment and fence closed) has no such region and appends at
+/// the end exactly as before.
 fn append_bullet(content: &str, text: &str) -> String {
+    let bullet = format!("- [ ] {text}");
+    let boundary = trailing_unterminated_offset(content);
+    if boundary >= content.len() {
+        return append_after(content, &bullet);
+    }
+    // `content[..boundary]` is the balanced prefix (it ends at the start of
+    // the unterminated region's opener line); `content[boundary..]` is the
+    // region that runs to EOF. Insert the bullet into the prefix, then
+    // re-attach the region after a blank-line separator.
+    let head = append_after(&content[..boundary], &bullet);
+    format!("{head}\n{tail}", tail = &content[boundary..])
+}
+
+/// Append `bullet` after `content`: a single newline joins onto an existing
+/// bullet run, a blank line separates the bullet from any non-list tail
+/// (markdownlint's lists-surrounded-by-blanks rule). Output ends with exactly
+/// one trailing newline. Operates on the balanced prefix only — comment/fence
+/// awareness lives in [`append_bullet`].
+fn append_after(content: &str, bullet: &str) -> String {
     let trimmed = content.trim_end_matches(['\n', '\r']);
     if trimmed.is_empty() {
-        return format!("- [ ] {text}\n");
+        return format!("{bullet}\n");
     }
     let last_line = trimmed.lines().last().unwrap_or("");
     let sep = if bullet_text(last_line).is_some() {
@@ -156,7 +183,32 @@ fn append_bullet(content: &str, text: &str) -> String {
     } else {
         "\n\n"
     };
-    format!("{trimmed}{sep}- [ ] {text}\n")
+    format!("{trimmed}{sep}{bullet}\n")
+}
+
+/// Byte offset at which a trailing *unterminated* HTML comment or fenced code
+/// block begins — the region the comment/fence-aware read side would skip
+/// through to EOF. Returns `content.len()` when the document is well-formed
+/// (every comment and fence closed), so an append lands at the end.
+fn trailing_unterminated_offset(content: &str) -> usize {
+    let mut skip = SkipScanner::default();
+    let mut region_start: Option<usize> = None;
+    let mut offset = 0usize;
+    for raw in content.split_inclusive('\n') {
+        // Feed `skip` the newline-stripped line, matching how `iter_bullets`
+        // drives the scanner via `content.lines()`.
+        let line = raw.strip_suffix('\n').unwrap_or(raw);
+        let line = line.strip_suffix('\r').unwrap_or(line);
+        let was_in_region = skip.in_region();
+        skip.skip(line);
+        match (was_in_region, skip.in_region()) {
+            (false, true) => region_start = Some(offset),
+            (true, false) => region_start = None,
+            _ => {}
+        }
+        offset += raw.len();
+    }
+    region_start.unwrap_or(content.len())
 }
 
 #[cfg(test)]
@@ -239,6 +291,59 @@ mod tests {
         .unwrap();
         let result = run(&args("real item", None), tmp.path()).unwrap();
         assert_eq!(result.item_count, 1, "comment bullets must not be counted");
+    }
+
+    #[test]
+    fn appends_before_a_trailing_unterminated_comment() {
+        // scenarios/append-inbox-comment-aware-write.md: an inbox that ends
+        // inside an unclosed `<!--` comment must not swallow the new bullet.
+        // It lands before the comment, so the comment/fence-aware read side
+        // counts it (the write side agrees with the read side).
+        let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join("specs")).unwrap();
+        fs::write(
+            tmp.path().join("specs/inbox.md"),
+            "# Inbox\n\n- [ ] first\n<!-- dangling note, never closed\nmore comment text\n",
+        )
+        .unwrap();
+        let result = run(&args("second", None), tmp.path()).unwrap();
+        assert_eq!(
+            result.item_count, 2,
+            "the appended bullet must be counted, not swallowed by the comment"
+        );
+        let content = read_inbox(tmp.path());
+        let bullet_pos = content.find("- [ ] second").expect("bullet written");
+        let comment_pos = content.find("<!-- dangling").expect("comment preserved");
+        assert!(
+            bullet_pos < comment_pos,
+            "bullet must precede the unterminated comment:\n{content}"
+        );
+        assert_eq!(
+            count_inbox_bullets(&content),
+            2,
+            "read side counts both bullets"
+        );
+    }
+
+    #[test]
+    fn appends_before_a_trailing_unterminated_fence() {
+        // The fence counterpart to the unterminated-comment case: a bullet
+        // appended to an inbox ending in an unclosed ``` fence lands before
+        // the fence, where the read side counts it.
+        let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join("specs")).unwrap();
+        fs::write(
+            tmp.path().join("specs/inbox.md"),
+            "# Inbox\n\n- [ ] first\n```\n- [ ] fenced, not an item\n",
+        )
+        .unwrap();
+        let result = run(&args("second", None), tmp.path()).unwrap();
+        assert_eq!(result.item_count, 2);
+        let content = read_inbox(tmp.path());
+        assert!(
+            content.find("- [ ] second").unwrap() < content.find("```").unwrap(),
+            "bullet must precede the unterminated fence:\n{content}"
+        );
     }
 
     #[test]

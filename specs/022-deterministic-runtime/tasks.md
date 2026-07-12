@@ -16,7 +16,7 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 
 ## 67. Implement scenario: [append-inbox-comment-aware-write](scenarios/append-inbox-comment-aware-write.md)
 
-- [ ] Implement the behavior described in `scenarios/append-inbox-comment-aware-write.md`
+- [x] Implement the behavior described in `scenarios/append-inbox-comment-aware-write.md`
 
 - **Done when**: `append-inbox`'s write side is comment/fence-aware like its read side: a bullet appended to an `inbox.md` that ends inside an unclosed `<!--` comment (or fence) lands in a position `count_inbox_bullets` counts, never inside the comment; well-formed inboxes append unchanged; a test covers the unclosed-comment case; `cargo test` green.
 

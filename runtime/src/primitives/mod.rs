@@ -808,6 +808,14 @@ impl SkipScanner {
         }
         false
     }
+
+    /// `true` while the scanner sits inside an *open* fenced code block or
+    /// HTML comment — content fed now would be skipped. Lets a caller detect
+    /// an unterminated region that runs to EOF (e.g. `append-inbox` placing a
+    /// new bullet where the comment/fence-aware read side will count it).
+    pub(crate) fn in_region(&self) -> bool {
+        self.in_fence || self.in_comment
+    }
 }
 
 /// Walk `content` line by line, yielding the numeric prefix of every ATX
