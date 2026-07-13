@@ -24,5 +24,12 @@ Every script in this directory follows the same contract:
 - `sibling-coupling.sh` — Family 7.
 - `introducing-drift.sh` — Family 8.
 - `primitive-promotion-candidates.sh` — Family 9.
+- `migration-coverage.sh` — Family 10.
+- `consolidation-pair.sh` — Family 11.
+- `fixture-session-shape.sh` — Family 12.
+- `runtime-hardcoded-paths.sh` — Family 13.
+- `installer-registry-parity.sh` — Family 14.
+- `runtime-probe-parity.sh` — Family 15.
+- `installer-command-parity.sh` — Family 16. `/govern`'s §Per-Agent Scaffolding slash-command manifest must list exactly the `framework/commands/*.md` files, minus the maintainer-only commands (`audit`) intentionally withheld from adopters.
 
-Each family is described in detail in the [026 spec](../../specs/026-framework-self-audit/spec.md#check-families) and the [026 plan's Technical Decisions](../../specs/026-framework-self-audit/plan.md#per-family-script-designs).
+Families 1–9 are described in detail in the [026 spec](../../specs/026-framework-self-audit/spec.md#check-families) and the [026 plan's Technical Decisions](../../specs/026-framework-self-audit/plan.md#per-family-script-designs); families 10+ were added incrementally and carry their rationale in each script's header comment.
