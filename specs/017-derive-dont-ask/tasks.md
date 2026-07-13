@@ -178,6 +178,8 @@ Done when: the template exists and documents adopter usage. ✓
 - [x] Reframe `dependencies` as generator-managed
 - [x] Lint passes
 
+Done when: `framework/commands/specify.md` no longer prompts for a tag or title, treats `dependencies` and the README table as generator-managed, and lint passes. ✓
+
 ### 17. Update `framework/commands/capture.md`
 
 - [x] Remove the `title` placeholder fill-in instruction
@@ -186,12 +188,16 @@ Done when: the template exists and documents adopter usage. ✓
 - [x] Reframe `dependencies` as generator-managed
 - [x] Lint passes
 
+Done when: `framework/commands/capture.md` drops the title and `tags` instructions and the README-table step, reframes `dependencies` as generator-managed, and lint passes. ✓
+
 ### 18. Update `framework/commands/clarify.md`
 
 - [x] Remove the `tags` advisory from the validation gate
 - [x] Add cross-spec impact check step (after deps readiness)
 - [x] Add "Recompute dependencies" step at the very start of Hot Path
 - [x] Lint passes
+
+Done when: `framework/commands/clarify.md` drops the `tags` advisory and adds the cross-spec impact and recompute-dependencies steps, and lint passes. ✓
 
 ### 19. Update `framework/commands/plan.md`
 
@@ -204,6 +210,8 @@ Done when: the template exists and documents adopter usage. ✓
 - [x] Update Finalize to not list `[simple]` markers
 - [x] Lint passes
 
+Done when: `framework/commands/plan.md` drops the title and `[simple]` instructions, reframes Affected Files as a planning aid, adds the cross-spec impact and recompute-dependencies steps, and lint passes. ✓
+
 ### 20. Update `framework/commands/implement.md`
 
 - [x] Remove the `[simple]` marker reading
@@ -215,6 +223,8 @@ Done when: the template exists and documents adopter usage. ✓
 - [x] Replace constants/env-vars constitution refs with `framework/rules/configuration-cross.md`
 - [x] Lint passes
 
+Done when: `framework/commands/implement.md` uses the git-derived write boundary, drops `[simple]` handling, adds the cross-spec scan and recompute-dependencies steps, cites `configuration-cross.md`, and lint passes. ✓
+
 ### 21. Update `framework/commands/elaborate.md`
 
 - [x] Remove the `title` placeholder fill-in instruction
@@ -222,12 +232,16 @@ Done when: the template exists and documents adopter usage. ✓
 - [x] Add "Recompute dependencies" step in Confirm target
 - [x] Lint passes
 
+Done when: `framework/commands/elaborate.md` writes `section:` instead of `spec-ref`, drops the title instruction, adds the recompute-dependencies step, and lint passes. ✓
+
 ### 22. Update `framework/commands/groom.md`
 
 - [x] Remove the `[promote-to-rule]` prefix instruction
 - [x] Replace with "leave in inbox unmodified — next groom pass re-walks every unmigrated item"
 - [x] Add `specs/rules/configuration-cross.md` to the rule-file examples
 - [x] Lint passes
+
+Done when: `framework/commands/groom.md` replaces the `[promote-to-rule]` instruction with the leave-in-inbox behavior, references `configuration-cross.md`, and lint passes. ✓
 
 ### 23. Update `framework/commands/analyze.md`
 
@@ -242,10 +256,14 @@ Done when: the template exists and documents adopter usage. ✓
 - [x] Replace per-row help-equivalence check with structural generator-drift check
 - [x] Lint passes
 
+Done when: `framework/commands/analyze.md` drops the title/frontmatter-schema/Fix-Mode sections and `--fix`, renames `spec-ref` to `section`, adds the generator-drift check, and lint passes. ✓
+
 ### 24. Update `framework/commands/amend.md`
 
 - [x] Add "Recompute dependencies" step in Confirm target (skip on scenario targets)
 - [x] Lint passes
+
+Done when: `framework/commands/amend.md` adds the recompute-dependencies step (skipped on scenario targets) and lint passes. ✓
 
 ### 25. Update `framework/commands/target.md`
 
@@ -253,9 +271,13 @@ Done when: the template exists and documents adopter usage. ✓
 - [x] Add "Recompute dependencies" step in step 4 (between spec-file detection and frontmatter parse)
 - [x] Lint passes
 
+Done when: `framework/commands/target.md` drops the `tags` parse and adds the recompute-dependencies step, and lint passes. ✓
+
 ### 26. Add marker comments to `framework/commands/help.md`
 
 - [x] Done as part of task 11 (all five marker pairs added; generator produces no diff). ✓
+
+Done when: `framework/commands/help.md` carries all five generated-table marker pairs (added under task 11) and the generators produce no diff. ✓
 
 ## Phase 6 — Bootstrap installer
 

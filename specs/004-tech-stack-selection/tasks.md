@@ -15,6 +15,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] Document category visibility rules per project type
 - [x] Document that each question includes "Other" and "Skip" options
 
+Done when: `init.md`'s inputs section presents the tech-stack questionnaire (project-type question plus per-category backend/frontend questions, category visibility rules, and "Other"/"Skip" options) in place of the old "Primary language(s)" input.
+
 ## 2. Update init.md scaffolding steps
 
 - [x] Modify step 3 (AGENTS.md) to populate Tech Stack table from selections
@@ -23,19 +25,27 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] Handle "skip all" case — leave comment placeholder unchanged
 - [x] Modify step 8 (.gitignore) to derive languages from tech stack selections instead of standalone input
 
+Done when: `init.md`'s scaffolding steps populate the AGENTS.md Tech Stack table from the selections — with layer-to-role mapping, fullstack dual-language rows, and the skip-all placeholder preserved — and derive `.gitignore` languages from those selections.
+
 ## 3. Update AGENTS.md template
 
 - [x] Adjust Tech Stack comment block so it can be cleanly replaced by init when selections are made
+
+Done when: the AGENTS.md template's Tech Stack comment block is shaped so `/gov:init` can cleanly replace it when selections are made.
 
 ## 4. Update init.md display section
 
 - [x] Remove step 3 from "Next steps" ("Fill in AGENTS.md — tech stack...") since Tech Stack is now populated
 - [x] Adjust wording to reflect that only Code Style, Testing, and Gotchas need manual filling
 
+Done when: `init.md`'s "Next steps" no longer lists filling in the Tech Stack table, and the wording reflects that only Code Style, Testing, and Gotchas need manual completion.
+
 ## 5. Validate
 
 - [x] Run `npx markdownlint-cli2` on all modified files
 - [x] Verify backwards compatibility: skip all categories → AGENTS.md unchanged
+
+Done when: `npx markdownlint-cli2` passes on all modified files and skipping every category leaves the AGENTS.md Tech Stack block unchanged.
 
 ## 6. Framework-implies-language inference
 
