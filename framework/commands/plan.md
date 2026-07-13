@@ -112,7 +112,7 @@ Before creating the plan, load only the cross-spec context this feature actually
 1. **If the user picked "keep" in the existing-artifact prompt above**, skip the template copy — `tasks.md` is already on disk and is the working artifact. Otherwise (no prior artifacts, or "replace"), copy `specs/templates/tasks.md` into the feature directory as `tasks.md`.
 2. Break the plan into discrete, ordered work items:
    - Each task is small enough to complete and verify in a single session.
-   - Each task has a clear "done when" condition.
+   - Each task closes with its completion condition written on its own line as `- **Done when**: <condition>` — this exact marker is what `read-tasks`/`check-artifacts` recognize (a checkbox-nested `- [x] Done when: …` or a bulletless `Done when: …` is tolerated on read, but author the canonical bold form).
    - Tasks respect dependency order.
    - Tasks are derived from the plan, not invented independently.
 

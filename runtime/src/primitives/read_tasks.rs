@@ -19,12 +19,10 @@ use std::path::Path;
 
 use crate::primitives::{
     PrimitiveError, Result, SkipScanner, TasksStructure, checkbox, detect_tasks_structure,
-    parse_atx_heading, read_text, rel_path,
+    parse_atx_heading, parse_done_when, read_text, rel_path,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{ReadTasksArgs, ReadTasksResult, Subtask, Task};
-
-const DONE_WHEN_PREFIX: &str = "**Done when**";
 
 /// Execute the `read-tasks` primitive against the given repo root.
 ///
@@ -110,10 +108,11 @@ pub fn run(args: &ReadTasksArgs, repo: &Path) -> Result<ReadTasksResult> {
         let Some(task) = current.as_mut() else {
             continue;
         };
-        let trimmed = line.trim_start();
-        if let Some(rest) = trimmed.strip_prefix("- ")
-            && let Some(done) = parse_done_when(rest)
-        {
+        // A "Done when" clause in any authoring form (bold, checkbox, or
+        // bulletless) is recorded as the task's done-when, never as a
+        // subtask — the shared recognizer keeps this decision identical to
+        // `mark-task`'s subtask-exclusion (the read/mark index contract).
+        if let Some(done) = parse_done_when(line) {
             task.done_when = Some(done);
             continue;
         }
@@ -171,18 +170,6 @@ fn split_numbered_heading(heading: &str) -> Option<(String, String)> {
     Some((number.to_string(), after.trim_start().to_string()))
 }
 
-fn parse_done_when(rest: &str) -> Option<String> {
-    let trimmed = rest.trim_start();
-    if !trimmed.starts_with(DONE_WHEN_PREFIX) {
-        return None;
-    }
-    let after_label = trimmed[DONE_WHEN_PREFIX.len()..]
-        .trim_start_matches("**")
-        .trim_start();
-    let body = after_label.strip_prefix(':').unwrap_or(after_label);
-    Some(body.trim().to_string())
-}
-
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
@@ -235,6 +222,104 @@ mod tests {
         assert_eq!(split_numbered_heading("Not numbered"), None);
         // A prose heading whose digits are not followed by `.` is not a task.
         assert_eq!(split_numbered_heading("3 quick wins"), None);
+    }
+
+    // --- done-when authoring forms -------------------------------------------
+
+    #[test]
+    fn recognizes_all_done_when_authoring_forms() {
+        // The bold, checkbox, and bulletless forms the writers and the
+        // corpus produce must all populate `done_when` — and none of them
+        // may leak into the subtask list.
+        let tmp = tempdir().unwrap();
+        let content = "# Foo\n\n\
+                       ## 1. Bold bullet\n\n\
+                       - [x] real subtask\n\n\
+                       - **Done when**: the canonical form parses.\n\n\
+                       ## 2. Checkbox form (colon)\n\n\
+                       - [x] first subtask\n\
+                       - [ ] second subtask\n\
+                       - [x] Done when: the LLM checkbox form parses.\n\n\
+                       ## 3. Checkbox form (colon-less)\n\n\
+                       - [x] only subtask\n\
+                       - [x] Done when `the bare condition` holds\n\n\
+                       ## 4. Bulletless form\n\n\
+                       - [ ] only subtask\n\n\
+                       Done when: the bare form parses.\n";
+        make_phased_fixture(tmp.path(), "001-forms", content);
+        let result = run(
+            &ReadTasksArgs {
+                feature: "001-forms".into(),
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert_eq!(result.tasks.len(), 4);
+
+        assert_eq!(
+            result.tasks[0].done_when.as_deref(),
+            Some("the canonical form parses.")
+        );
+        assert_eq!(
+            result.tasks[0].subtasks.len(),
+            1,
+            "bold done-when must not count as a subtask"
+        );
+
+        assert_eq!(
+            result.tasks[1].done_when.as_deref(),
+            Some("the LLM checkbox form parses.")
+        );
+        assert_eq!(
+            result.tasks[1].subtasks.len(),
+            2,
+            "checkbox-form done-when must not count as a subtask"
+        );
+        assert!(
+            result.tasks[1]
+                .subtasks
+                .iter()
+                .all(|s| !s.text.starts_with("Done when")),
+            "the done-when line leaked into the subtask list"
+        );
+
+        // The colon-less checkbox form (spec 024's shape) parses too.
+        assert_eq!(
+            result.tasks[2].done_when.as_deref(),
+            Some("`the bare condition` holds")
+        );
+        assert_eq!(result.tasks[2].subtasks.len(), 1);
+
+        assert_eq!(
+            result.tasks[3].done_when.as_deref(),
+            Some("the bare form parses.")
+        );
+        assert_eq!(result.tasks[3].subtasks.len(), 1);
+    }
+
+    #[test]
+    fn word_boundary_guard_rejects_longer_words() {
+        // The recognizer keys on the exact label `Done when`; a subtask that
+        // opens with a longer word (`Done whenever …`) must NOT be read as
+        // `Done when` + `ever …`. It stays an ordinary subtask.
+        let tmp = tempdir().unwrap();
+        let content = "# Foo\n\n\
+                       ## 1. Guard\n\n\
+                       - [ ] Done whenever the cache warms, refresh it\n";
+        make_phased_fixture(tmp.path(), "001-guard", content);
+        let result = run(
+            &ReadTasksArgs {
+                feature: "001-guard".into(),
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert_eq!(result.tasks.len(), 1);
+        assert!(
+            result.tasks[0].done_when.is_none(),
+            "`Done whenever` is not the `Done when` label"
+        );
+        assert_eq!(result.tasks[0].subtasks.len(), 1);
     }
 
     // --- phased-structure tests -----------------------------------------------

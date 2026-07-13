@@ -16,7 +16,7 @@ use std::path::Path;
 
 use crate::primitives::{
     PrimitiveError, Result, SkipScanner, TasksStructure, detect_tasks_structure, parse_atx_heading,
-    read_text, rel_path, write_atomic,
+    parse_done_when, read_text, rel_path, write_atomic,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{CheckboxToggleResult, MarkTaskArgs};
@@ -161,6 +161,13 @@ fn collect_checkbox_line_indices(
     let mut out = Vec::new();
     for idx in range {
         if skip_mask[idx] {
+            continue;
+        }
+        // A checkbox-form done-when clause (`- [x] Done when: …`) carries a
+        // checkbox but is not an addressable subtask — `read-tasks` records
+        // it as the task's done-when, so `mark-task` must exclude it here or
+        // every subtask index after it would skew (the read/mark contract).
+        if parse_done_when(lines[idx]).is_some() {
             continue;
         }
         if let Some((_bracket, marker_idx)) = find_checkbox_line(lines[idx]) {
@@ -313,6 +320,55 @@ mod tests {
         let new_content = fs::read_to_string(tmp.path().join("specs/feat/tasks.md")).unwrap();
         assert!(new_content.contains("- [ ] Subtask two."));
         assert!(new_content.contains("- **Done when**: both subtasks check."));
+    }
+
+    #[test]
+    fn checkbox_form_done_when_is_excluded_from_subtask_indexing() {
+        // The magpie / `/gov:plan`-authored shape: a checkbox-form done-when
+        // (`- [x] Done when: …`) as the task's last `- [x]` line. It carries
+        // a checkbox but must not be addressable as a subtask, and the real
+        // subtasks before it must keep their indexes — matching what
+        // `read-tasks` reports (the read/mark index contract).
+        let tmp = tempdir().unwrap();
+        let feature_dir = tmp.path().join("specs/feat");
+        fs::create_dir_all(&feature_dir).unwrap();
+        let body = "# feat\n\n## 1. Checkbox task\n\n- [ ] first subtask\n- [ ] second subtask\n- [x] Done when: the condition holds\n";
+        fs::write(feature_dir.join("tasks.md"), body).unwrap();
+
+        // Index 1 lands on the second real subtask, not the done-when line.
+        let ok = run(
+            &MarkTaskArgs {
+                feature: "feat".into(),
+                task_number: "1".into(),
+                subtask_index: 1,
+                checked: true,
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert!(!ok.previous);
+        assert!(ok.current);
+        let updated = fs::read_to_string(feature_dir.join("tasks.md")).unwrap();
+        assert!(updated.contains("- [x] second subtask"));
+        // The done-when line is untouched by a subtask flip.
+        assert!(updated.contains("- [x] Done when: the condition holds"));
+
+        // Index 2 — where the done-when checkbox physically sits — is out of
+        // range: only two real subtasks exist.
+        let err = run(
+            &MarkTaskArgs {
+                feature: "feat".into(),
+                task_number: "1".into(),
+                subtask_index: 2,
+                checked: true,
+            },
+            tmp.path(),
+        )
+        .unwrap_err();
+        match err {
+            PrimitiveError::SubtaskOutOfRange { total, .. } => assert_eq!(total, 2),
+            other => panic!("expected SubtaskOutOfRange, got {other:?}"),
+        }
     }
 
     fn write_phased_fixture(tmp: &std::path::Path) {

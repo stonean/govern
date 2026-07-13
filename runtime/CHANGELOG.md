@@ -2,6 +2,18 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.21.1] — 2026-07-12
+
+A read-side parser fix. `read-tasks` recognized only the `- **Done when**:` form its writer (`append-task`) emits — but `/gov:plan` authors the task breakdown directly (the runtime provides no primitive for it), so LLM- and hand-authored `tasks.md` files use other spellings the parser silently rejected, flagging every task as missing a done-when clause under `/gov:analyze` and the `/gov:review` done-gate. Captured as 022 follow-on scenario `done-when-authoring-forms`.
+
+### Fixed
+
+- **`read-tasks` / `check-artifacts` recognize every done-when authoring form** — a task's completion condition now parses from the checkbox-nested `- [x] Done when: …`, the bulletless `Done when: …`, and the colon-less `Done when <cond>` forms, alongside the canonical `- **Done when**: …` that `append-task` writes. Recognition routes through one shared `primitives::mod::parse_done_when` that `read-tasks` and `mark-task` both consume, so a checkbox-form clause is excluded from the subtask index space by **both** sides (the read/mark index contract) rather than counted as a subtask by `mark-task` while `read-tasks` treats it as the clause. The label must land on a word boundary — `Done whenever …` stays an ordinary subtask — and a task carrying no condition in any form is still flagged. Previously `check-artifacts` reported "task N has no Done when clause" for every task in any spec whose breakdown `/gov:plan` authored in a non-bold form: a 100%-false-positive block observed on an adopter project whose specs were authored end-to-end by `/gov:plan`.
+
+### Changed
+
+- **The `tasks.md` template documents the canonical done-when form** — the paired framework change (per the runtime/framework lockstep): `framework/templates/spec/tasks.md`'s example carries a `- **Done when**: …` line per task and states the requirement, and `/gov:plan`'s task-breakdown reference names the exact marker, so the LLM-authored breakdown converges on the form the reader and `append-task` prefer. Tolerant reader plus writer guidance — new specs write the canonical form, existing specs in any form still parse.
+
 ## [0.21.0] — 2026-07-12
 
 The rmcp 1.x → 2.x port the 0.19.0 notes deferred, plus the follow-on scenarios it unblocked. The migration landed **source-compatible** — rmcp's 2.x breaking changes are in the MCP model types (2025-11-25 spec alignment), not the `#[tool]` / `ToolRouter` / `Parameters` surface the runtime builds on — so the bump is a dependency change, and MCP unknown-field strictness (022 task 65) ships alongside it as promised. Four more 022 follow-on scenarios (tasks 66–69) close latent network-hardening and parser gaps surfaced during the 0.20.0 alignment review and this port. Spec 022 (`deterministic-runtime`) advances to `done` with this release.

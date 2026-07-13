@@ -608,6 +608,81 @@ pub(crate) mod checkbox {
     }
 }
 
+/// The task "Done when" clause label, matched case-insensitively by
+/// [`parse_done_when`]. `append-task` writes the canonical bold form
+/// (`- **Done when**: …`); the template documents it and `/gov:plan`'s
+/// task-breakdown reference names it.
+const DONE_WHEN_LABEL: &str = "Done when";
+
+/// Recognize a task's "Done when" clause in any authoring form the writers
+/// and the corpus produce, returning its trimmed body:
+///
+/// - `- **Done when**: <body>` — the form [`crate::primitives::append_task`]
+///   emits and the `tasks.md` template documents (runtime-canonical);
+/// - `- [x] Done when: <body>` / `- [ ] Done when: <body>` — the checkbox
+///   form `/gov:plan`'s LLM-authored task breakdown tends to produce (the
+///   plan step fills the template directly, not via `append-task`);
+/// - `Done when: <body>` — the bulletless form early specs used.
+///
+/// The leading list bullet, an optional task-list checkbox, the `**`
+/// emphasis around the label, and the `:` separator are all optional (the
+/// corpus carries both `Done when: …` and the colon-less `Done when <cond>`
+/// forms); the label is matched case-insensitively. To keep a prose subtask
+/// that merely opens with a longer word (`Done whenever …`) from being read
+/// as a clause, the label must land on a **word boundary** — the character
+/// after it must be the `:` separator, a closing `**`, whitespace, or the
+/// end of the line.
+///
+/// Shared by [`crate::primitives::read_tasks`] (records the body) and
+/// [`crate::primitives::mark_task`] (excludes the clause line from the
+/// subtask index space) so a checkbox-form clause is treated as a clause by
+/// both sides, never as an addressable subtask — the read/mark index contract.
+pub(crate) fn parse_done_when(line: &str) -> Option<String> {
+    // Peel an optional task-list checkbox via the shared grammar
+    // (`- [x] Done when: …`); otherwise peel an optional plain list bullet
+    // (`- Done when: …`); otherwise take the line for the bulletless form
+    // (`Done when: …`).
+    let after_marker = if let Some((_checked, text)) = checkbox::parse_checkbox_line(line) {
+        text
+    } else {
+        let trimmed = line.trim_start();
+        trimmed
+            .strip_prefix("- ")
+            .unwrap_or(trimmed)
+            .trim()
+            .to_string()
+    };
+    // Optional opening `**` emphasis, then the case-insensitive label.
+    let label_start = after_marker
+        .trim_start()
+        .trim_start_matches('*')
+        .trim_start();
+    let rest = strip_label_ci(label_start, DONE_WHEN_LABEL)?;
+    // Word-boundary guard: the label must be followed by a separator, not
+    // more letters (rejects `Done whenever …`).
+    match rest.chars().next() {
+        Some(c) if !(c == ':' || c == '*' || c.is_whitespace()) => return None,
+        _ => {}
+    }
+    // Strip the separator decoration — an optional `**` emphasis and an
+    // optional `:` in either order (`**Done when**:`, `**Done when:**`,
+    // `Done when:`, and the colon-less `Done when <cond>` all reduce
+    // cleanly) — without eating a body that itself opens with `**emphasis**`.
+    let sep = rest.strip_prefix("**").unwrap_or(rest);
+    let sep = sep.strip_prefix(':').unwrap_or(sep);
+    let sep = sep.strip_prefix("**").unwrap_or(sep);
+    Some(sep.trim().to_string())
+}
+
+/// Case-insensitively strip an ASCII `label` prefix from `s`, returning the
+/// remainder. Uses [`str::get`] so a multibyte-char boundary at
+/// `label.len()` yields a clean `None` rather than a slice panic.
+fn strip_label_ci<'a>(s: &'a str, label: &str) -> Option<&'a str> {
+    let head = s.get(..label.len())?;
+    head.eq_ignore_ascii_case(label)
+        .then_some(&s[label.len()..])
+}
+
 /// Resolve a caller-supplied path argument against the repo root, accepting
 /// absolute paths as-is.
 ///
