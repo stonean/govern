@@ -16,7 +16,7 @@ Audit `govern`'s own framework artifacts for the kinds of drift `/gov:analyze` i
 
 `/audit` fills that gap. It loads no rule files — its checks are about *framework consistency*, not spec quality. Each check family produces structured findings on stdout. Exit code is binary: `0` when no findings, `1` when any finding is present. CI uses the exit code as a release gate.
 
-See [spec 026](../../specs/026-framework-self-audit/spec.md) for the design and the [026 plan](../../specs/026-framework-self-audit/plan.md) for the check families and the check-zero precondition pass. The family set has grown since the original design — `scripts/audit/run-all.sh` runs the fifteen families enumerated in the markdown-only reference below.
+See [spec 026](../../specs/026-framework-self-audit/spec.md) for the design and the [026 plan](../../specs/026-framework-self-audit/plan.md) for the check families and the check-zero precondition pass. The family set has grown since the original design — `scripts/audit/run-all.sh` runs the sixteen families enumerated in the markdown-only reference below.
 
 ## Scope Boundaries
 
@@ -52,6 +52,7 @@ When the runtime is not on `PATH`, walk the same scripts directly. Each prints f
 14. Run `scripts/audit/runtime-hardcoded-paths.sh` (Family 13).
 15. Run `scripts/audit/installer-registry-parity.sh` (Family 14 — `install.sh` agent list and dest paths match the §Agent Registry, and each agent's pre-seeded settings file matches its registry `settings_template`).
 16. Run `scripts/audit/runtime-probe-parity.sh` (Family 15 — the gvrn binary probe is in parity between each agent's §Agent Registry `settings_template` seed and its `configure/{key}.md` set: present in both or neither, never one only).
+17. Run `scripts/audit/installer-command-parity.sh` (Family 16 — the `/govern` §Per-Agent Scaffolding slash-command manifest lists exactly the `framework/commands/*.md` files, minus the maintainer-only commands (`audit`) intentionally not shipped to adopters).
 
 ## Boundary with `/gov:analyze`
 
