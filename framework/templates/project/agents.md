@@ -30,6 +30,24 @@ See [constitution.md](constitution.md) — guiding principles, development pipel
 
 -->
 
+## Grounding Sources
+
+<!-- Optional. Reachable, read-only live sources an agent should consult to
+     ground claims about existing reality instead of guessing (constitution
+     §grounding). Name what exists and how to reach it read-only. Omit the
+     section if the project has none — the agent still derives sources from
+     `.env`, compose/service files, and framework config, and otherwise falls
+     back to the §grounding directive. Read-only access is the default; a task
+     must explicitly authorize any write.
+
+     Example:
+     | Source | Reach it (read-only) | Use it to confirm |
+     | --- | --- | --- |
+     | Dev database | `psql "$DATABASE_URL_RO"` | schema, constraints, representative rows |
+     | Dev server | `curl -s localhost:8080/health` | live endpoint shape and status |
+     | App logs | `tail -f var/log/dev.log` | actual runtime behavior |
+-->
+
 ## Project Structure
 
 - `constitution.md` -- Principles, pipeline, quality standards
