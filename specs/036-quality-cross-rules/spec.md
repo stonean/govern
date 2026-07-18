@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [008-security-rules, 016-cross-cutting-rules, 017-derive-dont-ask, 024-rule-loader, 033-rule-surface-setting]
 review:
   last-run: 2026-06-29T02:01:56Z
@@ -34,6 +34,10 @@ Inaugural rule:
 
 - **Build-time schema fail-loud** is already `api-backend.md` `BE-SCHEMA-002` — `quality-cross.md` cites it for the build-time case rather than restating it; `QUAL-STUB-001` governs the broader runtime/contract case across all surfaces.
 
+### Added categories
+
+- **`GROUND`** (`QUAL-GROUND-001`, SHOULD) — code whose correctness depends on an external contract it does not own (database schema, external API shape, config key, file/wire format) should bind to it so a wrong assumption fails loudly, rather than silently encoding a guess. The code-side counterpart to `/gov:analyze`'s artifact-grounding check; both enforce constitution §grounding. Added after the inaugural delivery per the category-growth policy (`data-model.md` §Category abbreviations), consolidating the code-side grounding enforcement into this existing `QUAL`-surface home rather than a new spec.
+
 ## Acceptance Criteria
 
 - [x] `framework/rules/quality-cross.md` exists, ends in the `-cross.md` suffix, and follows the canonical rule schema (`### {ID}` headings; Statement / Rationale / Verification; RFC 2119 language) per [008-security-rules](../008-security-rules/spec.md)'s data-model.
@@ -43,6 +47,7 @@ Inaugural rule:
 - [x] The Verification clause is expressed as a check `/gov:review` can apply to code (silent passthrough vs. loud failure), and is scoped so legitimately-empty implementations are not flagged (the three-part discriminator and exemption list in Resolved Questions — Verification mechanism).
 - [x] Rules whose surface overlaps an existing rule cite it rather than restating it (`BE-SCHEMA-002` for the build-time fail-loud case).
 - [x] The file is added to the `/govern` **Shared Files** manifest in `framework/bootstrap/govern.md` (slotted between `performance-frontend.md` and `security-backend.md`) and is auto-selected for every stack via the `-cross.md` suffix ([024-rule-loader](../024-rule-loader/spec.md)), composing with [033-rule-surface-setting](../033-rule-surface-setting/spec.md).
+- [x] `QUAL-GROUND-001` (SHOULD) is present with Statement / Rationale / Verification, the `GROUND` category is declared in the file header and registered in the data-model, and the rule is enforced by `/gov:review`'s quality pass as the code-side counterpart to `/gov:analyze`'s grounding check (constitution §grounding).
 
 ## Open Questions
 

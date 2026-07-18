@@ -33,3 +33,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 - [x] Run `/gov:review` over the change set; resolve any MUST findings.
 - Done when: `/gov:review` reports no blocking violations and the spec can advance to `done`.
+
+## 6. Add QUAL-GROUND-001 (verify external contracts)
+
+- [x] Declare the `GROUND` category in the `quality-cross.md` file header and register it in `data-model.md` (category table + `QUAL-GROUND` namespace).
+- [x] Add `QUAL-GROUND-001` (SHOULD) to `quality-cross.md` following the canonical schema — the code-side counterpart to `/gov:analyze`'s grounding check, enforcing constitution §grounding.
+- Done when: `scripts/lint-rule-ids.sh` accepts `QUAL-GROUND-001`, markdownlint and `scripts/audit/*` pass, and the rule is registered in both the file header and the data-model. Re-run `/gov:review` before advancing 036 back to `done`.
