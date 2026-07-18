@@ -33,7 +33,7 @@ If `--all` is not present, use the feature identifier if provided, otherwise fal
 - Read-only by default — do NOT modify any files. The sole exception is `--fix`, which reverts a drifted `done` spec from `done` to `in-progress` via `set-status` (see Review state drift below); without `--fix`, no file is written.
 - Read only files within the target feature's directory, the cross-spec files needed for reference checks (`specs/system.md`, `specs/events.md`, `specs/errors.md`, dependency spec files), and the project's installed command-source frontmatter for the project-level consistency section below (`.claude/commands/gov/*.md` frontmatter only, plus `.claude/commands/govern.md` frontmatter for the bootstrap installer **if that file exists**). May invoke `scripts/gen-help-tables.sh --dry-run` and `scripts/gen-spec-deps.sh --dry-run` to surface generator drift. Do NOT read source code or test files.
 - Resolving the target spec's cross-service `references:` index additionally reads `.govern.toml` (the `[services]` registry) and the registered local checkouts' linked `spec.md` files — and nothing else; the canonical repo URL is **never fetched**. On the runtime path the host calls the resolve-references primitive per referencing spec; on the markdown-only path it reads those files with host file tools (see **Cross-service references** in the markdown-only reference below). This stays read-only.
-- Reference: §spec-requirements, §plan-phase, §tasks-phase, §readiness-check, §scenarios, §cross-spec-impact, §text-first-artifacts, §markdown-standards, §drift-prevention (constitution loaded by `/gov:target` — do not re-read). See [030 — Cross-Service References](../../specs/030-cross-service-references/spec.md) for the reference semantics surfaced here.
+- Reference: §spec-requirements, §grounding, §plan-phase, §tasks-phase, §readiness-check, §scenarios, §cross-spec-impact, §text-first-artifacts, §markdown-standards, §drift-prevention (constitution loaded by `/gov:target` — do not re-read). See [030 — Cross-Service References](../../specs/030-cross-service-references/spec.md) for the reference semantics surfaced here.
 
 ## Instructions
 
@@ -66,7 +66,10 @@ If `--all` is not present, use the feature identifier if provided, otherwise fal
 12. Parse the spec body for a `## Applicable Rules` section and collect every rule ID cited there. For each cited ID that did **not** appear in the set of rules whose Verification triggers fired in steps 9 or 10, emit an advisory finding: `Applicable Rules citation does not fire: {rule-id} is listed under ## Applicable Rules, but the rule's Verification trigger did not fire against any spec artifact. Either remove the citation, or extend the spec to bring the cited surface into scope.` Skip this step when the spec has no `## Applicable Rules` section. Citations whose IDs do not resolve to any loaded rule are handled earlier in step 5 and not reprocessed here. See **Applicable Rules citation consistency** in the markdown-only reference for the full semantics and the promotion criterion that governs when this check graduates from advisory to blocking.
 
 <!-- audit:ignore-promotion -->
-13. Render the report (host responsibility): list hard-fail and blocking findings first, advisory findings next, then informational. For each finding, include what failed, what was expected, what was found, and a suggested fix. With `--fix` set, additionally revert any status-done spec whose review block has drifted to blocking — the guarded set-status revert (`from: done`, `to: in-progress`), detailed in the Review state drift section in the markdown-only reference below.
+13. Scan the spec body (loaded in step 1) and `plan.md` (read it if present) for **ungrounded factual claims about the existing system** — assertions about how current code behaves, what a schema or interface contains, or what an external system returns, stated as fact but carrying neither a citation to a primary source (a `path:line` reference, a named query, a command, or a link to a substantiating artifact) nor an explicit assumption / Open Question marker. Descriptive claims about existing reality need grounding; **prescriptive requirements** about the feature under design (what it MUST do) are contracts, not claims, and are never flagged — the descriptive-vs-prescriptive call is the semantic judgment this step turns on. This is a *form* check: do NOT read source code to confirm a claim (out of scope; see Scope Boundaries), only verify the artifact sources or hedges it. Apply to the spec body at status `clarified` or later and to `plan.md` at `planned` or later; skip on a `draft` spec. Emit each as an **Advisory** finding per the **Grounding** section of the markdown-only reference below.
+
+<!-- audit:ignore-promotion -->
+14. Render the report (host responsibility): list hard-fail and blocking findings first, advisory findings next, then informational. For each finding, include what failed, what was expected, what was found, and a suggested fix. With `--fix` set, additionally revert any status-done spec whose review block has drifted to blocking — the guarded set-status revert (`from: done`, `to: in-progress`), detailed in the Review state drift section in the markdown-only reference below.
 
 ## Markdown-only reference
 
@@ -114,6 +117,22 @@ Reference: the schema is canonically declared in `framework/constitution.md` §t
 - Tasks reference the plan
 - Each task has a "done when" condition
 - Tasks are numbered and ordered
+
+### Grounding (advisory)
+
+Enforces `constitution.md` §grounding against the spec and plan bodies: a factual claim about the **existing system** must be grounded — either cited to a primary source or marked as an assumption — rather than asserted from conjecture. `/gov:analyze` checks the *form* of grounding (is the claim sourced or hedged), not its truth: confirming a claim against the code would require reading source, which is out of this command's scope (see Scope Boundaries). The truth check is the agent's job at authoring time (§grounding) and `/gov:review`'s job against code.
+
+Applies to the spec body at status `clarified` or later, and to `plan.md` at `planned` or later (when it exists). `draft` specs are exempt — claims are still forming, the same way open questions are tolerated only at `draft`.
+
+Flag a passage when **all** hold:
+
+- It is a **descriptive claim about existing reality** — how current code behaves, what a schema/table/column/interface contains, what an external service returns, what a config value is. Prescriptive requirements about the feature under design ("the endpoint MUST reject unsigned requests") are contracts, not claims, and are never flagged. The descriptive-vs-prescriptive call is the semantic judgment this check turns on.
+- It is **asserted as fact** — not already framed as an assumption, an open question, or a proposal.
+- It carries **no grounding** — no citation to a primary source (a `path:line` reference, a named query, a command and its output, or a link to an artifact that substantiates it) and no explicit assumption / Open Question marker.
+
+Suggested fix per finding: ground the claim (read the code, query the dev database, run the command — then cite the source), or, when no reachable source can settle it, restate it as an assumption (in a plan) or an Open Question (in a spec, which reverts the spec to `draft` per §spec-lifecycle).
+
+**Severity:** advisory in v1 — grounding is a semantic judgment with false-positive risk, and forcing it blocking before the signal is proven would erode trust the way any noisy gate does. **Promotion criterion:** promote to blocking when a single `/gov:analyze --all` run reports 5 or more ungrounded claims across the repo on two consecutive runs (the second-run requirement guards against transient mid-authoring states where a claim lands before its source is wired in). This mirrors the **Applicable Rules citation consistency** promotion path below.
 
 ### Scenario consistency (advisory)
 

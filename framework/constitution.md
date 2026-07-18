@@ -37,6 +37,27 @@ These are evaluation criteria, not implementation instructions. Use them to iden
 
 Per-task token tracking and budget ceilings require a runtime `govern` does not have — that work belongs to the AI platform. `govern` contributes by offering cost-aware patterns the user can opt into. The current levers: the stuck-detection step in `/{project}:implement` catches runaway loops before they compound spend; default-off autonomy keeps the human in the loop unless `--auto` is explicitly passed. For runtime cost controls, point the adopter at the platform's tooling — Claude Code's `/cost`, the Anthropic usage dashboard, Cursor's request limits, and equivalents.
 
+<!-- §grounding -->
+
+## Grounding
+
+Work from what can be observed, not from what can be guessed. When a question can be answered by consulting a source that is actually reachable — the code, the project's own artifacts, a connected dev database, runtime output — the agent MUST consult that source before answering. Reasoning from the conversation alone, when a primary source was available and went unread, is a defect regardless of whether the guess turned out to be right.
+
+Grounding is the working-discipline counterpart to the **Verified** principle: *nothing reaches production without validation* governs the product; grounding governs how the agent reaches every claim along the way — during `/specify`, `/clarify`, `/plan`, `/implement`, `/review`, and `/analyze` alike.
+
+### Sources, in order of authority
+
+1. **Code and artifacts** — source files, `spec.md`, `plan.md`, scenarios, rules, `system.md`, tests, migrations, config, and git history are the ground truth for what the system *is* and what was *decided*. Read the file; do not recall it.
+2. **Live, reachable state** — a connected dev or read-only database, a running dev server, logs, a REPL, `--help` output, an actual test run. When such a source is on hand, query it rather than infer schema, data shape, or behavior.
+3. **Inference** — permitted only for what no reachable source can answer, and then stated as an assumption, never asserted as fact.
+
+### Rules
+
+- **Prefer the source to the recollection.** Before asserting how code behaves, what a schema holds, what an artifact says, or what a command does, open it — a `Read`, a `grep`, or a query is cheaper than a wrong answer propagated downstream.
+- **A connected database is a primary source, not a hazard.** When the project exposes a dev or read-only database (or equivalent live state), use it to confirm schema, constraints, and representative data instead of theorizing them. Treat it read-only unless the task explicitly authorizes writes.
+- **Name the assumption when you must infer.** When no reachable source can settle a load-bearing question, mark the claim as an assumption rather than laundering a guess into a fact. During a spec that assumption is an Open Question ([Spec requirements](#spec-requirements)); during implementation it is captured to the inbox ([Automatic issue capture](#automatic-issue-capture)).
+- **Cite what you consulted.** When a conclusion turned on a specific source, reference it (`path:line`, the query, the command) so the next reader can re-derive it rather than re-guess.
+
 <!-- §pipeline -->
 
 ## Development Pipeline
@@ -487,6 +508,7 @@ For every kind of fact described in multiple places, one location is authoritati
 | Constitution section anchors | `<!-- §<anchor> -->` markers in `framework/constitution.md` |
 | Command frontmatter (description, argument-hint) | each command's own frontmatter block |
 | Rules artifact tier definition | `framework/constitution.md` §rules |
+| Agent grounding / evidence discipline | `framework/constitution.md` §grounding |
 | Runtime contract / boundary | `framework/constitution.md` §runtime-boundary |
 | Security rule file format and ID conventions (`BE-`/`FE-`) | `specs/008-security-rules/data-model.md` |
 | Configuration rule file format and ID conventions (`CFG-`) | `specs/017-derive-dont-ask/data-model.md` |
