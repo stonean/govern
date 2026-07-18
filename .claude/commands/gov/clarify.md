@@ -39,16 +39,16 @@ The "already `{status}`" branch and the `done` branch never modify any file.
 
 Feature-targeted:
 
-- Read only the target feature's spec file (frontmatter and body) and dependency spec frontmatter. For the Recovery path, also list (without reading) `plan.md`, `tasks.md`, `data-model.md`, and `specs/{feature}/scenarios/`. Do NOT read plan files, tasks, source code, test files, scenarios, or unrelated specs' bodies.
+- Read only the target feature's spec file (frontmatter and body) and dependency spec frontmatter. For the Recovery path, also list (without reading) `plan.md`, `tasks.md`, `data-model.md`, and `specs/{feature}/scenarios/`. Do NOT read plan files, tasks, source code, test files, scenarios, or unrelated specs' bodies *speculatively* or to browse. **Grounding carve-out (§grounding):** when an open question is a factual question about existing reality — how current code behaves, what a schema or interface holds, what a dev database contains — you MAY read the specific source that settles it (and MUST cite it in the resolution), rather than resolve the question from conjecture. Read narrowly, only what answers the question.
 - Scenario-level open questions are not surfaced — spec-level and scenario-level questions are independent concerns.
 - Do NOT begin planning or implementation work. This command resolves questions and verifies acceptance criteria only.
-- Reference: §spec-requirements, §spec-lifecycle, §pipeline-boundaries, §text-first-artifacts (constitution loaded by `/gov:target` — do not re-read).
+- Reference: §grounding, §spec-requirements, §spec-lifecycle, §pipeline-boundaries, §text-first-artifacts (constitution loaded by `/gov:target` — do not re-read).
 
 Scenario-targeted:
 
-- Read the targeted scenario file (frontmatter and body). May read the parent spec's frontmatter `status` field to decide which next-step suggestion to display. Do NOT read the parent spec's open questions or body, plan files, tasks, source code, test files, or unrelated specs.
+- Read the targeted scenario file (frontmatter and body). May read the parent spec's frontmatter `status` field to decide which next-step suggestion to display. Do NOT read the parent spec's open questions or body, plan files, tasks, source code, test files, or unrelated specs *speculatively* or to browse. The **Grounding carve-out (§grounding)** above applies here too: a scenario question about existing reality may be settled by reading the specific source that answers it, cited in the resolution.
 - Do NOT begin planning or implementation work. This command resolves scenario-level questions only.
-- Reference: §scenarios, §text-first-artifacts (constitution loaded by `/gov:target` — do not re-read).
+- Reference: §grounding, §scenarios, §text-first-artifacts (constitution loaded by `/gov:target` — do not re-read).
 
 ## Instructions
 
@@ -103,7 +103,7 @@ Read `spec.md`. If it does not exist, stop and report: "Spec does not exist. Run
 
 1. **Resolve open questions one at a time** — process each open question individually in sequence:
    1. Display the question with its full context.
-   2. Propose an answer with rationale, or ask the user to decide.
+   2. Propose an answer with rationale, or ask the user to decide. **When the question turns on existing reality — how current code behaves, what a schema, interface, or dev database holds — consult the specific source that settles it and ground the proposed answer in what you found, citing it (`path:line`, the query, or the command). Do not resolve a factual question about existing code by conjecture; when no reachable source can settle it, say so and resolve it as an explicit assumption or leave it open (§grounding).**
    3. Wait for the user to review, discuss, refine, or approve the resolution.
    4. Only after the user confirms, move the question from `## Open Questions` to `## Resolved Questions` and proceed to the next one.
    5. If the user wants to skip a question, move to the next and revisit skipped questions at the end.
@@ -152,7 +152,7 @@ Before mutating anything, surface the inconsistency to the user:
 
 1. **Resolve open questions one at a time** — process each open question in the scenario's `## Open Questions` section individually in sequence:
    1. Display the question with its full context.
-   2. Propose an answer with rationale, or ask the user to decide.
+   2. Propose an answer with rationale, or ask the user to decide. **When the question turns on existing reality — how current code behaves, what a schema, interface, or dev database holds — consult the specific source that settles it and ground the proposed answer in what you found, citing it (`path:line`, the query, or the command). Do not resolve a factual question about existing code by conjecture; when no reachable source can settle it, say so and resolve it as an explicit assumption or leave it open (§grounding).**
    3. Wait for the user to review, discuss, refine, or approve the resolution.
    4. Only after the user confirms, move the question to Resolved Questions and proceed to the next one.
    5. If the user wants to skip a question, move to the next and revisit skipped questions at the end.

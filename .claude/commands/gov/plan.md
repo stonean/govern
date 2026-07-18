@@ -34,9 +34,9 @@ Read the spec's `status` field from the YAML frontmatter at the top of the file.
 
 ## Scope Boundaries
 
-- Read only files needed for planning: the target spec, `specs/system.md`, and cross-spec files per the markdown-only reference below. Do NOT read source code, test files, or unrelated specs beyond what the checklist requires.
+- Read only files needed for planning: the target spec, `specs/system.md`, and cross-spec files per the markdown-only reference below. Do NOT read source code, test files, or unrelated specs *speculatively* or to browse the codebase. **Grounding carve-out (§grounding):** you MAY read the specific existing source, schema, or interface a technical decision directly depends on — read narrowly to substantiate that one decision, never to survey — and MUST cite what you read (`path:line`) or mark the claim an assumption. This is the only sanctioned source read; the ban on speculative reads stands.
 - Do NOT begin implementation. This command produces `plan.md` and `tasks.md` only.
-- Reference: §plan-phase, §tasks-phase, §readiness-check, §text-first-artifacts (constitution loaded by `/gov:target` — do not re-read).
+- Reference: §grounding, §plan-phase, §tasks-phase, §readiness-check, §text-first-artifacts (constitution loaded by `/gov:target` — do not re-read).
 
 ## Instructions
 
@@ -92,13 +92,14 @@ Before creating the plan, load only the cross-spec context this feature actually
 - **Read if the feature introduces error codes:** `specs/errors.md` — check code ranges and format conventions.
 - **Read if the feature has dependencies:** the spec file (not plan or tasks) of each dependency listed in this spec's frontmatter `dependencies` field — confirm `status` and understand the contracts this feature builds on.
 - **Read if the feature introduces or modifies domain entities or data structures:** `data-model.md` files from related specs — check for structural conflicts.
-- **Do NOT read** plans, tasks, scenarios, or source code from other features.
+- **Read to ground a decision (§grounding):** the specific existing source, schema, or interface a technical decision directly depends on — read narrowly, and cite what you read (`path:line`) in the decision's rationale. A claim about how existing code behaves that you did not read is an assumption and must be labeled one.
+- **Do NOT read** plans, tasks, or scenarios from other features, and do NOT read source code *speculatively* or to browse — the targeted grounding read above is the only sanctioned source read.
 
 ### Create the plan
 
 1. **If the user picked "keep" in the existing-artifact prompt above**, skip the template copy — `plan.md` is already on disk and is the working artifact. Otherwise (no prior artifacts, or "replace"), copy `specs/templates/plan.md` into the feature directory as `plan.md`.
 2. Fill in (or, on the keep path, edit/extend the existing content):
-   - **Technical Decisions**: each decision with rationale. Code snippets, function signatures, and package paths belong here.
+   - **Technical Decisions**: each decision with rationale. Code snippets, function signatures, and package paths belong here. **Ground every claim about existing code, schema, or interfaces in the source — read the specific file (or query the dev database) and cite it (`path:line`), or label the claim an assumption (§grounding). Do not assert how existing code behaves from memory or conversation.**
    - **Affected Files**: a *planning aid* — list the files you expect to create or modify so reviewers can sanity-check scope.
    - **Data Model**: data structure definitions. Create `data-model.md` if the feature introduces or modifies domain entities or data structures.
    - **Trade-offs**: what was considered and rejected, known limitations.
