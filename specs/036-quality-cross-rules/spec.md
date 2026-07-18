@@ -1,9 +1,9 @@
 ---
-status: in-progress
+status: done
 dependencies: [008-security-rules, 016-cross-cutting-rules, 017-derive-dont-ask, 024-rule-loader, 033-rule-surface-setting]
 review:
-  last-run: 2026-06-29T02:01:56Z
-  reviewed-against: 7615f7fe656b26db674656e8c54068e6d892ae7c
+  last-run: 2026-07-18T22:09:18Z
+  reviewed-against: b723c17e55ac6efce05befceac1535bb0b291fdd
   must-violations: 0
   should-violations: 0
   low-confidence: 0
