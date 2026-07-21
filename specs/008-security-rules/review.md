@@ -1,8 +1,8 @@
 ---
 spec: 008-security-rules
-reviewed-at: 2026-05-18T00:00:00Z
-reviewed-against: 2c44696447300ddf12ad395e2c64b1dd17a81949
-diff-base: 2c44696447300ddf12ad395e2c64b1dd17a81949
+reviewed-at: 2026-07-21T17:24:17Z
+reviewed-against: ba807cc50336165b183c5d8f6182a4935c9e87c6
+diff-base: ba807cc50336165b183c5d8f6182a4935c9e87c6
 must-violations: 0
 should-violations: 0
 low-confidence: 0
@@ -13,9 +13,9 @@ skipped-passes: []
 
 ## Summary
 
-Re-review triggered by two advisory fixes landed against the spec's artifacts: `data-model.md` (line 44, category schema relaxed from "Short uppercase abbreviation" to `[A-Z][A-Z0-9]*` to admit alphanumeric tokens like `A11YFORM`, `A11YMEDIA`, `VITALS`, etc., introduced by the later rule files) and `tasks.md` (line 56, `FE-DEP-002` typo corrected to `FE-DEPS-002`). Both are doc-only edits; the rule files this spec creates (`framework/rules/security-{backend,frontend}.md`) and the bootstrap/analyze wiring are unchanged since the 2026-05-10 review.
+Re-review triggered by a reopen: `FE-DEPS-005` (dependency-originated network egress) was added to `framework/rules/security-frontend.md` after `FE-DEPS-004`, before `## FE-PII`. The gap was surfaced upstream from an adopter — every existing `FE-DEPS` rule governs *what code is loaded and from where* (vulnerability scan, integrity, injection, pinning); none governed *what a dependency does on the network once running*. The motivating case was `@mui/x-telemetry` posting to a vendor endpoint on dev-server reloads while silent in production builds. No `data-model.md` change was required — `FE`/`DEPS` is already in the category table and the file carries ID grammar, not a per-ID manifest.
 
-Tech-stack alignment was skipped via `.govern.toml [review] tech-stack-verified = true`. The project's own code surface is markdown + bash + YAML — no backend service, no frontend application — so only the cross-cutting rule file applies; the security-backend/security-frontend files are *shipped content*, not enforceable constraints on the framework's own source. All five passes ran clean against the modified scope.
+Tech-stack alignment was skipped via `.govern.toml [review] tech-stack-verified = true`. The project's own code surface is markdown + bash + YAML — no backend service, no frontend application — so the security-frontend file is *shipped content*, not an enforceable constraint on the framework's own source. The change is a single rule addition to that shipped content; all five passes ran clean against the modified scope.
 
 ## MUST violations (blocking)
 
@@ -41,23 +41,23 @@ Tech-stack alignment was skipped via `.govern.toml [review] tech-stack-verified 
 
 ### Security
 
-`configuration-cross.md` `CFG-CONST-*` and `CFG-ENV-*` triggers fire on plans/specs that introduce operator-tunable constants or env vars. The data-model.md change tightens a category-token regex; the tasks.md change fixes a typo. Neither introduces a new constant, env var, or configuration value. No findings.
+The added rule is itself a security constraint (dependency egress), not code that could violate one. It follows the established `FE-DEPS` format — Statement (RFC 2119 MUST/MUST NOT), Rationale, Verification, Source — and cites OWASP A08:2021. No new constant, env var, or configuration value is introduced. No findings.
 
 ### Reuse
 
-The schema clarification is one cell of one table; the typo fix is a single token. No duplication.
+`FE-DEPS-005` occupies distinct semantic ground from the four existing `FE-DEPS` rules (runtime egress vs. load-time provenance, vulnerability, and pinning) and from `FE-CSP-*` (a build-time obligation vs. a browser-enforced backstop). No overlap or duplication.
 
 ### Quality
 
-The relaxed regex `[A-Z][A-Z0-9]*` matches every legacy ID (`AUTHN`, `XSS`, `CSRF`, etc.) and the extended set (`A11YFORM`, `A11YMEDIA`, `SCHEMA`, `APIVER`, `VITALS`, `BUNDLE`, `IMAGE`, `FONT`, `LOAD`, `KBD`, `ARIA`, `IDEMP`, `COMPAT`, `SEMHTML`, `CONTRAST`, `ERRENV`, `STATUS`, `PAGE`). It does not match lowercase or symbol-bearing tokens, preserving the original intent. No regression.
+ID grammar holds (`FE-DEPS-005`, `[A-Z][A-Z0-9]*` category, zero-padded sequence, next free number in the family). No duplicate IDs (`grep '^### ' … | sort | uniq -d` clean). Insertion preserves family ordering; markdownlint clean.
 
 ### Efficiency
 
-N/A — doc edits.
+N/A — a rule-content addition.
 
 ### Simplicity
 
-The phrase "drawn from the per-surface set below or extended by a later rule-introducing spec" makes the open-extension semantics explicit, replacing the prior implicit "Short uppercase abbreviation" closed-list reading. One sentence, no indirection.
+The rule is intentionally independent of `FE-CSP-*` rather than folded into it, which keeps each concern citable on its own terms. One rule, no indirection.
 
 ## Rule-file selection
 
@@ -65,4 +65,4 @@ The phrase "drawn from the per-surface set below or extended by a later rule-int
 loading rule files: configuration-cross.md
 ```
 
-Backend / frontend rule files were not loaded — the framework's own implementation is markdown + bash + YAML, not application code. Those files are shipped to adopters; this project does not enforce them against itself.
+Backend / frontend rule files were not loaded against the framework's own source — the implementation is markdown + bash + YAML, not application code. Those files are shipped to adopters; this project does not enforce them against itself.

@@ -4,8 +4,8 @@ status: done
 dependencies: [007-govern-workflow]
 tags: [security, format]
 review:
-  last-run: 2026-05-18T00:00:00Z
-  reviewed-against: 2c44696447300ddf12ad395e2c64b1dd17a81949
+  last-run: 2026-07-21T17:24:17Z
+  reviewed-against: ba807cc50336165b183c5d8f6182a4935c9e87c6
   must-violations: 0
   should-violations: 0
   low-confidence: 0

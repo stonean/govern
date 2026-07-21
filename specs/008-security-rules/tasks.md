@@ -140,3 +140,15 @@ Run all structural and lint checks; verify each acceptance criterion is satisfie
 - [x] Each acceptance criterion in `spec.md` is checked individually against the produced artifacts and marked `- [x]` only if satisfied
 
 **Done when:** all checks pass, the rule files are internally consistent, and every acceptance criterion is satisfied.
+
+## 8. Add FE-DEPS-005 — dependency-originated network egress (reopen)
+
+Reopen surfaced upstream from an adopter: an `FE-DEPS` rule was missing for a dependency's *runtime* network egress (telemetry/analytics/license/update-poll), which every existing `FE-DEPS` rule (load-time, vulnerability, pinning) leaves uncovered. Motivating case: `@mui/x-telemetry` posting to a vendor endpoint on dev-server reloads while silent in production builds.
+
+- [x] Add `FE-DEPS-005` to `framework/rules/security-frontend.md` after `FE-DEPS-004`, before `## FE-PII`
+- [x] `specs/008-security-rules/data-model.md` needs no change — `FE`/`DEPS` category already listed; the file carries ID grammar, not a per-ID manifest or rule count
+- [x] `npx markdownlint-cli2` passes on `framework/rules/security-frontend.md`
+- [x] `grep '^### ' framework/rules/security-frontend.md | sort | uniq -d` reports no duplicate IDs
+- [x] Re-review clears the reopen and returns `008` to `done`
+
+**Done when:** `FE-DEPS-005` is present and well-formed, no data-model change is outstanding, and `008` is re-reviewed back to `done`.
