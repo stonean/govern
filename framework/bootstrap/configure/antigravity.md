@@ -20,7 +20,7 @@ Configure `{cli-config-dir}/settings.json` with the Antigravity tool permissions
 1. Read `{cli-config-dir}/settings.json` (create it if missing, with `{ "permissions": { "allow": [], "deny": [], "ask": [] } }`).
 2. Ensure `permissions.allow`, `permissions.deny`, and `permissions.ask` contain all of the canonical entries below. Add any that are missing; remove exact-match duplicates so each `action(target)` string appears at most once per array. Do not reorder or rewrite non-duplicate entries beyond the canonical set. Preserve any other top-level keys and unspecified keys under `permissions` byte-for-byte.
 
-   Antigravity auto-allows reads and writes of files **inside the workspace** by default, so `read_file`/`write_file` entries are intentionally omitted — `govern`'s edits to specs, `.govern.session.toml`, and config all fall under the workspace auto-allow. Only out-of-workspace and non-file actions need explicit grants.
+   Antigravity auto-allows reads and writes of files **inside the workspace** by default, so `read_file`/`write_file` entries are intentionally omitted — `govern`'s edits to specs, `.govern/session.toml`, and config all fall under the workspace auto-allow. Only out-of-workspace and non-file actions need explicit grants.
 
 3. Canonical `permissions.allow` entries:
 
@@ -53,8 +53,8 @@ Configure `{cli-config-dir}/settings.json` with the Antigravity tool permissions
    - `command(npx markdownlint-cli2)`
 
    **Shell — hooks and generators (`govern`'s pre-commit pipeline):**
-   - `command(scripts/gen-.*)`
-   - `command(./scripts/gen-.*)`
+   - `command(.govern/scripts/gen-.*)`
+   - `command(./.govern/scripts/gen-.*)`
    - `command(./.githooks/pre-commit)`
    - `command(scripts/install-hooks.sh)`
    - `command(./scripts/install-hooks.sh)`

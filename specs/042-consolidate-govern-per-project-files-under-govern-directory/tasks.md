@@ -62,10 +62,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 8. Repoint shipped-generator literals across commands, hook, CI, and permissions
 
-- [ ] Command bodies: `gen-spec-deps.sh` references in `implement.md:98`, `clarify.md:102`, `amend.md:43`, `plan.md:74`, `target.md:39`, `specify.md:39,75`, `analyze.md:34,52` → `.govern/scripts/`; leave `analyze.md`'s `gen-help-tables.sh` (`:34,227`) at `scripts/`
-- [ ] Adopter hook `framework/bootstrap/hooks/govern-pre-commit:27-28` → `.govern/scripts/` for both shipped gens
-- [ ] CI template `adopter-generators.yml:8,28,45,50` → `.govern/scripts/`
-- [ ] Permission allowlists (`configure/claude.md:77-80`, `auggie.md:62-63`, `antigravity.md:56-60`, `opencode.md:58-61`): `gen-*` globs → `.govern/scripts/`; leave `install-hooks.sh` at `scripts/`; update `.govern.toml`/`.govern.session.toml` permission entries to `.govern/…`
+- [x] Command bodies: `gen-spec-deps.sh` references in `implement.md:98`, `clarify.md:102`, `amend.md:43`, `plan.md:74`, `target.md:39`, `specify.md:39,75`, `analyze.md:34,52` → `.govern/scripts/`; leave `analyze.md`'s `gen-help-tables.sh` (`:34,227`) at `scripts/`
+- [x] Adopter hook `framework/bootstrap/hooks/govern-pre-commit:27-28` → `.govern/scripts/` for both shipped gens
+- [x] CI template `adopter-generators.yml:8,28,45,50` → `.govern/scripts/`
+- [x] Permission allowlists (`configure/claude.md:77-80`, `auggie.md:62-63`, `antigravity.md:56-60`, `opencode.md:58-61`): `gen-*` globs → `.govern/scripts/`; leave `install-hooks.sh` at `scripts/`; update `.govern.toml`/`.govern.session.toml` permission entries to `.govern/…`
 
 - **Done when**: every shipped-generator literal resolves to `.govern/scripts/…`, maintainer-only literals are untouched, and the four agents' permission sets cover the new paths.
 

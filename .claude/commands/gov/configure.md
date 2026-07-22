@@ -24,10 +24,10 @@ Configure `.claude/settings.local.json` with the permissions needed for slash co
    - `Write`
 
    **Govern state files (no per-write confirmation):**
-   - `Edit(.govern.session.toml)`
-   - `Write(.govern.session.toml)`
-   - `Edit(.govern.toml)`
-   - `Write(.govern.toml)`
+   - `Edit(.govern/session.toml)`
+   - `Write(.govern/session.toml)`
+   - `Edit(.govern/config.toml)`
+   - `Write(.govern/config.toml)`
 
    **Web access:**
    - `WebFetch`
@@ -74,8 +74,8 @@ Configure `.claude/settings.local.json` with the permissions needed for slash co
    - `Bash(git config --get core.hooksPath)`
    - `Bash(git config --unset core.hooksPath)`
    - `Bash(./.githooks/pre-commit)`
-   - `Bash(scripts/gen-*.sh)`
-   - `Bash(./scripts/gen-*.sh)`
+   - `Bash(.govern/scripts/gen-*.sh)`
+   - `Bash(./.govern/scripts/gen-*.sh)`
    - `Bash(scripts/install-hooks.sh)`
    - `Bash(./scripts/install-hooks.sh)`
 

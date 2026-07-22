@@ -59,7 +59,7 @@ Configure `{cli-config-dir}/settings.local.json` with the tool permissions neede
    - `{ "toolName": "launch-process", "shellInputRegex": "^git config core\\.hooksPath", "permission": { "type": "allow" } }`
    - `{ "toolName": "launch-process", "shellInputRegex": "^git config --(get|unset) core\\.hooksPath", "permission": { "type": "allow" } }`
    - `{ "toolName": "launch-process", "shellInputRegex": "^\\./.githooks/pre-commit", "permission": { "type": "allow" } }`
-   - `{ "toolName": "launch-process", "shellInputRegex": "^\\./?scripts/gen-.*\\.sh", "permission": { "type": "allow" } }`
+   - `{ "toolName": "launch-process", "shellInputRegex": "^\\./?\\.govern/scripts/gen-.*\\.sh", "permission": { "type": "allow" } }`
    - `{ "toolName": "launch-process", "shellInputRegex": "^\\./?scripts/install-hooks\\.sh", "permission": { "type": "allow" } }`
 
    **Runtime MCP tools (`mcp:gvrn:*` — generated from `framework/runtime-tools.txt`):**

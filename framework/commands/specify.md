@@ -36,7 +36,7 @@ If the constitution has not been loaded in this session (e.g., `/{project}:targe
 
 1. Invoke `create-feature` with the feature description from `$ARGUMENTS` as the title (the description is required — if empty, ask the user what feature to specify). The primitive computes the next feature number from the existing NNN-prefixed directories under the configured specs root, derives the kebab-case slug, creates `specs/{NNN-slug}/`, and copies the spec template into it atomically (mode-preserving); it resolves the template from `{specs-root}/templates/spec.md` and falls back to the framework source layout `framework/templates/spec/spec.md` (the govern repo's own layout). An already-existing target directory is the `created: false` domain outcome — report the collision and stop rather than overwrite. With no gvrn runtime registered, walk the markdown-only path below instead.
 
-2. <!-- llm:writeSpecBody --> Fill the new spec body following §spec-requirements: a Motivation section, Acceptance Criteria with concrete and testable checkboxes (sparse acceptance criteria are valid for brownfield use — leave the section with a comment noting criteria will emerge from real work), Open Questions, and any inline links to other specs that scripts/gen-spec-deps.sh will derive the frontmatter dependencies from. The host returns the markdown body for the new file; the walker forwards the response through the context.
+2. <!-- llm:writeSpecBody --> Fill the new spec body following §spec-requirements: a Motivation section, Acceptance Criteria with concrete and testable checkboxes (sparse acceptance criteria are valid for brownfield use — leave the section with a comment noting criteria will emerge from real work), Open Questions, and any inline links to other specs that .govern/scripts/gen-spec-deps.sh will derive the frontmatter dependencies from. The host returns the markdown body for the new file; the walker forwards the response through the context.
 
 3. Invoke `lint-markdown` against the new spec file to surface any markdown violations the LLM may have introduced. With no gvrn runtime registered, run `npx markdownlint-cli2` per the markdown-only path.
 
@@ -72,7 +72,7 @@ Fill in the spec following `constitution.md` rules (§spec-requirements, §text-
 - No language-specific code, function signatures, or package paths.
 - Acceptance criteria must be concrete and testable when present. For brownfield use, sparse acceptance criteria are expected and valid — leave the section with a placeholder comment if no criteria are known yet; criteria emerge as real work touches the feature (§brownfield-process).
 - List all open questions in the spec body.
-- When the spec depends on other specs, link them inline in the body (e.g., `[NNN-feature](../NNN-feature/spec.md)`) — `scripts/gen-spec-deps.sh` (run by the pre-commit hook) derives the `dependencies:` frontmatter from those links on every commit.
+- When the spec depends on other specs, link them inline in the body (e.g., `[NNN-feature](../NNN-feature/spec.md)`) — `.govern/scripts/gen-spec-deps.sh` (run by the pre-commit hook) derives the `dependencies:` frontmatter from those links on every commit.
 
 ### Lint the new file
 

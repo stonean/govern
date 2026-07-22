@@ -25,7 +25,7 @@ Configure the repo-root `opencode.json` `permission` block with the OpenCode per
 3. Canonical `permission` entries:
 
    **Top-level tool actions:**
-   - `"edit": "allow"` — `govern` edits specs, `tasks.md`, `.govern.session.toml`, and config
+   - `"edit": "allow"` — `govern` edits specs, `tasks.md`, `.govern/session.toml`, and config
    - `"webfetch": "allow"`, `"websearch": "allow"` — `/govern` fetches the framework archive; research commands
 
    **`bash` pattern map (broad `ask` first, allows next, denies last):**
@@ -55,8 +55,8 @@ Configure the repo-root `opencode.json` `permission` block with the OpenCode per
      "markdownlint *": "allow",
      "markdownlint-cli2 *": "allow",
      "npx markdownlint-cli2 *": "allow",
-     "scripts/gen-*": "allow",
-     "./scripts/gen-*": "allow",
+     ".govern/scripts/gen-*": "allow",
+     "./.govern/scripts/gen-*": "allow",
      "scripts/install-hooks.sh *": "allow",
      "./scripts/install-hooks.sh *": "allow",
      "./.githooks/pre-commit": "allow",

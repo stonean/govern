@@ -7,11 +7,11 @@
 # Both run with --staged: only specs that are part of this commit are rewritten,
 # so committing one spec never dirties or restages the derived frontmatter of
 # unrelated specs. Currently runs:
-#   1. scripts/gen-spec-deps.sh         — frontmatter `dependencies:` from body
+#   1. .govern/scripts/gen-spec-deps.sh — frontmatter `dependencies:` from body
 #                                         inline links to sibling specs (also
 #                                         runs the dependency-cycle check, which
 #                                         spans the full spec graph)
-#   2. scripts/gen-cross-service-refs.sh — frontmatter `references:` from body
+#   2. .govern/scripts/gen-cross-service-refs.sh — frontmatter `references:` from body
 #                                         inline links to other services' specs
 #                                         (distinct from dependencies)
 #
@@ -24,8 +24,8 @@ shopt -s nullglob
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
-scripts/gen-spec-deps.sh --staged
-scripts/gen-cross-service-refs.sh --staged
+.govern/scripts/gen-spec-deps.sh --staged
+.govern/scripts/gen-cross-service-refs.sh --staged
 
 # Re-stage only spec files already part of this commit, so the derived
 # `dependencies:` / `references:` rewrites are captured without sweeping in

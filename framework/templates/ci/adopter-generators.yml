@@ -5,7 +5,7 @@
 # check run:
 #
 #   1. Generator sync — generated frontmatter (currently spec `dependencies:`,
-#      via scripts/gen-spec-deps.sh) must match its sources. Safety net for
+#      via .govern/scripts/gen-spec-deps.sh) must match its sources. Safety net for
 #      contributors who never installed the local pre-commit hook
 #      (.githooks/pre-commit, set up by /govern).
 #
@@ -25,7 +25,7 @@ on:
   pull_request:
     paths:
       - 'specs/**'
-      - 'scripts/gen-*.sh'
+      - '.govern/scripts/gen-*.sh'
       - '.githooks/**'
   push:
     branches:
@@ -42,12 +42,12 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run gen-spec-deps
-        run: ./scripts/gen-spec-deps.sh
+        run: ./.govern/scripts/gen-spec-deps.sh
 
       - name: Fail if any generator produced a diff
         run: |
           if ! git diff --exit-code; then
-            echo "::error::Spec dependencies are out of sync with body links. Run /govern to install the pre-commit hook, or run scripts/gen-spec-deps.sh locally and re-commit."
+            echo "::error::Spec dependencies are out of sync with body links. Run /govern to install the pre-commit hook, or run .govern/scripts/gen-spec-deps.sh locally and re-commit."
             exit 1
           fi
 

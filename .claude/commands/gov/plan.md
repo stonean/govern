@@ -71,7 +71,7 @@ The full plan-creation procedure (existing-artifact protection, cross-spec conte
 
 ### Recompute dependencies (safety net)
 
-Run `scripts/gen-spec-deps.sh --dry-run` (via the `run-generator` primitive; the generator walks every spec — there is no per-spec mode). If it reports a diff, the `dependencies:` frontmatter is stale from uncommitted body edits; surface that and recommend committing (the pre-commit hook syncs it) or running the generator manually, then evaluate cross-spec context against the current frontmatter. Do not run the generator for real from this command.
+Run `.govern/scripts/gen-spec-deps.sh --dry-run` (via the `run-generator` primitive; the generator walks every spec — there is no per-spec mode). If it reports a diff, the `dependencies:` frontmatter is stale from uncommitted body edits; surface that and recommend committing (the pre-commit hook syncs it) or running the generator manually, then evaluate cross-spec context against the current frontmatter. Do not run the generator for real from this command.
 
 ### Detect existing artifacts
 
