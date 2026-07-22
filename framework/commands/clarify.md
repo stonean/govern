@@ -15,11 +15,11 @@ This command is the resolver, not the back-edge entry point. The `clarified` / `
 
 ## Context
 
-Use the session target from `.govern.session.toml`. If `$ARGUMENTS` is provided, use it to override the session target. If no session target is set and no arguments provided, stop and tell the user to run `/{project}:target` first.
+Use the session target from `.govern/session.toml`. If `$ARGUMENTS` is provided, use it to override the session target. If no session target is set and no arguments provided, stop and tell the user to run `/{project}:target` first.
 
 ## Target File Detection
 
-Read `.govern.session.toml`. If the session includes a `scenario` and `scenario-path`, operate on the scenario file (the scenario-targeted branch of the Instructions below; detailed walk under **Scenario-targeted clarify** in the Markdown-only reference). Otherwise, operate on the feature spec.
+Read `.govern/session.toml`. If the session includes a `scenario` and `scenario-path`, operate on the scenario file (the scenario-targeted branch of the Instructions below; detailed walk under **Scenario-targeted clarify** in the Markdown-only reference). Otherwise, operate on the feature spec.
 
 ## Gate
 
@@ -59,7 +59,7 @@ Steps 1–11 are the feature-targeted walk; a scenario-targeted session runs ste
 **Exec-path scope** (`gvrn exec clarify`): steps 7–8 are semantic host work with no extension marker, so the subprocess walker no-ops them by design — they cannot fold into the `askClarifyQuestion` round trip, which is one question per trip, because they are spec-wide passes that must run even when the question loop has nothing to walk (the zero-questions short-circuit in step 2). A host walking this command file directly (the MCP path) and the markdown-only path both perform steps 7–8 in full; a host driving exec performs them itself before accepting the step-10 gate. This scope reduction is deliberate and recorded in the spec 022 data-model's exec-path note — not a silent gap.
 
 <!-- audit:ignore-promotion -->
-1. Resolve the target from `.govern.session.toml`; `$ARGUMENTS` overrides the session target. If no session target is set and no arguments are provided, stop and tell the user to run `/{project}:target` first. When the session includes a `scenario` and `scenario-path`, this is a **scenario-targeted** run: read the scenario file, run the question loop (step 6) against it, then wrap up at step 12 — steps 2–5 and 7–11 are feature-spec work and do not apply.
+1. Resolve the target from `.govern/session.toml`; `$ARGUMENTS` overrides the session target. If no session target is set and no arguments are provided, stop and tell the user to run `/{project}:target` first. When the session includes a `scenario` and `scenario-path`, this is a **scenario-targeted** run: read the scenario file, run the question loop (step 6) against it, then wrap up at step 12 — steps 2–5 and 7–11 are feature-spec work and do not apply.
 
 2. Invoke `read-spec` against the target feature (with `include-body`) and branch on the pair `(status, open-question count)` per the Gate table above — the result's frontmatter carries the status and its open-questions list carries the count (the Gate's entry-counting rule; placeholder lines are not entries):
    - Missing feature or `spec.md`: stop and report: "Spec does not exist. Run `/{project}:specify` first."

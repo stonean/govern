@@ -114,7 +114,7 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 
 ### Key Concepts
 
-- **Session target** — The feature you're currently working on, stored in `.govern.session.toml`. Most commands operate on the target by default.
+- **Session target** — The feature you're currently working on, stored in `.govern/session.toml`. Most commands operate on the target by default.
 - **Dependencies** — Features declare dependencies in their spec. A feature is blocked until its dependencies reach `clarified` or later.
 - **Artifacts** — Each feature directory can contain `spec.md`, `plan.md`, `tasks.md`, `data-model.md`, and a `scenarios/` subdirectory.
 - **Scenarios** — A scenario is a spec at a lower level of abstraction. Scenarios live in `specs/NNN-feature/scenarios/slug.md` and capture bugs, edge cases, and detailed behavior. Each scenario gets a linked task in `tasks.md`.

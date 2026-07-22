@@ -78,10 +78,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 10. Documentation and canonical sources
 
-- [ ] Constitution: update the canonical-sources table, the `§concurrent-features` session-state paragraph (`:569`), the generator-provenance notes (`:421,422` → `.govern/scripts/`; leave `:323` `lint-rule-filenames.sh` at `scripts/`), and `[services]`/`[paths]`/`[review]` path mentions
-- [ ] `AGENTS.md`: update session/config path notes (`:43-49`) and the three-site wiring rule (`:61`) to name `.govern/scripts/` as the shipped-generator home
-- [ ] `README.md`: update `.govern.toml` schema mentions and `gen-cross-service-refs.sh` paths (`:236,247`)
-- [ ] Update config/session path prose in the reading commands (`link`, `review`, `status`, `analyze`, `groom`, `target`, `amend`, `implement`, `prune`, `plan`, `clarify`, `specify`, `help`)
+- [x] Constitution: update the canonical-sources table, the `§concurrent-features` session-state paragraph (`:569`), the generator-provenance notes (`:421,422` → `.govern/scripts/`; leave `:323` `lint-rule-filenames.sh` at `scripts/`), and `[services]`/`[paths]`/`[review]` path mentions
+- [x] `AGENTS.md`: update session/config path notes (`:43-49`) and the three-site wiring rule (`:61`) to name `.govern/scripts/` as the shipped-generator home
+- [x] `README.md`: update `.govern.toml` schema mentions and `gen-cross-service-refs.sh` paths (`:236,247`)
+- [x] Update config/session path prose in the reading commands (`link`, `review`, `status`, `analyze`, `groom`, `target`, `amend`, `implement`, `prune`, `plan`, `clarify`, `specify`, `help`)
 
 - **Done when**: no framework doc or command body carries a stale root-path reference to the three moved artifacts, and the three-site wiring rule names the new generator home.
 

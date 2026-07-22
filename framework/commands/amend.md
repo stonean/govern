@@ -18,11 +18,11 @@ Two back-edges keep the spec lifecycle honest, both owned by `/amend`:
 
 ## Context
 
-Use the session target from `.govern.session.toml`. If `$ARGUMENTS` is provided, use it as the initial input text. If no session target is set and no arguments provided, stop and tell the user to run `/{project}:target` first.
+Use the session target from `.govern/session.toml`. If `$ARGUMENTS` is provided, use it as the initial input text. If no session target is set and no arguments provided, stop and tell the user to run `/{project}:target` first.
 
 ## Target File Detection
 
-Read `.govern.session.toml`. If the session includes a `scenario` and `scenario-path`, the target artifact is the scenario file and the input is always treated as a question (scenarios do not nest under scenarios; the classifier is bypassed). Otherwise, the target artifact is the feature's `spec.md`. If that file does not exist, stop and report: "Spec does not exist. Run `/{project}:specify` first."
+Read `.govern/session.toml`. If the session includes a `scenario` and `scenario-path`, the target artifact is the scenario file and the input is always treated as a question (scenarios do not nest under scenarios; the classifier is bypassed). Otherwise, the target artifact is the feature's `spec.md`. If that file does not exist, stop and report: "Spec does not exist. Run `/{project}:specify` first."
 
 ## Scope Boundaries
 
@@ -38,7 +38,7 @@ Read `.govern.session.toml`. If the session includes a `scenario` and `scenario-
 
 ### Confirm target
 
-1. Read `.govern.session.toml` to get the session target's feature and optional scenario.
+1. Read `.govern/session.toml` to get the session target's feature and optional scenario.
 2. Read the target artifact (scenario file if targeted, otherwise `spec.md`).
 3. **Recompute dependencies (safety net).** If the target is a spec, route the dependency dry run through the runtime's `run-generator` primitive (or `.govern/scripts/gen-spec-deps.sh --dry-run` with host tools when no gvrn runtime is registered; the generator walks every spec — there is no per-spec mode). When it reports drift, the `dependencies:` frontmatter is stale from uncommitted body edits; surface that and recommend committing (the pre-commit hook syncs it) or running the generator manually. Do **not** run the generator for real here: this command's writes are limited to the target's questions/scenario/task/status and the session file (see Scope Boundaries), while the generator rewrites `dependencies:` across every spec. The pre-commit hook normally keeps this in sync; this step catches uncommitted body edits. (Skip on scenario targets — scenarios have no `dependencies` field.)
 4. If the target is a spec, read its frontmatter `status` field now — the value is needed for the gate, the impact display, the classifier's status tiebreaker, and the post-record mutation.
@@ -163,7 +163,7 @@ Informational; no separate confirmation prompt.
 1. Invoke `create-scenario` to write `specs/{feature}/scenarios/{slug}.md` with the accepted `section` and the assembled `body` — the `## Context` … `## Edge Cases` markdown passed as one payload (per the content-ingestion convention; the section split is authored in-context, not as separate params). The primitive frames it with the `section:` frontmatter, the H1-from-slug, and the Open / Resolved Questions scaffolding (this framing is compiled into the primitive, mirroring `framework/templates/spec/scenario.md` — it does not read the template file), creates the `scenarios/` subdirectory if absent, and refuses on slug conflict.
 2. Invoke `append-task` with the new scenario's `slug` to append a numbered task block to `specs/{feature}/tasks.md`. Pass `slug` and omit `body`: `append-task` **requires** `slug` when `body` is omitted (it refuses with a missing-argument error if both are absent) and renders the default body from it — a single checkbox ``- [ ] Implement the behavior described in `scenarios/{slug}.md` `` with the done-when condition "the scenario's described behavior is correctly implemented and tested."
 3. If the spec's `status` is `done`, invoke `set-status` to flip `done → in-progress`. (For other spec statuses, no status mutation occurs.) Otherwise, edit the frontmatter directly.
-4. Invoke `write-session` to set the new scenario as the session target: pass the feature slug as the feature argument, the repo-relative spec directory as the path argument, the new scenario slug as the scenario argument, and `specs/{feature}/scenarios/{slug}.md` as the scenario-path argument. The primitive performs a target write: it rewrites `.govern.session.toml` atomically (tempfile + rename), preserving any cli-config-dir already in the file (the per-contributor agent identity written by /govern). On the markdown-only path, first read any existing `.govern.session.toml` to capture its cli-config-dir, then rewrite the TOML directly with top-level keys `feature`, `path`, `scenario`, `scenario-path`, `set-at` (ISO 8601 UTC), then the preserved cli-config-dir, through the same tempfile + rename pattern.
+4. Invoke `write-session` to set the new scenario as the session target: pass the feature slug as the feature argument, the repo-relative spec directory as the path argument, the new scenario slug as the scenario argument, and `specs/{feature}/scenarios/{slug}.md` as the scenario-path argument. The primitive performs a target write: it rewrites `.govern/session.toml` atomically (tempfile + rename), preserving any cli-config-dir already in the file (the per-contributor agent identity written by /govern). On the markdown-only path, first read any existing `.govern/session.toml` to capture its cli-config-dir, then rewrite the TOML directly with top-level keys `feature`, `path`, `scenario`, `scenario-path`, `set-at` (ISO 8601 UTC), then the preserved cli-config-dir, through the same tempfile + rename pattern.
 5. Invoke `lint-markdown` on every modified file.
 
 ### Status mutation summary

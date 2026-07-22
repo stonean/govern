@@ -93,7 +93,7 @@ Adoption installs a full set of verb-named, session-aware commands. Use `/target
 | --- | --- |
 | `/target` | Set the working feature (or `feature/scenario`) for the session |
 | `/status` | Dashboard of every feature's progress, or a focused view of the current target |
-| `/link` | Register a service in `.govern.toml [services]` so cross-service references resolve to the linked spec's status; `--list` shows registered services and their resolution health |
+| `/link` | Register a service in `.govern/config.toml [services]` so cross-service references resolve to the linked spec's status; `--list` shows registered services and their resolution health |
 | `/help` | Project overview and command reference |
 
 ### Bootstrap — one-time per project
@@ -205,7 +205,7 @@ From that session on, the pipeline takes the deterministic path. File writes are
 
 ## Configuration
 
-`.govern.toml` is an optional project file — `/govern` runs fine without it. Create it only if you need one of these behaviors:
+`.govern/config.toml` is an optional project file — `/govern` runs fine without it. Create it only if you need one of these behaviors:
 
 - **`[pinned]`** — list destination paths `govern` should never overwrite, even files it normally updates (e.g. a customized `constitution.md`).
 - **`[rules]`** — declare which rule surfaces your project needs: `surfaces = ["backend"]`, `["frontend"]`, or both. `/govern` prompts for this on first run, then installs only the matching rule files (cross-cutting `-cross` rules always apply) and `/review` enforces only those. Leave it unset to let `govern` derive the surface from your stack and install every rule file.
@@ -231,9 +231,9 @@ For the full schema, see [specs/019-config-decisions/data-model.md](specs/019-co
 
 ## Cross-service references
 
-When a project spans multiple services — each its own repo with its own `govern` install — a spec can link a spec in another service and see its live lifecycle status. The reference is a standard markdown link to the linked spec's **canonical repo URL**; that URL is identity and navigation only and is **never fetched**. `govern` reads the linked spec's `status` from its **local checkout**, resolved through the `.govern.toml [services]` registry.
+When a project spans multiple services — each its own repo with its own `govern` install — a spec can link a spec in another service and see its live lifecycle status. The reference is a standard markdown link to the linked spec's **canonical repo URL**; that URL is identity and navigation only and is **never fetched**. `govern` reads the linked spec's `status` from its **local checkout**, resolved through the `.govern/config.toml [services]` registry.
 
-References are informative, never dependencies: they do not enter `dependencies:`, do not gate completion, and never block a pipeline gate. They are harvested into a derived `references:` frontmatter index — distinct from `dependencies:` — by `scripts/gen-cross-service-refs.sh`; you never hand-author it.
+References are informative, never dependencies: they do not enter `dependencies:`, do not gate completion, and never block a pipeline gate. They are harvested into a derived `references:` frontmatter index — distinct from `dependencies:` — by `.govern/scripts/gen-cross-service-refs.sh`; you never hand-author it.
 
 ### Documenting a reference in a spec
 
@@ -244,7 +244,7 @@ Tokens follow the contract in
 [api 014-auth-tokens](https://github.com/acme/api/blob/main/specs/014-auth-tokens/spec.md).
 ```
 
-On the next commit (or any `scripts/gen-cross-service-refs.sh` run) the generator harvests that link into the frontmatter:
+On the next commit (or any `.govern/scripts/gen-cross-service-refs.sh` run) the generator harvests that link into the frontmatter:
 
 ```yaml
 references:
@@ -254,7 +254,7 @@ references:
 
 What the generator keys on:
 
-- **`NNN-slug` is the identity.** Everything in the URL before a `/blob/<ref>/` or `/tree/<ref>/` branch segment is the repo, matched against `.govern.toml [services]` to resolve the alias; the branch is ignored, so two links to the same spec on different branches collapse to one reference. A URL matching no registered service is still recorded, with `service: null` (the `unregistered` outcome above).
+- **`NNN-slug` is the identity.** Everything in the URL before a `/blob/<ref>/` or `/tree/<ref>/` branch segment is the repo, matched against `.govern/config.toml [services]` to resolve the alias; the branch is ignored, so two links to the same spec on different branches collapse to one reference. A URL matching no registered service is still recorded, with `service: null` (the `unregistered` outcome above).
 - **Absolute URL, not a sibling link.** `[label](../014-auth-tokens/spec.md)` is a *sibling* link and becomes a **dependency** (a different generator, the blocking `dependencies:` graph) — never a cross-service reference. Use the full canonical URL precisely so the two stay distinct.
 - **Opt-outs are honored.** A link is **not** harvested if it sits under a `## See also` heading, inside a fenced code block, wrapped in `` `backticks` `` (inline code reads as an illustrative example, not a live link), or on a blockquote (`>`) line. These are the same navigational opt-outs `dependencies:` honors — use them for example or "see also" links you don't want to register.
 
@@ -289,7 +289,7 @@ Re-run `/govern` to pull the latest framework files. Each file is handled by one
 | `create` | Created on first run, skipped on re-run | `specs/system.md`, `specs/errors.md`, `specs/events.md` |
 | `skip` | Never overwritten | `AGENTS.md`, `CLAUDE.md` |
 
-`.gitignore` uses a `merge` strategy — `govern` patterns are appended below a `# govern` marker. Pin individual files you've customized with `[pinned]` in `.govern.toml` (above). `govern` is a reference, not a runtime dependency: if you'd rather not use `/govern`, diff the repo and apply changes at your own pace.
+`.gitignore` uses a `merge` strategy — `govern` patterns are appended below a `# govern` marker. Pin individual files you've customized with `[pinned]` in `.govern/config.toml` (above). `govern` is a reference, not a runtime dependency: if you'd rather not use `/govern`, diff the repo and apply changes at your own pace.
 
 ## Security rules
 

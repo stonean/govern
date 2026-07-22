@@ -20,7 +20,7 @@ First step in the pipeline. Creates a new numbered feature directory with a spec
 
 ## Context
 
-This command does not require a session target — it creates a new feature. If `.govern.session.toml` exists, the session target will be overwritten with the new feature.
+This command does not require a session target — it creates a new feature. If `.govern/session.toml` exists, the session target will be overwritten with the new feature.
 
 If the constitution has not been loaded in this session (e.g., `/gov:target` has not been run), read `constitution.md` now to load `govern` rules. If the constitution was already loaded by `/gov:target`, do not re-read it.
 
@@ -42,13 +42,13 @@ If the constitution has not been loaded in this session (e.g., `/gov:target` has
 
 4. Invoke `gate-confirm` with a `gate` name (e.g. `specify-create`) and a `prompt` asking the user to approve creating the new feature and setting it as the session target before any session-file write. `gate-confirm` is non-blocking — it returns the prompt payload (`gate`, `prompt`, `request-id`) and the host routes the decision out-of-band. On confirmation, continue to the session write below; on denial, the walker exits cleanly without writing the session.
 
-5. Invoke `write-session` with the new feature slug and its repo-relative spec directory — under the configured `[paths] specs-root` (default `specs`; spec 040) — as the feature and path arguments. This is a target write: the primitive stamps a fresh set-at while preserving any cli-config-dir already in the file (the per-contributor agent identity written by `/govern`), at `.govern.session.toml`, through tempfile + rename atomic-write semantics. On the markdown-only path, the host writes the file by hand per the markdown-only reference's Write the session target section — the cli-config-dir preservation rule there applies verbatim.
+5. Invoke `write-session` with the new feature slug and its repo-relative spec directory — under the configured `[paths] specs-root` (default `specs`; spec 040) — as the feature and path arguments. This is a target write: the primitive stamps a fresh set-at while preserving any cli-config-dir already in the file (the per-contributor agent identity written by `/govern`), at `.govern/session.toml`, through tempfile + rename atomic-write semantics. On the markdown-only path, the host writes the file by hand per the markdown-only reference's Write the session target section — the cli-config-dir preservation rule there applies verbatim.
 
 ## Markdown-only reference
 
 The full new-feature-creation procedure (directory creation, template copy, frontmatter conventions, session write, and next-step prompt) is documented below for the markdown-only path. The numbered steps above invoke the mechanical primitives plus the writeSpecBody extension that automate the deterministic phases.
 
-> **Spec-root resolution.** Every `specs/…` path below is written under the configured `[paths] specs-root` (default `specs`; spec 040, constitution §spec-phase). When `.govern.toml` sets `[paths] specs-root`, substitute that name for the literal `specs/` throughout — the feature-number scan, the new feature directory, the `templates/spec.md` source, and the session `path`. The literal `specs/` is the documented default; the runtime primitives already resolve it, so only this markdown-only path performs the substitution by hand.
+> **Spec-root resolution.** Every `specs/…` path below is written under the configured `[paths] specs-root` (default `specs`; spec 040, constitution §spec-phase). When `.govern/config.toml` sets `[paths] specs-root`, substitute that name for the literal `specs/` throughout — the feature-number scan, the new feature directory, the `templates/spec.md` source, and the session `path`. The literal `specs/` is the documented default; the runtime primitives already resolve it, so only this markdown-only path performs the substitution by hand.
 
 ### Resolve feature number and slug
 
@@ -80,7 +80,7 @@ Run `npx markdownlint-cli2` on the new file (primitive: `lint-markdown`).
 
 ### Write the session target
 
-Write `.govern.session.toml` to set this feature as the session target (primitive: `write-session`, gated by `gate-confirm` above). First read any existing `.govern.session.toml` to capture its cli-config-dir (the per-contributor agent identity written by /govern) and carry it forward, so creating a new feature never drops the agent identity. Use tempfile + rename atomic-write semantics analogous to the runtime's spec write primitives.
+Write `.govern/session.toml` to set this feature as the session target (primitive: `write-session`, gated by `gate-confirm` above). First read any existing `.govern/session.toml` to capture its cli-config-dir (the per-contributor agent identity written by /govern) and carry it forward, so creating a new feature never drops the agent identity. Use tempfile + rename atomic-write semantics analogous to the runtime's spec write primitives.
 
 ### Display the next step
 

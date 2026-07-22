@@ -87,7 +87,7 @@ specs/
       {slug}.md          # One file per scenario
 ```
 
-The top-level directory name (`specs` above) is the documented default; a project may rename it via `.govern.toml` `[paths] specs-root` (e.g. to avoid colliding with a sibling framework's `spec/`, like RSpec's). When the key is unset every command and the optional runtime default to `specs`, so an adopter who never sets it sees unchanged behavior. The literal `specs/` throughout this constitution and the command sources is that default; wherever a command or the runtime constructs a path under it, it resolves `[paths] specs-root` (spec 040).
+The top-level directory name (`specs` above) is the documented default; a project may rename it via `.govern/config.toml` `[paths] specs-root` (e.g. to avoid colliding with a sibling framework's `spec/`, like RSpec's). When the key is unset every command and the optional runtime default to `specs`, so an adopter who never sets it sees unchanged behavior. The literal `specs/` throughout this constitution and the command sources is that default; wherever a command or the runtime constructs a path under it, it resolves `[paths] specs-root` (spec 040).
 
 <!-- §spec-requirements -->
 
@@ -120,7 +120,7 @@ Forward edges only — `/clarify` raises status to `clarified`, `/plan` to `plan
 
 - **Backward via new questions** — `clarified` / `planned` / `in-progress` → `draft` when `/amend` records a new open question; the next `/clarify` resolves the question and the spec advances forward again. `draft` is the only status that tolerates open questions, so it is the destination; `/amend` performs the status mutation in the same write that records the question.
 - **Backward via new scenario** — `done` → `in-progress` when `/amend` records a scenario. The scenario's task is implemented and the spec returns to `done`.
-- **Backward via meaningful body edit** — `done` → `in-progress` when any artifact under `specs/{feature}/` is edited *meaningfully*. An edit is **mechanical** (no back-edge) in either of two diff-determinable cases: **(a)** every change in the diff is the same find-and-replace token substitution, applied uniformly across all live artifacts per the `AGENTS.md` rename rule's scope, mapping a deprecated label (slug, capability, command, identifier, parenthetical descriptor) to its current label; or **(b)** every change in the diff adds, removes, or rewrites a **cross-service reference** — an inline body link whose target resolves to a registered `.govern.toml` `[services]` entry, together with the regenerated `references:` frontmatter that harvests it — because such references are informative cross-service navigation, never dependencies, acceptance criteria, or behavior (spec 030). Anything else — new scope, changed semantics, factual corrections, restructuring, edits scoped to a single spec — is a **meaningful edit** and triggers the back-edge via the same `/amend` flow used for scenarios. The distinction is determinable from the diff alone, so the rule does not depend on author judgment.
+- **Backward via meaningful body edit** — `done` → `in-progress` when any artifact under `specs/{feature}/` is edited *meaningfully*. An edit is **mechanical** (no back-edge) in either of two diff-determinable cases: **(a)** every change in the diff is the same find-and-replace token substitution, applied uniformly across all live artifacts per the `AGENTS.md` rename rule's scope, mapping a deprecated label (slug, capability, command, identifier, parenthetical descriptor) to its current label; or **(b)** every change in the diff adds, removes, or rewrites a **cross-service reference** — an inline body link whose target resolves to a registered `.govern/config.toml` `[services]` entry, together with the regenerated `references:` frontmatter that harvests it — because such references are informative cross-service navigation, never dependencies, acceptance criteria, or behavior (spec 030). Anything else — new scope, changed semantics, factual corrections, restructuring, edits scoped to a single spec — is a **meaningful edit** and triggers the back-edge via the same `/amend` flow used for scenarios. The distinction is determinable from the diff alone, so the rule does not depend on author judgment.
 
 This avoids spec proliferation; scenarios evolve the existing spec rather than spawning a new one. Spec bodies are living documents that represent current state — git history is the historical record of what was written when.
 
@@ -324,7 +324,7 @@ Enforcement is two-layered. In `govern`'s own repository, `scripts/lint-rule-fil
 
 #### Project-level opt-out
 
-A project may exclude a stack-selected rule file from `/{project}:review` by listing it in `.govern.toml` `[[review.disabled-rule-files]]` with a mandatory `reason` — the reason is the audit trail for the override, surfaced on stdout at the start of every run. The opt-out is project-wide and applies to whole files; per-`(rule, file)` exceptions remain the job of `/{project}:review --waive`. Schema and behavior are documented in [`framework/commands/review.md`](commands/review.md).
+A project may exclude a stack-selected rule file from `/{project}:review` by listing it in `.govern/config.toml` `[[review.disabled-rule-files]]` with a mandatory `reason` — the reason is the audit trail for the override, surfaced on stdout at the start of every run. The opt-out is project-wide and applies to whole files; per-`(rule, file)` exceptions remain the job of `/{project}:review --waive`. Schema and behavior are documented in [`framework/commands/review.md`](commands/review.md).
 
 #### Lifecycle
 
@@ -418,8 +418,8 @@ The frontmatter schema applies to **spec files** (`spec.md`) and **scenario file
 | Field | Required | Type | Allowed values | Description |
 | --- | --- | --- | --- | --- |
 | `status` | yes | string | `draft`, `clarified`, `planned`, `in-progress`, `done` | Spec lifecycle state |
-| `dependencies` | yes | list of strings | spec slugs (e.g., `002-events`); empty list permitted | **Generated** by `scripts/gen-spec-deps.sh` from inline markdown links to sibling specs in the body. Not hand-authored. Author opt-out: links under a `## See also` heading are treated as navigational and do not produce edges (`## References` remains a dep-producing section). |
-| `references` | no | list of `{service, spec}` entries | registered service alias + target `NNN-slug`; empty or absent permitted | **Generated** by `scripts/gen-cross-service-refs.sh` from inline body links to a registered service's canonical repo URL. Not hand-authored, and **strictly distinct from `dependencies`** — informative cross-service navigation that never enters the blocking dependency graph (spec 030). |
+| `dependencies` | yes | list of strings | spec slugs (e.g., `002-events`); empty list permitted | **Generated** by `.govern/scripts/gen-spec-deps.sh` from inline markdown links to sibling specs in the body. Not hand-authored. Author opt-out: links under a `## See also` heading are treated as navigational and do not produce edges (`## References` remains a dep-producing section). |
+| `references` | no | list of `{service, spec}` entries | registered service alias + target `NNN-slug`; empty or absent permitted | **Generated** by `.govern/scripts/gen-cross-service-refs.sh` from inline body links to a registered service's canonical repo URL. Not hand-authored, and **strictly distinct from `dependencies`** — informative cross-service navigation that never enters the blocking dependency graph (spec 030). |
 
 #### Scenario files
 
@@ -512,7 +512,7 @@ For every kind of fact described in multiple places, one location is authoritati
 | Runtime contract / boundary | `framework/constitution.md` §runtime-boundary |
 | Security rule file format and ID conventions (`BE-`/`FE-`) | `specs/008-security-rules/data-model.md` |
 | Configuration rule file format and ID conventions (`CFG-`) | `specs/017-derive-dont-ask/data-model.md` |
-| Service registry schema (`.govern.toml` `[services]`) | `specs/030-cross-service-references/data-model.md` |
+| Service registry schema (`.govern/config.toml` `[services]`) | `specs/030-cross-service-references/data-model.md` |
 | Where contributor knowledge is recorded (git vs. per-user agent memory) | `framework/constitution.md` §drift-prevention (Shared knowledge stays in git) |
 
 When adding a new kind of fact that may be referenced from multiple documents, name its canonical source explicitly here.
@@ -566,7 +566,7 @@ The test before saving to per-user memory: *would this help a teammate?* If yes,
 
 ### Concurrent Features
 
-The session state file (`.govern.session.toml` at the repo root) holds a single target by design. The pipeline is serial within a feature, and concurrent work on independent features uses two independent sessions in two terminals — not multi-target session state. Isolation is provided by the platform layer: `git worktree` keeps the working trees separate, and AI-agent platforms typically expose isolation primitives (Claude Code's `isolation: "worktree"` agent parameter, Cursor's worktree integration, etc.). Reach for those rather than asking `govern` to track multiple targets at once.
+The session state file (`.govern/session.toml`) holds a single target by design. The pipeline is serial within a feature, and concurrent work on independent features uses two independent sessions in two terminals — not multi-target session state. Isolation is provided by the platform layer: `git worktree` keeps the working trees separate, and AI-agent platforms typically expose isolation primitives (Claude Code's `isolation: "worktree"` agent parameter, Cursor's worktree integration, etc.). Reach for those rather than asking `govern` to track multiple targets at once.
 
 <!-- §cross-spec-impact -->
 

@@ -8,31 +8,31 @@ parity:
 
 # Link
 
-Register a service in `.govern.toml` so cross-service references to it resolve to the linked spec's lifecycle status.
+Register a service in `.govern/config.toml` so cross-service references to it resolve to the linked spec's lifecycle status.
 
 ## Purpose
 
-Records a service in the `.govern.toml` `[services]` registry — its canonical repository URL and its local checkout path — so a cross-service reference whose href matches that repo can surface the linked spec's status (see [030 — Cross-Service References](../../specs/030-cross-service-references/spec.md)). The registry is **required for status resolution, optional for referencing**: a reference whose repo matches no `[services]` entry stays a plain navigational link (the `unregistered` outcome). Registration is not derived — the local `path` is machine-local knowledge `govern` cannot infer — so it is captured here rather than harvested.
+Records a service in the `.govern/config.toml` `[services]` registry — its canonical repository URL and its local checkout path — so a cross-service reference whose href matches that repo can surface the linked spec's status (see [030 — Cross-Service References](../../specs/030-cross-service-references/spec.md)). The registry is **required for status resolution, optional for referencing**: a reference whose repo matches no `[services]` entry stays a plain navigational link (the `unregistered` outcome). Registration is not derived — the local `path` is machine-local knowledge `govern` cannot infer — so it is captured here rather than harvested.
 
 ## Context
 
-This command does not require a session target — it edits the project-level `[services]` registry in `.govern.toml`, not any feature spec. The repo URL is **identity and navigation only**: it is recorded verbatim and is **never fetched**. Status is read later from the local `path`, never over the network.
+This command does not require a session target — it edits the project-level `[services]` registry in `.govern/config.toml`, not any feature spec. The repo URL is **identity and navigation only**: it is recorded verbatim and is **never fetched**. Status is read later from the local `path`, never over the network.
 
 ## Scope Boundaries
 
-- Read and write only `.govern.toml`. Do NOT modify any spec, plan, scenario, source file, or session state.
+- Read and write only the config file — `.govern/config.toml` when it exists, else the legacy root `.govern.toml` when that exists (the active-file rule, spec 042). Do NOT modify any spec, plan, scenario, source file, or session state.
 - Do NOT fetch the repo URL or reach across the network. The local checkout `path` is the only state read at resolution time, and that resolution belongs to `/gov:status` and `/gov:analyze`, not to this command.
-- Removal and edits of an existing entry stay hand-edits to `.govern.toml`.
+- Removal and edits of an existing entry stay hand-edits to `.govern/config.toml`.
 - Reference: §text-first-artifacts, §runtime-boundary, and [030 `data-model.md`](../../specs/030-cross-service-references/data-model.md) — the canonical source for the `[services]` schema (constitution loaded by `/gov:target`; do not re-read).
 
 ## Instructions
 
-This command is host-driven: it has no runtime primitive, so the same procedure runs whether or not the `gvrn` runtime is installed — both the deterministic and the markdown-only paths converge on the host's file tools reading and writing `.govern.toml`. The full procedure — argument forms, per-field validation, the additive write, and `--list` — is in the **Procedure** reference below.
+This command is host-driven: it has no runtime primitive, so the same procedure runs whether or not the `gvrn` runtime is installed — both the deterministic and the markdown-only paths converge on the host's file tools reading and writing `.govern/config.toml`. The full procedure — argument forms, per-field validation, the additive write, and `--list` — is in the **Procedure** reference below.
 
 <!-- audit:ignore-promotion -->
 1. Parse the arguments. With `--list`, run the **List the registry** branch (read-only) and stop. With three positional values (alias, repo, path) plus an optional `--description <text>`, take them as pre-supplied field values, validate them, and prompt only for anything missing or invalid. With no arguments, collect every field interactively.
 
-2. <!-- llm:registerService --> Run the registration flow: prompt for each missing field one at a time — alias, then repo URL, then local path, then an optional description (empty to skip) — validating each value as it is entered (see **Validation**). Then write the `[services.<alias>]` block additively to `.govern.toml`, preserving every other table (see **Additive write**). A duplicate alias is rejected before any write; a duplicate repo is warned but allowed.
+2. <!-- llm:registerService --> Run the registration flow: prompt for each missing field one at a time — alias, then repo URL, then local path, then an optional description (empty to skip) — validating each value as it is entered (see **Validation**). Then write the `[services.<alias>]` block additively to `.govern/config.toml`, preserving every other table (see **Additive write**). A duplicate alias is rejected before any write; a duplicate repo is warned but allowed.
 
 <!-- audit:ignore-promotion -->
 3. Confirm the result: echo the resulting `[services.<alias>]` block, surface any path-resolution warning, and point the user at `/gov:status` to see the linked spec's status once the service is checked out.
@@ -60,20 +60,20 @@ Prompt one field at a time, the same one-at-a-time interaction `/gov:clarify` us
 
 Per field, as entered:
 
-- **alias** — a valid bare TOML key (letters, digits, hyphens, underscores; no whitespace, dots, or quotes) and **not already present** as a `[services.<alias>]` table in `.govern.toml`. A collision is **rejected** with no write — changing an existing entry is a hand-edit. This is the duplicate-alias rejection.
+- **alias** — a valid bare TOML key (letters, digits, hyphens, underscores; no whitespace, dots, or quotes) and **not already present** as a `[services.<alias>]` table in `.govern/config.toml`. A collision is **rejected** with no write — changing an existing entry is a hand-edit. This is the duplicate-alias rejection.
 - **repo** — URL-shaped (a scheme such as `https://` and a host). Recorded verbatim; it is identity and navigation only and is never fetched. If the same URL is already registered under another alias, **warn** — a duplicate repo makes the match ambiguous (a registry finding) — but allow the write.
 - **path** — the local checkout location, relative to the repo root or absolute, recorded exactly as written. If it does not currently resolve to a directory, **warn** but do **not** block: a missing checkout is the valid `not-checked-out` state, surfaced at resolution time, not a config error.
 - **description** — free text, optional, informational only; no behavior depends on it.
 
 ### Additive write
 
-- Read `.govern.toml` (create it with just the new block if it is absent).
+- Read the active config file per Scope Boundaries above (when neither location exists, create `.govern/config.toml` with just the new block — a write outside the `/govern` migration never creates a partial `.govern/config.toml` alongside a legacy file).
 - Add a `[services.<alias>]` table with `repo`, `path`, and `description` (omit `description` when skipped). Preserve every other table — `[host]`, `[project]`, `[paths]`, `[rules]`, `[pinned]`, `[migrations]`, `[workflows]`, `[review]`, and any sibling `[services.*]` entries — byte-for-byte. (The operative rule is "preserve every table other than the one being added"; the list is illustrative, not exhaustive.) This is the additive discipline already used for `.mcp.json` and permission merges.
 - Write atomically (tempfile + rename).
 
 ### List the registry
 
-- Read `.govern.toml`. If `[services]` is absent or empty, report that no services are registered and show the register form (`/gov:link <alias> <repo> <path>`).
+- Read `.govern/config.toml`. If `[services]` is absent or empty, report that no services are registered and show the register form (`/gov:link <alias> <repo> <path>`).
 - Otherwise, for each registered service show its alias, `repo`, `path`, the `description` when present, and a resolution-health line: **resolves** when the `path` exists as a checkout, **not checked out** when it is missing or unusable. Listing reads only the registry and the existence of each local `path` — it does not read linked specs or touch the network.
 
 ### Notes

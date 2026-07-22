@@ -12,11 +12,11 @@ Backlog grooming for `specs/inbox.md`. Walks each raw item through the bug decis
 
 ## Context
 
-Use the session target from `.govern.session.toml` if set, but groom operates across all specs so a target is not *required* to start. When groom routes an item to an existing spec — a spec edit or a scenario under the matching spec — it **sets** the session target to that spec as part of the routing, so a follow-on `/gov:amend` or `/gov:implement` needs no manual `/gov:target`. Adding a scenario to a `done` spec also **reopens** it `done → in-progress` so that follow-on `/gov:implement` has an actionable target. See **Setting the session target** and **Reopening a `done` spec** in the Markdown-only reference below.
+Use the session target from `.govern/session.toml` if set, but groom operates across all specs so a target is not *required* to start. When groom routes an item to an existing spec — a spec edit or a scenario under the matching spec — it **sets** the session target to that spec as part of the routing, so a follow-on `/gov:amend` or `/gov:implement` needs no manual `/gov:target`. Adding a scenario to a `done` spec also **reopens** it `done → in-progress` so that follow-on `/gov:implement` has an actionable target. See **Setting the session target** and **Reopening a `done` spec** in the Markdown-only reference below.
 
 ## Scope Boundaries
 
-- This command grooms inbox items — it creates scenario files, appends tasks, edits a matched spec's body when the operator confirms the spec-edit route (Step 3), sets the session target (`.govern.session.toml`) when routing to an existing spec, and reopens a matched spec's frontmatter status `done → in-progress` when it adds a scenario to a `done` spec, but does NOT implement fixes. Do NOT read or modify source code or test files.
+- This command grooms inbox items — it creates scenario files, appends tasks, edits a matched spec's body when the operator confirms the spec-edit route (Step 3), sets the session target (`.govern/session.toml`) when routing to an existing spec, and reopens a matched spec's frontmatter status `done → in-progress` when it adds a scenario to a `done` spec, but does NOT implement fixes. Do NOT read or modify source code or test files.
 - For each item, read only the spec file of the matching feature (for decision tree evaluation) and its `tasks.md` (for appending). Do NOT read plans, data models, or source code.
 - Reference: §bug-handling, §rules, §scenarios, §brownfield-inbox (constitution loaded by `/gov:target` — do not re-read).
 
@@ -62,7 +62,7 @@ For each item, walk the steps in order; the first matching step names the route.
 **Step 1: Is this a cross-cutting concern with no covering rule?** (route: `rule`)
 
 - Apply the four-indicator promotion checklist (§rules in `constitution.md`): cross-cutting, citable, governance-recognized category, generalizable wording. If the item qualifies, recommend promoting it to a rule.
-- If a loaded rule file already covers the domain (e.g., `specs/rules/security-backend.md` for an authentication concern, `specs/rules/configuration-cross.md` for an env-var concern), recommend the user amend the relevant rule file directly — note that local edits to rule files are overwritten by `/govern` unless the file is pinned in `.govern.toml`, so amendments belong upstream in the framework rather than in adopting projects.
+- If a loaded rule file already covers the domain (e.g., `specs/rules/security-backend.md` for an authentication concern, `specs/rules/configuration-cross.md` for an env-var concern), recommend the user amend the relevant rule file directly — note that local edits to rule files are overwritten by `/govern` unless the file is pinned in `.govern/config.toml`, so amendments belong upstream in the framework rather than in adopting projects.
 - If no rule file covers the domain, creating a new rule file is its own feature spec (out of `/gov:groom`'s scope). Leave the item in the inbox unmodified — every subsequent groom pass walks every unmigrated item, including this one, so it stays surfaced. Ask the user whether to skip and continue.
 - If the item is feature-specific rather than cross-cutting, fall through to Step 2.
 
@@ -91,7 +91,7 @@ When an item routes to an existing spec, set the session target to that spec as 
 - **Scenario creation (Step 4)** — target the matched feature **plus the new scenario**: write `feature`, `path`, `scenario` (the new scenario slug), and `scenario-path` (`specs/{feature}/scenarios/{slug}.md`) — the same target shape `/gov:amend`'s scenario route writes.
 - **Rule items (Step 1), new-spec items (Step 2 → `/gov:specify`), chores, and discards** set **no** target — a rule file and a chore have no single spec home, and `/gov:specify` already targets the spec it creates.
 
-Write the file the way every session-target write does: first read any existing `.govern.session.toml` to capture its `cli-config-dir` (the per-contributor agent identity written by `/govern`) and carry it forward, then rewrite the file atomically (tempfile + rename) with the target keys plus `set-at` (ISO 8601 UTC). Dropping `cli-config-dir` would strip the agent identity, so it is always preserved. On the runtime path the `write-session` primitive performs exactly this write.
+Write the file the way every session-target write does: first read any existing `.govern/session.toml` to capture its `cli-config-dir` (the per-contributor agent identity written by `/govern`) and carry it forward, then rewrite the file atomically (tempfile + rename) with the target keys plus `set-at` (ISO 8601 UTC). Dropping `cli-config-dir` would strip the agent identity, so it is always preserved. On the runtime path the `write-session` primitive performs exactly this write.
 
 Across a multi-item run, each spec-routed item performs this write, so the session target follows the current item and ends pointing at the most recently groomed spec.
 
