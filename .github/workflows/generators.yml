@@ -34,10 +34,10 @@ jobs:
         run: ./scripts/gen-help-tables.sh
 
       - name: Run gen-spec-deps
-        run: ./scripts/gen-spec-deps.sh
+        run: ./.govern/scripts/gen-spec-deps.sh
 
       - name: Run gen-cross-service-refs
-        run: ./scripts/gen-cross-service-refs.sh
+        run: ./.govern/scripts/gen-cross-service-refs.sh
 
       - name: Fail if any generator produced a diff
         run: |

@@ -23,7 +23,8 @@
 # Body inline links are authoritative; the frontmatter is a derived index.
 
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# Two levels up: this script lives at <repo>/.govern/scripts/ (spec 042).
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
 dry_run=0
 staged_only=0

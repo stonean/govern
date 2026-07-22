@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test surface for scripts/gen-spec-deps.sh.
+# Test surface for .govern/scripts/gen-spec-deps.sh.
 #
 # Builds tiny fixture spec trees under temp dirs, runs the generator against
 # them via the `--root=PATH` flag, and asserts on the resulting frontmatter
@@ -32,7 +32,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-GEN="$REPO_ROOT/scripts/gen-spec-deps.sh"
+GEN="$REPO_ROOT/.govern/scripts/gen-spec-deps.sh"
 
 failures=0
 pass() { printf '  PASS  %s\n' "$1"; }

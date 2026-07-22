@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test surface for scripts/gen-cross-service-refs.sh.
+# Test surface for .govern/scripts/gen-cross-service-refs.sh.
 #
 # Builds tiny fixture spec trees (plus a fixture .govern.toml [services]
 # registry) under temp dirs, runs the generator against them via the
@@ -37,7 +37,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-GEN="$REPO_ROOT/scripts/gen-cross-service-refs.sh"
+GEN="$REPO_ROOT/.govern/scripts/gen-cross-service-refs.sh"
 
 failures=0
 pass() { printf '  PASS  %s\n' "$1"; }

@@ -1,9 +1,9 @@
-# Follow `source`d files (e.g. scripts/lib/specs-root.sh via the `# shellcheck
+# Follow `source`d files (e.g. .govern/scripts/lib/specs-root.sh via the `# shellcheck
 # source=` directives) so a variable a script sets for its sourced helpers to
 # consume — like ROOT / SPECS_ROOT for lib/specs-root.sh's resolve_specs_root /
 # list_specs / staged_specs — is seen as used rather than mis-flagged SC2034.
 external-sources=true
 # Resolve `source=` paths relative to each script's own directory, so
-# `scripts/gen-*.sh`'s `source=lib/specs-root.sh` finds `scripts/lib/...`
+# `.govern/scripts/gen-*.sh`'s `source=lib/specs-root.sh` finds `.govern/scripts/lib/...`
 # regardless of the cwd shellcheck runs from.
 source-path=SCRIPTDIR

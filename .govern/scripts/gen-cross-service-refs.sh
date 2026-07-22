@@ -15,7 +15,7 @@
 #   * spec    — the `NNN-slug` segment of the URL (the stable identity).
 #   * service — the URL's repo (everything before any `/blob/<ref>/` or
 #               `/tree/<ref>/` branch segment, which is ignored) matched
-#               against `.govern.toml` [services]. A matched repo records the
+#               against the govern config's [services]. A matched repo records the
 #               service alias; an unmatched repo records `service: null` (the
 #               `unregistered` outcome, surfaced later at resolution time).
 #
@@ -23,7 +23,7 @@
 # segment is NOT hardcoded to `specs`: a referenced service may rename its own
 # spec root (spec 040). Two tiers, decided per registered service:
 #   * Checkout reachable — the service is registered in [services] and its
-#     local `path` resolves; the matcher reads that checkout's own .govern.toml
+#     local `path` resolves; the matcher reads that checkout's own govern config
 #     [paths] specs-root (default `specs`) and accepts only that exact segment.
 #   * Checkout unreachable — a registered service that is not checked out, or
 #     an unregistered repo, has an unknowable root, so the matcher accepts any
@@ -43,7 +43,8 @@
 # derived index.
 
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# Two levels up: this script lives at <repo>/.govern/scripts/ (spec 042).
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
 dry_run=0
 staged_only=0
@@ -88,13 +89,13 @@ enumerate_specs() {
   if [ "$staged_only" -eq 1 ]; then staged_specs; else list_specs; fi
 }
 
-# Parse .govern.toml [services] into "normalized-repo<TAB>alias<TAB>root"
+# Parse the govern config [services] into "normalized-repo<TAB>alias<TAB>root"
 # records — the registry the harvest matcher consults. A missing file or absent
 # [services] table yields an empty registry (every reference then resolves to
 # `unregistered`).
 #
 # `root` is each service's resolved spec-root name: when its local checkout is
-# reachable, read from that checkout's own .govern.toml (default `specs`); when
+# reachable, read from that checkout's own govern config (default `specs`); when
 # the service is not checked out, left empty — the tier where the matcher
 # accepts any spec-root segment (scenario referenced-service-spec-root, Q1). The
 # two-step parse — awk extracts alias/repo/path, then bash resolves the
@@ -102,7 +103,8 @@ enumerate_specs() {
 reg_file="$(mktemp)"
 svc_raw=""
 trap 'rm -f "$reg_file" "$svc_raw"' EXIT
-if [ -f "$ROOT/.govern.toml" ]; then
+config_file="$(config_path_of "$ROOT")"
+if [ -f "$config_file" ]; then
   svc_raw="$(mktemp)"
   awk '
     function norm(v) { sub(/\/+$/, "", v); sub(/\.git$/, "", v); return v }
@@ -124,7 +126,7 @@ if [ -f "$ROOT/.govern.toml" ]; then
     in_svc && /^[[:space:]]*repo[[:space:]]*=/ { repo = unq($0); next }
     in_svc && /^[[:space:]]*path[[:space:]]*=/ { path = unq($0); next }
     END { flush() }
-  ' "$ROOT/.govern.toml" > "$svc_raw"
+  ' "$config_file" > "$svc_raw"
 
   # Resolve each service's spec-root from its local checkout when reachable;
   # otherwise leave it empty (the not-checked-out / permissive tier). `path`
@@ -137,7 +139,7 @@ if [ -f "$ROOT/.govern.toml" ]; then
         /*) checkout="$path" ;;
         *)  checkout="$ROOT/$path" ;;
       esac
-      [ -d "$checkout" ] && root="$(specs_root_of "$checkout/.govern.toml")"
+      [ -d "$checkout" ] && root="$(specs_root_of "$(config_path_of "$checkout")")"
     fi
     printf '%s\t%s\t%s\n' "$repo" "$alias" "$root" >> "$reg_file"
   done < "$svc_raw"

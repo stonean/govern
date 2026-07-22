@@ -87,9 +87,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 11. Dogfood the new layout in govern's own repo
 
-- [ ] `git mv .govern.toml .govern/config.toml`; move gitignored `.govern.session.toml` → `.govern/session.toml`; `git mv` the three generators (with `lib/`) into `.govern/scripts/`
-- [ ] Fix `.gitignore:9` to `/.govern/session.toml`; update `.githooks/pre-commit:32-36` (two shipped gens → `.govern/scripts/`, three maintainer gens stay at `scripts/`); update `.shellcheckrc` comments
-- [ ] Run a full `/gov:*` cycle and the pre-commit generators on the dogfooded layout with no path errors
+- [x] `git mv .govern.toml .govern/config.toml`; move gitignored `.govern.session.toml` → `.govern/session.toml`; `git mv` the three generators (with `lib/`) into `.govern/scripts/`
+- [x] Fix `.gitignore:9` to `/.govern/session.toml`; update `.githooks/pre-commit:32-36` (two shipped gens → `.govern/scripts/`, three maintainer gens stay at `scripts/`); update `.shellcheckrc` comments
+- [x] Run a full `/gov:*` cycle and the pre-commit generators on the dogfooded layout with no path errors
 
 - **Done when**: govern's own config/session/generators live under `.govern/`, maintainer scripts remain at `scripts/`, and the pipeline plus pre-commit generators run clean.
 

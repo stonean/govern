@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/lib/specs-root.sh — shared spec-tree helpers for the generators.
+# .govern/scripts/lib/specs-root.sh — shared spec-tree helpers for the generators.
 #
 # Sourced by gen-spec-deps.sh and gen-cross-service-refs.sh, which run in both
 # govern's own pre-commit and adopter pre-commit hooks. One definition rather
@@ -12,14 +12,15 @@
 # any of these, and $SPECS_ROOT (resolve_specs_root's result) before calling
 # list_specs / staged_specs; both generators set them up top.
 
-# Spec-root directory name from a given .govern.toml's [paths] specs-root,
+# Spec-root directory name from a given govern config file's [paths]
+# specs-root,
 # defaulting to "specs" (spec 040) when the file is absent, the key is missing,
 # or the value is outside the [A-Za-z0-9_-] charset (path separators, "..",
 # ".", or any regex metacharacter). That conservative charset matches the
 # runtime's validate_specs_root, so the name is safe both as a path component
 # and when interpolated into the grep/awk regexes the generators build from it.
 #
-# Takes the .govern.toml path as an argument so callers can resolve THIS repo's
+# Takes the config-file path as an argument so callers can resolve THIS repo's
 # root (resolve_specs_root, below) or a *referenced* service's own root from its
 # local checkout (gen-cross-service-refs.sh's checkout-reachable matcher tier —
 # scenario referenced-service-spec-root).
@@ -43,9 +44,22 @@ specs_root_of() {
   printf '%s' "$name"
 }
 
-# Spec-root directory name for THIS repo ($ROOT/.govern.toml).
+# Active govern config file for a repo/checkout root: `.govern/config.toml`
+# when it exists, else the legacy root `.govern.toml` (spec 042 — new wins on
+# a split layout; when neither exists the legacy path is returned and
+# specs_root_of falls through to the default on the absent file).
+config_path_of() {
+  local base="$1"
+  if [ -f "$base/.govern/config.toml" ]; then
+    printf '%s' "$base/.govern/config.toml"
+  else
+    printf '%s' "$base/.govern.toml"
+  fi
+}
+
+# Spec-root directory name for THIS repo (its active config file).
 resolve_specs_root() {
-  specs_root_of "$ROOT/.govern.toml"
+  specs_root_of "$(config_path_of "$ROOT")"
 }
 
 # Feature-spec files to process, scoped to the git index (tracked + staged)

@@ -51,8 +51,8 @@ jobs:
 
       - name: (b) Bash generator scripts run clean
         run: |
-          bash scripts/gen-spec-deps.sh --dry-run
-          bash scripts/gen-cross-service-refs.sh --dry-run
+          bash .govern/scripts/gen-spec-deps.sh --dry-run
+          bash .govern/scripts/gen-cross-service-refs.sh --dry-run
           bash scripts/gen-help-tables.sh --dry-run
 
       - name: (c) markdownlint passes
