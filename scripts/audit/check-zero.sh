@@ -21,7 +21,7 @@ cd "$ROOT"
 # added to `gen-claude-commands.sh` by spec 026 task 2 to close the gap).
 # Lints already run in read-only mode by design — no flag.
 checks=(
-  "scripts/gen-spec-deps.sh --dry-run"
+  ".govern/scripts/gen-spec-deps.sh --dry-run"
   "scripts/gen-help-tables.sh --dry-run"
   "scripts/gen-configure-mcp.sh --dry-run"
   "scripts/gen-claude-commands.sh --check"

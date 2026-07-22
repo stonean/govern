@@ -95,9 +95,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 12. Update maintainer audit scripts
 
-- [ ] `scripts/audit/fixture-session-shape.sh:53` — find `.govern/session.toml` under the fixtures tree
-- [ ] `scripts/audit/consolidation-pair.sh` — update the motivating-case path reference
-- [ ] Confirm `scripts/audit/migration-coverage.sh` accepts the new registry entry, and run the full `scripts/audit/run-all.sh`
+- [x] `scripts/audit/fixture-session-shape.sh:53` — find `.govern/session.toml` under the fixtures tree
+- [x] `scripts/audit/consolidation-pair.sh` — update the motivating-case path reference
+- [x] Confirm `scripts/audit/migration-coverage.sh` accepts the new registry entry, and run the full `scripts/audit/run-all.sh`
 
 - **Done when**: `scripts/audit/run-all.sh` passes on the dogfooded layout with the new migration entry.
 

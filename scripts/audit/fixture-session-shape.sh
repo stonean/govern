@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # scripts/audit/fixture-session-shape.sh — Family 12 of /audit.
 #
-# Verifies every runtime/tests/fixtures/*/.govern.session.toml file:
+# Verifies every fixture session file — legacy-root `.govern.session.toml`
+# and new-layout `.govern/session.toml` (spec 042) — under runtime/tests/fixtures/:
 #
 #   12a parses cleanly as TOML.
 #   12b does NOT use the legacy camelCase keys `scenarioPath` or
@@ -50,7 +51,7 @@ fi
 # Find every .govern.session.toml under the fixtures tree. Use a
 # while-read loop instead of `mapfile` for portability — macOS ships
 # bash 3.x and lacks `mapfile`.
-SESSION_FILES=$(find "$FIXTURES_DIR" -name ".govern.session.toml" -print | sort)
+SESSION_FILES=$(find "$FIXTURES_DIR" \( -name ".govern.session.toml" -o -path "*/.govern/session.toml" \) -print | sort)
 
 if [ -z "$SESSION_FILES" ]; then
   # No fixtures use a session file — clean exit.

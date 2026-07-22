@@ -3,10 +3,11 @@
 #
 # Verifies that every "consolidated artifact" (a single canonical path
 # that multiple loosely-coupled files reference) agrees across all
-# referencing sources. The motivating case is .govern.session.toml,
+# referencing sources. The motivating case is .govern/session.toml,
 # which appears in:
 #
-#   1. The runtime's SESSION_FILE constant (write_session.rs).
+#   1. The runtime's SESSION_FILE constant (schema/paths.rs — the
+#      single source of truth the resolvers read; spec 042).
 #   2. The migration body that translates legacy files into it
 #      (framework/migrations/session-file-consolidate.md).
 #   3. The framework-managed gitignore block
@@ -36,9 +37,10 @@ emit() {
   drift=1
 }
 
-# 11a — Extract SESSION_FILE from write_session.rs. The constant is the
-# runtime's authoritative source for the consolidated session-file path.
-SESSION_RS="runtime/src/primitives/write_session.rs"
+# 11a — Extract SESSION_FILE from schema/paths.rs (moved there from
+# write_session.rs by spec 042's resolver consolidation). The constant is
+# the runtime's authoritative source for the consolidated session-file path.
+SESSION_RS="runtime/src/schema/paths.rs"
 if [ ! -f "$SESSION_RS" ]; then
   emit "$SESSION_RS" "missing — cannot anchor the consolidation-pair check" \
     "restore the runtime crate or remove this audit family"
