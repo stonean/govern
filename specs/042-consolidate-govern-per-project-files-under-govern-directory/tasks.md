@@ -71,8 +71,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 9. gitignore template supersession
 
-- [ ] Change `framework/templates/project/gitignore` session entry to `/.govern/session.toml`
-- [ ] Confirm the `/govern` managed-block rewrite supersedes an adopter's old `.govern.session.toml` line (no dangling entry) and leaves `.govern/config.toml` / `.govern/scripts/` tracked
+- [x] Change `framework/templates/project/gitignore` session entry to `/.govern/session.toml`
+- [x] Confirm the `/govern` managed-block rewrite supersedes an adopter's old `.govern.session.toml` line (no dangling entry) and leaves `.govern/config.toml` / `.govern/scripts/` tracked
 
 - **Done when**: a `/govern` run leaves `.govern/session.toml` ignored, no dangling `.govern.session.toml` line, and config/scripts tracked.
 

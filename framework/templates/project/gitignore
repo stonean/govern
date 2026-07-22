@@ -26,7 +26,9 @@
 *.sqlite-journal
 
 # govern session state — per-user, ephemeral; managed by /{project}:target.
-.govern.session.toml
+# Anchored to the session file only, so committed .govern/config.toml and
+# .govern/scripts/ stay tracked.
+/.govern/session.toml
 
 # IDE
 .vscode/
