@@ -29,11 +29,11 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 4. Runtime write-boundary and generator-script detection recognize `.govern/scripts/`
 
-- [ ] Add `.govern/scripts/**` to the default write-boundary seed (`interpreter/mod.rs`) alongside `scripts/**`
-- [ ] Recognize `.govern/scripts/*.sh` as generator scripts in `derive_boundary.rs` and `primitives/mod.rs`
-- [ ] Confirm `run_generator.rs` needs no change (resolves the caller-supplied path)
+- [x] Grounded finding: the runtime has **no** hardcoded `scripts/**` default write-boundary. The boundary is entirely git-derived — `derive-boundary` emits a `{dir}/**` zone per touched directory, so `.govern/scripts/` becomes a zone automatically — plus any host/session seed. The `scripts/**` literals in `interpreter/mod.rs` and `derive_boundary.rs` are test scenarios, not production defaults; nothing to extend.
+- [x] Grounded finding: generator-script detection is not path-hardcoded — `run-generator` resolves the caller-supplied path, so `.govern/scripts/gen-spec-deps.sh` (from the task-8 command literals) resolves cleanly; the `scripts/*.sh` literals in `primitives/mod.rs` are test example-data.
+- [x] `run_generator.rs` needs no change (resolves the caller-supplied path)
 
-- **Done when**: `/gov:implement` can write under `.govern/scripts/` and generator detection classifies scripts there, with `scripts/**` still recognized.
+- **Done when**: verified the runtime is path-agnostic for scripts — no production code hardcodes `scripts/`, so `.govern/scripts/` is handled by boundary derivation + caller-supplied paths with zero runtime change (mirrors 040's finding that `run_generator` needed no change).
 
 ## 5. Runtime integration coverage for both layouts
 
@@ -46,9 +46,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 6. Author the `govern-dir-consolidate` migration
 
-- [ ] Add the `[[migrations]]` entry to `framework/migrations.toml` (`id = govern-dir-consolidate`, `introduced_in = 0.22.0`, no `sunset_after`, adopter-relative `target_paths`, `procedure_file`)
-- [ ] Write `framework/migrations/govern-dir-consolidate.md`: idempotency scan → `git mv`/`mv` the three concerns → converge-on-collision (identical→silent remove, divergent→warn+remove) → pinned-invoker warning → conditional summary line, no inner prompt
-- [ ] Verify audit Family 10 passes (procedure file exists, no orphan, no stale framework-prefixed target path)
+- [x] Add the `[[migrations]]` entry to `framework/migrations.toml` (`id = govern-dir-consolidate`, `introduced_in = 0.22.0`, no `sunset_after`, adopter-relative `target_paths`, `procedure_file`)
+- [x] Write `framework/migrations/govern-dir-consolidate.md`: idempotency scan → `git mv`/`mv` the three concerns → converge-on-collision (identical→silent remove, divergent→warn+remove) → pinned-invoker warning → conditional summary line, no inner prompt
+- [x] Verify audit Family 10 passes (procedure file exists, no orphan, no stale framework-prefixed target path)
 
 - **Done when**: the registry entry and procedure file exist, the migration is idempotent and converges a split layout, and `scripts/audit/migration-coverage.sh` passes.
 

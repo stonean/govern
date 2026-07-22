@@ -104,3 +104,23 @@ target_paths = [
   "{config_dir}/{project}-session.json",
 ]
 procedure_file = "framework/migrations/session-file-consolidate.md"
+
+[[migrations]]
+id = "govern-dir-consolidate"
+introduced_in = "0.22.0"
+# No sunset_after: high-impact directory reorg kept active indefinitely (like
+# session-file-consolidate), so any adopter still on the old root layout is
+# converged on their next /govern run. The runtime keeps the legacy-path
+# fallback indefinitely to match (spec 042).
+summary = "Consolidate .govern.toml/.govern.session.toml and the adopter-facing generators under a .govern/ directory (.govern/config.toml, .govern/session.toml, .govern/scripts/)"
+# Adopter-relative paths only (no framework/ prefix): govern's own generators
+# relocate to .govern/scripts/ as a source move (dogfooding), which is not a
+# registry-tracked removal, so /audit Family 10b does not assert on these.
+target_paths = [
+  ".govern.toml",
+  ".govern.session.toml",
+  "scripts/gen-spec-deps.sh",
+  "scripts/gen-cross-service-refs.sh",
+  "scripts/lib/specs-root.sh",
+]
+procedure_file = "framework/migrations/govern-dir-consolidate.md"
