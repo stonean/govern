@@ -103,8 +103,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 13. End-to-end verification
 
-- [ ] Fresh-adopter path: a first `/govern` run scaffolds directly to `.govern/` with no root-level govern files
-- [ ] Migration path: a legacy-layout fixture project runs `/govern`, converges to `.govern/`, and is a no-op on re-run
-- [ ] Pre-migration fallback: `/gov:status` on a legacy-layout project (before `/govern`) reads correctly via fallback with no path error
+- [x] Fresh-adopter path: a first `/govern` run scaffolds directly to `.govern/` with no root-level govern files
+- [x] Migration path: a legacy-layout fixture project runs `/govern`, converges to `.govern/`, and is a no-op on re-run
+- [x] Pre-migration fallback: `/gov:status` on a legacy-layout project (before `/govern`) reads correctly via fallback with no path error
 
 - **Done when**: fresh-adopter, migration, and pre-migration-fallback paths all pass, and the runtime + audit suites are green.
