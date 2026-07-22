@@ -21,9 +21,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 3. Writers target the active file (migration is the sole cutover)
 
-- [ ] Make config writers (`merge-managed-block` host block, `write-review`, and the bootstrap's `last_applied` / project-inputs / workflow-decline writes) and `write-session` target the active file the resolver returns, not the new location unconditionally
-- [ ] Ensure the bootstrap resolves the config path once per run so `last_applied` read and write-back agree
-- [ ] Unit-test that a config write with a legacy file present and no `.govern/config.toml` writes to the legacy file (no partial `.govern/` file created)
+- [x] Make config writers (`merge-managed-block` host block, `write-review`, and the bootstrap's `last_applied` / project-inputs / workflow-decline writes) and `write-session` target the active file the resolver returns, not the new location unconditionally
+- [x] Ensure the bootstrap resolves the config path once per run so `last_applied` read and write-back agree
+- [x] Unit-test that a config write with a legacy file present and no `.govern/config.toml` writes to the legacy file (no partial `.govern/` file created)
 
 - **Done when**: no writer outside the migration creates a partial `.govern/config.toml`, and a test proves a pre-migration write stays on the legacy file.
 

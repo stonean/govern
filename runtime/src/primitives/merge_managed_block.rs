@@ -1508,4 +1508,49 @@ Thumbs.db";
         assert_eq!(result.action, "unchanged");
         assert_eq!(result.dedup_removed, Some(0));
     }
+
+    // -- config write policy (spec 042) -------------------------------------
+
+    #[test]
+    fn config_write_with_legacy_present_stays_on_legacy_file() {
+        // The bootstrap's host-block write composed with the active-file
+        // resolver: with a populated legacy `.govern.toml` and no
+        // `.govern/config.toml`, the write lands on the legacy file and no
+        // partial `.govern/` file is created — the `/govern` migration is the
+        // sole cutover (spec 042 §Transition and fallback).
+        let tmp = tempfile::tempdir().unwrap();
+        fs::write(
+            tmp.path().join(".govern.toml"),
+            "[pinned]\nfiles = [\"AGENTS.md\"]\n",
+        )
+        .unwrap();
+
+        let target = crate::schema::paths::config_path_for_write(tmp.path());
+        let rel = target
+            .strip_prefix(tmp.path())
+            .unwrap()
+            .to_string_lossy()
+            .into_owned();
+        assert_eq!(rel, ".govern.toml", "active file is the legacy config");
+
+        let result = run(
+            &MergeManagedBlockArgs {
+                path: rel,
+                block: "[host]\nproject = \"gov\"".into(),
+                marker: Some("govern (host)".into()),
+                marker_style: Some("line-prefix".into()),
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert_eq!(result.action, "inserted");
+
+        let body = fs::read_to_string(tmp.path().join(".govern.toml")).unwrap();
+        assert!(body.contains("[pinned]"), "legacy sections preserved");
+        assert!(body.contains("project = \"gov\""));
+        assert!(
+            !tmp.path().join(".govern").exists(),
+            "no partial .govern/ file created while the legacy config lingers"
+        );
+    }
 }

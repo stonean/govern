@@ -86,11 +86,25 @@ pub fn session_path(repo: &Path) -> PathBuf {
 /// when it exists, else the legacy root file when *that* exists, else the new
 /// path for a fresh project). The `/govern` migration is the sole cutover, so a
 /// write never creates a `.govern/` file while a legacy one still lingers (spec
-/// 042 §Transition and fallback). Config writes apply the same rule in the
-/// bootstrap markdown; no runtime primitive writes the config file.
+/// 042 §Transition and fallback).
 #[must_use]
 pub(crate) fn session_path_for_write(repo: &Path) -> PathBuf {
     active_path(repo, SESSION_FILE, LEGACY_SESSION_FILE)
+}
+
+/// Resolve the config file to *write*: the active file, same rule as
+/// [`session_path_for_write`]. No runtime primitive writes the config file
+/// itself — config writes are host-driven (the bootstrap's `[migrations]` /
+/// `[project]` / `[workflows]` writes, `/gov:review`'s `[review]` flag, and
+/// the `merge-managed-block` host-block call, whose target path the caller
+/// supplies) — so this resolver is the canonical statement of the rule those
+/// callers mirror: a pre-migration write lands on the legacy file rather than
+/// creating a partial `.govern/config.toml` that new-wins-on-read would let
+/// strand the legacy file's other sections (spec 042 §Transition and
+/// fallback).
+#[must_use]
+pub fn config_path_for_write(repo: &Path) -> PathBuf {
+    active_path(repo, CONFIG_FILE, LEGACY_CONFIG_FILE)
 }
 
 /// Shared active-file resolution for writes: prefer the new path when it
@@ -498,6 +512,42 @@ mod tests {
         assert_eq!(
             session_path_for_write(repo.path()),
             repo.path().join(SESSION_FILE)
+        );
+    }
+
+    #[test]
+    fn config_write_path_targets_active_file_defaulting_new() {
+        // fresh project (neither present) → new
+        let repo = tmp_repo();
+        assert_eq!(
+            config_path_for_write(repo.path()),
+            repo.path().join(CONFIG_FILE)
+        );
+
+        // legacy present, new absent → write stays on legacy (never creates a
+        // partial `.govern/config.toml` that would strand the legacy sections)
+        let repo = tmp_repo();
+        touch(repo.path(), LEGACY_CONFIG_FILE);
+        assert_eq!(
+            config_path_for_write(repo.path()),
+            repo.path().join(LEGACY_CONFIG_FILE)
+        );
+
+        // new present → write targets new (cutover already happened)
+        let repo = tmp_repo();
+        touch(repo.path(), CONFIG_FILE);
+        assert_eq!(
+            config_path_for_write(repo.path()),
+            repo.path().join(CONFIG_FILE)
+        );
+
+        // both present → new wins, matching the read resolver
+        let repo = tmp_repo();
+        touch(repo.path(), LEGACY_CONFIG_FILE);
+        touch(repo.path(), CONFIG_FILE);
+        assert_eq!(
+            config_path_for_write(repo.path()),
+            repo.path().join(CONFIG_FILE)
         );
     }
 }
