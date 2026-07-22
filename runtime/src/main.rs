@@ -359,7 +359,7 @@ fn run_exec(command: &str, args: &[String], repo: &std::path::Path) -> ExitCode 
     // `substitutions`, etc.) survive intact — the walker's context map
     // and every primitive's args struct are JSON-shaped.
     let mut context = Map::new();
-    let session_path = repo.join(".govern.session.toml");
+    let session_path = gvrn::schema::paths::session_path(repo);
     if let Ok(text) = std::fs::read_to_string(&session_path)
         && let Ok(Value::Object(map)) = toml::from_str::<Value>(&text)
     {

@@ -334,7 +334,7 @@ fn collapse_whitespace(reason: &str) -> String {
 
 /// Parse `.govern.toml`, returning defaults when the file is absent.
 fn load_govern_toml(repo: &Path) -> Result<GovernToml> {
-    let path = repo.join(".govern.toml");
+    let path = paths::config_path(repo);
     if !path.is_file() {
         return Ok(GovernToml::default());
     }

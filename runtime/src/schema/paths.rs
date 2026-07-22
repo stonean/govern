@@ -37,6 +37,77 @@ use serde::Deserialize;
 /// never sets `[paths] specs-root` sees byte-for-byte identical behavior.
 pub const DEFAULT_SPECS_ROOT: &str = "specs";
 
+/// Consolidated project config file under the `.govern/` directory (spec 042).
+pub(crate) const CONFIG_FILE: &str = ".govern/config.toml";
+
+/// Legacy repo-root config filename (pre-042). Read as a fallback when the
+/// consolidated [`CONFIG_FILE`] is absent so an adopter who upgrades gvrn
+/// before re-running `/govern` is never broken.
+pub(crate) const LEGACY_CONFIG_FILE: &str = ".govern.toml";
+
+/// Consolidated per-contributor session file under `.govern/` (spec 042).
+/// Gitignored. This is the single source of truth for the session path; the
+/// `write-session` and `migrate-session-file` primitives and `host.rs` all
+/// resolve through the helpers below rather than joining a literal.
+pub(crate) const SESSION_FILE: &str = ".govern/session.toml";
+
+/// Legacy repo-root session filename (pre-042). Read as a fallback when the
+/// consolidated [`SESSION_FILE`] is absent.
+pub(crate) const LEGACY_SESSION_FILE: &str = ".govern.session.toml";
+
+/// Resolve the project config file to *read* for `repo`: the consolidated
+/// `.govern/config.toml` when it exists, else the legacy root `.govern.toml`
+/// (spec 042). New-wins when both exist, so a split layout never reads stale
+/// content. When neither exists the legacy path is returned — a missing file
+/// the caller already treats as "config absent" → defaults.
+#[must_use]
+pub fn config_path(repo: &Path) -> PathBuf {
+    let new = repo.join(CONFIG_FILE);
+    if new.exists() {
+        new
+    } else {
+        repo.join(LEGACY_CONFIG_FILE)
+    }
+}
+
+/// Resolve the session file to *read*: `.govern/session.toml` when it exists,
+/// else the legacy root `.govern.session.toml` (spec 042). New-wins on a split.
+#[must_use]
+pub fn session_path(repo: &Path) -> PathBuf {
+    let new = repo.join(SESSION_FILE);
+    if new.exists() {
+        new
+    } else {
+        repo.join(LEGACY_SESSION_FILE)
+    }
+}
+
+/// Resolve the session file to *write*: the active file (`.govern/session.toml`
+/// when it exists, else the legacy root file when *that* exists, else the new
+/// path for a fresh project). The `/govern` migration is the sole cutover, so a
+/// write never creates a `.govern/` file while a legacy one still lingers (spec
+/// 042 §Transition and fallback). Config writes apply the same rule in the
+/// bootstrap markdown; no runtime primitive writes the config file.
+#[must_use]
+pub(crate) fn session_path_for_write(repo: &Path) -> PathBuf {
+    active_path(repo, SESSION_FILE, LEGACY_SESSION_FILE)
+}
+
+/// Shared active-file resolution for writes: prefer the new path when it
+/// exists, fall back to the legacy path when *it* exists, and default to the
+/// new path for a fresh project (neither present).
+fn active_path(repo: &Path, new: &str, legacy: &str) -> PathBuf {
+    let new_path = repo.join(new);
+    if new_path.exists() {
+        return new_path;
+    }
+    let legacy_path = repo.join(legacy);
+    if legacy_path.exists() {
+        return legacy_path;
+    }
+    new_path
+}
+
 /// Validate a configured spec-root directory name for well-formedness.
 ///
 /// A well-formed name is a single directory-name segment using only the
@@ -112,7 +183,7 @@ impl Paths {
     /// the key is absent or empty, the value is malformed, or the document
     /// does not parse. Malformed value/document log to stderr.
     fn load_configured(base: &Path) -> Option<String> {
-        let toml_path = base.join(".govern.toml");
+        let toml_path = config_path(base);
         let content = std::fs::read_to_string(&toml_path).ok()?;
         let parsed: PathsFile = match toml::from_str(&content) {
             Ok(parsed) => parsed,
@@ -336,5 +407,97 @@ mod tests {
         let repo = tmp_repo();
         write_toml(repo.path(), "[paths\nbroken");
         assert_eq!(Paths::load(repo.path()).specs_root, "specs");
+    }
+
+    // --- config_path / session_path resolvers (spec 042) ---------------------
+
+    fn touch(dir: &Path, rel: &str) {
+        let p = dir.join(rel);
+        if let Some(parent) = p.parent() {
+            std::fs::create_dir_all(parent).unwrap();
+        }
+        std::fs::write(p, "x").unwrap();
+    }
+
+    #[test]
+    fn config_path_prefers_new_then_legacy() {
+        // neither present → returns the legacy path (a missing file the caller
+        // reads as "config absent")
+        let repo = tmp_repo();
+        assert_eq!(
+            config_path(repo.path()),
+            repo.path().join(LEGACY_CONFIG_FILE)
+        );
+
+        // legacy only → legacy
+        let repo = tmp_repo();
+        touch(repo.path(), LEGACY_CONFIG_FILE);
+        assert_eq!(
+            config_path(repo.path()),
+            repo.path().join(LEGACY_CONFIG_FILE)
+        );
+
+        // new only → new
+        let repo = tmp_repo();
+        touch(repo.path(), CONFIG_FILE);
+        assert_eq!(config_path(repo.path()), repo.path().join(CONFIG_FILE));
+
+        // both present → new wins
+        let repo = tmp_repo();
+        touch(repo.path(), LEGACY_CONFIG_FILE);
+        touch(repo.path(), CONFIG_FILE);
+        assert_eq!(config_path(repo.path()), repo.path().join(CONFIG_FILE));
+    }
+
+    #[test]
+    fn session_path_prefers_new_then_legacy() {
+        let repo = tmp_repo();
+        assert_eq!(
+            session_path(repo.path()),
+            repo.path().join(LEGACY_SESSION_FILE)
+        );
+
+        let repo = tmp_repo();
+        touch(repo.path(), LEGACY_SESSION_FILE);
+        assert_eq!(
+            session_path(repo.path()),
+            repo.path().join(LEGACY_SESSION_FILE)
+        );
+
+        let repo = tmp_repo();
+        touch(repo.path(), SESSION_FILE);
+        assert_eq!(session_path(repo.path()), repo.path().join(SESSION_FILE));
+
+        let repo = tmp_repo();
+        touch(repo.path(), LEGACY_SESSION_FILE);
+        touch(repo.path(), SESSION_FILE);
+        assert_eq!(session_path(repo.path()), repo.path().join(SESSION_FILE));
+    }
+
+    #[test]
+    fn session_write_path_targets_active_file_defaulting_new() {
+        // fresh project (neither present) → new, so the migration is the sole
+        // cutover and a write never strands a populated legacy file
+        let repo = tmp_repo();
+        assert_eq!(
+            session_path_for_write(repo.path()),
+            repo.path().join(SESSION_FILE)
+        );
+
+        // legacy present, new absent → write stays on legacy
+        let repo = tmp_repo();
+        touch(repo.path(), LEGACY_SESSION_FILE);
+        assert_eq!(
+            session_path_for_write(repo.path()),
+            repo.path().join(LEGACY_SESSION_FILE)
+        );
+
+        // new present → write targets new (cutover already happened)
+        let repo = tmp_repo();
+        touch(repo.path(), SESSION_FILE);
+        assert_eq!(
+            session_path_for_write(repo.path()),
+            repo.path().join(SESSION_FILE)
+        );
     }
 }

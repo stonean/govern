@@ -94,7 +94,7 @@ pub fn run(args: &ResolveReferencesArgs, repo: &Path) -> Result<ResolveReference
 /// shared with `dashboard`, whose rendered references readout appends the
 /// matched service's `description` from the same registry.
 pub(crate) fn load_services(repo: &Path) -> Result<Services> {
-    let toml_path = repo.join(".govern.toml");
+    let toml_path = paths::config_path(repo);
     if !toml_path.exists() {
         return Ok(Services::default());
     }

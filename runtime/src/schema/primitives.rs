@@ -2820,13 +2820,13 @@ mod tests {
 
         let result = MigrateSessionFileResult {
             source: ".claude/gov-session.json".into(),
-            dest: ".govern.session.toml".into(),
+            dest: ".govern/session.toml".into(),
             action: "migrated".into(),
             legacy_deleted: true,
         };
         let r_value: serde_json::Value = serde_json::to_value(&result).unwrap();
         assert_eq!(r_value["source"], ".claude/gov-session.json");
-        assert_eq!(r_value["dest"], ".govern.session.toml");
+        assert_eq!(r_value["dest"], ".govern/session.toml");
         assert_eq!(r_value["action"], "migrated");
         assert_eq!(r_value["legacy-deleted"], true);
         assert_eq!(round_trip(&result), result);
@@ -2904,7 +2904,7 @@ mod tests {
         assert!(!legacy.clear, "absent `clear` defaults to false");
 
         let result = WriteSessionResult {
-            path: ".govern.session.toml".into(),
+            path: ".govern/session.toml".into(),
             created: true,
         };
         assert_eq!(round_trip(&result), result);

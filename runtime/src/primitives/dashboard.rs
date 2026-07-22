@@ -19,7 +19,6 @@ use serde::Deserialize;
 
 use crate::host::Host;
 use crate::primitives::resolve_references::{self, load_services};
-use crate::primitives::write_session::SESSION_FILE;
 use crate::primitives::{
     PrimitiveError, Result, ScenarioFrontmatter, feature_number, list_feature_dirs,
     list_scenario_files, read_text, section_lines, split_frontmatter,
@@ -482,7 +481,7 @@ struct DisabledRuleFile {
 
 /// Read `.govern.toml` and summarize the review-state for the dashboard.
 fn load_config(repo: &Path) -> Result<DashboardConfig> {
-    let toml_path = repo.join(".govern.toml");
+    let toml_path = paths::config_path(repo);
     if !toml_path.is_file() {
         return Ok(DashboardConfig {
             present: false,
@@ -532,7 +531,7 @@ struct SessionFile {
 /// as-recorded; `/{project}:target` is the corrective action for stale
 /// slugs, not the dashboard.
 fn load_session_target(repo: &Path) -> Result<Option<DashboardSessionTarget>> {
-    let session_path = repo.join(SESSION_FILE);
+    let session_path = paths::session_path(repo);
     if !session_path.is_file() {
         return Ok(None);
     }

@@ -24,7 +24,7 @@ use std::path::Path;
 
 use serde::Deserialize;
 
-use crate::primitives::write_session::SESSION_FILE;
+use crate::schema::paths;
 
 /// Default `cli-config-dir` when `.govern.toml`'s `[host]` block is
 /// missing the key. Matches the framework repo's own layout, so this
@@ -93,7 +93,7 @@ impl Host {
     /// (a parse error logs to stderr and yields `None` — command resolution
     /// should not fail because of an unrelated config error).
     fn load_host_block(repo: &Path) -> Option<HostBlock> {
-        let toml_path = repo.join(".govern.toml");
+        let toml_path = paths::config_path(repo);
         let content = std::fs::read_to_string(&toml_path).ok()?;
         match toml::from_str::<HostFile>(&content) {
             Ok(parsed) => parsed.host,
@@ -112,7 +112,7 @@ impl Host {
     /// session file yields `None` so resolution falls through to the legacy
     /// `.govern.toml` value and then the default.
     fn load_session_cli_config_dir(repo: &Path) -> Option<String> {
-        let session_path = repo.join(SESSION_FILE);
+        let session_path = paths::session_path(repo);
         let content = std::fs::read_to_string(&session_path).ok()?;
         toml::from_str::<SessionHost>(&content).ok()?.cli_config_dir
     }

@@ -1,9 +1,9 @@
 //! `write-session` — atomically rewrite the session state file at
-//! `<repo>/.govern.session.toml`.
+//! `<repo>/.govern/session.toml`.
 //!
 //! Mirrors the write-side of [`crate::primitives::dashboard::load_session_target`].
 //! The session file is the second of the two durable journals named by
-//! spec 022 (markdown + `.govern.session.toml`, per
+//! spec 022 (markdown + `.govern/session.toml`, per
 //! `specs/022-deterministic-runtime/plan.md` §No data persistence outside
 //! session file + markdown); the read path is exposed by `dashboard`, and
 //! this primitive is the matching write path.
@@ -19,7 +19,7 @@
 //! (e.g., `.claude/gov-session.json`) — coupled the session location to
 //! both the AI CLI (`.claude/` vs `.augment/`) and the adopting project's
 //! name (`gov-session.json` vs `anvil-session.json`). Consolidating onto
-//! `.govern.session.toml` at the repo root makes the path host-agnostic,
+//! `.govern/session.toml` at the repo root makes the path host-agnostic,
 //! project-name-agnostic, and uniform across every adopter; the runtime
 //! no longer hardcodes any AI CLI's config directory.
 
@@ -31,16 +31,12 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
 
 use crate::primitives::{PrimitiveError, Result, rel_path, validate_no_traversal, write_atomic};
+use crate::schema::paths;
 use crate::schema::primitives::{WriteSessionArgs, WriteSessionResult};
-
-/// Repo-relative path of the session file. Hardcoded — there is no host
-/// variability to parameterize anymore; the file lives at the repo root
-/// for every adopter.
-pub(crate) const SESSION_FILE: &str = ".govern.session.toml";
 
 /// Execute the `write-session` primitive against `repo`.
 ///
-/// Writes a fresh TOML document at `<repo>/.govern.session.toml` via
+/// Writes a fresh TOML document at `<repo>/.govern/session.toml` via
 /// tempfile + rename — same atomic-write pattern every other
 /// state-modifying primitive (`mark-task`, `mark-criterion`,
 /// `set-status`) uses.
@@ -67,7 +63,11 @@ pub(crate) fn run_with_now(
 ) -> Result<WriteSessionResult> {
     validate_args(args)?;
 
-    let session_path = repo.join(SESSION_FILE);
+    // Writes target the *active* session file — `.govern/session.toml` when it
+    // exists, else the legacy root file when that exists, else the new path for
+    // a fresh project (spec 042). The `/govern` migration owns the cutover, so a
+    // write never creates a `.govern/` file while a legacy one still lingers.
+    let session_path = paths::session_path_for_write(repo);
     let created = !session_path.exists();
     let existing = read_existing_session(&session_path);
 
@@ -210,7 +210,7 @@ fn validate_args(args: &WriteSessionArgs) -> Result<()> {
 }
 
 /// On-disk shape of the session file. Field order is the wire contract —
-/// the parity byte-equality check on `.govern.session.toml` depends on it.
+/// the parity byte-equality check on `.govern/session.toml` depends on it.
 /// All keys are kebab-case to match the reader in
 /// [`crate::primitives::dashboard`]. Every field is optional: a host-config
 /// write (only `cli-config-dir`) against a fresh repo writes just that key,
@@ -234,7 +234,7 @@ struct SessionRecord {
     cli_config_dir: Option<String>,
 }
 
-/// The fields of an existing `.govern.session.toml` a write may need to
+/// The fields of an existing `.govern/session.toml` a write may need to
 /// carry forward: a target write preserves `cli-config-dir`; a host-config
 /// write preserves the whole target block.
 #[derive(Deserialize, Default)]
@@ -357,11 +357,12 @@ mod tests {
     #[test]
     fn writes_canonical_shape_without_scenario() {
         let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".govern")).unwrap();
         let result = run_with_now(&base_args(), tmp.path(), fixed_now()).unwrap();
-        assert_eq!(result.path, ".govern.session.toml");
+        assert_eq!(result.path, ".govern/session.toml");
         assert!(result.created, "fresh file is reported as created");
 
-        let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
+        let body = fs::read_to_string(tmp.path().join(".govern/session.toml")).unwrap();
         assert_eq!(
             body,
             "feature = \"022-deterministic-runtime\"\n\
@@ -373,6 +374,7 @@ mod tests {
     #[test]
     fn writes_scenario_pair_when_both_supplied() {
         let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".govern")).unwrap();
         let mut args = base_args();
         args.scenario = Some("write-session-primitive".into());
         args.scenario_path =
@@ -381,7 +383,7 @@ mod tests {
         let result = run_with_now(&args, tmp.path(), fixed_now()).unwrap();
         assert!(result.created);
 
-        let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
+        let body = fs::read_to_string(tmp.path().join(".govern/session.toml")).unwrap();
         assert!(
             body.contains("scenario = \"write-session-primitive\""),
             "{body}"
@@ -402,8 +404,9 @@ mod tests {
     #[test]
     fn overwrites_existing_file_and_reports_not_created() {
         let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".govern")).unwrap();
         fs::write(
-            tmp.path().join(".govern.session.toml"),
+            tmp.path().join(".govern/session.toml"),
             "feature = \"old-feature\"\npath = \"specs/old\"\nset-at = \"2026-01-01T00:00:00Z\"\n",
         )
         .unwrap();
@@ -411,7 +414,7 @@ mod tests {
         let result = run_with_now(&base_args(), tmp.path(), fixed_now()).unwrap();
         assert!(!result.created, "existing file is reported as overwritten");
 
-        let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
+        let body = fs::read_to_string(tmp.path().join(".govern/session.toml")).unwrap();
         assert!(body.contains("022-deterministic-runtime"));
         assert!(!body.contains("old-feature"));
     }
@@ -420,14 +423,15 @@ mod tests {
     fn writes_at_repo_root_regardless_of_project_name() {
         // The point of the consolidation: the path doesn't change with
         // project name, AI CLI, or anything else. It is always
-        // `.govern.session.toml` at the repo root.
+        // `.govern/session.toml` at the repo root.
         let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".govern")).unwrap();
         let mut args = base_args();
         args.feature = Some("002-observability".into());
         args.path = Some("specs/002-observability".into());
         let result = run_with_now(&args, tmp.path(), fixed_now()).unwrap();
-        assert_eq!(result.path, ".govern.session.toml");
-        assert!(tmp.path().join(".govern.session.toml").is_file());
+        assert_eq!(result.path, ".govern/session.toml");
+        assert!(tmp.path().join(".govern/session.toml").is_file());
         // No host-specific or project-specific sibling exists.
         assert!(!tmp.path().join(".claude").exists());
         assert!(!tmp.path().join(".claude/gov-session.json").exists());
@@ -440,8 +444,9 @@ mod tests {
         // session file; a later `/{project}:target` rewrites the file for a
         // new feature and must NOT drop it.
         let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".govern")).unwrap();
         fs::write(
-            tmp.path().join(".govern.session.toml"),
+            tmp.path().join(".govern/session.toml"),
             "feature = \"001-old\"\npath = \"specs/001-old\"\nset-at = \"2026-01-01T00:00:00Z\"\ncli-config-dir = \".opencode\"\n",
         )
         .unwrap();
@@ -451,7 +456,7 @@ mod tests {
         args.path = Some("specs/002-new".into());
         run_with_now(&args, tmp.path(), fixed_now()).unwrap();
 
-        let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
+        let body = fs::read_to_string(tmp.path().join(".govern/session.toml")).unwrap();
         assert!(body.contains("feature = \"002-new\""), "{body}");
         assert!(
             body.contains("cli-config-dir = \".opencode\""),
@@ -464,8 +469,9 @@ mod tests {
     #[test]
     fn omits_cli_config_dir_when_none_recorded() {
         let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".govern")).unwrap();
         run_with_now(&base_args(), tmp.path(), fixed_now()).unwrap();
-        let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
+        let body = fs::read_to_string(tmp.path().join(".govern/session.toml")).unwrap();
         assert!(!body.contains("cli-config-dir"), "{body}");
     }
 
@@ -475,6 +481,7 @@ mod tests {
         // a host-config write (no feature) against a fresh repo writes just
         // `cli-config-dir`.
         let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".govern")).unwrap();
         let args = WriteSessionArgs {
             feature: None,
             path: None,
@@ -485,7 +492,7 @@ mod tests {
         };
         let result = run_with_now(&args, tmp.path(), fixed_now()).unwrap();
         assert!(result.created);
-        let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
+        let body = fs::read_to_string(tmp.path().join(".govern/session.toml")).unwrap();
         assert_eq!(body, "cli-config-dir = \".opencode\"\n");
     }
 
@@ -494,8 +501,9 @@ mod tests {
         // Setting `cli-config-dir` after a target is already selected must not
         // disturb the target block (feature/path/scenario/set-at).
         let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".govern")).unwrap();
         fs::write(
-            tmp.path().join(".govern.session.toml"),
+            tmp.path().join(".govern/session.toml"),
             "feature = \"001-x\"\npath = \"specs/001-x\"\nset-at = \"2026-01-01T00:00:00Z\"\n",
         )
         .unwrap();
@@ -508,7 +516,7 @@ mod tests {
             clear: false,
         };
         run_with_now(&args, tmp.path(), fixed_now()).unwrap();
-        let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
+        let body = fs::read_to_string(tmp.path().join(".govern/session.toml")).unwrap();
         assert!(body.contains("feature = \"001-x\""), "{body}");
         assert!(body.contains("path = \"specs/001-x\""), "{body}");
         assert!(body.contains("set-at = \"2026-01-01T00:00:00Z\""), "{body}");
@@ -518,6 +526,7 @@ mod tests {
     #[test]
     fn rejects_write_with_neither_target_nor_cli_config_dir() {
         let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".govern")).unwrap();
         let args = WriteSessionArgs {
             feature: None,
             path: None,
@@ -528,12 +537,13 @@ mod tests {
         };
         let err = run_with_now(&args, tmp.path(), fixed_now()).unwrap_err();
         assert!(matches!(err, PrimitiveError::MissingArgument { .. }));
-        assert!(!tmp.path().join(".govern.session.toml").exists());
+        assert!(!tmp.path().join(".govern/session.toml").exists());
     }
 
     #[test]
     fn rejects_feature_without_path() {
         let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".govern")).unwrap();
         let args = WriteSessionArgs {
             feature: Some("001-x".into()),
             path: None,
@@ -561,6 +571,7 @@ mod tests {
         // A scenario is a sub-selection of the current target, so it requires
         // a target write (feature + path).
         let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".govern")).unwrap();
         let args = WriteSessionArgs {
             feature: None,
             path: None,
@@ -586,6 +597,7 @@ mod tests {
     #[test]
     fn clearing_scenario_omits_both_keys() {
         let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".govern")).unwrap();
         // First write with a scenario set.
         let mut with_scenario = base_args();
         with_scenario.scenario = Some("write-session-primitive".into());
@@ -595,7 +607,7 @@ mod tests {
 
         // Then overwrite without — both keys must vanish.
         run_with_now(&base_args(), tmp.path(), fixed_now()).unwrap();
-        let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
+        let body = fs::read_to_string(tmp.path().join(".govern/session.toml")).unwrap();
         assert!(!body.contains("scenario"), "{body}");
         assert!(!body.contains("scenario-path"), "{body}");
     }
@@ -605,15 +617,16 @@ mod tests {
         // target.md's `--clear`: the target block vanishes, the
         // per-contributor `cli-config-dir` survives.
         let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".govern")).unwrap();
         fs::write(
-            tmp.path().join(".govern.session.toml"),
+            tmp.path().join(".govern/session.toml"),
             "feature = \"001-x\"\npath = \"specs/001-x\"\nscenario = \"y\"\nscenario-path = \"specs/001-x/scenarios/y.md\"\nset-at = \"2026-01-01T00:00:00Z\"\ncli-config-dir = \".opencode\"\n",
         )
         .unwrap();
 
         let result = run_with_now(&clear_args(), tmp.path(), fixed_now()).unwrap();
         assert!(!result.created, "existing file is overwritten, not created");
-        let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
+        let body = fs::read_to_string(tmp.path().join(".govern/session.toml")).unwrap();
         assert_eq!(
             body, "cli-config-dir = \".opencode\"\n",
             "only cli-config-dir survives a clear: {body}"
@@ -625,28 +638,30 @@ mod tests {
         // `cli-config-dir` is not a target field; supplied alongside
         // `clear`, it overrides the preserved value.
         let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".govern")).unwrap();
         fs::write(
-            tmp.path().join(".govern.session.toml"),
+            tmp.path().join(".govern/session.toml"),
             "feature = \"001-x\"\npath = \"specs/001-x\"\nset-at = \"2026-01-01T00:00:00Z\"\ncli-config-dir = \".opencode\"\n",
         )
         .unwrap();
         let mut args = clear_args();
         args.cli_config_dir = Some(".augment".into());
         run_with_now(&args, tmp.path(), fixed_now()).unwrap();
-        let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
+        let body = fs::read_to_string(tmp.path().join(".govern/session.toml")).unwrap();
         assert_eq!(body, "cli-config-dir = \".augment\"\n");
     }
 
     #[test]
     fn clear_on_session_without_cli_config_dir_writes_empty_file() {
         let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".govern")).unwrap();
         fs::write(
-            tmp.path().join(".govern.session.toml"),
+            tmp.path().join(".govern/session.toml"),
             "feature = \"001-x\"\npath = \"specs/001-x\"\nset-at = \"2026-01-01T00:00:00Z\"\n",
         )
         .unwrap();
         run_with_now(&clear_args(), tmp.path(), fixed_now()).unwrap();
-        let body = fs::read_to_string(tmp.path().join(".govern.session.toml")).unwrap();
+        let body = fs::read_to_string(tmp.path().join(".govern/session.toml")).unwrap();
         assert_eq!(body, "", "nothing to preserve → empty session file");
     }
 
@@ -655,6 +670,7 @@ mod tests {
         // Mutual exclusion: `clear` combined with any target field is a
         // supplied-and-rejected InvalidArgument, and nothing is written.
         let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".govern")).unwrap();
         let mut args = base_args();
         args.clear = true;
         let err = run_with_now(&args, tmp.path(), fixed_now()).unwrap_err();
@@ -669,12 +685,13 @@ mod tests {
             }
             other => panic!("expected InvalidArgument, got {other:?}"),
         }
-        assert!(!tmp.path().join(".govern.session.toml").exists());
+        assert!(!tmp.path().join(".govern/session.toml").exists());
     }
 
     #[test]
     fn rejects_scenario_without_scenario_path() {
         let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".govern")).unwrap();
         let mut args = base_args();
         args.scenario = Some("orphan".into());
         let err = run_with_now(&args, tmp.path(), fixed_now()).unwrap_err();
@@ -690,12 +707,13 @@ mod tests {
             other => panic!("expected MissingArgument, got {other:?}"),
         }
         // Disk is unchanged (no file created).
-        assert!(!tmp.path().join(".govern.session.toml").exists());
+        assert!(!tmp.path().join(".govern/session.toml").exists());
     }
 
     #[test]
     fn rejects_scenario_path_without_scenario() {
         let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".govern")).unwrap();
         let mut args = base_args();
         args.scenario_path = Some("specs/x/scenarios/y.md".into());
         let err = run_with_now(&args, tmp.path(), fixed_now()).unwrap_err();
@@ -715,6 +733,7 @@ mod tests {
     #[test]
     fn rejects_path_with_parent_component() {
         let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".govern")).unwrap();
         let mut args = base_args();
         args.path = Some("specs/../escape".into());
         let err = run_with_now(&args, tmp.path(), fixed_now()).unwrap_err();
@@ -724,6 +743,7 @@ mod tests {
     #[test]
     fn rejects_absolute_scenario_path() {
         let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".govern")).unwrap();
         let mut args = base_args();
         args.scenario = Some("x".into());
         args.scenario_path = Some("/etc/passwd".into());
@@ -735,7 +755,8 @@ mod tests {
     fn dropping_named_tempfile_leaves_existing_session_unchanged() {
         use std::io::Write;
         let tmp = tempdir().unwrap();
-        let session_path = tmp.path().join(".govern.session.toml");
+        fs::create_dir_all(tmp.path().join(".govern")).unwrap();
+        let session_path = tmp.path().join(".govern/session.toml");
         let original = "feature = \"unchanged\"\n";
         fs::write(&session_path, original).unwrap();
         {

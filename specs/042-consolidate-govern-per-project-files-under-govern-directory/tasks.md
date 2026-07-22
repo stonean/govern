@@ -4,18 +4,18 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 1. Runtime config + session path resolvers with legacy fallback
 
-- [ ] Add `config_path(repo)` and `session_path(repo)` helpers in the runtime config/host layer, each returning the `.govern/` path when it exists and the legacy root path otherwise (new-wins when both exist)
-- [ ] Route the six config reads through `config_path`: `host.rs::load_host_block`, `schema/paths.rs::Paths::load_configured`, `resolve_references.rs::load_services`, `dashboard.rs::load_review_state`, `discover_rule_files.rs::load_govern_toml`, and the `main.rs` exec walker config seed
-- [ ] Route the session readers through `session_path`: `dashboard.rs::load_session_target`, `host.rs::load_session_cli_config_dir`, and the `main.rs:353-367` exec walker session seed (replace the literal at `:362`)
-- [ ] Unit-test both resolvers across new-only, legacy-only, both-present (→ `.govern/`), and neither-present (→ default `.govern/`)
+- [x] Add `config_path(repo)` and `session_path(repo)` helpers in the runtime config/host layer, each returning the `.govern/` path when it exists and the legacy root path otherwise (new-wins when both exist)
+- [x] Route the six config reads through `config_path`: `host.rs::load_host_block`, `schema/paths.rs::Paths::load_configured`, `resolve_references.rs::load_services`, `dashboard.rs::load_review_state`, `discover_rule_files.rs::load_govern_toml`, and the `main.rs` exec walker config seed
+- [x] Route the session readers through `session_path`: `dashboard.rs::load_session_target`, `host.rs::load_session_cli_config_dir`, and the `main.rs:353-367` exec walker session seed (replace the literal at `:362`)
+- [x] Unit-test both resolvers across new-only, legacy-only, both-present (→ `.govern/`), and neither-present (→ default `.govern/`)
 
 - **Done when**: every config/session read resolves `.govern/` first and falls back to the legacy root path, and unit tests cover all four presence cases for both resolvers.
 
 ## 2. Move the session constant and its compile-time guards
 
-- [ ] Change `SESSION_FILE` (`write_session.rs:39`) to `.govern/session.toml`
-- [ ] Update the literal-asserting guards/tests to the new value: `migrate_session_file.rs:189,345`; `write_session.rs:361,429`; `host.rs:262,275,292`
-- [ ] Confirm `migrate-session-file` (which writes `SESSION_FILE`) now lands the `session-file-consolidate` migration directly at `.govern/session.toml`
+- [x] Change `SESSION_FILE` (`write_session.rs:39`) to `.govern/session.toml`
+- [x] Update the literal-asserting guards/tests to the new value: `migrate_session_file.rs:189,345`; `write_session.rs:361,429`; `host.rs:262,275,292`
+- [x] Confirm `migrate-session-file` (which writes `SESSION_FILE`) now lands the `session-file-consolidate` migration directly at `.govern/session.toml`
 
 - **Done when**: the constant and all its guards/tests use `.govern/session.toml`, and the runtime crate compiles with the compile-time guard satisfied.
 
