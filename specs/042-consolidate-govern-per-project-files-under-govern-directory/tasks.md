@@ -54,9 +54,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 7. Update the bootstrap `govern.md`
 
-- [ ] Change the Shared Files manifest rows (`:635-637`) so source and dest are `.govern/scripts/{gen-spec-deps.sh, gen-cross-service-refs.sh, lib/specs-root.sh}`
-- [ ] Update config/session path prose to `.govern/config.toml` / `.govern/session.toml` (Instructions steps, §Project Configuration, §Session state, Pre-run Migrations, workflow-decline writes)
-- [ ] Document the write-active-file / migration-is-sole-cutover behavior
+- [x] Change the Shared Files manifest rows (`:635-637`) so source and dest are `.govern/scripts/{gen-spec-deps.sh, gen-cross-service-refs.sh, lib/specs-root.sh}`
+- [x] Update config/session path prose to `.govern/config.toml` / `.govern/session.toml` (Instructions steps, §Project Configuration, §Session state, Pre-run Migrations, workflow-decline writes)
+- [x] Document the write-active-file / migration-is-sole-cutover behavior
 
 - **Done when**: `govern.md` ships the three generators to `.govern/scripts/`, names the new config/session paths throughout, and documents the cutover rule.
 

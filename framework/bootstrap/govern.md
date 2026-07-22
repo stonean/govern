@@ -21,9 +21,9 @@ The same `govern.md` supports every agent the framework knows about. The set of 
 
 > **For agent runtimes**: backticked primitive names in this section (`fetch-archive`, `extract-archive`, `apply-manifest`, `merge-managed-block`, `enforce-manifest`) map to MCP tools the optional [gvrn runtime](https://crates.io/crates/gvrn) exposes under bare `<primitive>` names (e.g., `fetch-archive`). Hosts wrap them with a server-name prefix taken from the agent's MCP registration (Claude: `mcp__gvrn__fetch-archive`; Auggie: `mcp:gvrn:fetch-archive`). When the server is registered for your session, **call the corresponding tool** for each step listed below — that is the deterministic path. When it is not registered, walk the markdown-only reference below (`tar -xzf`, `curl`, etc.) to produce the same result. The two paths share a contract; neither one wraps the other.
 
-**Procedural fidelity.** Execute the steps below as written. The only confirmation prompts to issue are those the procedure specifies: project inputs (§Inputs), agent-selection prompts on `--add-agent` / first-run (§Agent Selection), the registry-driven migration prompts (§Pre-run Migrations — outer "apply N pending migrations" prompt plus any per-entry inner prompts the procedure files specify), and per-category workflow prompts (§Workflow recommendation, step 8). Do not stop to warn about uncommitted edits to update-strategy files, custom slash commands that **Slash command cleanup** is about to remove, or "data loss" from the stale → write-and-abort path. The procedure already encodes safety: `.govern.toml` `[pinned] files` is the opt-out, the stale path writes upstream and aborts cleanly (recoverable from git), and slash-command cleanup is unconditional for unpinned files. Extra prompts duplicate information the procedure already gives the user and stall routine runs.
+**Procedural fidelity.** Execute the steps below as written. The only confirmation prompts to issue are those the procedure specifies: project inputs (§Inputs), agent-selection prompts on `--add-agent` / first-run (§Agent Selection), the registry-driven migration prompts (§Pre-run Migrations — outer "apply N pending migrations" prompt plus any per-entry inner prompts the procedure files specify), and per-category workflow prompts (§Workflow recommendation, step 8). Do not stop to warn about uncommitted edits to update-strategy files, custom slash commands that **Slash command cleanup** is about to remove, or "data loss" from the stale → write-and-abort path. The procedure already encodes safety: `.govern/config.toml` `[pinned] files` is the opt-out, the stale path writes upstream and aborts cleanly (recoverable from git), and slash-command cleanup is unconditional for unpinned files. Extra prompts duplicate information the procedure already gives the user and stall routine runs.
 
-1. The walker context carries the inputs the host has already gathered and validated: project (the destination project name), description (one-line project description), languages (comma-separated), agents (registry keys), framework-version (release tag), archive-url and sha256-url (computed from framework-version), staging-dir, substitutions-map, manifest-entries (the per-strategy list described in **Shared Files** and **Per-Agent Scaffolding**), pinned-list (from `.govern.toml`'s `[pinned] files` block), gitignore-block (the `.claude/`, `.augment/`, `.agents/`, `.opencode/`, `specs/.cache/`, etc. lines), host-block (the `project` value — the team-shared slash-command namespace — written to committed `.govern.toml`, plus the per-contributor `cli-config-dir` written to the gitignored `.govern.session.toml` since teammates may use different agents; the runtime reads both at `gvrn exec` time to resolve `{cli-config-dir}/commands/{project}/<name>.md`), enforce-directories (the slash-command directories whose top-level `*.md` files are pruned to the manifest), and the per-agent govern-install entry with `keep-literals: ["project", "cli-config-dir"]`. The host runs the markdown-only reference below to collect inputs, derive registry values, validate `.govern.toml`, and seed context; the runtime walks the procedure that follows.
+1. The walker context carries the inputs the host has already gathered and validated: project (the destination project name), description (one-line project description), languages (comma-separated), agents (registry keys), framework-version (release tag), archive-url and sha256-url (computed from framework-version), staging-dir, substitutions-map, manifest-entries (the per-strategy list described in **Shared Files** and **Per-Agent Scaffolding**), pinned-list (from `.govern/config.toml`'s `[pinned] files` block), gitignore-block (the `.claude/`, `.augment/`, `.agents/`, `.opencode/`, `specs/.cache/`, etc. lines), host-block (the `project` value — the team-shared slash-command namespace — written to committed `.govern/config.toml`, plus the per-contributor `cli-config-dir` written to the gitignored `.govern/session.toml` since teammates may use different agents; the runtime reads both at `gvrn exec` time to resolve `{cli-config-dir}/commands/{project}/<name>.md`), enforce-directories (the slash-command directories whose top-level `*.md` files are pruned to the manifest), and the per-agent govern-install entry with `keep-literals: ["project", "cli-config-dir"]`. The host runs the markdown-only reference below to collect inputs, derive registry values, validate `.govern/config.toml`, and seed context; the runtime walks the procedure that follows.
 
 2. Invoke `fetch-archive` (MCP: `fetch-archive`) to download the framework tarball. The primitive verifies the sha256 against a sidecar URL when one is supplied; without a sidecar (the live-on-main case, since GitHub's auto-generated source tarballs ship without sidecars) it returns the computed digest and `verified: false`, leaving any out-of-band verification to the host. A sidecar mismatch halts the procedure with an `error` envelope so no partial state lands in the destination tree.
 
@@ -35,7 +35,7 @@ The same `govern.md` supports every agent the framework knows about. The set of 
 
 6. Establish the team-shared host configuration. Invoke `merge-managed-block` (MCP: `merge-managed-block`) against the **active config file** — `.govern/config.toml` when it exists, else the legacy root `.govern.toml` when that exists, else `.govern/config.toml` for a fresh project (spec 042: config writes target the active file, so no write outside the `govern-dir-consolidate` migration ever creates a partial `.govern/config.toml` alongside a lingering legacy file) — with `marker-style: "line-prefix"`, `marker: "govern (host)"`, and a block carrying **only** the resolved `project` value (the team-shared slash-command namespace). First-run creates the file with just the managed block; subsequent runs update only the region between the `# govern (host)` preamble line and the next blank line, preserving every other config section (`[pinned]`, `[workflows]`, `[migrations]`, `[review]`) byte-for-byte — and dropping any legacy `cli-config-dir` key a prior version wrote into the managed block. On the markdown-only path, the host writes the `[host]` block to the same active file with its file-writing tool. See §Project Configuration for the `[host]` schema.
 
-7. Record the per-contributor agent identity. Invoke `write-session` (MCP: `write-session`) with `cli-config-dir` set to the agent's resolved config-dir and **no** target fields — a host-config write that stores the agent identity in the gitignored `.govern.session.toml` (preserving any existing target), never in committed config, because teammates on one project may each use a different agent. The runtime reads `project` from `.govern.toml` and `cli-config-dir` from the session file at `gvrn exec` time to resolve `{cli-config-dir}/commands/{project}/<name>.md`; absent either, it falls back to `.claude` / repo directory basename — fine for the framework's own repo, broken for any adopter whose layout doesn't match the defaults. On the markdown-only path, the host writes the session-file `cli-config-dir` key with its file-writing tool.
+7. Record the per-contributor agent identity. Invoke `write-session` (MCP: `write-session`) with `cli-config-dir` set to the agent's resolved config-dir and **no** target fields — a host-config write that stores the agent identity in the gitignored `.govern/session.toml` (preserving any existing target), never in committed config, because teammates on one project may each use a different agent. The runtime reads `project` from `.govern/config.toml` and `cli-config-dir` from the session file at `gvrn exec` time to resolve `{cli-config-dir}/commands/{project}/<name>.md`; absent either, it falls back to `.claude` / repo directory basename — fine for the framework's own repo, broken for any adopter whose layout doesn't match the defaults. On the markdown-only path, the host writes the session-file `cli-config-dir` key with its file-writing tool.
 
 8. Invoke `enforce-manifest` (MCP: `enforce-manifest`) once per directory in the host's enforce-directories list (typically the per-agent slash-command directory). The primitive removes files matching the glob-include arg (default `*.md`) whose relative path is neither in the expected list nor pinned. One call replaces the slash-command manifest enforcement loop the markdown-only reference describes. Adopter cleanup of historical conventions (legacy `skills/` directory, post-005 workflow filename rename, and the rest) is owned by the **Pre-run Migrations** section above and the `framework/migrations.toml` registry it drives.
 
@@ -77,7 +77,7 @@ For each agent, these paths and behaviors are computed by convention from its ro
 | Native rules file | `CLAUDE.md` | `AGENTS.md` | `AGENTS.md` |
 | Slash-command cleanup glob | `*.md` in the commands dir | `{project}-*/` skill dirs in `skills/` | `*.md` in `command/{project}/` |
 
-The session state file is `.govern.session.toml` at the repo root for every adopter — not a derived per-agent path (the path is uniform across agents). It's gitignored, and it additionally records the per-contributor `cli-config-dir` (see §Session state).
+The session state file is `.govern/session.toml` for every adopter — not a derived per-agent path (the path is uniform across agents). It's gitignored, and it additionally records the per-contributor `cli-config-dir` (see §Session state).
 
 ### MCP registration (per-agent)
 
@@ -121,7 +121,7 @@ Flags may appear in any order alongside the project name.
 Before any scaffolding, verify:
 
 - The current directory **is** an existing git repository. If not, stop and report: "This is not a git repository. Run `git init` first."
-- If the spec-root directory already exists, this is a re-run. The spec-root name is `[paths] specs-root` from `.govern.toml` when that file is present, else `specs` (spec 040). Report: "Existing {spec-root}/ directory found — running in update mode." Proceed normally; `update` strategy files will be overwritten, `create` strategy files will be skipped, `skip` strategy files will be left alone.
+- If the spec-root directory already exists, this is a re-run. The spec-root name is `[paths] specs-root` from `.govern/config.toml` when that file is present, else `specs` (spec 040). Report: "Existing {spec-root}/ directory found — running in update mode." Proceed normally; `update` strategy files will be overwritten, `create` strategy files will be skipped, `skip` strategy files will be left alone.
 
 ## Agent Selection
 
@@ -272,9 +272,9 @@ If the fetch fails — non-zero `curl` exit, network error, or a 404 — abort t
 For each selected agent, compare the upstream `{tempdir}/govern.md.upstream` against the agent's installed `govern` file and assign one status. For `claude-style` the installed file is `{config_dir}/commands/govern.md` and for `opencode` it is `{config_dir}/command/govern.md` — both installed verbatim (frontmatter included), so the comparison is a direct byte-compare against `{tempdir}/govern.md.upstream`. For `antigravity` the installed file is `{config_dir}/skills/govern/SKILL.md`, which wraps **only the upstream body** in `name: govern` frontmatter — the installer drops `govern.md`'s own frontmatter when wrapping. So compare **bodies on both sides**: strip the leading frontmatter block (the first `---`-delimited region) from the installed `SKILL.md` **and** from `{tempdir}/govern.md.upstream`, then byte-compare what remains. Stripping only the `SKILL.md` side leaves `govern.md`'s frontmatter on the upstream side, which never matches — a false `stale` on every run. The statuses below are assigned from this body-vs-body (antigravity) or file-vs-file (`claude-style` / `opencode`) comparison:
 
 - **`no installed copy`** — the installed file does not exist (first run for this agent). Continue.
-- **`current`** — the two files are byte-identical, **or** the installed file is byte-identical to upstream and listed in `.govern.toml` `pinned.files` (the pin had nothing to suppress this run). Continue.
+- **`current`** — the two files are byte-identical, **or** the installed file is byte-identical to upstream and listed in `.govern/config.toml` `pinned.files` (the pin had nothing to suppress this run). Continue.
 - **`stale`** — the two files differ and the installed file is **not** pinned. The running session is using older instructions than what is current upstream.
-- **`pinned-divergent`** — the two files differ and the installed file **is** listed in `.govern.toml` `pinned.files`. The pin intentionally suppresses the update; continue, and emit a single advisory line in the post-scaffolding output.
+- **`pinned-divergent`** — the two files differ and the installed file **is** listed in `.govern/config.toml` `pinned.files`. The pin intentionally suppresses the update; continue, and emit a single advisory line in the post-scaffolding output.
 
 The check is scoped to **selected agents only** — agents whose `config_dir` exists in the project but are not in this run's selection are not diffed. An unselected stale agent will trip the check on its very next `/govern` run targeting it.
 
@@ -320,15 +320,15 @@ Everything past the pre-flight phase — **Collect Project Inputs**, **Pre-run M
 
 The Pre-flight Phase has passed (nothing in the pending-restart set), so this run will proceed to scaffold. **Only now** — never before the Pre-flight Phase — resolve the project inputs, so an abort can never discard answers the user just typed.
 
-`.govern.toml` is the persistent home for these answers. Resolve each input from the first available source and **prompt only for what is still missing**:
+The **active config file** (`.govern/config.toml` when it exists, else the legacy root `.govern.toml`; spec 042 — see §Project Configuration) is the persistent home for these answers. Resolve each input from the first available source and **prompt only for what is still missing**:
 
-1. **Project name** — from `$ARGUMENTS` (a single non-flag word, per §Inputs), else `[project] name` in `.govern.toml` (else `[host] project` for configs predating the `[project]` table), else prompt. Used for `{project}` substitution and command directory naming.
-2. **Project description** — from `[project] description` in `.govern.toml`, else prompt. Used for AGENTS.md.
-3. **Primary language(s)** — from `[project] languages` in `.govern.toml`, else prompt. Used for .gitignore language patterns.
-4. **Rule surfaces** — from `[rules] surfaces` in `.govern.toml`, else prompt ("Which rule surfaces does this project need? backend / frontend / both"). Recorded as a list with members in `{backend, frontend}` ("both" records both). Selects which rule files `/govern` installs (§Shared Files) and which `/gov:review` enforces (`review.md` §Behavior step 5). When the recorded surfaces exclude a surface that `[project] languages` implies (e.g., a frontend language is listed but `surfaces` omits `frontend`), emit one advisory line and honor the explicit value. **Validate a present value before using it** (degenerate configs fail fast per `CFG-ENV-003`, never silently ignored): the **empty list** (`surfaces = []`) is valid and means cross-only — install only `*-cross.md`, no surface-suffixed files — and is distinct from the key being unset (which derives/installs all); an **unrecognized member** outside `{backend, frontend}` (a typo, or `"cross"` — cross-cutting files are not a selectable surface) halts with `/govern: invalid [rules] surfaces member "<value>" — accepted members are "backend" and "frontend" (use [] for cross-only; -cross.md files always apply)`, and a list mixing valid and invalid members fails on the invalid one; a **non-list value** (a bare string) halts with `/govern: [rules] surfaces must be a list of strings, got <type>`.
-5. **Spec-root directory** — from `[paths] specs-root` in `.govern.toml`, else prompt ("What should the spec-root directory be named?") **defaulting to `specs`**. Names the top-level directory that holds every govern artifact (feature dirs, `inbox.md`, `rules/`, shared docs). The prompt lives **only** in `/govern` — no other command asks for it — and when the key stays unset every command and the runtime default to `specs`, so an adopter who never sets it sees unchanged behavior (spec [040](../../specs/040-configurable-specs-dir/spec.md)). **Validate a present or entered value before using it** (fail fast — a value that breaks path resolution is never silently accepted): a name that is empty or contains any character outside `[A-Za-z0-9_-]` (a path separator, `.`/`..`, or other punctuation) halts with `/govern: invalid [paths] specs-root "<value>" — must be a single directory name using only letters, digits, '-', and '_'`. Two **non-blocking** notices after a valid value is chosen: when the chosen directory **already exists on disk and is not a govern spec root** (no `inbox.md`, no numbered `NNN-*` subdirs), emit one line naming it and proceed — it may be a sibling framework's directory (e.g. RSpec's `spec/`), and the operator's choice is honored after the warning; when the configured `specs-root` is **absent on disk but a different govern-shaped directory exists**, emit a one-line half-finished-rename notice rather than silently scaffolding a new empty tree.
+1. **Project name** — from `$ARGUMENTS` (a single non-flag word, per §Inputs), else `[project] name` in the config file (else `[host] project` for configs predating the `[project]` table), else prompt. Used for `{project}` substitution and command directory naming.
+2. **Project description** — from `[project] description` in the config file, else prompt. Used for AGENTS.md.
+3. **Primary language(s)** — from `[project] languages` in the config file, else prompt. Used for .gitignore language patterns.
+4. **Rule surfaces** — from `[rules] surfaces` in the config file, else prompt ("Which rule surfaces does this project need? backend / frontend / both"). Recorded as a list with members in `{backend, frontend}` ("both" records both). Selects which rule files `/govern` installs (§Shared Files) and which `/gov:review` enforces (`review.md` §Behavior step 5). When the recorded surfaces exclude a surface that `[project] languages` implies (e.g., a frontend language is listed but `surfaces` omits `frontend`), emit one advisory line and honor the explicit value. **Validate a present value before using it** (degenerate configs fail fast per `CFG-ENV-003`, never silently ignored): the **empty list** (`surfaces = []`) is valid and means cross-only — install only `*-cross.md`, no surface-suffixed files — and is distinct from the key being unset (which derives/installs all); an **unrecognized member** outside `{backend, frontend}` (a typo, or `"cross"` — cross-cutting files are not a selectable surface) halts with `/govern: invalid [rules] surfaces member "<value>" — accepted members are "backend" and "frontend" (use [] for cross-only; -cross.md files always apply)`, and a list mixing valid and invalid members fails on the invalid one; a **non-list value** (a bare string) halts with `/govern: [rules] surfaces must be a list of strings, got <type>`.
+5. **Spec-root directory** — from `[paths] specs-root` in the config file, else prompt ("What should the spec-root directory be named?") **defaulting to `specs`**. Names the top-level directory that holds every govern artifact (feature dirs, `inbox.md`, `rules/`, shared docs). The prompt lives **only** in `/govern` — no other command asks for it — and when the key stays unset every command and the runtime default to `specs`, so an adopter who never sets it sees unchanged behavior (spec [040](../../specs/040-configurable-specs-dir/spec.md)). **Validate a present or entered value before using it** (fail fast — a value that breaks path resolution is never silently accepted): a name that is empty or contains any character outside `[A-Za-z0-9_-]` (a path separator, `.`/`..`, or other punctuation) halts with `/govern: invalid [paths] specs-root "<value>" — must be a single directory name using only letters, digits, '-', and '_'`. Two **non-blocking** notices after a valid value is chosen: when the chosen directory **already exists on disk and is not a govern spec root** (no `inbox.md`, no numbered `NNN-*` subdirs), emit one line naming it and proceed — it may be a sibling framework's directory (e.g. RSpec's `spec/`), and the operator's choice is honored after the warning; when the configured `specs-root` is **absent on disk but a different govern-shaped directory exists**, emit a one-line half-finished-rename notice rather than silently scaffolding a new empty tree.
 
-On a routine re-run (update mode) `.govern.toml` already carries all five, so this step prompts for nothing. On a first scaffold it prompts for whatever is missing, then **persists the three project inputs into the active config file's `[project]` table** (`name`, `description`, `languages`; the active file per spec 042 — `.govern/config.toml` when it exists, else the legacy root `.govern.toml` when that exists, else `.govern/config.toml`), **the rule surfaces into the `[rules]` table** (`surfaces`), **and the spec-root into the `[paths]` table** (`specs-root`; see §Project Configuration), preserving every other section, so the next run — and the session after any State B / stale-`govern.md` restart — reads them back instead of re-asking. `host.project` continues to be written from `project.name` as the runtime's slash-command namespace.
+On a routine re-run (update mode) the config file already carries all five, so this step prompts for nothing. On a first scaffold it prompts for whatever is missing, then **persists the three project inputs into the active config file's `[project]` table** (`name`, `description`, `languages`; the active file per spec 042 — `.govern/config.toml` when it exists, else the legacy root `.govern.toml` when that exists, else `.govern/config.toml`), **the rule surfaces into the `[rules]` table** (`surfaces`), **and the spec-root into the `[paths]` table** (`specs-root`; see §Project Configuration), preserving every other section, so the next run — and the session after any State B / stale-`govern.md` restart — reads them back instead of re-asking. `host.project` continues to be written from `project.name` as the runtime's slash-command namespace.
 
 When prompting (AskUserQuestion), every question **must** include an `options` array with 2–4 example choices (the user can always select "Other" for custom input):
 
@@ -372,7 +372,7 @@ Adopter-side cleanup for conventions that have been removed or renamed since the
 
 ### Stale-reference behavior
 
-If `.govern.toml`'s `[migrations].last_applied` references an `id` that no longer exists in the active registry (the entry was sunsetted since the adopter's last run), treat the field as "before the oldest active entry" and run every active entry. Emit one warning: `last_applied was "{retired_id}" which has been retired; see CHANGELOG.md for its recipe.` Adopters far enough behind to hit a sunsetted entry apply it manually from `CHANGELOG.md`.
+If the active config file's `[migrations].last_applied` references an `id` that no longer exists in the active registry (the entry was sunsetted since the adopter's last run), treat the field as "before the oldest active entry" and run every active entry. Emit one warning: `last_applied was "{retired_id}" which has been retired; see CHANGELOG.md for its recipe.` Adopters far enough behind to hit a sunsetted entry apply it manually from `CHANGELOG.md`.
 
 ### Duplicate-id and reference-integrity guard
 
@@ -380,15 +380,17 @@ If `framework/migrations.toml` contains two entries with the same `id`, or if an
 
 ## Project Configuration
 
-`.govern.toml` is the project's configuration and persisted-decisions store. If the file exists, read it before processing the file manifest. The file is optional — if it does not exist, use default behavior for every key. If the file exists but is malformed (TOML parse error), abort the run with a clear error rather than silently proceeding.
+`.govern/config.toml` is the project's configuration and persisted-decisions store (spec 042; the pre-042 location was the repo root `.govern.toml`, and every reader falls back to it while the new file is absent — new wins when both exist). If the file exists, read it before processing the file manifest. The file is optional — if it does not exist, use default behavior for every key. If the file exists but is malformed (TOML parse error), abort the run with a clear error rather than silently proceeding.
 
-The file is a flat collection of top-level sections. There is no umbrella namespace; each section is keyed to the thing it governs. The sections that may appear in `.govern.toml`:
+**Write policy — the `/govern` migration is the sole cutover (spec 042).** Every config write in this procedure (the `[host]` managed block, the `[project]`/`[rules]`/`[paths]` input persistence, `[workflows].declined_categories`, `[migrations].last_applied`) and every session write targets the **active file**: the `.govern/` file when it exists, else the legacy root file when that exists, else the `.govern/` file for a fresh project. No write outside the `govern-dir-consolidate` migration ever creates `.govern/config.toml` while a legacy `.govern.toml` lingers — that partial file would win on read and strand the legacy file's other sections. The migration moves the whole file as one unit; the runtime's `config_path_for_write` / `session_path_for_write` resolvers are the canonical statement of this rule, and `write-session` applies it on every session write.
+
+The file is a flat collection of top-level sections. There is no umbrella namespace; each section is keyed to the thing it governs. The sections that may appear in the config file:
 
 ```toml
 # govern (host)
 [host]
 # `project` only — the team-shared slash-command namespace. The per-contributor
-# `cli-config-dir` lives in the gitignored `.govern.session.toml` (teammates may
+# `cli-config-dir` lives in the gitignored `.govern/session.toml` (teammates may
 # use different agents), never here.
 project = "gov"
 
@@ -460,7 +462,7 @@ declined_categories = ["Linting", "Formatting"]
 # reason = "Pre-OpenAPI; revisit after schema lands (PROJ-1234)"
 ```
 
-`host.project` — the project's slash-command namespace, written by `/govern` into a managed block (`# govern (host)` line-prefix marker) in committed `.govern.toml` on every run (idempotent — re-runs update rather than append). The per-contributor `cli-config-dir` (the agent's config-dir name) is **not** committed: teammates on one project may each use a different agent, so `/govern` writes it to the gitignored `.govern.session.toml` instead (§Instructions step 7). The runtime reads `project` from `.govern.toml` and `cli-config-dir` from the session file at `gvrn exec` time to resolve `{cli-config-dir}/commands/{project}/<name>.md`; both fall back to `.claude` / the repo directory basename when absent. Adopters whose layout matches the defaults (this repo, anyone on Claude Code with the conventional `.claude/commands/<project>/`) never observe the difference; Auggie / OpenCode adopters and anyone with a non-standard layout do.
+`host.project` — the project's slash-command namespace, written by `/govern` into a managed block (`# govern (host)` line-prefix marker) in committed `.govern/config.toml` on every run (idempotent — re-runs update rather than append). The per-contributor `cli-config-dir` (the agent's config-dir name) is **not** committed: teammates on one project may each use a different agent, so `/govern` writes it to the gitignored `.govern/session.toml` instead (§Instructions step 7). The runtime reads `project` from `.govern/config.toml` and `cli-config-dir` from the session file at `gvrn exec` time to resolve `{cli-config-dir}/commands/{project}/<name>.md`; both fall back to `.claude` / the repo directory basename when absent. Adopters whose layout matches the defaults (this repo, anyone on Claude Code with the conventional `.claude/commands/<project>/`) never observe the difference; Auggie / OpenCode adopters and anyone with a non-standard layout do.
 
 `project.name`, `project.description`, and `project.languages` — the project inputs collected at §Collect Project Inputs (name; one-line description for AGENTS.md; primary languages for .gitignore patterns), written into the `[project]` table additively (preserving every other section) and read back on every subsequent run so the inputs are asked at most once. `[project]` is the source of truth for the answers; `host.project` is written from `project.name` as the runtime's slash-command namespace (the derived runtime view of the same value), so the two cannot diverge. Editing a `[project]` value re-runs the corresponding scaffold step with the new value on the next `/govern` — the documented way to rename a project or change its languages. The table is host-side state (the host gathers inputs before the runtime walks per §Instructions step 1), so it is written on every adoption path without a runtime primitive.
 
@@ -470,9 +472,9 @@ declined_categories = ["Linting", "Formatting"]
 
 `migrations.last_applied` — slug of the newest pre-run migration applied to this project, written by `/govern` after each successful migration in §Pre-run Migrations. Absent section means "no migrations applied"; bootstrap runs every active entry on the next run. Adopters should not edit this field by hand — the registry in `framework/migrations.toml` and the per-entry procedure files in `framework/migrations/{id}.md` are the authoritative sources.
 
-`workflows.declined_categories` — categories listed here suppress the per-category workflow recommendation prompt entirely (see the **Workflow recommendation** flow below). Entries that don't match any canonical category name are reported once each in the post-scaffolding summary as `unrecognized workflow decline: "{value}" (in .govern.toml)` but do not abort the run.
+`workflows.declined_categories` — categories listed here suppress the per-category workflow recommendation prompt entirely (see the **Workflow recommendation** flow below). Entries that don't match any canonical category name are reported once each in the post-scaffolding summary as `unrecognized workflow decline: "{value}" (in .govern/config.toml)` but do not abort the run.
 
-`review.disabled-rule-files` — array-of-tables consumed by `/gov:review` at rule-file selection time (see [`framework/commands/review.md`](../commands/review.md) §Inputs and §Behavior step 5). `/govern` does not read this key; it is documented here so adopters see the full `.govern.toml` schema in one place.
+`review.disabled-rule-files` — array-of-tables consumed by `/gov:review` at rule-file selection time (see [`framework/commands/review.md`](../commands/review.md) §Inputs and §Behavior step 5). `/govern` does not read this key; it is documented here so adopters see the full `.govern/config.toml` schema in one place.
 
 The full schema (allowed values, case-insensitive matching, empty-section behavior, future-section guidance) is declared in [`specs/019-config-decisions/data-model.md`](../../specs/019-config-decisions/data-model.md).
 
@@ -550,7 +552,7 @@ Determine whether the file needs migration:
 - Otherwise, scan the first few lines after the heading for bold-prefix metadata patterns (`**Status:**`, `**Dependencies:**`, `**spec-ref:**`). If at least one is found, the file needs migration.
 - If no bold-prefix lines are present and no frontmatter exists, skip with reason "no metadata to migrate."
 
-Skip files that appear in `.govern.toml` `pinned.files` with reason "pinned." The adopter is responsible for migrating pinned files manually.
+Skip files that appear in `.govern/config.toml` `pinned.files` with reason "pinned." The adopter is responsible for migrating pinned files manually.
 
 ### Convert
 
@@ -603,7 +605,7 @@ Print a per-file summary at the end of the migration step:
 
 - `migrated: {file path}` for converted files
 - `skipped (already frontmatter): {file path}` for files that were already in the new format
-- `skipped (pinned): {file path}` for files listed in `.govern.toml`
+- `skipped (pinned): {file path}` for files listed in `.govern/config.toml`
 - `skipped (no metadata to migrate): {file path}` for files without recognizable metadata
 - `skipped (malformed metadata): {file path} — {reason}` for files that could not be parsed
 
@@ -632,9 +634,9 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 | `framework/rules/security-backend.md` | `specs/rules/security-backend.md` |
 | `framework/rules/security-frontend.md` | `specs/rules/security-frontend.md` |
 | `framework/bootstrap/hooks/govern-pre-commit` | `.githooks/govern-pre-commit` |
-| `scripts/gen-spec-deps.sh` | `scripts/gen-spec-deps.sh` |
-| `scripts/gen-cross-service-refs.sh` | `scripts/gen-cross-service-refs.sh` |
-| `scripts/lib/specs-root.sh` | `scripts/lib/specs-root.sh` |
+| `.govern/scripts/gen-spec-deps.sh` | `.govern/scripts/gen-spec-deps.sh` |
+| `.govern/scripts/gen-cross-service-refs.sh` | `.govern/scripts/gen-cross-service-refs.sh` |
+| `.govern/scripts/lib/specs-root.sh` | `.govern/scripts/lib/specs-root.sh` |
 | `.markdownlint-cli2.jsonc` | `.markdownlint-cli2.jsonc` |
 | `framework/templates/spec/spec.md` | `specs/templates/spec.md` |
 | `framework/templates/spec/plan.md` | `specs/templates/plan.md` |
@@ -758,7 +760,7 @@ The configure row uses the agent-specific source `framework/bootstrap/configure/
 
 ### Slash command cleanup
 
-After processing the slash command manifest above, list all `.md` files in `{config_dir}/commands/{project}/`. For each file that is **not** in the slash command manifest above and **not** listed in `.govern.toml` `pinned.files`:
+After processing the slash command manifest above, list all `.md` files in `{config_dir}/commands/{project}/`. For each file that is **not** in the slash command manifest above and **not** listed in `.govern/config.toml` `pinned.files`:
 
 - Delete the file.
 - Report it as "removed" in the post-scaffolding summary.
@@ -779,7 +781,7 @@ When the agent's registry `layout` is `antigravity`, the two subsections above (
 
 **Rules (strategy: update).** Mirror each domain rule file the **Shared Files** manifest placed in `specs/rules/` into `{config_dir}/rules/{name}.md`, so Antigravity loads them natively. Both copies regenerate from `framework/rules/` on every `/govern` run — `specs/rules/` stays the pipeline-read location for every agent; `{config_dir}/rules/` is the Antigravity-native mirror. The `specs/rules/` write itself (in **Shared Files**) is layout-independent and unchanged.
 
-**Skill cleanup (replaces Slash command cleanup).** List the skill directories under `{config_dir}/skills/` whose name matches `{project}-*`. Delete any `{config_dir}/skills/{project}-{name}/` whose `{project}-{name}` is not produced by the skills manifest above and is not listed in `.govern.toml` `pinned.files`; report removals and pinned-keeps as for the `claude-style` cleanup. Skill dirs outside the `{project}-*` namespace (and the `govern` skill) are adopter/agent territory and are never touched.
+**Skill cleanup (replaces Slash command cleanup).** List the skill directories under `{config_dir}/skills/` whose name matches `{project}-*`. Delete any `{config_dir}/skills/{project}-{name}/` whose `{project}-{name}` is not produced by the skills manifest above and is not listed in `.govern/config.toml` `pinned.files`; report removals and pinned-keeps as for the `claude-style` cleanup. Skill dirs outside the `{project}-*` namespace (and the `govern` skill) are adopter/agent territory and are never touched.
 
 ### OpenCode layout (`layout: opencode`)
 
@@ -787,7 +789,7 @@ When the agent's registry `layout` is `opencode`, the two subsections above (**S
 
 **Commands (strategy: update).** For each row in the slash-command manifest above — the fourteen `framework/commands/*.md` rows plus the `framework/bootstrap/configure/{key}.md` configure row — copy the source **verbatim** (frontmatter + body, no skill transform) to `{config_dir}/command/{project}/{name}.md` (instead of `{config_dir}/commands/{project}/{name}.md`). Substitute `{project}` and `{cli-config-dir}` (→ `.opencode`) in the body exactly as in the `claude-style` copy, and carry the `description` frontmatter as-is. `{name}` is the command's base name (the configure row's `{name}` is `configure`). The commands are invoked `/{project}/{name}` — OpenCode namespaces by subdirectory (verified: `command/gov/specify.md` registers as command key `gov/specify`).
 
-**Command cleanup (replaces Slash command cleanup).** List the `.md` files under `{config_dir}/command/{project}/`. Delete any whose base name is not produced by the manifest above and is not listed in `.govern.toml` `pinned.files`; report removals and pinned-keeps as for the `claude-style` cleanup. Files outside the `{project}/` subdirectory are adopter/agent territory and are never touched.
+**Command cleanup (replaces Slash command cleanup).** List the `.md` files under `{config_dir}/command/{project}/`. Delete any whose base name is not produced by the manifest above and is not listed in `.govern/config.toml` `pinned.files`; report removals and pinned-keeps as for the `claude-style` cleanup. Files outside the `{project}/` subdirectory are adopter/agent territory and are never touched.
 
 **Rules.** OpenCode reads `AGENTS.md` natively (via its `instructions` resolution) and the pipeline reads the shared `specs/rules/` directly — there is **no** native rules-dir mirror (unlike `antigravity`). Nothing extra to scaffold.
 
@@ -816,14 +818,14 @@ After the slash command cleanup, offer any newly registered workflows that match
 
    If `AGENTS.md` is missing, has no Tech Stack table, or the table is empty (still the comment placeholder), skip the rest of this section silently — there is nothing to match against.
 
-3. **Load recorded declines.** Read `.govern.toml` if it exists and collect entries from `[workflows] declined_categories` into a normalized lowercase set. This set is consulted at the per-category prompt step to suppress prompts for categories the user has previously chosen to permanently decline. Behavior:
+3. **Load recorded declines.** Read `.govern/config.toml` if it exists and collect entries from `[workflows] declined_categories` into a normalized lowercase set. This set is consulted at the per-category prompt step to suppress prompts for categories the user has previously chosen to permanently decline. Behavior:
 
-   - If `.govern.toml` does not exist: the decline set is empty. Skip silently.
-   - If `.govern.toml` exists without a `[workflows]` section: the decline set is empty. Skip silently.
+   - If `.govern/config.toml` does not exist: the decline set is empty. Skip silently.
+   - If `.govern/config.toml` exists without a `[workflows]` section: the decline set is empty. Skip silently.
    - If `[workflows]` exists without a `declined_categories` key, or the key is an empty array: the decline set is empty. Skip silently.
    - If the file is malformed (TOML parse error): the surrounding **Project Configuration** load already aborted the run; this step never executes on a malformed file.
 
-   While building the set, validate each entry case-insensitively against the canonical category list (`Linting`, `Formatting`, `Testing`, `Migrations`, `Code Review`, `Deployment`). Entries that don't match any canonical name are still loaded into the set (they cannot suppress anything because no category will hash to them) and recorded for the post-scaffolding summary as one line each: `unrecognized workflow decline: "{value}" (in .govern.toml)`. Unrecognized entries do not abort the run and do not affect prompts for valid categories.
+   While building the set, validate each entry case-insensitively against the canonical category list (`Linting`, `Formatting`, `Testing`, `Migrations`, `Code Review`, `Deployment`). Entries that don't match any canonical name are still loaded into the set (they cannot suppress anything because no category will hash to them) and recorded for the post-scaffolding summary as one line each: `unrecognized workflow decline: "{value}" (in .govern/config.toml)`. Unrecognized entries do not abort the run and do not affect prompts for valid categories.
 
 4. **Match registry entries** against the project's tech stack. For each entry, look up the project's value for `entry.trigger.field` and compare case-insensitively against `entry.trigger.value`. Collect every matching entry.
 
@@ -835,7 +837,7 @@ After the slash command cleanup, offer any newly registered workflows that match
 
 8. **Per-category prompt or suppress.** Walk the grouped categories in order. For each category:
 
-   - **Suppress branch.** If the category (lowercased) is in the decline set loaded at step 3, do not invoke `AskUserQuestion`. Skip scaffolding for this category's workflows entirely. Report `suppressed (workflow): {Category} (declined in .govern.toml)` in the post-scaffolding summary, using the category's title-case display name. Continue with the next category.
+   - **Suppress branch.** If the category (lowercased) is in the decline set loaded at step 3, do not invoke `AskUserQuestion`. Skip scaffolding for this category's workflows entirely. Report `suppressed (workflow): {Category} (declined in .govern/config.toml)` in the post-scaffolding summary, using the category's title-case display name. Continue with the next category.
    - **Prompt branch.** Otherwise, present `AskUserQuestion`: "Scaffold these {category} workflows for {agent name}?" with the matched entries listed. Options, in order, exactly as labeled:
 
      1. `Yes, scaffold all in this category`
@@ -865,7 +867,7 @@ After the slash command cleanup, offer any newly registered workflows that match
 
     - **`declined_categories` key exists** — append the new category name to the array, deduplicating case-insensitively (do not write a duplicate if `Linting` is added when `linting` is already present).
 
-    Preserve all existing TOML content: other sections (`[pinned]`, future sections), comments, ordering, and surrounding whitespace. Read the file, modify the `[workflows]` section in place, and write the result back. Report each newly persisted category once in the summary as `recorded decline (workflow): {Category} (in .govern.toml)`.
+    Preserve all existing TOML content: other sections (`[pinned]`, future sections), comments, ordering, and surrounding whitespace. Read the file, modify the `[workflows]` section in place, and write the result back. Report each newly persisted category once in the summary as `recorded decline (workflow): {Category} (in .govern/config.toml)`.
 
 10. **Fetch and write accepted workflows.** For each accepted entry (categories whose step-8 answer was `Yes, scaffold all in this category`):
 
@@ -878,7 +880,7 @@ After the slash command cleanup, offer any newly registered workflows that match
 
 ### Session state
 
-The session state file lives at `.govern.session.toml` at the repo root — a single uniform path for every adopter, project-name-agnostic, gitignored, and **per-contributor**. It carries two things: the session target (feature, optional scenario, `set-at`), written on each `/{project}:target` (or its scenario sibling) invocation; and the contributor's `cli-config-dir`, written by `/govern` at adoption (§Instructions step 7) — the one place an agent-specific value belongs, since teammates on one project may use different agents. Both are written by the runtime's `write-session` primitive (a target write preserves `cli-config-dir`; a host-config write preserves the target), or on the markdown-only path by the host's file-writing tool. There is no per-agent session state beyond this one file.
+The session state file lives at `.govern/session.toml` (spec 042; the pre-042 location was the repo root `.govern.session.toml`, read and written via the active-file rule until the `govern-dir-consolidate` migration moves it) — a single uniform path for every adopter, project-name-agnostic, gitignored, and **per-contributor**. It carries two things: the session target (feature, optional scenario, `set-at`), written on each `/{project}:target` (or its scenario sibling) invocation; and the contributor's `cli-config-dir`, written by `/govern` at adoption (§Instructions step 7) — the one place an agent-specific value belongs, since teammates on one project may use different agents. Both are written by the runtime's `write-session` primitive (a target write preserves `cli-config-dir`; a host-config write preserves the target), or on the markdown-only path by the host's file-writing tool. There is no per-agent session state beyond this one file.
 
 ### `govern` self-installation (strategy: update)
 
@@ -894,7 +896,7 @@ After **Per-Agent Scaffolding** completes, manage the project's git pre-commit h
 
 Two files participate, with different ownership models:
 
-- **`.githooks/govern-pre-commit`** is govern-owned. Placed by the **Shared Files** manifest with `update` strategy; carries the `# managed-by: govern` sentinel on line 2; rewritten on every `/govern` run unless pinned in `.govern.toml`. Holds the generator orchestration (currently `scripts/gen-spec-deps.sh --staged` and `scripts/gen-cross-service-refs.sh --staged` plus output staging). Both run with `--staged` so a commit only rewrites the specs it touches, never unrelated ones.
+- **`.githooks/govern-pre-commit`** is govern-owned. Placed by the **Shared Files** manifest with `update` strategy; carries the `# managed-by: govern` sentinel on line 2; rewritten on every `/govern` run unless pinned in `.govern/config.toml`. Holds the generator orchestration (currently `.govern/scripts/gen-spec-deps.sh --staged` and `.govern/scripts/gen-cross-service-refs.sh --staged` plus output staging). Both run with `--staged` so a commit only rewrites the specs it touches, never unrelated ones.
 - **`.githooks/pre-commit`** is adopter-owned. Placed by the manifest with `create` strategy on first install; never overwritten thereafter. Initial content invokes `./.githooks/govern-pre-commit`; adopters add their own pre-commit checks above or below that invocation.
 
 This section's job is to wire git up to actually run the outer hook (`git config core.hooksPath .githooks`) without clobbering whatever hook system the project already uses.
@@ -908,7 +910,7 @@ Detection runs in this order — first match wins:
 
 The detection ladder no longer treats `.githooks/pre-commit` itself as a govern-managed file — under the new model the outer file is adopter-owned, so its presence is not a signal that govern installed it. Migration of pre-existing govern-installed hooks (from spec-017 adopters) is handled by the **Migration from spec-017 hook** subsection below, which runs before the detection ladder.
 
-`scripts/gen-spec-deps.sh` and `scripts/gen-cross-service-refs.sh` ship in the **Shared Files** manifest with `update` strategy. Every `/govern` run refreshes them from upstream so adopters pick up generator fixes automatically. Adopters who have customized a script can list it in `.govern.toml` `pinned.files` to opt out of overwrites.
+`.govern/scripts/gen-spec-deps.sh` and `.govern/scripts/gen-cross-service-refs.sh` ship in the **Shared Files** manifest with `update` strategy. Every `/govern` run refreshes them from upstream so adopters pick up generator fixes automatically. Adopters who have customized a script can list it in `.govern/config.toml` `pinned.files` to opt out of overwrites.
 
 ### Migration from spec-017 hook
 
@@ -948,7 +950,7 @@ When detection skips installation (cases 2 and 3 above), report this message to 
 
 ### Pinning
 
-Both hook files are subject to `.govern.toml` `pinned.files`, but the meaning differs by ownership:
+Both hook files are subject to `.govern/config.toml` `pinned.files`, but the meaning differs by ownership:
 
 - **`.githooks/govern-pre-commit`** is the only file pinning is meaningful for. A pinned inner file uses `skip` strategy instead of `update` — `/govern` does not overwrite it across releases. Useful when an adopter has customized govern's generator orchestration and does not want it reset.
 - **`.githooks/pre-commit`** is `create`-strategy and never overwritten after first run regardless of pinning. Listing it in `pinned.files` is harmless but has no effect.
@@ -992,7 +994,7 @@ After writing the agent's installed `govern` file — whether via the **Pre-flig
 - **All supported agents already adopted with `--add-agent`** — show the prompt with all agents pre-selected; if the user confirms with no additions, treat it as a routine update and continue silently.
 - **`settings.local.json` already has entries beyond the bootstrap** — only add the curl/ls bootstrap entries if missing. Do not overwrite, deduplicate, or reorder entries added by `/{project}:configure` or by the user.
 - **`govern.md` content already matches the version on disk** — when the manifest's `update` strategy compares fetched content to the installed file, identical content reports as "unchanged" and avoids a redundant write. Same rule applies to per-project `configure.md` and other update-strategy files.
-- **Pinned `govern.md` in `.govern.toml`** — the manifest's `update` strategy still skips the file (no overwrite), and the **Pre-flight Phase**'s self-update check never writes pinned files even on the stale-detect path. The check byte-compares anyway: matching upstream → recorded as `current`, no output; divergent from upstream → recorded as `pinned-divergent`, the run continues, and a single advisory line is printed in the post-scaffolding output. A pinned `govern.md` will not pick up upstream changes until the pin is removed, but the user is told once when the pin is currently suppressing real divergence.
+- **Pinned `govern.md` in `.govern/config.toml`** — the manifest's `update` strategy still skips the file (no overwrite), and the **Pre-flight Phase**'s self-update check never writes pinned files even on the stale-detect path. The check byte-compares anyway: matching upstream → recorded as `current`, no output; divergent from upstream → recorded as `pinned-divergent`, the run continues, and a single advisory line is printed in the post-scaffolding output. A pinned `govern.md` will not pick up upstream changes until the pin is removed, but the user is told once when the pin is currently suppressing real divergence.
 - **Self-update check sees a stale `govern` in an unselected adopted agent** — the check is scoped to selected agents only. The unselected agent's stale copy is not diffed, not written, and does not trigger the abort; it will be detected the next time the user runs `/govern` against it.
 - **Self-update small fetch fails** — clean abort with the error message defined in **Pre-flight Phase → Self-update check → Small fetch**. No `govern.md` writes occur, and the archive fetch is skipped. The user re-runs after the transient failure clears.
 - **Archive fetch or extract fails** — clean abort with the error message defined in **File Fetching → Archive fetch and extract**. The pre-flight phase has already passed by this point, so no additional `govern.md` or gvrn-wiring writes are pending; the user re-runs after the transient failure clears.
@@ -1027,7 +1029,7 @@ Omit the tip in **State A** (the runtime is already live) and **State B** (the r
 
 ### Pinned `govern.md` advisory
 
-If the **Pre-flight Phase** recorded any selected agent as `pinned-divergent` (the installed `govern` file (`{config_dir}/commands/govern.md`, or `{config_dir}/skills/govern/SKILL.md` for `antigravity`) is listed in `.govern.toml` `pinned.files` and differs from upstream), append one advisory line per divergent agent after the file summary and before next steps:
+If the **Pre-flight Phase** recorded any selected agent as `pinned-divergent` (the installed `govern` file (`{config_dir}/commands/govern.md`, or `{config_dir}/skills/govern/SKILL.md` for `antigravity`) is listed in `.govern/config.toml` `pinned.files` and differs from upstream), append one advisory line per divergent agent after the file summary and before next steps:
 
 > {agent}: govern.md pinned, upstream has changed.
 
@@ -1087,7 +1089,7 @@ Tip: `specs/` is plain markdown and works in any PKM tool (Obsidian, Logseq, Foa
 
 ## Idempotency
 
-This command is safe to run again. Files with `update` strategy are always overwritten with the latest `govern` version — unless pinned in `.govern.toml`, in which case they are skipped. Files with `create` strategy skip existing files. The `.gitignore` merge checks for the `# govern` marker before appending. `skip` strategy files are never overwritten.
+This command is safe to run again. Files with `update` strategy are always overwritten with the latest `govern` version — unless pinned in `.govern/config.toml`, in which case they are skipped. Files with `create` strategy skip existing files. The `.gitignore` merge checks for the `# govern` marker before appending. `skip` strategy files are never overwritten.
 
 Re-runs are additive across agents — adopting a new agent leaves existing agents' files untouched.
 
