@@ -351,9 +351,10 @@ fn run_exec(command: &str, args: &[String], repo: &std::path::Path) -> ExitCode 
     };
 
     // Seed the walker context: session file (when present) overlaid with
-    // CLI `key=value` arg overrides. The session lives at the repo-root
-    // `.govern.session.toml` post-consolidation; the path is uniform
-    // across every adopter regardless of AI CLI or project name. TOML
+    // CLI `key=value` arg overrides. The session resolves through
+    // `paths::session_path` — `.govern/session.toml` (spec 042) with a
+    // fallback to the legacy repo-root `.govern.session.toml`; the path is
+    // uniform across every adopter regardless of AI CLI or project name. TOML
     // values are bridged into `serde_json::Value` via serde so nested
     // structures (arrays-of-tables for `entries`, sub-tables for
     // `substitutions`, etc.) survive intact — the walker's context map

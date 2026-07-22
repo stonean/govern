@@ -203,11 +203,15 @@ fn exec_chains_bootstrap_primitives_extract_apply_merge() {
     )
     .unwrap();
 
-    // Seed `.govern.session.toml` with every arg the three primitives
-    // need. Post-consolidation, the walker reads this single repo-root
-    // file regardless of AI CLI / project name. `path` is repo-relative:
-    // merge-managed-block rejects absolute paths (BE-INPUT-004) and
-    // resolves against the repo root — the exec cwd, i.e. this tempdir.
+    // Seed the session with every arg the three primitives need, at the
+    // consolidated `.govern/session.toml` layout (spec 042) so this test
+    // exercises new-layout resolution end-to-end through the exec walker's
+    // `session_path` seed (legacy root `.govern.session.toml` fallback stays
+    // covered by the parity fixtures and `specs_root_override`). The walker
+    // reads this single repo-root-relative file regardless of AI CLI /
+    // project name. `path` is repo-relative: merge-managed-block rejects
+    // absolute paths (BE-INPUT-004) and resolves against the repo root — the
+    // exec cwd, i.e. this tempdir.
     let session_toml = format!(
         "archive = {archive:?}\n\
          dest = {dest:?}\n\
@@ -228,7 +232,9 @@ fn exec_chains_bootstrap_primitives_extract_apply_merge() {
         source_root = tmp.path().join("staging").to_string_lossy().to_string(),
         target_root = tmp.path().join("project").to_string_lossy().to_string(),
     );
-    let session_path = tmp.path().join(".govern.session.toml");
+    let govern_dir = tmp.path().join(".govern");
+    fs::create_dir_all(&govern_dir).unwrap();
+    let session_path = govern_dir.join("session.toml");
     let mut sf = fs::File::create(&session_path).unwrap();
     sf.write_all(session_toml.as_bytes()).unwrap();
 
