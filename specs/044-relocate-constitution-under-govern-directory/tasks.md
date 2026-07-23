@@ -49,10 +49,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 7. Verification sweep
 
-- [ ] Repo-wide stale-reference grep over live artifacts (`framework/`, `runtime/`, `docs/`, `README.md`, `AGENTS.md`, `specs/`): no adopter-root `constitution.md` reference remains outside historical spec bodies that describe the old layout as old
-- [ ] `npx markdownlint-cli2` clean over touched markdown
-- [ ] `scripts/audit/cross-doc-consistency.sh` and `scripts/audit/ssot-invariants.sh` pass
-- [ ] `cargo test` parity suite green with no golden/fixture diffs (confirms the synthetic-fixture finding)
+- [x] Repo-wide stale-reference grep over live artifacts (`framework/`, `runtime/`, `docs/`, `README.md`, `AGENTS.md`, `specs/`): no adopter-root `constitution.md` reference remains outside historical spec bodies that describe the old layout as old
+- [x] `npx markdownlint-cli2` clean over touched markdown
+- [x] `scripts/audit/cross-doc-consistency.sh` and `scripts/audit/ssot-invariants.sh` pass
+- [x] `cargo test` parity suite green with no golden/fixture diffs (confirms the synthetic-fixture finding)
 
 - **Done when**: all four checks pass with no re-blessed goldens.
 
