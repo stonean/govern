@@ -17,7 +17,7 @@
 
 ## Documentation
 
-- [constitution.md](constitution.md) — Guiding principles, development pipeline, spec lifecycle, quality standards
+- [constitution.md](.govern/constitution.md) — Guiding principles, development pipeline, spec lifecycle, quality standards
 - [AGENTS.md](AGENTS.md) — Tech stack, project structure, code style, conventions, and boundaries
 - [specs/system.md](specs/system.md) — System architecture, request lifecycle, shared infrastructure
 - [specs/errors.md](specs/errors.md) — Error handling conventions
@@ -32,7 +32,7 @@
 
 ## Development Pipeline
 
-{project} follows a spec-driven workflow. See [constitution.md](constitution.md#development-pipeline) for the full pipeline definition, spec lifecycle states, and readiness checks.
+{project} follows a spec-driven workflow. See [constitution.md](.govern/constitution.md#development-pipeline) for the full pipeline definition, spec lifecycle states, and readiness checks.
 
 ### Pipeline
 

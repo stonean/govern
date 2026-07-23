@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-@import constitution.md
+@import .govern/constitution.md
 @import AGENTS.md
 
 ## Auto-Memory Routing

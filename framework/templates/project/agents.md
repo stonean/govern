@@ -6,7 +6,7 @@
 
 ## Constitution
 
-See [constitution.md](constitution.md) — guiding principles, development pipeline, spec lifecycle, and quality standards that govern this project.
+See [constitution.md](.govern/constitution.md) — guiding principles, development pipeline, spec lifecycle, and quality standards that govern this project.
 
 ## Tech Stack
 
@@ -50,7 +50,7 @@ See [constitution.md](constitution.md) — guiding principles, development pipel
 
 ## Project Structure
 
-- `constitution.md` -- Principles, pipeline, quality standards
+- `.govern/constitution.md` -- Principles, pipeline, quality standards
 - `AGENTS.md` -- Agent rules: tech stack, conventions, workflow, gotchas, boundaries
 - `CLAUDE.md` -- `@AGENTS.md` + Claude Code-specific configuration
 - `specs/`

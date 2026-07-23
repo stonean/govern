@@ -26,9 +26,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 4. Update the project seed templates
 
-- [ ] `claude-md.md:3` → `@import .govern/constitution.md`
-- [ ] `agents.md:9,53` → link/list `.govern/constitution.md`
-- [ ] `project-readme.md:20,35` → Documentation bullet and pipeline link target `.govern/constitution.md` (no new governance blurb, per the resolved question)
+- [x] `claude-md.md:3` → `@import .govern/constitution.md`
+- [x] `agents.md:9,53` → link/list `.govern/constitution.md`
+- [x] `project-readme.md:20,35` → Documentation bullet and pipeline link target `.govern/constitution.md` (no new governance blurb, per the resolved question)
 
 - **Done when**: `rg -n 'constitution' framework/templates/project/` shows only `.govern/constitution.md` references.
 
