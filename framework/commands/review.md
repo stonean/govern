@@ -122,8 +122,8 @@ The numbered Instructions above are the deterministic path — the runtime's pri
    findings across all five passes, `blocking: false`, and exit `0` — there
    is nothing to review yet. Skip steps 4–5 and the rest of this run.
 4. **Tech-stack alignment check.**
-   - Read the active config file (`.govern/config.toml` when it exists,
-     else the legacy root `.govern.toml`). If `[review] tech-stack-verified = true`, skip to
+   - Read the active config file (resolution rule in Instructions step 1;
+     spec 042). If `[review] tech-stack-verified = true`, skip to
      step 5.
    - Otherwise, read `AGENTS.md`'s `Tech Stack` section and inspect the file
      scope (extensions, imports, runtime/manifest markers). Confirm the
@@ -136,9 +136,7 @@ The numbered Instructions above are the deterministic path — the runtime's pri
      confirm-before-write pipeline steps do): _"Tech-stack alignment
      confirmed. Persist this so future runs skip the check? (Y/n)"_. On
      `Y`, write `[review] tech-stack-verified = true` to the active config
-     file (`.govern/config.toml` when it exists, else the legacy root
-     `.govern.toml` when that exists, else `.govern/config.toml`; spec
-     042). On `n` or skip, the check runs again on the next
+     file (same resolution as Instructions step 1). On `n` or skip, the check runs again on the next
      invocation. To re-run the check after a stack change, the operator
      removes the line manually — `/{project}:review` does not auto-reset.
 5. Discover rule files by suffix. List `framework/rules/*.md` in govern's
