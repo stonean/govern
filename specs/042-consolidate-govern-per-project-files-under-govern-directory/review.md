@@ -1,10 +1,10 @@
 ---
 spec: 042-consolidate-govern-per-project-files-under-govern-directory
-reviewed-at: 2026-07-23T00:01:01Z
-reviewed-against: 3d135ca0da936dfbb8b3c78014a5f296638c8769
+reviewed-at: 2026-07-23T00:03:37Z
+reviewed-against: 8a770e89e32618d7c55f0c5f99398ae9faf4777f
 diff-base: 790ebd9d03c2c1061f7289d179f8d2a7f931a212
 must-violations: 0
-should-violations: 1
+should-violations: 0
 low-confidence: 1
 captured-issues: 3
 skipped-passes: []
@@ -14,7 +14,7 @@ skipped-passes: []
 
 ## Summary
 
-Spec 042 relocates govern's per-project files under .govern/ — a path-resolution and prose-sweep feature with no new attack surface: no user input reaches the new path constructions (fixed constants joined to the repo root; the specs-root charset allowlist guards the one regex interpolation), writes remain atomic tempfile+rename, and constants stay centralized in schema/paths.rs. 0 MUST violations across all five passes; 1 SHOULD (reuse: the active-file rule is restated inline at ~7 prose sites where a pointer to the canonical §Project Configuration statement would prevent drift) and 1 low-confidence note (theoretical probe-to-use race against a concurrently running /govern migration, mitigated by the serial-pipeline design and atomic writes). Not blocking.
+Spec 042 relocates govern's per-project files under .govern/ — a path-resolution and prose-sweep feature with no new attack surface: no user input reaches the new path constructions (fixed constants joined to the repo root; the specs-root charset allowlist guards the one regex interpolation), writes remain atomic tempfile+rename, and constants stay centralized in schema/paths.rs. Post-fix run: the prior QUAL-REUSE SHOULD (active-file rule restated at ~7 prose sites) is resolved — each standalone artifact now carries one canonical statement (govern.md §Project Configuration, review.md Instructions step 1, link.md Scope Boundaries) with pointers elsewhere. 0 MUST, 0 SHOULD; 1 low-confidence note retained (theoretical probe-to-use race against a concurrently running /govern migration, mitigated by the serial-pipeline design and atomic writes). Not blocking.
 
 ## MUST violations (blocking)
 
@@ -22,13 +22,7 @@ Spec 042 relocates govern's per-project files under .govern/ — a path-resoluti
 
 ## SHOULD violations (advisory)
 
-### SHOULD: QUAL-REUSE — active-file resolution rule restated inline at ~7 prose sites
-
-- **File**: `framework/bootstrap/govern.md`
-- **Rule**: Reuse pass: identify logic that duplicates existing utilities or that should be extracted into shared code (review.md §Reuse pass); constitution §drift-prevention: shared knowledge has one canonical source.
-- **Finding**: The three-branch active-file rule (`.govern/` when it exists, else legacy root when that exists, else `.govern/`) is restated near-verbatim at govern.md step 6, §Inputs intro, §Pre-run Migrations step 2, the workflow-decline step, §Project Configuration's write-policy paragraph, review.md steps 1 and 4, and link.md's Scope Boundaries and Additive write. The canonical statements already exist (§Project Configuration prose; runtime `config_path_for_write`); each inline restatement is a future drift site if the rule ever changes.
-- **Auto-fixable**: no
-- **Suggested fix**: Where a site only needs the rule (not walker-context detail), replace the inline three-branch parenthetical with a short pointer, e.g. "the active config file (per §Project Configuration's write policy)". Keep the full statement in §Project Configuration and the runtime resolvers.
+*None.*
 
 ## Low-confidence findings
 

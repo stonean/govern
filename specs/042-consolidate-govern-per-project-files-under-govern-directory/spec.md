@@ -2,10 +2,10 @@
 status: in-progress
 dependencies: [027-bootstrap-migration-registry, 040-configurable-specs-dir]
 review:
-  last-run: 2026-07-23T00:01:01Z
-  reviewed-against: 3d135ca0da936dfbb8b3c78014a5f296638c8769
+  last-run: 2026-07-23T00:03:37Z
+  reviewed-against: 8a770e89e32618d7c55f0c5f99398ae9faf4777f
   must-violations: 0
-  should-violations: 1
+  should-violations: 0
   low-confidence: 1
   blocking: false
 ---
