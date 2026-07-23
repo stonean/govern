@@ -6,13 +6,13 @@ The `govern` framework — a pipeline-driven spec-to-implementation flow scaffol
 
 ## Constitution
 
-See [constitution.md](constitution.md) — guiding principles, development pipeline, spec lifecycle, and quality standards that govern this project.
+See [constitution.md](framework/constitution.md) — guiding principles, development pipeline, spec lifecycle, and quality standards that govern this project.
 
 ## Project Structure
 
 The `framework/` directory is govern's source — everything that ships to adopted projects via `/govern`. It is laid out by IA primary purpose, not by file kind:
 
-- `framework/constitution.md` — the constitution shipped to adopted projects (sync target of root `constitution.md`)
+- `framework/constitution.md` — the constitution shipped to adopted projects (lands at `.govern/constitution.md` in adopter repos)
 - `framework/rules/` — domain rule sets adopted projects can reference (security-backend, security-frontend, …)
 - `framework/templates/spec/` — templates consumed by an agent during the pipeline (spec, plan, tasks, data-model, research, scenario)
 - `framework/templates/project/` — project document templates consumed once at adoption (agents, claude-md, system, errors, events, project-readme, gitignore, inbox)

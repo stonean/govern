@@ -34,9 +34,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 5. Update govern's own docs
 
-- [ ] Fix `AGENTS.md:9`'s dead root link to `framework/constitution.md`
-- [ ] Reword `AGENTS.md:15`'s sync-target parenthetical to name `.govern/constitution.md` as the adopter destination
-- [ ] Update `README.md:210,217,284` pinned/strategy examples to `.govern/constitution.md`
+- [x] Fix `AGENTS.md:9`'s dead root link to `framework/constitution.md`
+- [x] Reword `AGENTS.md:15`'s sync-target parenthetical to name `.govern/constitution.md` as the adopter destination
+- [x] Update `README.md:210,217,284` pinned/strategy examples to `.govern/constitution.md`
 
 - **Done when**: no bare root `constitution.md` reference remains in `AGENTS.md` / `README.md`, and every constitution link in them resolves to an existing file.
 

@@ -207,14 +207,14 @@ From that session on, the pipeline takes the deterministic path. File writes are
 
 `.govern/config.toml` is an optional project file — `/govern` runs fine without it. Create it only if you need one of these behaviors:
 
-- **`[pinned]`** — list destination paths `govern` should never overwrite, even files it normally updates (e.g. a customized `constitution.md`).
+- **`[pinned]`** — list destination paths `govern` should never overwrite, even files it normally updates (e.g. a customized `.govern/constitution.md`).
 - **`[rules]`** — declare which rule surfaces your project needs: `surfaces = ["backend"]`, `["frontend"]`, or both. `/govern` prompts for this on first run, then installs only the matching rule files (cross-cutting `-cross` rules always apply) and `/review` enforces only those. Leave it unset to let `govern` derive the surface from your stack and install every rule file.
 - **`[paths]`** — rename the top-level directory that holds every `govern` artifact: `specs-root = "governance"`. Defaults to `specs`; set it to avoid colliding with a sibling framework's directory (e.g. RSpec's `spec/`). `/govern` prompts for it on first run; once set, every command and the runtime resolve it. A single directory name — no path separators, no `..`, no leading slash.
 - **`[services]`** — register sibling services so cross-service reference links resolve to the linked spec's lifecycle status (see [Cross-service references](#cross-service-references)). Add entries with `/link`, not by hand.
 
 ```toml
 [pinned]
-files = ["constitution.md"]
+files = [".govern/constitution.md"]
 
 [rules]
 surfaces = ["backend"]
@@ -281,7 +281,7 @@ Re-run `/govern` to pull the latest framework files. Each file is handled by one
 
 | Strategy | Behavior | Examples |
 | --- | --- | --- |
-| `update` | Always overwritten with the latest version | `constitution.md`, spec templates, slash commands |
+| `update` | Always overwritten with the latest version | `.govern/constitution.md`, spec templates, slash commands |
 | `create` | Created on first run, skipped on re-run | `specs/system.md`, `specs/errors.md`, `specs/events.md` |
 | `skip` | Never overwritten | `AGENTS.md`, `CLAUDE.md` |
 
