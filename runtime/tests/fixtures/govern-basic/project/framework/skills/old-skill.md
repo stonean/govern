@@ -5,5 +5,6 @@ convention that adopters cleaned up via the bootstrap's `enforce-manifest`
 loop before spec 027 moved adopter-cleanup into the registry-driven
 `## Pre-run Migrations` flow. `enforce-manifest` is now scoped to the
 per-agent slash-command directory and must NOT touch this file — the
-`skills-to-workflows` migration in `framework/migrations.toml` is the
-sole owner of that cleanup.
+registry-driven Pre-run Migrations loop (`framework/migrations.toml`,
+currently via the `workflows-sunset` entry) is the sole owner of that
+cleanup.

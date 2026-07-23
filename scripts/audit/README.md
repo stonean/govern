@@ -17,8 +17,7 @@ Every script in this directory follows the same contract:
 - `check-zero.sh` — generator/lint precondition pass. Run before family checks; halts `/audit` on failure to avoid misleading findings against known-stale generator output.
 - `cross-doc-consistency.sh` — Family 1.
 - `manifest-parity.sh` — Family 2.
-- `registry-equivalence.sh` — Family 3.
-- `placeholder-roundtrip.sh` — Family 4.
+- `placeholder-roundtrip.sh` — Family 4. (Family 3, registry equivalence, was retired with the workflows feature — spec 043; family numbers are stable identifiers, so the gap stands.)
 - `template-alignment.sh` — Family 5.
 - `ssot-invariants.sh` — Family 6.
 - `sibling-coupling.sh` — Family 7.

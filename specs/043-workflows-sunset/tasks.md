@@ -58,8 +58,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 8. Full-sweep verification and audit
 
-- [ ] Run the token sweep + prose-claim pass from the plan's Sweep verification section; classify every remaining hit
-- [ ] Run `scripts/audit/run-all.sh` and `npx markdownlint-cli2` over touched markdown
+- [x] Run the token sweep + prose-claim pass from the plan's Sweep verification section; classify every remaining hit
+- [x] Run `scripts/audit/run-all.sh` and `npx markdownlint-cli2` over touched markdown
 
 - **Done when**: every sweep hit falls in an allowed class, the audit passes clean, and lint reports no new violations.
 

@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # scripts/audit/run-all.sh — `/audit` aggregator.
 #
-# Runs the check-zero precondition pass followed by the sixteen family
+# Runs the check-zero precondition pass followed by the fifteen family
 # check scripts. Aggregates findings to stdout under per-family headers
 # and exits 1 when any family (or check-zero) produced findings.
+# Family numbers are stable identifiers: Family 3 (registry equivalence)
+# was retired with the workflows feature (spec 043), leaving a gap.
 #
 # This script IS the implementation of `/audit`. The framework/commands/
 # audit.md slash-command file is documentation that invokes this
@@ -44,7 +46,6 @@ fi
 
 run_check "Family 1 — cross-doc claim consistency" "scripts/audit/cross-doc-consistency.sh"
 run_check "Family 2 — manifest parity" "scripts/audit/manifest-parity.sh"
-run_check "Family 3 — registry equivalence" "scripts/audit/registry-equivalence.sh"
 run_check "Family 4 — placeholder roundtrip" "scripts/audit/placeholder-roundtrip.sh"
 run_check "Family 5 — template alignment" "scripts/audit/template-alignment.sh"
 run_check "Family 6 — SSOT invariants" "scripts/audit/ssot-invariants.sh"
