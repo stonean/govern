@@ -124,3 +124,19 @@ target_paths = [
   "scripts/lib/specs-root.sh",
 ]
 procedure_file = "framework/migrations/govern-dir-consolidate.md"
+
+[[migrations]]
+id = "workflows-sunset"
+introduced_in = "0.23.0"
+sunset_after = "0.25.0"
+summary = "Remove scaffolded workflow commands, the synced workflows/registry.json, and the [workflows] config section (workflows feature removed; spec 043; subsumes the archived skills-to-workflows and workflow-filename-rename migrations)"
+# Adopter-relative paths drive the bootstrap loop; framework/ paths
+# (when present) drive /audit Family 10's no-stale-target-paths check.
+target_paths = [
+  "{config_dir}/commands/{project}/workflows/",
+  "{config_dir}/commands/{project}/skills/",
+  "workflows/registry.json",
+  "framework/workflows/",
+  "framework/skills/",
+]
+procedure_file = "framework/migrations/workflows-sunset.md"
