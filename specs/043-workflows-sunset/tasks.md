@@ -11,8 +11,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 2. Archive the two 005-era migrations
 
-- [ ] Append both procedure texts to `CHANGELOG.md` § Archived migrations (headings naming id, `introduced_in`, `sunset_after`), replacing the *"None yet"* placeholder
-- [ ] Remove both `[[migrations]]` entries from `framework/migrations.toml` and delete `framework/migrations/skills-to-workflows.md` and `framework/migrations/workflow-filename-rename.md`
+- [x] Append both procedure texts to `CHANGELOG.md` § Archived migrations (headings naming id, `introduced_in`, `sunset_after`), replacing the *"None yet"* placeholder
+- [x] Remove both `[[migrations]]` entries from `framework/migrations.toml` and delete `framework/migrations/skills-to-workflows.md` and `framework/migrations/workflow-filename-rename.md`
 
 - **Done when**: neither id appears in `framework/migrations.toml`, both recipes are readable in `CHANGELOG.md`, and no `framework/migrations/*.md` file is orphaned from the registry.
 

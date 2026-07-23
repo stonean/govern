@@ -33,46 +33,6 @@ target_paths = [".governance.toml"]
 procedure_file = "framework/migrations/governance-config-rename.md"
 
 [[migrations]]
-id = "skills-to-workflows"
-introduced_in = "0.2.0"
-sunset_after = "0.10.0"
-summary = "Remove legacy {config_dir}/commands/{project}/skills/ directory"
-# Adopter-relative paths drive the bootstrap loop; framework/ paths
-# (when present) drive /audit Family 10's no-stale-target-paths check.
-target_paths = [
-  "{config_dir}/commands/{project}/skills/",
-  "framework/skills/",
-]
-procedure_file = "framework/migrations/skills-to-workflows.md"
-
-[[migrations]]
-id = "workflow-filename-rename"
-introduced_in = "0.2.0"
-sunset_after = "0.10.0"
-summary = "Remove legacy {category}-{language}-{tool}.md workflow files"
-target_paths = [
-  "{config_dir}/commands/{project}/workflows/format-go-gofmt.md",
-  "{config_dir}/commands/{project}/workflows/format-python-black.md",
-  "{config_dir}/commands/{project}/workflows/format-typescript-prettier.md",
-  "{config_dir}/commands/{project}/workflows/lint-go-golangci-lint.md",
-  "{config_dir}/commands/{project}/workflows/lint-python-ruff.md",
-  "{config_dir}/commands/{project}/workflows/lint-typescript-eslint.md",
-  "{config_dir}/commands/{project}/workflows/test-go-gotest.md",
-  "{config_dir}/commands/{project}/workflows/test-python-pytest.md",
-  "{config_dir}/commands/{project}/workflows/test-typescript-vitest.md",
-  "framework/workflows/format-go-gofmt.md",
-  "framework/workflows/format-python-black.md",
-  "framework/workflows/format-typescript-prettier.md",
-  "framework/workflows/lint-go-golangci-lint.md",
-  "framework/workflows/lint-python-ruff.md",
-  "framework/workflows/lint-typescript-eslint.md",
-  "framework/workflows/test-go-gotest.md",
-  "framework/workflows/test-python-pytest.md",
-  "framework/workflows/test-typescript-vitest.md",
-]
-procedure_file = "framework/migrations/workflow-filename-rename.md"
-
-[[migrations]]
 id = "spec-and-plan-sunset"
 introduced_in = "0.5.0"
 sunset_after = "0.10.0"
