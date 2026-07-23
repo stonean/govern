@@ -70,6 +70,20 @@ pub fn config_path(repo: &Path) -> PathBuf {
     }
 }
 
+/// Repo-relative display name of the resolved config file — the same
+/// new-wins choice [`config_path`] makes, as the literal provenance tags
+/// render (`.govern/config.toml` post-migration, the legacy root
+/// `.govern.toml` before it). Display-only; readers resolve through
+/// [`config_path`].
+#[must_use]
+pub(crate) fn config_display_name(repo: &Path) -> &'static str {
+    if repo.join(CONFIG_FILE).exists() {
+        CONFIG_FILE
+    } else {
+        LEGACY_CONFIG_FILE
+    }
+}
+
 /// Resolve the session file to *read*: `.govern/session.toml` when it exists,
 /// else the legacy root `.govern.session.toml` (spec 042). New-wins on a split.
 #[must_use]

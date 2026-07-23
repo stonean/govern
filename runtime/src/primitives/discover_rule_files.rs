@@ -103,7 +103,13 @@ pub fn run(args: &DiscoverRuleFilesArgs, repo: &Path) -> Result<DiscoverRuleFile
             }
         }
 
-        apply_disabled_filter(config.review.as_ref(), &all, &mut selected, &mut notices);
+        apply_disabled_filter(
+            config.review.as_ref(),
+            &all,
+            &mut selected,
+            &mut notices,
+            paths::config_display_name(repo),
+        );
     }
 
     selected.sort();
@@ -246,12 +252,16 @@ fn toml_type_name(value: &toml::Value) -> &'static str {
 /// set, appending the ordered notice lines for each entry. Entries are
 /// processed in config order; the first entry for a given `file` applies,
 /// later duplicates warn. Malformed entries warn and are skipped without
-/// dropping anything.
+/// dropping anything. `config_name` is the repo-relative resolved config
+/// file the disable came from, rendered in the drop notice's provenance
+/// tag (spec 042: `.govern/config.toml`, or the legacy root `.govern.toml`
+/// pre-migration).
 fn apply_disabled_filter(
     review: Option<&ReviewSection>,
     all: &[String],
     selected: &mut Vec<String>,
     notices: &mut Vec<String>,
+    config_name: &str,
 ) {
     let Some(review) = review else { return };
     let mut seen: Vec<String> = Vec::new();
@@ -270,7 +280,7 @@ fn apply_disabled_filter(
         if let Some(pos) = selected.iter().position(|s| s == file) {
             selected.remove(pos);
             notices.push(format!(
-                "disabled-rule-file: {file} — {} (.govern.toml)",
+                "disabled-rule-file: {file} — {} ({config_name})",
                 collapse_whitespace(reason)
             ));
         } else if all.iter().any(|s| s == file) {
@@ -542,6 +552,21 @@ mod tests {
         );
         assert!(result.notices.contains(
             &"disabled-rule-file: accessibility-frontend.md — Internal admin UI; not yet adopting WCAG AA. (.govern.toml)".to_string()
+        ));
+    }
+
+    #[test]
+    fn disabled_notice_names_new_layout_config() {
+        // Same drop, config under `.govern/config.toml` — the provenance
+        // tag names the resolved file, not a hardcoded legacy literal.
+        let toml = "[[review.disabled-rule-files]]\nfile = \"accessibility-frontend.md\"\nreason = \"Internal admin UI; not yet adopting WCAG AA.\"\n";
+        let tmp = setup(THREE, None);
+        let cfg_dir = tmp.path().join(".govern");
+        std::fs::create_dir_all(&cfg_dir).unwrap();
+        std::fs::write(cfg_dir.join("config.toml"), toml).unwrap();
+        let result = run(&args(&[]), tmp.path()).unwrap();
+        assert!(result.notices.contains(
+            &"disabled-rule-file: accessibility-frontend.md — Internal admin UI; not yet adopting WCAG AA. (.govern/config.toml)".to_string()
         ));
     }
 

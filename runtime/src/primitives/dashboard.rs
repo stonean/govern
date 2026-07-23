@@ -84,7 +84,13 @@ fn render_markdown(
     let mut blocks = vec![
         render_preamble(specs, session_target, &project),
         render_table(specs, session_target, &project),
-        render_callouts(specs, tags_union, config, &project),
+        render_callouts(
+            specs,
+            tags_union,
+            config,
+            &project,
+            paths::config_display_name(repo),
+        ),
     ];
     if let Some(readout) = render_references(repo, specs, &project)? {
         blocks.push(readout);
@@ -172,12 +178,16 @@ fn render_table(
 }
 
 /// Counts per status plus the conditional callouts (blocked, recovery,
-/// tags, disabled rule files), one line each.
+/// tags, disabled rule files), one line each. `config_name` is the
+/// repo-relative resolved config file, rendered in the disabled-rule-files
+/// provenance tag (spec 042: `.govern/config.toml`, or the legacy root
+/// `.govern.toml` pre-migration).
 fn render_callouts(
     specs: &[DashboardSpec],
     tags_union: &[String],
     config: &DashboardConfig,
     project: &str,
+    config_name: &str,
 ) -> String {
     let mut lines: Vec<String> = Vec::new();
     if !specs.is_empty() {
@@ -231,7 +241,7 @@ fn render_callouts(
     }
     if config.present && !config.disabled_rule_files.is_empty() {
         lines.push(format!(
-            "disabled rule files: {} (.govern.toml) — {}",
+            "disabled rule files: {} ({config_name}) — {}",
             config.disabled_rule_files.len(),
             config.disabled_rule_files.join(", ")
         ));
@@ -620,9 +630,9 @@ mod tests {
         std::fs::write(dir.join("spec.md"), content).unwrap();
     }
 
-    /// Write the canonical session TOML at `<repo>/.govern.session.toml`.
-    /// All tests use the same path — the consolidation removed every
-    /// per-host / per-project variability.
+    /// Write a legacy root session TOML at `<repo>/.govern.session.toml` —
+    /// the fallback path the resolver reads when `.govern/session.toml`
+    /// is absent, so these tests double as legacy-fallback coverage.
     fn write_session_toml(repo: &Path, body: &str) {
         std::fs::write(repo.join(".govern.session.toml"), body).unwrap();
     }
@@ -1121,6 +1131,34 @@ reason = "Deferred until v2 perf budget lands."
         assert!(
             rendered.contains("disabled rule files: 1 (.govern.toml) — security-backend.md"),
             "{rendered}"
+        );
+    }
+
+    #[test]
+    fn rendered_config_callout_names_new_layout_config() {
+        // Same callout, config under `.govern/config.toml` — the
+        // provenance tag names the resolved file, not a legacy literal.
+        let tmp = TempDir::new().unwrap();
+        let cfg_dir = tmp.path().join(".govern");
+        std::fs::create_dir_all(&cfg_dir).unwrap();
+        std::fs::write(
+            cfg_dir.join("config.toml"),
+            "[host]\nproject = \"gov\"\n\n[[review.disabled-rule-files]]\nfile = \"security-backend.md\"\nreason = \"n/a\"\n",
+        )
+        .unwrap();
+        write_spec(
+            tmp.path(),
+            "001-alpha",
+            "status: draft\ndependencies: []\n",
+            "",
+        );
+        let result = run(&DashboardArgs::default(), tmp.path()).unwrap();
+        assert!(
+            result
+                .rendered_markdown
+                .contains("disabled rule files: 1 (.govern/config.toml) — security-backend.md"),
+            "{}",
+            result.rendered_markdown
         );
     }
 

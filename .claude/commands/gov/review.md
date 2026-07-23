@@ -192,12 +192,15 @@ The numbered Instructions above are the deterministic path — the runtime's pri
      it from the set and emit one line:
 
      ```text
-     disabled-rule-file: <filename> — <reason> (.govern.toml)
+     disabled-rule-file: <filename> — <reason> (<config-file>)
      ```
 
-     Collapse internal whitespace in `reason` (including newlines from
-     TOML multi-line strings) to single spaces before emitting — the
-     notice is single-line by contract.
+     `<config-file>` is the repo-relative resolved config file the
+     disable came from — `.govern/config.toml`, or the legacy root
+     `.govern.toml` on a pre-migration layout. Collapse internal
+     whitespace in `reason` (including newlines from TOML multi-line
+     strings) to single spaces before emitting — the notice is
+     single-line by contract.
 
    - **No-op notice (non-selected match).** `file` matches a
      basename in the rule-file directory but the file was NOT in the
