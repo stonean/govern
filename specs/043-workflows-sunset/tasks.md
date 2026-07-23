@@ -34,9 +34,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 5. Hand-sweep `init.md`, README, AGENTS.md
 
-- [ ] `.claude/commands/gov/init.md`: remove §8, renumber later steps, reword the `:40` inference justification
-- [ ] `README.md`: drop the `[workflows]` config docs, example TOML section, repo-layout row; run the prose-claim pass (scaffold/recommend/decline phrasings)
-- [ ] `AGENTS.md`: drop the `framework/workflows/` project-structure bullet, the ships-as-is gotcha, and the "per-category workflow prompts" phrase in the procedural-fidelity mirror
+- [x] `.claude/commands/gov/init.md`: remove §8, renumber later steps, reword the `:40` inference justification
+- [x] `README.md`: drop the `[workflows]` config docs, example TOML section, repo-layout row; run the prose-claim pass (scaffold/recommend/decline phrasings)
+- [x] `AGENTS.md`: drop the `framework/workflows/` project-structure bullet, the ships-as-is gotcha, and the "per-category workflow prompts" phrase in the procedural-fidelity mirror
 
 - **Done when**: the meaning-based sweep over README, AGENTS.md, and `.claude/commands/` finds no claim that govern offers, scaffolds, or records declines for workflows.
 
