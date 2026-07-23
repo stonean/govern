@@ -1,12 +1,12 @@
 ---
 spec: 042-consolidate-govern-per-project-files-under-govern-directory
-reviewed-at: 2026-07-23T00:03:37Z
-reviewed-against: 8a770e89e32618d7c55f0c5f99398ae9faf4777f
-diff-base: 790ebd9d03c2c1061f7289d179f8d2a7f931a212
+reviewed-at: 2026-07-23T00:50:37Z
+reviewed-against: 50cc0702cf621c3766668c66275a83c47c0c6455
+diff-base: 2b32d415558b5483d523711dd16669ee0566fc10
 must-violations: 0
 should-violations: 0
 low-confidence: 1
-captured-issues: 3
+captured-issues: 0
 skipped-passes: []
 ---
 
@@ -14,7 +14,7 @@ skipped-passes: []
 
 ## Summary
 
-Spec 042 relocates govern's per-project files under .govern/ — a path-resolution and prose-sweep feature with no new attack surface: no user input reaches the new path constructions (fixed constants joined to the repo root; the specs-root charset allowlist guards the one regex interpolation), writes remain atomic tempfile+rename, and constants stay centralized in schema/paths.rs. Post-fix run: the prior QUAL-REUSE SHOULD (active-file rule restated at ~7 prose sites) is resolved — each standalone artifact now carries one canonical statement (govern.md §Project Configuration, review.md Instructions step 1, link.md Scope Boundaries) with pointers elsewhere. 0 MUST, 0 SHOULD; 1 low-confidence note retained (theoretical probe-to-use race against a concurrently running /govern migration, mitigated by the serial-pipeline design and atomic writes). Not blocking.
+Post-fix run: the QUAL-REUSE SHOULD from the 64b926c pass is resolved — `config_path` now derives from `config_display_name` (50cc070), so the new-wins choice lives once and the read path and provenance tag cannot disagree on the resolution rule; behavior unit-proven identical across all four presence cases. The tasks 14–15 delta plus release prep otherwise stands as reviewed: no new attack surface (display literals, doc comments, fixed-constant path helper), no new input handling, network calls, or secrets. 0 MUST, 0 SHOULD; 1 low-confidence note retained (probe-to-use race — read and display still resolve at separate moments at the call sites, though the choice logic is now single-sourced; mitigated by the serial pipeline and atomic writes). No issues captured to the inbox in the window. Not blocking.
 
 ## MUST violations (blocking)
 
@@ -28,9 +28,9 @@ Spec 042 relocates govern's per-project files under .govern/ — a path-resoluti
 
 ### LOW-CONFIDENCE: BE-RACE-001 — resolver existence-probe → use window races a concurrent migration
 
-- **File**: `runtime/src/schema/paths.rs:64-109`
+- **File**: `runtime/src/schema/paths.rs:58-120`
 - **Rule**: Shared mutable state reachable from more than one concurrent execution context MUST be protected by a synchronization mechanism — a lock, an atomic primitive, single-owner/actor confinement, or serialized access; unsynchronized concurrent read-write is a data race.
-- **Finding**: config_path/session_path/active_path probe existence and return a PathBuf the caller later opens; a /govern migration moving the file between probe and use yields a missing-file read (benign: callers treat as absent → defaults/fallback) or, worst case, a session write landing on the legacy path concurrently with the migration's move, losing that write. Mitigated by design: the pipeline is serial per constitution §concurrent-features, the migration runs only inside /govern, and all writes are atomic tempfile+rename — recorded low-confidence for visibility, not as a confirmed defect.
+- **Finding**: Carried forward from the 8a770e8 run: the resolvers probe existence and return a path the caller later opens, and `discover-rule-files` / `dashboard` resolve the config once for reading and again for the provenance tag — two temporal probes, so a config file created or removed between read and render could tag a file other than the one read (the choice *logic* is now single-sourced in `config_display_name` after 50cc070, but the probes still run at separate moments). Mitigated by design: the pipeline is serial per constitution §concurrent-features, the migration runs only inside /govern, writes are atomic tempfile+rename, and the notice renders only when a config was successfully read. Recorded low-confidence for visibility, not as a confirmed defect.
 - **Auto-fixable**: no
 
 ## Waived findings
@@ -39,9 +39,7 @@ Spec 042 relocates govern's per-project files under .govern/ — a path-resoluti
 
 ## Captured issues
 
-- [ ] Test infra: runtime/tests/exec_subprocess.rs + parity.rs `ensure_binary_built()` only builds `target/release/gvrn` when absent, so subprocess-based integration tests silently run a STALE release binary and don't reflect current src changes (discovered during spec 042 — new-layout exec seed appeared to fail until `cargo build --release` was run manually). Consider always rebuilding (or using CARGO_BIN_EXE) so exec/parity tests validate current code.
-- [ ] Display-literal drift (spec 042 follow-up): runtime-emitted provenance tags still say `(.govern.toml)` — `discover_rule_files.rs:273` (`disabled-rule-file: … (.govern.toml)`) and `dashboard.rs:234` (`disabled rule files: {N} (.govern.toml) — …`) — mirrored verbatim in `review.md:197` and `status.md:59`. Update runtime literals + both doc mirrors + any parity goldens together (ideally name the resolved config path instead of a hardcoded one); doc-only edits would break doc↔runtime message parity.
-- [ ] Stale CLI doc strings (spec 042 follow-up): `gvrn write-session --help` says "Atomically rewrite `.govern.session.toml`" — the write targets the active file (`.govern/session.toml` post-migration) via session_path_for_write. Sweep the runtime's user-visible doc comments/help strings (main.rs Command variants, schema arg docs) for legacy `.govern.session.toml` / `.govern.toml` mentions.
+*None.*
 
 ## Skipped passes
 
