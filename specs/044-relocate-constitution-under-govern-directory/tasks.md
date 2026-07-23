@@ -4,8 +4,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 1. Register the `constitution-relocate` migration
 
-- [ ] Add the `[[migrations]]` entry to `framework/migrations.toml`: `id = "constitution-relocate"`, `introduced_in = "0.24.0"`, no `sunset_after` (with the indefinite-retention comment mirroring `govern-dir-consolidate`'s), `target_paths = ["constitution.md"]`, `procedure_file = "framework/migrations/constitution-relocate.md"`
-- [ ] Write `framework/migrations/constitution-relocate.md` per the plan: idempotency check, convergence rule, `git mv` move, seed-reference rewrites with the absent-file/altered-line rules, pin re-point, pinned-command warning, summary line
+- [x] Add the `[[migrations]]` entry to `framework/migrations.toml`: `id = "constitution-relocate"`, `introduced_in = "0.24.0"`, no `sunset_after` (with the indefinite-retention comment mirroring `govern-dir-consolidate`'s), `target_paths = ["constitution.md"]`, `procedure_file = "framework/migrations/constitution-relocate.md"`
+- [x] Write `framework/migrations/constitution-relocate.md` per the plan: idempotency check, convergence rule, `git mv` move, seed-reference rewrites with the absent-file/altered-line rules, pin re-point, pinned-command warning, summary line
 
 - **Done when**: the registry entry parses, the procedure file documents every behavior the spec's migration section names, and the audit's migration-coverage invariants (Family 10) pass.
 

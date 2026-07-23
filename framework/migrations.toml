@@ -86,6 +86,21 @@ target_paths = [
 procedure_file = "framework/migrations/govern-dir-consolidate.md"
 
 [[migrations]]
+id = "constitution-relocate"
+introduced_in = "0.24.0"
+# No sunset_after: high-impact layout move kept active indefinitely (like
+# govern-dir-consolidate), so any adopter still carrying the root
+# constitution.md is converged on their next /govern run. No runtime fallback
+# exists to pair with it — no primitive reads the constitution; the shipped
+# command bodies are rescaffolded to the new path in the same /govern run
+# (spec 044).
+summary = "Relocate the shipped constitution from the adopter repo root to .govern/constitution.md, re-pointing the CLAUDE.md import, AGENTS.md/README.md links, and any [pinned] entry"
+target_paths = [
+  "constitution.md",
+]
+procedure_file = "framework/migrations/constitution-relocate.md"
+
+[[migrations]]
 id = "workflows-sunset"
 introduced_in = "0.23.0"
 sunset_after = "0.25.0"
