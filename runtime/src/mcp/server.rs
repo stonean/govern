@@ -521,7 +521,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "migrate-session-file",
-        description = "Translate a pre-0.10.0 legacy session JSON (`.claude/{project}-session.json`) into the consolidated `.govern.session.toml` at the repo root, applying camelCase→kebab-case key renames (`scenarioPath`→`scenario-path`, `setAt`→`set-at`), and delete the legacy file. Idempotent: no-op when no legacy file is present; preserves any existing `.govern.session.toml`."
+        description = "Translate a pre-0.10.0 legacy session JSON (`.claude/{project}-session.json`) into the consolidated `.govern/session.toml`, applying camelCase→kebab-case key renames (`scenarioPath`→`scenario-path`, `setAt`→`set-at`), and delete the legacy file. Idempotent: no-op when no legacy file is present; preserves any existing `.govern/session.toml`."
     )]
     async fn migrate_session_file(
         &self,
@@ -625,7 +625,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "dashboard",
-        description = "Single-call pipeline-state surface for /{project}:status. Returns the per-spec inventory (status, deps, tags, open-question count, artifact existence, scenarios count, blocked-by), the repo-wide tags-union, the .govern.toml review-state summary, and the optional session target read from .govern.session.toml."
+        description = "Single-call pipeline-state surface for /{project}:status. Returns the per-spec inventory (status, deps, tags, open-question count, artifact existence, scenarios count, blocked-by), the repo-wide tags-union, the config review-state summary (.govern/config.toml), and the optional session target read from the session file (.govern/session.toml; legacy root fallback pre-migration)."
     )]
     async fn dashboard(
         &self,
@@ -638,7 +638,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "write-session",
-        description = "Atomically merge-write `.govern.session.toml` (repo root, gitignored, single path for every adopter). A target write (supply `feature`+`path`, optional `scenario`) sets the target and preserves the per-contributor `cli-config-dir`; a host-config write (supply only `cli-config-dir`) sets the agent config-dir and preserves the existing target. Pairs with `dashboard`'s read of the same file; allowing this MCP tool once suppresses the per-invocation Write permission prompt the host-write path triggers."
+        description = "Atomically merge-write the active session file (`.govern/session.toml`; legacy root `.govern.session.toml` pre-migration; gitignored). A target write (supply `feature`+`path`, optional `scenario`) sets the target and preserves the per-contributor `cli-config-dir`; a host-config write (supply only `cli-config-dir`) sets the agent config-dir and preserves the existing target. Pairs with `dashboard`'s read of the same file; allowing this MCP tool once suppresses the per-invocation Write permission prompt the host-write path triggers."
     )]
     async fn write_session(
         &self,
@@ -651,7 +651,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "resolve-references",
-        description = "Resolve a consumer feature's `references:` index against `.govern.toml` [services]: for each cross-service reference, read the linked spec's live lifecycle status from its local checkout and classify the outcome (ok / unregistered / not-checked-out / broken / status-unreadable)."
+        description = "Resolve a consumer feature's `references:` index against the config's [services] registry (`.govern/config.toml`; legacy root fallback): for each cross-service reference, read the linked spec's live lifecycle status from its local checkout and classify the outcome (ok / unregistered / not-checked-out / broken / status-unreadable)."
     )]
     async fn resolve_references(
         &self,

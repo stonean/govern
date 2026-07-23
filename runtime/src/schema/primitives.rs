@@ -56,7 +56,7 @@ pub struct ReviewBlock {
 #[serde(rename_all = "kebab-case")]
 pub struct DiscoverRuleFilesArgs {
     /// Surfaces detected by the host's stack detection, consulted ONLY when
-    /// `.govern.toml` `[rules] surfaces` is unset. Members are `backend`
+    /// `.govern/config.toml` `[rules] surfaces` is unset. Members are `backend`
     /// and/or `frontend`. When the config key is set it wins; when both are
     /// absent, every recognized surface is loaded.
     #[serde(default)]
@@ -674,10 +674,11 @@ pub struct TraverseDepsResult {
 // -- dashboard ---------------------------------------------------------------
 
 /// Args for `dashboard`. The primitive takes no caller-supplied inputs —
-/// the repo root, `.govern.toml` (committed config), and
-/// `.govern.session.toml` (gitignored per-user session state) are the only
-/// state it reads. The empty args struct preserves clap-derive consistency
-/// with every other primitive.
+/// the repo root, the project config (`.govern/config.toml`, committed),
+/// and the session file (`.govern/session.toml`, gitignored per-user
+/// session state), each resolved with the pre-042 legacy root fallback,
+/// are the only state it reads. The empty args struct preserves
+/// clap-derive consistency with every other primitive.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct DashboardArgs {}
@@ -719,14 +720,15 @@ pub struct DashboardSpec {
     pub blocked_by: Vec<String>,
 }
 
-/// `.govern.toml` review-state summary returned alongside the per-spec
-/// inventory. The `present` flag distinguishes "config absent" from
-/// "config present but section absent / empty" so callers can drive the
-/// callout-suppression rule correctly.
+/// Config review-state summary returned alongside the per-spec
+/// inventory, read from the resolved config file (`.govern/config.toml`;
+/// legacy root `.govern.toml` pre-migration). The `present` flag
+/// distinguishes "config absent" from "config present but section absent
+/// / empty" so callers can drive the callout-suppression rule correctly.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct DashboardConfig {
-    /// `true` when `.govern.toml` exists at the repo root.
+    /// `true` when the resolved config file exists.
     pub present: bool,
     /// Basenames from `[[review.disabled-rule-files]]`. Empty when the
     /// section is absent or its array is empty.
@@ -750,8 +752,9 @@ pub struct DashboardScenarioDetail {
     pub open_question_count: u32,
 }
 
-/// Session-target summary returned when the repo-root `.govern.session.toml`
-/// exists and names a target. The `feature` field always names the targeted
+/// Session-target summary returned when the session file
+/// (`.govern/session.toml`; legacy root `.govern.session.toml`
+/// pre-migration) exists and names a target. The `feature` field always names the targeted
 /// feature; `scenario` is populated when a scenario is targeted;
 /// `scenario-detail` is populated alongside `scenario` to spare callers an
 /// extra read.
@@ -771,13 +774,13 @@ pub struct DashboardSessionTarget {
 
 /// Result for `dashboard`. One call returns everything `/gov:status` needs
 /// to render the full pipeline view: the per-spec inventory, the
-/// repo-wide `tags-union`, the `.govern.toml` review-state summary, and
+/// repo-wide `tags-union`, the config review-state summary, and
 /// the optional session target.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct DashboardResult {
-    /// Session target when the repo-root `.govern.session.toml` exists and
-    /// names a target; `None` otherwise.
+    /// Session target when the session file (`.govern/session.toml`;
+    /// legacy root fallback) exists and names a target; `None` otherwise.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub session_target: Option<DashboardSessionTarget>,
     /// Per-spec entries in directory-name order.
@@ -785,7 +788,7 @@ pub struct DashboardResult {
     /// Sorted, deduplicated union of every spec's `tags` array. Empty when
     /// no spec has tags.
     pub tags_union: Vec<String>,
-    /// `.govern.toml` review-state summary.
+    /// Config review-state summary.
     pub config: DashboardConfig,
     /// The full pipeline view pre-rendered as one markdown fragment —
     /// preamble, dashboard table, counts and callouts, and the
@@ -1501,8 +1504,8 @@ pub struct PruneTasksResult {
 
 /// Args for `migrate-session-file`. Translates a pre-0.10.0 legacy
 /// session JSON at `legacy-path` into the consolidated
-/// `<repo>/.govern.session.toml` and deletes the legacy file. The
-/// destination is hardcoded (it's `write-session`'s `SESSION_FILE`
+/// `<repo>/.govern/session.toml` and deletes the legacy file. The
+/// destination is hardcoded (it's the runtime's `SESSION_FILE`
 /// constant) so the migration cannot drift from the runtime's read
 /// path.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
@@ -1525,11 +1528,11 @@ pub struct MigrateSessionFileResult {
     /// (echoes the input `legacy-path`).
     pub source: String,
     /// Repo-relative path of the consolidated session file. Always
-    /// `.govern.session.toml` (the runtime's `write-session::SESSION_FILE`).
+    /// `.govern/session.toml` (the runtime's `SESSION_FILE` constant).
     pub dest: String,
     /// `"migrated"` — legacy file translated into a fresh
-    /// `.govern.session.toml` and deleted.
-    /// `"kept-existing"` — `.govern.session.toml` already existed; the
+    /// `.govern/session.toml` and deleted.
+    /// `"kept-existing"` — `.govern/session.toml` already existed; the
     /// new file was left untouched and the legacy file was deleted.
     /// `"no-legacy"` — no legacy file present at `legacy-path`; no-op.
     pub action: String,
@@ -1540,9 +1543,10 @@ pub struct MigrateSessionFileResult {
 
 // -- write-session -----------------------------------------------------------
 
-/// Args for `write-session`. Sets the session state at the canonical
-/// `<repo>/.govern.session.toml` location (gitignored, repo-root, no
-/// host/project variability). The `scenario` and `scenario-path` fields
+/// Args for `write-session`. Sets the session state at the active
+/// session file — `.govern/session.toml`, or the legacy root
+/// `.govern.session.toml` pre-migration (the `/govern` migration is the
+/// sole cutover); gitignored either way. The `scenario` and `scenario-path` fields
 /// are paired — both must be supplied together or both omitted; omitting
 /// both clears any previously set scenario.
 ///
@@ -1616,9 +1620,10 @@ pub struct WriteSessionArgs {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct WriteSessionResult {
-    /// Repo-relative path of the written session file (always
-    /// `.govern.session.toml` — kept on the result for symmetry with
-    /// other write primitives' return shapes).
+    /// Repo-relative path of the written session file — the active file
+    /// the write resolved (`.govern/session.toml`, or the legacy root
+    /// `.govern.session.toml` pre-migration); kept on the result for
+    /// symmetry with other write primitives' return shapes.
     pub path: String,
     /// `true` when the file did not exist before this call, `false` when
     /// an existing file was overwritten in place.
@@ -1628,8 +1633,8 @@ pub struct WriteSessionResult {
 // -- resolve-references ------------------------------------------------------
 
 /// Args for `resolve-references`. Resolves the consumer feature's derived
-/// `references:` index (see spec 030) against the `.govern.toml` `[services]`
-/// registry, reading each linked spec's live `status` from its local
+/// `references:` index (see spec 030) against the `.govern/config.toml`
+/// `[services]` registry, reading each linked spec's live `status` from its local
 /// checkout. Takes only the consumer feature; the repo root is supplied by
 /// the runtime.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]

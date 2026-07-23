@@ -113,7 +113,7 @@ enum Command {
     MergeManagedBlock(MergeManagedBlockArgs),
     /// Idempotently merge a canonical permission allow/deny set into a JSON file with dedup.
     MergePermissions(MergePermissionsArgs),
-    /// Translate a pre-0.10.0 legacy session JSON into `.govern.session.toml` and delete the legacy file.
+    /// Translate a pre-0.10.0 legacy session JSON into `.govern/session.toml` and delete the legacy file.
     MigrateSessionFile(MigrateSessionFileArgs),
     /// Write a new scenarios/{slug}.md file under a feature with frontmatter and body.
     CreateScenario(CreateScenarioArgs),
@@ -139,7 +139,7 @@ enum Command {
     GateConfirm(GateConfirmArgs),
     /// Single-call pipeline-state surface for `/{project}:status`.
     Dashboard(DashboardArgs),
-    /// Atomically rewrite `.govern.session.toml` with the session-target record.
+    /// Atomically rewrite the active session file (`.govern/session.toml`; legacy root pre-migration) with the session-target record.
     WriteSession(WriteSessionArgs),
 }
 
