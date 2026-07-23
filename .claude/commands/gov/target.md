@@ -16,7 +16,7 @@ Establishes which feature spec all subsequent `/gov:*` commands operate on. Opti
 
 ## Scope Boundaries
 
-- Read `constitution.md` once per session and the targeted feature's `spec.md` frontmatter and open-question count. Read the targeted scenario file only when one is specified.
+- Read `.govern/constitution.md` once per session and the targeted feature's `spec.md` frontmatter and open-question count. Read the targeted scenario file only when one is specified.
 - Do NOT read plan files, tasks, source code, test files, or unrelated specs' bodies.
 - Do NOT modify any spec, plan, scenario, or source file. The only file written is the session file (`.govern/session.toml`). Status transitions belong to the pipeline commands (`/gov:clarify`, `/gov:plan`, `/gov:implement`) and to `/gov:amend` (the documented back-edges: `clarified|planned|in-progress → draft` on a new question, and `done → in-progress` on a new scenario).
 - Reference: §spec-lifecycle, §scenarios, §concurrent-features, §text-first-artifacts.

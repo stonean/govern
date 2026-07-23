@@ -22,7 +22,7 @@ First step in the pipeline. Creates a new numbered feature directory with a spec
 
 This command does not require a session target — it creates a new feature. If `.govern/session.toml` exists, the session target will be overwritten with the new feature.
 
-If the constitution has not been loaded in this session (e.g., `/gov:target` has not been run), read `constitution.md` now to load `govern` rules. If the constitution was already loaded by `/gov:target`, do not re-read it.
+If the constitution has not been loaded in this session (e.g., `/gov:target` has not been run), read `.govern/constitution.md` now to load `govern` rules. If the constitution was already loaded by `/gov:target`, do not re-read it.
 
 ## Scope Boundaries
 
@@ -65,7 +65,7 @@ Both sections above are what the `create-feature` primitive automates on the run
 
 ### Fill the spec body
 
-Fill in the spec following `constitution.md` rules (§spec-requirements, §text-first-artifacts):
+Fill in the spec following `.govern/constitution.md` rules (§spec-requirements, §text-first-artifacts):
 
 - Frontmatter `status` starts at `draft` (template default); `dependencies` starts at `[]` and is generator-managed (do not author by hand).
 - Describe behavior and contracts, not implementation.

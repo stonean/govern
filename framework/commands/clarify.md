@@ -97,7 +97,7 @@ With no gvrn runtime registered, the host walks the same contract with its own f
 
 ### Feature-targeted clarify (hot path: `draft` spec)
 
-Read `spec.md`. If it does not exist, stop and report: "Spec does not exist. Run `/{project}:specify` first." Then perform the clarify gate defined in `constitution.md` (§spec-requirements, §spec-lifecycle):
+Read `spec.md`. If it does not exist, stop and report: "Spec does not exist. Run `/{project}:specify` first." Then perform the clarify gate defined in `.govern/constitution.md` (§spec-requirements, §spec-lifecycle):
 
 0. **Recompute dependencies (safety net).** Run `.govern/scripts/gen-spec-deps.sh --dry-run` (it walks every spec — there is no per-spec mode). If it reports a diff, the `dependencies:` frontmatter is stale from uncommitted body edits; surface that and recommend committing (the pre-commit hook syncs it) or running the generator manually. Do not run it for real from this command — evaluate dependency readiness against the current frontmatter and note the caveat.
 

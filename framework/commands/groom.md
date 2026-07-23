@@ -61,7 +61,7 @@ For each item, walk the steps in order; the first matching step names the route.
 
 **Step 1: Is this a cross-cutting concern with no covering rule?** (route: `rule`)
 
-- Apply the four-indicator promotion checklist (§rules in `constitution.md`): cross-cutting, citable, governance-recognized category, generalizable wording. If the item qualifies, recommend promoting it to a rule.
+- Apply the four-indicator promotion checklist (§rules in `.govern/constitution.md`): cross-cutting, citable, governance-recognized category, generalizable wording. If the item qualifies, recommend promoting it to a rule.
 - If a loaded rule file already covers the domain (e.g., `specs/rules/security-backend.md` for an authentication concern, `specs/rules/configuration-cross.md` for an env-var concern), recommend the user amend the relevant rule file directly — note that local edits to rule files are overwritten by `/govern` unless the file is pinned in `.govern/config.toml`, so amendments belong upstream in the framework rather than in adopting projects.
 - If no rule file covers the domain, creating a new rule file is its own feature spec (out of `/{project}:groom`'s scope). Leave the item in the inbox unmodified — every subsequent groom pass walks every unmigrated item, including this one, so it stays surfaced. Ask the user whether to skip and continue.
 - If the item is feature-specific rather than cross-cutting, fall through to Step 2.

@@ -45,7 +45,7 @@ If `--all` is not present, use the feature identifier if provided, otherwise fal
 
 3. Invoke `traverse-deps` against the feature to verify each dependency directory exists, carries a compatible status, and that the reachable dep subgraph is acyclic. Missing dependencies are blocking; an incompatible status (the edge's `compatible: false` — the dependency is below `planned`) is blocking when this spec is at `clarified` or later. `traverse-deps` reports per-edge `compatible` and `status` **unconditionally** (it never reads the consumer's own status), so apply that consumer-status conditioning host-side from the returned data rather than mapping the top-level `compatible` flag straight to a blocking finding. Any non-empty `cycles` entry — multi-node SCC or self-loop — is blocking. The cycle check is defense-in-depth that fires when the upstream `gen-spec-deps.sh` generator check (spec 017) was bypassed or stale frontmatter re-introduces an edge.
 
-4. Invoke `resolve-anchor` against the spec path **with `markers-path` set to the constitution file** (`framework/constitution.md` in govern's own repo; `constitution.md` at the adopter repo root) to confirm every `§<name>` reference in the spec resolves to a `<!-- §name -->` marker in the constitution. The `markers-path` is essential: a spec carries no markers of its own, so resolving against the spec itself would flag *every* reference as unresolved; resolving against the constitution flags only a reference to a section that was renamed or restructured without updating callers. Unresolved anchors are advisory. With no gvrn runtime, walk the markdown-only path.
+4. Invoke `resolve-anchor` against the spec path **with `markers-path` set to the constitution file** (`framework/constitution.md` in govern's own repo; `.govern/constitution.md` at the adopter repo root) to confirm every `§<name>` reference in the spec resolves to a `<!-- §name -->` marker in the constitution. The `markers-path` is essential: a spec carries no markers of its own, so resolving against the spec itself would flag *every* reference as unresolved; resolving against the constitution flags only a reference to a section that was renamed or restructured without updating callers. Unresolved anchors are advisory. With no gvrn runtime, walk the markdown-only path.
 
 5. Invoke `check-rule-ids` against the spec path with the project's rule files. Cited rule IDs that are missing are blocking; cited rule IDs marked deprecated are advisory.
 
@@ -120,7 +120,7 @@ Reference: the schema is canonically declared in `framework/constitution.md` §t
 
 ### Grounding (advisory)
 
-Enforces `constitution.md` §grounding against the spec and plan bodies: a factual claim about the **existing system** must be grounded — either cited to a primary source or marked as an assumption — rather than asserted from conjecture. `/gov:analyze` checks the *form* of grounding (is the claim sourced or hedged), not its truth: confirming a claim against the code would require reading source, which is out of this command's scope (see Scope Boundaries). The truth check is the agent's job at authoring time (§grounding) and `/gov:review`'s job against code.
+Enforces `.govern/constitution.md` §grounding against the spec and plan bodies: a factual claim about the **existing system** must be grounded — either cited to a primary source or marked as an assumption — rather than asserted from conjecture. `/gov:analyze` checks the *form* of grounding (is the claim sourced or hedged), not its truth: confirming a claim against the code would require reading source, which is out of this command's scope (see Scope Boundaries). The truth check is the agent's job at authoring time (§grounding) and `/gov:review`'s job against code.
 
 Applies to the spec body at status `clarified` or later, and to `plan.md` at `planned` or later (when it exists). `draft` specs are exempt — claims are still forming, the same way open questions are tolerated only at `draft`.
 
@@ -175,7 +175,7 @@ When `--fix` is set, this check additionally reverts affected specs from `done` 
 
 ### Rules (blocking and advisory)
 
-Rules are the cross-cutting tier of the framework's three-tier requirement model (see §rules in `constitution.md`). Discover rule files by directory walk: list every `*.md` file in the project's rule-file directory and classify each by basename suffix per the closed-suffix policy declared in `constitution.md` §rules — `*-backend.md`, `*-frontend.md`, `*-cross.md`, or unrecognized. `/gov:analyze` loads **every** discovered file regardless of detected stack — and regardless of the project's `[rules] surfaces` setting (`govern.md`, **Project Configuration**) — because citation verification spans surfaces: a backend project that cites `FE-XSS-001` in a scenario covering HTML output still needs that citation verified. `[rules] surfaces` scopes `/gov:review` enforcement only (which surface's rules are checked against code); it never prunes the rule-file set `/gov:analyze` loads for citation resolution.
+Rules are the cross-cutting tier of the framework's three-tier requirement model (see §rules in `.govern/constitution.md`). Discover rule files by directory walk: list every `*.md` file in the project's rule-file directory and classify each by basename suffix per the closed-suffix policy declared in `.govern/constitution.md` §rules — `*-backend.md`, `*-frontend.md`, `*-cross.md`, or unrecognized. `/gov:analyze` loads **every** discovered file regardless of detected stack — and regardless of the project's `[rules] surfaces` setting (`govern.md`, **Project Configuration**) — because citation verification spans surfaces: a backend project that cites `FE-XSS-001` in a scenario covering HTML output still needs that citation verified. `[rules] surfaces` scopes `/gov:review` enforcement only (which surface's rules are checked against code); it never prunes the rule-file set `/gov:analyze` loads for citation resolution.
 
 For each file with an unrecognized suffix, emit one stdout line:
 
@@ -213,11 +213,11 @@ The check assumes every citation resolves to a real rule — citations to unknow
 
 ### Project-level consistency (advisory)
 
-These checks span the project's installed command set and constitution rather than the target feature. They catch drift in the framework files `govern` ships, surfaced per the Drift Prevention principles in `constitution.md` §drift-prevention. Run once per `/gov:analyze` invocation regardless of which feature is targeted; with `--all`, run once before per-feature output.
+These checks span the project's installed command set and constitution rather than the target feature. They catch drift in the framework files `govern` ships, surfaced per the Drift Prevention principles in `.govern/constitution.md` §drift-prevention. Run once per `/gov:analyze` invocation regardless of which feature is targeted; with `--all`, run once before per-feature output.
 
 Read inputs:
 
-- `constitution.md` (already loaded by `/gov:target`)
+- `.govern/constitution.md` (already loaded by `/gov:target`)
 - `.claude/commands/gov/help.md`
 - The full set of `.md` files in `.claude/commands/gov/` (frontmatter only — do not read bodies for these checks)
 - `.claude/commands/govern.md` if it exists (frontmatter only — the bootstrap installer lives outside the project namespace)
@@ -225,7 +225,7 @@ Read inputs:
 Checks:
 
 - **Generator drift** — run `scripts/gen-help-tables.sh --dry-run` (via the `run-generator` primitive on the runtime path, the same way step 6 runs `gen-spec-deps.sh`; when the script exists in the project). Non-empty diff means the help.md command tables are out of sync with their sources. Report it as `Generator out of sync: {script}; the next commit will resolve.`
-- **Anchor resolution** — every `§<name>` reference in any installed command file (typically in `Reference: §<first>, §<second>` Scope-Boundaries lines) resolves to a corresponding marker in `constitution.md`.
+- **Anchor resolution** — every `§<name>` reference in any installed command file (typically in `Reference: §<first>, §<second>` Scope-Boundaries lines) resolves to a corresponding marker in `.govern/constitution.md`.
 - **Command frontmatter completeness** — every `.md` file in the installed commands directory has a `description:` frontmatter field; the same check applies to `.claude/commands/govern.md` when that file exists. Files whose body documents an `$ARGUMENTS` parameter additionally have `argument-hint:`. Report missing fields; do not check value content.
 
 These are advisory, not blocking — they signal framework drift that the project should resolve at its convenience. They do not prevent pipeline advancement on the target feature.

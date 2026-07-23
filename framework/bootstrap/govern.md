@@ -429,7 +429,7 @@ specs-root = "specs"
 # Use destination paths (after placeholder resolution).
 files = [
   ".claude/commands/myapp/implement.md",
-  "constitution.md",
+  ".govern/constitution.md",
 ]
 
 [migrations]
@@ -611,7 +611,7 @@ These files are scaffolded **once per `/govern` invocation**, regardless of how 
 
 | Source Path | Destination Path |
 | --- | --- |
-| `framework/constitution.md` | `constitution.md` |
+| `framework/constitution.md` | `.govern/constitution.md` |
 | `framework/rules/accessibility-frontend.md` | `specs/rules/accessibility-frontend.md` |
 | `framework/rules/api-backend.md` | `specs/rules/api-backend.md` |
 | `framework/rules/concurrency-backend.md` | `specs/rules/concurrency-backend.md` |

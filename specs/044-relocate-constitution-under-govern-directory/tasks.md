@@ -11,16 +11,16 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 2. Update the bootstrap manifest and prose
 
-- [ ] Change the Shared Files row `framework/constitution.md` → destination `.govern/constitution.md` (`framework/bootstrap/govern.md:614`)
-- [ ] Update the `[pinned] files` schema example (`govern.md:432`) to `.govern/constitution.md`
+- [x] Change the Shared Files row `framework/constitution.md` → destination `.govern/constitution.md` (`framework/bootstrap/govern.md:614`)
+- [x] Update the `[pinned] files` schema example (`govern.md:432`) to `.govern/constitution.md`
 
 - **Done when**: `rg -n 'constitution' framework/bootstrap/govern.md` shows no adopter-root `constitution.md` destination — only the `framework/constitution.md` source and `.govern/constitution.md` destination forms.
 
 ## 3. Sweep the shipped command bodies
 
-- [ ] Update the bare adopter-path references to `.govern/constitution.md`: `target.md:19`, `specify.md:25,68`, `groom.md:64`, `clarify.md:100`, `analyze.md:123,178,216,220,228`
-- [ ] Update `analyze.md:48`'s dual-path rule: `framework/constitution.md` in govern's own repo; `.govern/constitution.md` at the adopter repo root
-- [ ] Run the full sweep grep over `framework/commands/` to catch references my scoping grep filtered (lines mentioning both path forms)
+- [x] Update the bare adopter-path references to `.govern/constitution.md`: `target.md:19`, `specify.md:25,68`, `groom.md:64`, `clarify.md:100`, `analyze.md:123,178,216,220,228`
+- [x] Update `analyze.md:48`'s dual-path rule: `framework/constitution.md` in govern's own repo; `.govern/constitution.md` at the adopter repo root
+- [x] Run the full sweep grep over `framework/commands/` to catch references my scoping grep filtered (lines mentioning both path forms)
 
 - **Done when**: `rg -n '\bconstitution\.md' framework/commands/` returns only `framework/constitution.md` and `.govern/constitution.md` forms.
 
