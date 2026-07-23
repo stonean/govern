@@ -111,12 +111,12 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 14. Provenance tags name the resolved config path
 
-- [ ] Implement the behavior described in `scenarios/provenance-tags-name-resolved-config-path.md`
+- [x] Implement the behavior described in `scenarios/provenance-tags-name-resolved-config-path.md`
 
 - **Done when**: the disabled-rule-file provenance tags in `discover_rule_files.rs` and `dashboard.rs` name the resolved config path, the `review.md`/`status.md` mirrors match the runtime wording, and the parity suite passes with updated goldens.
 
 ## 15. Runtime doc strings name the active config/session paths
 
-- [ ] Implement the behavior described in `scenarios/runtime-doc-strings-name-active-paths.md`
+- [x] Implement the behavior described in `scenarios/runtime-doc-strings-name-active-paths.md`
 
 - **Done when**: no user-visible runtime doc string (clap help, MCP tool description, schema arg doc) names a legacy root path as the target; legacy mentions remain only where fallback or migration behavior is described.
