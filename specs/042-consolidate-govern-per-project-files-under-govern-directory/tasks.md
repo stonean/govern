@@ -108,3 +108,15 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] Pre-migration fallback: `/gov:status` on a legacy-layout project (before `/govern`) reads correctly via fallback with no path error
 
 - **Done when**: fresh-adopter, migration, and pre-migration-fallback paths all pass, and the runtime + audit suites are green.
+
+## 14. Provenance tags name the resolved config path
+
+- [ ] Implement the behavior described in `scenarios/provenance-tags-name-resolved-config-path.md`
+
+- **Done when**: the disabled-rule-file provenance tags in `discover_rule_files.rs` and `dashboard.rs` name the resolved config path, the `review.md`/`status.md` mirrors match the runtime wording, and the parity suite passes with updated goldens.
+
+## 15. Runtime doc strings name the active config/session paths
+
+- [ ] Implement the behavior described in `scenarios/runtime-doc-strings-name-active-paths.md`
+
+- **Done when**: no user-visible runtime doc string (clap help, MCP tool description, schema arg doc) names a legacy root path as the target; legacy mentions remain only where fallback or migration behavior is described.

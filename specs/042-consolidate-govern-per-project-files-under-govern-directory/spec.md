@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [027-bootstrap-migration-registry, 040-configurable-specs-dir]
 review:
   last-run: 2026-07-23T00:03:37Z
