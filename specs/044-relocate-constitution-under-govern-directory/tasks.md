@@ -42,8 +42,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 6. Cut the runtime version
 
-- [ ] Bump `runtime/Cargo.toml` to 0.24.0
-- [ ] Add the `runtime/CHANGELOG.md` 0.24.0 entry: no runtime behavior changes; the version anchors `constitution-relocate`'s `introduced_in` (043 precedent)
+- [x] Bump `runtime/Cargo.toml` to 0.24.0
+- [x] Add the `runtime/CHANGELOG.md` 0.24.0 entry: no runtime behavior changes; the version anchors `constitution-relocate`'s `introduced_in` (043 precedent)
 
 - **Done when**: `cargo build` succeeds at 0.24.0 and the changelog's top entry documents the no-behavior-change cut.
 

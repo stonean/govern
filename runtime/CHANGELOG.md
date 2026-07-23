@@ -2,6 +2,14 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.24.0] — 2026-07-22
+
+Spec 044: the shipped constitution relocates from the adopter repo root to `.govern/constitution.md`. The paired `constitution-relocate` migration (`introduced_in = 0.24.0`, no sunset) moves an existing adopter's root `constitution.md`, re-points the `CLAUDE.md` import, the `AGENTS.md` / `README.md` links, and any `[pinned] files` entry, and converges a stale root copy.
+
+### Changed
+
+- **No runtime code changes** — no primitive reads the constitution (loading it is host responsibility in the command bodies), and the parity fixtures' constitution paths are synthetic, so no fixture or golden changes ship. The version exists so the migration's `introduced_in` has a published release.
+
 ## [0.23.0] — 2026-07-22
 
 Spec 043: the workflows feature is removed from the framework — `/govern` no longer offers or scaffolds tech-stack workflow slash commands, and nothing reads the `[workflows]` config section. The paired `workflows-sunset` migration (`introduced_in = 0.23.0`) cleans adopter projects: scaffolded workflow commands (current and legacy filenames), any legacy `skills/` directory, the synced `workflows/registry.json`, and the `[workflows]` config section, all pinned-aware. It subsumes the retired `skills-to-workflows` and `workflow-filename-rename` migrations, whose recipes moved to the root `CHANGELOG.md` § Archived migrations.
