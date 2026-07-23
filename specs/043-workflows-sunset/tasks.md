@@ -65,7 +65,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 9. Release gate
 
-- [ ] Commit to `main` (explicit paths, no `git add -A`) and push after review
-- [ ] Tag `gvrn-v0.23.0` at that commit and push the tag; confirm the release pipeline's self-audit gate passes
+- [x] Commit to `main` (explicit paths, no `git add -A`) and push after review
+- [x] Tag `gvrn-v0.23.0` at that commit and push the tag; confirm the release pipeline's self-audit gate passes
 
 - **Done when**: the `gvrn-v0.23.0` tag is published and the runtime-release workflow completes green.
