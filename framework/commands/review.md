@@ -64,7 +64,7 @@ Quality gate before `done`: audit the feature's implementation against the proje
     (`[]`) is valid and means cross-only (not the same as unset); an
     unrecognized member (including `"cross"`) or a non-list value fails fast
     in step 2. Collected and persisted
-    by `/govern` (`govern.md` §Collect Project Inputs).
+    by `/govern` (`govern.md`, **Collect Project Inputs**).
 
 ## Flags
 
@@ -226,7 +226,7 @@ The numbered Instructions above are the deterministic path — the runtime's pri
    - **Malformed warning.** Entry is missing `file` or `reason`, or
      `reason`'s trimmed length is < 16 Unicode codepoints. Skip the
      entry (no file is dropped) and emit one line naming the offending
-     index (same pattern as §Malformed and duplicate waivers below):
+     index (same pattern as **Malformed and duplicate waivers** below):
 
      ```text
      malformed disabled-rule-file at review.disabled-rule-files[N]: <reason>
@@ -516,7 +516,7 @@ expire the waiver.
 ### Per-run waiver processing
 
 On every `/{project}:review` run, after the review passes have produced their
-findings (§Run review passes) and before counting them into `must-violations`
+findings (see **Run review passes**) and before counting them into `must-violations`
 or writing `review.md`, walk `review.waivers` and classify each entry against
 those findings. A waiver can only be judged against findings that exist — when
 an empty scope skips the passes entirely, leave the waivers untouched; and on
