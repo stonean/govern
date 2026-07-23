@@ -62,12 +62,9 @@ pub(crate) const LEGACY_SESSION_FILE: &str = ".govern.session.toml";
 /// the caller already treats as "config absent" → defaults.
 #[must_use]
 pub fn config_path(repo: &Path) -> PathBuf {
-    let new = repo.join(CONFIG_FILE);
-    if new.exists() {
-        new
-    } else {
-        repo.join(LEGACY_CONFIG_FILE)
-    }
+    // Derived from `config_display_name` so the new-wins choice lives once
+    // — the read path and the provenance tag can never disagree on the rule.
+    repo.join(config_display_name(repo))
 }
 
 /// Repo-relative display name of the resolved config file — the same
