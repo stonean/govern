@@ -25,10 +25,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 4. Sweep constitution, command sources, templates
 
-- [ ] `framework/constitution.md`: drop the Workflow registry map row; reword §runtime-boundary criterion 2(b)
-- [ ] `framework/commands/groom.md` (2 sites) and `framework/commands/link.md` (preserve list): reword per plan
-- [ ] `framework/templates/project/agents.md`: drop the workflows disambiguation from the Skills comment
-- [ ] Regenerate `.claude/commands/gov/` copies via `scripts/gen-claude-commands.sh`
+- [x] `framework/constitution.md`: drop the Workflow registry map row; reword §runtime-boundary criterion 2(b)
+- [x] `framework/commands/groom.md` (2 sites) and `framework/commands/link.md` (preserve list): reword per plan
+- [x] `framework/templates/project/agents.md`: drop the workflows disambiguation from the Skills comment
+- [x] Regenerate `.claude/commands/gov/` copies via `scripts/gen-claude-commands.sh`
 
 - **Done when**: no framework artifact outside `CHANGELOG.md` references the feature, and regenerated copies match their sources.
 

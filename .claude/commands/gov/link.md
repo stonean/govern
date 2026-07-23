@@ -68,7 +68,7 @@ Per field, as entered:
 ### Additive write
 
 - Read the active config file per Scope Boundaries above (when neither location exists, create `.govern/config.toml` with just the new block — a write outside the `/govern` migration never creates a partial `.govern/config.toml` alongside a legacy file).
-- Add a `[services.<alias>]` table with `repo`, `path`, and `description` (omit `description` when skipped). Preserve every other table — `[host]`, `[project]`, `[paths]`, `[rules]`, `[pinned]`, `[migrations]`, `[workflows]`, `[review]`, and any sibling `[services.*]` entries — byte-for-byte. (The operative rule is "preserve every table other than the one being added"; the list is illustrative, not exhaustive.) This is the additive discipline already used for `.mcp.json` and permission merges.
+- Add a `[services.<alias>]` table with `repo`, `path`, and `description` (omit `description` when skipped). Preserve every other table — `[host]`, `[project]`, `[paths]`, `[rules]`, `[pinned]`, `[migrations]`, `[review]`, and any sibling `[services.*]` entries — byte-for-byte. (The operative rule is "preserve every table other than the one being added"; the list is illustrative, not exhaustive.) This is the additive discipline already used for `.mcp.json` and permission merges.
 - Write atomically (tempfile + rename).
 
 ### List the registry

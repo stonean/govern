@@ -468,7 +468,7 @@ The backticked primitive names in a rewritten command's Instructions section map
 A capability is runtime-eligible only when **all three** hold:
 
 1. **Deterministic** — no semantic judgment required; the same inputs always produce the same outputs.
-2. **Currently mechanical** — already either (a) executed by an LLM following procedural instructions in a slash command body, or (b) implemented as a bash script invoked by `govern` workflows.
+2. **Currently mechanical** — already either (a) executed by an LLM following procedural instructions in a slash command body, or (b) implemented as a bash script the framework invokes (pre-commit hooks, generators, CI).
 3. **Degradation, not failure, when removed** — without the runtime, the work still completes correctly via the markdown-only path; only speed, cost, or reliability degrades.
 
 A capability that fails any criterion stays out of the runtime. Anything that requires reading prose for intent is permanently LLM-owned regardless of how mechanical its surface looks.
@@ -503,7 +503,6 @@ For every kind of fact described in multiple places, one location is authoritati
 | Pipeline command behavior | each command's source under `framework/commands/*.md` (or `framework/bootstrap/configure/{key}.md`) |
 | Frontmatter schema for specs and scenarios | `framework/constitution.md` §text-first-artifacts |
 | Validation severity tiers | `framework/constitution.md` §text-first-artifacts (Validation Severity subsection) |
-| Workflow registry | `framework/workflows/registry.json` |
 | Per-agent permission set | `framework/bootstrap/configure/{key}.md` |
 | Constitution section anchors | `<!-- §<anchor> -->` markers in `framework/constitution.md` |
 | Command frontmatter (description, argument-hint) | each command's own frontmatter block |

@@ -73,10 +73,7 @@ See [constitution.md](constitution.md) — guiding principles, development pipel
 ## Skills
 
 <!-- Optional. List skill files (Anthropic/Claude Code "skills" — context-loaded
-     instruction packs) that augment AGENTS.md for specific task types. This is
-     distinct from this repo's `framework/workflows/` — workflows are `govern`-
-     scaffolded slash commands for routine ops (lint, test, format), while skills
-     are an agent-platform feature for richer in-context instruction packs. Leave
+     instruction packs) that augment AGENTS.md for specific task types. Leave
      empty if you don't decompose into skills.
 
      Example (file paths are illustrative — adopters place skill files wherever
