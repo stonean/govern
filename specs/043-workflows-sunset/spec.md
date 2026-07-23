@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: [004-tech-stack-selection, 005-workflows, 010-agent-autonomy, 018-adopter-owned-pre-commit, 019-config-decisions, 027-bootstrap-migration-registry]
 review:
   last-run: 2026-07-23T02:15:16Z
@@ -63,17 +63,17 @@ A new registry entry (id `workflows-sunset`) drives cleanup on the next `/govern
 
 ## Acceptance Criteria
 
-- [ ] `framework/workflows/` does not exist, and no live artifact (framework/, scripts/, runtime/, .github/, docs/, README.md, AGENTS.md, spec bodies) references it or the feature's surfaces (`workflows/registry.json`, `[workflows] declined_categories`, the Workflow recommendation flow), excluding GitHub Actions paths and generic uses of the word.
-- [ ] The `/govern` procedure contains no workflow scaffolding: no recommendation flow, no registry manifest row, no `[workflows]` config schema, no workflow prompts in the procedural-fidelity preamble.
-- [ ] `framework/migrations.toml` carries a `workflows-sunset` entry (id, `introduced_in`, `sunset_after`, summary, procedure file under `framework/migrations/`) whose target paths cover the scaffolded command directory's 22 known filenames (13 current + 9 legacy), the legacy `skills/` directory, the synced `workflows/registry.json`, and `framework/workflows/` (audit Family 10 coverage).
-- [ ] `/govern` against an adopter with scaffolded workflow files removes every known-set file and the synced registry copy, removes the `[workflows]` section from the active config file while preserving all other tables byte-for-byte, reports each removal in the post-scaffolding summary, and advances `[migrations] last_applied`.
-- [ ] A file listed in `[pinned] files` survives with a `pinned (kept):` summary line; an adopter-authored file not in the known set survives silently and keeps its directory alive.
-- [ ] The migration is a no-op against an adopter with no workflow artifacts (fresh project, or `antigravity`/`opencode` layouts that never scaffolded).
-- [ ] `skills-to-workflows` and `workflow-filename-rename` no longer appear in `framework/migrations.toml`; their procedure text appears under root `CHANGELOG.md` § Archived migrations and their `framework/migrations/*.md` files are gone.
-- [ ] `specs/005-workflows/spec.md` carries a post-completion sunset note pointing at this spec, with `status: done` unchanged.
-- [ ] The constitution's canonical-source map has no Workflow registry row.
-- [ ] `scripts/audit/run-all.sh` passes clean after the removal.
-- [ ] The `gvrn-v{introduced_in}` release tag is published (migration completion gate).
+- [x] `framework/workflows/` does not exist, and no live artifact (framework/, scripts/, runtime/, .github/, docs/, README.md, AGENTS.md, spec bodies) references it or the feature's surfaces (`workflows/registry.json`, `[workflows] declined_categories`, the Workflow recommendation flow), excluding GitHub Actions paths and generic uses of the word.
+- [x] The `/govern` procedure contains no workflow scaffolding: no recommendation flow, no registry manifest row, no `[workflows]` config schema, no workflow prompts in the procedural-fidelity preamble.
+- [x] `framework/migrations.toml` carries a `workflows-sunset` entry (id, `introduced_in`, `sunset_after`, summary, procedure file under `framework/migrations/`) whose target paths cover the scaffolded command directory's 22 known filenames (13 current + 9 legacy), the legacy `skills/` directory, the synced `workflows/registry.json`, and `framework/workflows/` (audit Family 10 coverage).
+- [x] `/govern` against an adopter with scaffolded workflow files removes every known-set file and the synced registry copy, removes the `[workflows]` section from the active config file while preserving all other tables byte-for-byte, reports each removal in the post-scaffolding summary, and advances `[migrations] last_applied`.
+- [x] A file listed in `[pinned] files` survives with a `pinned (kept):` summary line; an adopter-authored file not in the known set survives silently and keeps its directory alive.
+- [x] The migration is a no-op against an adopter with no workflow artifacts (fresh project, or `antigravity`/`opencode` layouts that never scaffolded).
+- [x] `skills-to-workflows` and `workflow-filename-rename` no longer appear in `framework/migrations.toml`; their procedure text appears under root `CHANGELOG.md` § Archived migrations and their `framework/migrations/*.md` files are gone.
+- [x] `specs/005-workflows/spec.md` carries a post-completion sunset note pointing at this spec, with `status: done` unchanged.
+- [x] The constitution's canonical-source map has no Workflow registry row.
+- [x] `scripts/audit/run-all.sh` passes clean after the removal.
+- [x] The `gvrn-v{introduced_in}` release tag is published (migration completion gate).
 
 ## Open Questions
 
