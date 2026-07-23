@@ -65,3 +65,19 @@ if [[ "${GOVERN_SKIP_RUNTIME_CHECKS:-0}" != "1" ]] \
     )
   fi
 fi
+
+# Empty-commit guard. On 2026-07-22 a commit (b9ce6e5) landed with a tree
+# identical to its parent: the six files staged before `git commit` were
+# gone from the index by the time the commit was finalized, even though
+# this hook's runtime-check grep had seen them staged mid-run. The root
+# cause was not conclusively identified, so guard the outcome instead:
+# if the index matches HEAD when the hook ends, the commit would be
+# empty — abort loudly rather than let silent data loss ship. Escape
+# hatch for an intentional empty commit: GOVERN_ALLOW_EMPTY=1.
+if [[ "${GOVERN_ALLOW_EMPTY:-0}" != "1" ]] && git diff --cached --quiet; then
+  echo "pre-commit: index matches HEAD — this commit would be empty." >&2
+  echo "  Staged changes were lost during the hook run (or nothing was staged)." >&2
+  echo "  Re-stage the files and retry. For an intentional empty commit," >&2
+  echo "  re-run with GOVERN_ALLOW_EMPTY=1." >&2
+  exit 1
+fi
