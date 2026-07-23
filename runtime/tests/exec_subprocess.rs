@@ -30,21 +30,25 @@ fn write_procedure_repo(tmp: &Path, command_name: &str, body: &str) {
 }
 
 fn ensure_binary_built() {
-    let binary = runtime_binary();
-    if binary.exists() {
-        return;
-    }
-    let status = Command::new("cargo")
-        .args(["build", "--release"])
-        .current_dir(env!("CARGO_MANIFEST_DIR"))
-        .status()
-        .expect("cargo build --release must succeed");
-    assert!(status.success(), "cargo build failed");
-    assert!(
-        binary.exists(),
-        "binary not produced at {}",
-        binary.display()
-    );
+    // Always build (once per test binary): an incremental release build is
+    // a fast no-op when the binary is current, and it guarantees the tested
+    // binary matches the working tree — a mere `exists()` check let a stale
+    // `target/release/gvrn` from a prior version/source state pass.
+    static BUILD: std::sync::Once = std::sync::Once::new();
+    BUILD.call_once(|| {
+        let status = Command::new("cargo")
+            .args(["build", "--release"])
+            .current_dir(env!("CARGO_MANIFEST_DIR"))
+            .status()
+            .expect("cargo build --release must succeed");
+        assert!(status.success(), "cargo build failed");
+        let binary = runtime_binary();
+        assert!(
+            binary.exists(),
+            "binary not produced at {}",
+            binary.display()
+        );
+    });
 }
 
 #[test]
