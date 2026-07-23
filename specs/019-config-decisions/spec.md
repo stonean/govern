@@ -12,6 +12,8 @@ review:
 
 # 019 — Config-Persisted Decisions
 
+> **Note (post-completion, [043-workflows-sunset](../043-workflows-sunset/spec.md)):** the `[workflows] declined_categories` section this spec introduced was removed with the workflows feature — the `workflows-sunset` migration deletes it from adopter configs. The config-persistence *mechanism* this spec established (sections as persisted decisions, additive writes, the schema data-model) survives in the remaining sections; body references to `[workflows]` below are historical.
+
 `.govern.toml` is currently a single-purpose pin file: `[pinned] files = [...]` keeps `/govern` from overwriting customized files. Other interactive choices `/govern` makes — most visibly, the per-category workflow recommendation prompts in [005-workflows](../005-workflows/spec.md) — are forgotten the moment the run ends. A user who declines `Linting` workflows is asked again on every subsequent `/govern`, with no way to say "stop offering this."
 
 This feature extends `.govern.toml` from a pin-only file into the project's persisted-decisions store, with declining workflow recommendations as the motivating use case.

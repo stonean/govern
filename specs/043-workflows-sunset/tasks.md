@@ -42,17 +42,17 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 6. Runtime comment sweep, version bump, changelog
 
-- [ ] `runtime/src/schema/paths.rs` doc comment: drop `[workflows]` from the config-writes enumeration
-- [ ] `runtime/src/primitives/enforce_manifest.rs` module doc: generalize the legacy-conventions example
-- [ ] Bump `runtime/Cargo.toml` to `0.23.0`; add the `runtime/CHANGELOG.md` 0.23.0 section
-- [ ] `cargo build --release` (refresh the parity binary) and `cargo test` under `runtime/`; re-bless only a golden whose embedded command text changed — never for the version line
+- [x] `runtime/src/schema/paths.rs` doc comment: drop `[workflows]` from the config-writes enumeration
+- [x] `runtime/src/primitives/enforce_manifest.rs` module doc: generalize the legacy-conventions example
+- [x] Bump `runtime/Cargo.toml` to `0.23.0`; add the `runtime/CHANGELOG.md` 0.23.0 section
+- [x] `cargo build --release` (refresh the parity binary) and `cargo test` under `runtime/`; re-bless only a golden whose embedded command text changed — never for the version line
 
 - **Done when**: `cargo test` passes with the version rendered via the `{{runtime-version}}` placeholder and no golden diff attributable to the bump.
 
 ## 7. Annotate the sibling done specs
 
-- [ ] `specs/005-workflows/spec.md`: post-completion sunset blockquote pointing at 043 (`status: done` untouched)
-- [ ] One-line historical-surface notes in `specs/004-tech-stack-selection/spec.md`, `specs/010-agent-autonomy/spec.md`, `specs/019-config-decisions/spec.md`
+- [x] `specs/005-workflows/spec.md`: post-completion sunset blockquote pointing at 043 (`status: done` untouched)
+- [x] One-line historical-surface notes in `specs/004-tech-stack-selection/spec.md`, `specs/010-agent-autonomy/spec.md`, `specs/019-config-decisions/spec.md`
 
 - **Done when**: each note links `../043-workflows-sunset/spec.md`, no sibling spec's `status` changed, and `gen-spec-deps.sh --dry-run` reports only expected link-derived changes.
 

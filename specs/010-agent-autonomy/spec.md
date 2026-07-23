@@ -16,6 +16,8 @@ review:
 
 Evaluate capabilities found in autonomous agent orchestration tools (e.g., GSD-2) and determine which can be adopted within governance's constraints: zero dependencies, markdown-only artifacts, platform-agnostic, and human-in-the-loop pipeline gates.
 
+> **Note (post-completion, [043-workflows-sunset](../043-workflows-sunset/spec.md)):** the `skills/` → `workflows/` rename this spec delivered was itself sunset — the workflows feature no longer exists, and the `workflows-sunset` migration cleans up both directory generations in adopter projects. Body references to workflows below are historical.
+
 Each capability is evaluated independently. The outcome for each is one of: **adopt** (add to governance), **adapt** (modify the concept to fit governance's model), or **decline** (not a fit).
 
 ## Capabilities Under Evaluation

@@ -16,6 +16,8 @@ review:
 
 Interactive tech stack selection during `/gov:init` that collects richer project metadata beyond primary language(s). From those selections, populate the AGENTS.md Tech Stack table so the project's technology context is captured at creation time.
 
+> **Note (post-completion, [043-workflows-sunset](../043-workflows-sunset/spec.md)):** the workflow-registry trigger matching this spec fed was removed with the workflows feature. The Tech Stack table survives with its documentation role and `/gov:review`'s tech-stack alignment check as consumers; body references to workflow triggers below are historical.
+
 ## Problem
 
 Init currently asks only for primary language(s). Real projects have databases, messaging systems, frameworks, CSS preprocessors, test runners, and other infrastructure that shape how the project is built. Without this context, the AGENTS.md Tech Stack table is left blank — the user fills it manually every time. Tech-stack-specific conventions (Code Style, Testing, Gotchas) are the responsibility of the dev project, not governance, but the Tech Stack table itself should be populated at init time.
