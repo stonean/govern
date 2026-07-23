@@ -2,8 +2,8 @@
 status: in-progress
 dependencies: [004-tech-stack-selection, 005-workflows, 010-agent-autonomy, 018-adopter-owned-pre-commit, 019-config-decisions, 027-bootstrap-migration-registry]
 review:
-  last-run: null
-  reviewed-against: null
+  last-run: 2026-07-23T02:10:10Z
+  reviewed-against: 371c9d0330e33c2b42608d08f30d0852fd35ca28
   must-violations: 0
   should-violations: 0
   low-confidence: 0
