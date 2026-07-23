@@ -2,6 +2,14 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.23.0] — 2026-07-22
+
+Spec 043: the workflows feature is removed from the framework — `/govern` no longer offers or scaffolds tech-stack workflow slash commands, and nothing reads the `[workflows]` config section. The paired `workflows-sunset` migration (`introduced_in = 0.23.0`) cleans adopter projects: scaffolded workflow commands (current and legacy filenames), any legacy `skills/` directory, the synced `workflows/registry.json`, and the `[workflows]` config section, all pinned-aware. It subsumes the retired `skills-to-workflows` and `workflow-filename-rename` migrations, whose recipes moved to the root `CHANGELOG.md` § Archived migrations.
+
+### Changed
+
+- **Comment-only code changes** — the config-path resolver and `enforce-manifest` module docs no longer cite the removed `[workflows]` surface. No runtime behavior changes; the version exists so the migration's `introduced_in` has a published release.
+
 ## [0.22.0] — 2026-07-22
 
 Spec 042: per-project govern files consolidate under `.govern/` — `.govern.toml` → `.govern/config.toml`, `.govern.session.toml` → `.govern/session.toml`, and the three adopter-facing generators → `.govern/scripts/`. The runtime resolves the new locations with an indefinite legacy-root fallback; the paired `/govern` migration (`govern-dir-consolidate`, `introduced_in = 0.22.0`) is the sole cutover, so an adopter who upgrades gvrn before re-running `/govern` keeps working off the legacy files.

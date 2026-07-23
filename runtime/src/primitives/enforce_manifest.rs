@@ -4,8 +4,7 @@
 //! relative path is neither in `expected` nor `pinned`, and returns the
 //! per-file outcome split across `removed` / `kept` / `pinned-kept`.
 //! The bootstrap's sole caller is the per-agent slash-command manifest
-//! enforcement loop; adopter cleanup of historical conventions (the
-//! legacy `skills/` directory, legacy workflow filenames, and so on) is
+//! enforcement loop; adopter cleanup of historical conventions is
 //! owned by the registry-driven `## Pre-run Migrations` loop and the
 //! per-entry procedure files at `framework/migrations/{id}.md` (spec
 //! 027). The primitive itself is generic — it removes whatever files

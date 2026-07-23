@@ -106,7 +106,7 @@ pub(crate) fn session_path_for_write(repo: &Path) -> PathBuf {
 /// Resolve the config file to *write*: the active file, same rule as
 /// [`session_path_for_write`]. No runtime primitive writes the config file
 /// itself — config writes are host-driven (the bootstrap's `[migrations]` /
-/// `[project]` / `[workflows]` writes, `/gov:review`'s `[review]` flag, and
+/// `[project]` writes, `/gov:review`'s `[review]` flag, and
 /// the `merge-managed-block` host-block call, whose target path the caller
 /// supplies) — so this resolver is the canonical statement of the rule those
 /// callers mirror: a pre-migration write lands on the legacy file rather than
