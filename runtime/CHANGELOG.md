@@ -2,6 +2,22 @@
 
 All notable changes to the `govern` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `gvrn-v<MAJOR>.<MINOR>.<PATCH>` scheme distinct from framework tags (was `runtime-v*` before v0.2.0 — see the v0.2.0 rename entry below).
 
+## [0.22.0] — 2026-07-22
+
+Spec 042: per-project govern files consolidate under `.govern/` — `.govern.toml` → `.govern/config.toml`, `.govern.session.toml` → `.govern/session.toml`, and the three adopter-facing generators → `.govern/scripts/`. The runtime resolves the new locations with an indefinite legacy-root fallback; the paired `/govern` migration (`govern-dir-consolidate`, `introduced_in = 0.22.0`) is the sole cutover, so an adopter who upgrades gvrn before re-running `/govern` keeps working off the legacy files.
+
+### Changed
+
+- **Config/session reads resolve `.govern/` first** — new `config_path` / `session_path` resolvers return the consolidated location when present and fall back to the legacy root files, new-wins on a split layout. All six config reads (`host.rs`, `paths.rs`, `resolve-references`, `dashboard`, `discover-rule-files`, the exec walker's config seed) and the three session readers route through them.
+- **Writers target the active file** — `write-session` (via `session_path_for_write`) and the config-write rule land on the `.govern/` file when it exists and the legacy file when only it does; no runtime write outside the migration ever creates a partial `.govern/config.toml` that would strand the legacy file's other sections.
+- **`SESSION_FILE` is `.govern/session.toml`** — `migrate-session-file` lands the pre-0.10.0 session-JSON migration directly at the consolidated path.
+- **Provenance tags name the resolved config path (042 task 14)** — the disabled-rule-file notices from `discover-rule-files` and `dashboard`'s callout render the repo-relative resolved config file (`(.govern/config.toml)`, or the legacy root literal on a pre-migration layout) instead of a hardcoded `(.govern.toml)`; the `review.md` / `status.md` doc mirrors document the dynamic tag (doc↔runtime message parity preserved).
+- **User-visible doc strings name the active paths (042 task 15)** — clap `--help` for the Command variants, the MCP tool descriptions (`write-session`, `migrate-session-file`, `dashboard`, `resolve-references`), and the schema doc comments describe config/session access via the active file; legacy filenames remain only where the fallback or a migration is being described.
+
+### Fixed
+
+- **Subprocess test harnesses always rebuild the release binary** — `ensure_binary_built()` in the exec/parity suites runs an unconditional incremental `cargo build --release` (under a `Once`, one build per test binary) instead of early-returning when a stale `target/release/gvrn` merely exists — a stale binary from a prior version or source state can no longer be the one under test.
+
 ## [0.21.1] — 2026-07-12
 
 A read-side parser fix. `read-tasks` recognized only the `- **Done when**:` form its writer (`append-task`) emits — but `/gov:plan` authors the task breakdown directly (the runtime provides no primitive for it), so LLM- and hand-authored `tasks.md` files use other spellings the parser silently rejected, flagging every task as missing a done-when clause under `/gov:analyze` and the `/gov:review` done-gate. Captured as 022 follow-on scenario `done-when-authoring-forms`.
